@@ -13,7 +13,7 @@ const AuthCallback = () => {
   const [searchParams] = useSearchParams();
   const [status, setStatus] = useState<AuthStatus>('loading');
   const [errorMessage, setErrorMessage] = useState('');
-  const [authType, setAuthType] = useState<'signin' | 'signup' | 'recovery'>('signin');
+  const [authType, setAuthType] = useState<'signin' | 'signup' | 'recovery' | 'oauth'>('signin');
 
   useEffect(() => {
     const handleCallback = async () => {
@@ -42,7 +42,7 @@ const AuthCallback = () => {
           return;
         }
 
-        // Handle other errors
+        // Handle OAuth errors
         if (error && error !== 'access_denied') {
           console.error('Auth error:', error, errorDescription);
           setStatus('error');
@@ -66,32 +66,63 @@ const AuthCallback = () => {
         const type = searchParams.get('type');
         if (type === 'recovery') {
           setAuthType('recovery');
-          // Redirect to reset password page
+          console.log('🔓 Password recovery flow detected');
+          // Don't redirect yet - let ResetPassword handle it
           navigate('/reset-password', { replace: true });
           return;
         }
 
-        // Get session using exchangeCodeForSession for PKCE flow
-        const hashParams = new URLSearchParams(window.location.hash.substring(1));
-        const accessToken = hashParams.get('access_token');
-        const refreshToken = hashParams.get('refresh_token');
+        // Check for PKCE code parameter (OAuth flow)
+        const code = searchParams.get('code');
         
         let session = null;
         let sessionError = null;
 
-        // Try to get session from URL tokens first
-        if (accessToken && refreshToken) {
-          const { data, error } = await supabase.auth.setSession({
-            access_token: accessToken,
-            refresh_token: refreshToken,
-          });
+        if (code) {
+          // PKCE flow - exchange code for session
+          console.log('🔐 PKCE flow detected - exchanging code for session...');
+          setAuthType('oauth');
+          
+          const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+          
+          if (exchangeError) {
+            console.error('Code exchange error:', exchangeError);
+            setStatus('error');
+            setErrorMessage(exchangeError.message);
+            
+            toast({
+              title: "Authentication Failed",
+              description: exchangeError.message,
+              variant: "destructive",
+            });
+            
+            setTimeout(() => navigate('/signin'), 3000);
+            return;
+          }
+          
           session = data.session;
-          sessionError = error;
+          console.log('✅ Code exchange successful', session ? 'Session created' : 'No session');
         } else {
-          // Fallback to getting existing session
-          const { data, error } = await supabase.auth.getSession();
-          session = data.session;
-          sessionError = error;
+          // Try to get session from URL hash (magic link flow)
+          const hashParams = new URLSearchParams(window.location.hash.substring(1));
+          const accessToken = hashParams.get('access_token');
+          const refreshToken = hashParams.get('refresh_token');
+          
+          if (accessToken && refreshToken) {
+            console.log('🔗 Magic link flow detected - setting session from tokens...');
+            const { data, error } = await supabase.auth.setSession({
+              access_token: accessToken,
+              refresh_token: refreshToken,
+            });
+            session = data.session;
+            sessionError = error;
+          } else {
+            // Fallback to getting existing session
+            console.log('📋 Checking for existing session...');
+            const { data, error } = await supabase.auth.getSession();
+            session = data.session;
+            sessionError = error;
+          }
         }
 
         if (sessionError) {
@@ -125,7 +156,8 @@ const AuthCallback = () => {
         }
 
         // Successfully authenticated - now handle profile
-        console.log('Session established for user:', session.user.id);
+        console.log('✅ Session established for user:', session.user.id);
+        console.log('User email:', session.user.email);
 
         // Check if profile exists
         const { data: existingProfile, error: profileCheckError } = await supabase
@@ -141,7 +173,7 @@ const AuthCallback = () => {
 
         // Create profile if it doesn't exist
         if (!existingProfile) {
-          console.log('Creating new profile for user');
+          console.log('📝 Creating new profile for user...');
           
           const displayName = 
             session.user.user_metadata?.full_name || 
@@ -150,15 +182,17 @@ const AuthCallback = () => {
             session.user.email?.split('@')[0] ||
             'User';
 
+          const avatarUrl = 
+            session.user.user_metadata?.avatar_url ||
+            session.user.user_metadata?.picture ||
+            `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(displayName)}`;
+
           const { error: insertError } = await supabase
             .from('profiles')
             .insert({
               user_id: session.user.id,
               full_name: displayName,
-              avatar_url: 
-                session.user.user_metadata?.avatar_url ||
-                session.user.user_metadata?.picture ||
-                `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(displayName)}`,
+              avatar_url: avatarUrl,
               email: session.user.email,
               created_at: new Date().toISOString(),
             });
@@ -172,9 +206,11 @@ const AuthCallback = () => {
               variant: "default",
             });
           } else {
-            console.log('Profile created successfully');
+            console.log('✅ Profile created successfully');
             setAuthType('signup');
           }
+        } else {
+          console.log('✅ Existing profile found');
         }
 
         // Success!
@@ -182,10 +218,12 @@ const AuthCallback = () => {
         
         const welcomeMessage = authType === 'signup' 
           ? 'Welcome to BuyAPixel! Your account has been created.'
+          : authType === 'oauth'
+          ? `Welcome, ${existingProfile?.full_name || session.user.email}!`
           : `Welcome back, ${session.user.email}!`;
 
         toast({
-          title: authType === 'signup' ? "Account Created!" : "Welcome Back!",
+          title: authType === 'signup' ? "Account Created! 🎉" : "Welcome Back! 👋",
           description: welcomeMessage,
         });
 
@@ -197,7 +235,7 @@ const AuthCallback = () => {
         }, 1500);
 
       } catch (error) {
-        console.error('Unexpected error during auth callback:', error);
+        console.error('❌ Unexpected error during auth callback:', error);
         setStatus('error');
         setErrorMessage('An unexpected error occurred. Please try again.');
         
@@ -218,6 +256,14 @@ const AuthCallback = () => {
     navigate('/signin');
   };
 
+  const handleRequestNewLink = () => {
+    navigate('/signin', { 
+      state: { 
+        message: 'Please sign in to receive a new email link' 
+      } 
+    });
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-muted/20 p-4">
       <div className="text-center max-w-md mx-auto p-8 bg-card rounded-lg shadow-lg border">
@@ -227,11 +273,17 @@ const AuthCallback = () => {
               <Loader2 className="w-16 h-16 animate-spin mx-auto text-primary" />
             </div>
             <h2 className="text-2xl font-semibold mb-2">
-              {authType === 'recovery' ? 'Verifying link...' : 'Completing sign in...'}
+              {authType === 'recovery' 
+                ? 'Verifying link...' 
+                : authType === 'oauth'
+                ? 'Completing OAuth sign in...'
+                : 'Completing sign in...'}
             </h2>
             <p className="text-muted-foreground">
               {authType === 'recovery' 
                 ? 'Please wait while we verify your password reset link'
+                : authType === 'oauth'
+                ? 'Please wait while we connect your account'
                 : 'Please wait while we set up your account'}
             </p>
 
@@ -252,13 +304,22 @@ const AuthCallback = () => {
               </div>
             </div>
             <h2 className="text-2xl font-semibold mb-2 text-green-600 dark:text-green-400">
-              {authType === 'signup' ? 'Account Created!' : 'Success!'}
+              {authType === 'signup' ? 'Account Created! 🎉' : 'Success! ✨'}
             </h2>
             <p className="text-muted-foreground">
               {authType === 'signup' 
                 ? 'Your account has been created. Redirecting...'
+                : authType === 'oauth'
+                ? 'OAuth sign in successful. Redirecting...'
                 : 'Redirecting you to the app...'}
             </p>
+            
+            {/* Success animation */}
+            <div className="flex justify-center gap-2 mt-6">
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-bounce"></div>
+            </div>
           </>
         )}
 
@@ -280,7 +341,7 @@ const AuthCallback = () => {
                 Email links expire after a few minutes for security.
               </p>
               <Button 
-                onClick={handleReturnToSignIn}
+                onClick={handleRequestNewLink}
                 className="w-full"
                 size="lg"
               >
@@ -305,14 +366,14 @@ const AuthCallback = () => {
             </p>
             <div className="space-y-3">
               <p className="text-sm text-muted-foreground">
-                Redirecting to sign in page...
+                Redirecting to sign in page in 3 seconds...
               </p>
               <Button 
                 onClick={handleReturnToSignIn}
                 variant="outline"
                 className="w-full"
               >
-                Return Now
+                Return to Sign In Now
               </Button>
             </div>
           </>
