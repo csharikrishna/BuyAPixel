@@ -1,0 +1,757 @@
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Progress } from '@/components/ui/progress';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { 
+  Edit, ArrowLeft, Mail, Phone, Calendar, 
+  User, MapPin, Eye, TrendingUp, ExternalLink,
+  Award, Clock, CheckCircle2, AlertCircle, Info
+} from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { toast } from 'sonner';
+import ProfileEditModal from '@/components/ProfileEditModal';
+import { RealtimeChannel } from '@supabase/supabase-js';
+
+// Type definitions
+interface Profile {
+  id: string;
+  user_id: string;
+  full_name: string | null;
+  phone_number: string | null;
+  date_of_birth: string | null;
+  avatar_url: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+interface UserPixel {
+  x: number;
+  y: number;
+  id: string;
+  image_url?: string;
+  link_url?: string;
+  alt_text?: string;
+  price_paid: number;
+  purchased_at: string;
+}
+
+interface PixelStats {
+  totalPixels: number;
+  totalInvestment: number;
+  averagePrice: number;
+}
+
+interface ProfileField {
+  name: string;
+  label: string;
+  completed: boolean;
+  value: string | null;
+  icon: React.ReactNode;
+}
+
+interface ProfileCompletionData {
+  percentage: number;
+  completedFields: ProfileField[];
+  missingFields: ProfileField[];
+  allFields: ProfileField[];
+}
+
+// Loading skeleton component
+const ProfileSkeleton = () => (
+  <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 pb-20 lg:pb-8">
+    <div className="container mx-auto px-4 py-4 md:py-8">
+      <div className="flex items-center space-x-4 mb-8">
+        <Skeleton className="h-10 w-32" />
+        <Skeleton className="h-8 w-48" />
+      </div>
+      <Card className="w-full max-w-4xl mx-auto">
+        <CardHeader className="text-center">
+          <Skeleton className="w-32 h-32 rounded-full mx-auto mb-4" />
+          <Skeleton className="h-8 w-48 mx-auto" />
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Skeleton className="h-24 w-full" />
+          <Skeleton className="h-24 w-full" />
+        </CardContent>
+      </Card>
+    </div>
+  </div>
+);
+
+const Profile = () => {
+  const { user, loading: authLoading } = useAuth();
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [profileLoading, setProfileLoading] = useState(true);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [userPixels, setUserPixels] = useState<UserPixel[]>([]);
+  const [pixelsLoading, setPixelsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Calculate profile completion with detailed breakdown
+  const profileCompletionData = useMemo<ProfileCompletionData>(() => {
+    if (!profile) {
+      return {
+        percentage: 0,
+        completedFields: [],
+        missingFields: [],
+        allFields: []
+      };
+    }
+
+    const fields: ProfileField[] = [
+      {
+        name: 'full_name',
+        label: 'Full Name',
+        completed: Boolean(profile.full_name),
+        value: profile.full_name,
+        icon: <User className="w-4 h-4" />
+      },
+      {
+        name: 'phone_number',
+        label: 'Phone Number',
+        completed: Boolean(profile.phone_number),
+        value: profile.phone_number,
+        icon: <Phone className="w-4 h-4" />
+      },
+      {
+        name: 'date_of_birth',
+        label: 'Date of Birth',
+        completed: Boolean(profile.date_of_birth),
+        value: profile.date_of_birth,
+        icon: <Calendar className="w-4 h-4" />
+      },
+      {
+        name: 'avatar_url',
+        label: 'Profile Picture',
+        completed: Boolean(profile.avatar_url),
+        value: profile.avatar_url,
+        icon: <User className="w-4 h-4" />
+      }
+    ];
+
+    const completedFields = fields.filter(f => f.completed);
+    const missingFields = fields.filter(f => !f.completed);
+    const percentage = Math.round((completedFields.length / fields.length) * 100);
+
+    return {
+      percentage,
+      completedFields,
+      missingFields,
+      allFields: fields
+    };
+  }, [profile]);
+
+  // Memoized pixel statistics
+  const pixelStats = useMemo<PixelStats>(() => {
+    const totalPixels = userPixels.length;
+    const totalInvestment = userPixels.reduce((sum, p) => sum + p.price_paid, 0);
+    const averagePrice = totalPixels > 0 ? totalInvestment / totalPixels : 0;
+    
+    return { totalPixels, totalInvestment, averagePrice };
+  }, [userPixels]);
+
+  // Fetch profile data
+  const fetchProfile = useCallback(async () => {
+    if (!user?.id) return;
+    
+    setProfileLoading(true);
+    setError(null);
+    
+    try {
+      const { data, error: fetchError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (fetchError) throw fetchError;
+      setProfile(data);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load profile';
+      console.error('Error fetching profile:', err);
+      setError(errorMessage);
+      toast.error("Failed to load profile data");
+    } finally {
+      setProfileLoading(false);
+    }
+  }, [user?.id]);
+
+  // Fetch user pixels
+  const fetchUserPixels = useCallback(async () => {
+    if (!user?.id) return;
+    
+    setPixelsLoading(true);
+    
+    try {
+      const { data, error: fetchError } = await supabase
+        .from('pixels')
+        .select('*')
+        .eq('owner_id', user.id)
+        .order('purchased_at', { ascending: false });
+
+      if (fetchError) throw fetchError;
+      
+      const pixels: UserPixel[] = (data || []).map((row) => ({
+        id: row.id as string,
+        x: row.x as number,
+        y: row.y as number,
+        image_url: row.image_url || undefined,
+        link_url: row.link_url || undefined,
+        alt_text: row.alt_text || undefined,
+        price_paid: row.price_paid || 0,
+        purchased_at: row.purchased_at || ''
+      }));
+      
+      setUserPixels(pixels);
+    } catch (err) {
+      console.error('Error fetching user pixels:', err);
+      toast.error("Failed to load your pixels");
+    } finally {
+      setPixelsLoading(false);
+    }
+  }, [user?.id]);
+
+  // Initial data fetch
+  useEffect(() => {
+    if (user?.id) {
+      fetchProfile();
+      fetchUserPixels();
+    }
+  }, [user?.id, fetchProfile, fetchUserPixels]);
+
+  // Real-time subscription
+  useEffect(() => {
+    if (!user?.id) return;
+
+    let channel: RealtimeChannel;
+
+    const setupSubscription = async () => {
+      channel = supabase
+        .channel(`user-pixels-${user.id}`)
+        .on('postgres_changes', { 
+          event: '*', 
+          schema: 'public', 
+          table: 'pixels',
+          filter: `owner_id=eq.${user.id}`
+        }, () => {
+          fetchUserPixels();
+        })
+        .subscribe();
+    };
+
+    setupSubscription();
+
+    return () => {
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
+    };
+  }, [user?.id, fetchUserPixels]);
+
+  // Utility functions
+  const formatDate = useCallback((dateString: string | null): string => {
+    if (!dateString) return 'Not provided';
+    try {
+      return new Date(dateString).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    } catch {
+      return 'Invalid date';
+    }
+  }, []);
+
+  const getInitials = useCallback((name: string | null): string => {
+    if (!name) return 'U';
+    return name
+      .split(' ')
+      .map(n => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  }, []);
+
+  const handleEditProfile = useCallback(() => {
+    setEditModalOpen(true);
+  }, []);
+
+  const handleCloseModal = useCallback(() => {
+    setEditModalOpen(false);
+  }, []);
+
+  const handlePixelVisit = useCallback((url: string) => {
+    window.open(url, '_blank', 'noopener,noreferrer');
+  }, []);
+
+  // Loading state
+  if (authLoading || (profileLoading && !profile)) {
+    return <ProfileSkeleton />;
+  }
+
+  // Unauthenticated state
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <Card className="w-full max-w-md">
+          <CardContent className="p-6 text-center space-y-4">
+            <User className="w-16 h-16 mx-auto text-muted-foreground" />
+            <div>
+              <h2 className="text-xl font-semibold mb-2">Authentication Required</h2>
+              <p className="text-muted-foreground">
+                Please sign in to view your profile and manage your pixels.
+              </p>
+            </div>
+            <Link to="/signin" className="block">
+              <Button className="w-full">Sign In</Button>
+            </Link>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error && !profile) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <Card className="w-full max-w-md border-destructive">
+          <CardContent className="p-6 text-center space-y-4">
+            <div className="text-destructive">
+              <h2 className="text-xl font-semibold mb-2">Error Loading Profile</h2>
+              <p className="text-sm">{error}</p>
+            </div>
+            <Button onClick={() => fetchProfile()} variant="outline">
+              Retry
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 pb-20 lg:pb-8">
+      <div className="container mx-auto px-4 py-4 md:py-8 max-w-6xl">
+        {/* Header */}
+        <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 md:mb-8">
+          <div className="flex items-center space-x-3 md:space-x-4">
+            <Link to="/" aria-label="Back to home">
+              <Button variant="ghost" size="sm">
+                <ArrowLeft className="w-4 h-4 mr-2" aria-hidden="true" />
+                <span className="hidden sm:inline">Back to Home</span>
+                <span className="sm:hidden">Back</span>
+              </Button>
+            </Link>
+            <div>
+              <h1 className="text-2xl md:text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+                Account Overview
+              </h1>
+              <p className="text-sm text-muted-foreground hidden sm:block">
+                Manage your account and pixels
+              </p>
+            </div>
+          </div>
+          <Button 
+            onClick={handleEditProfile} 
+            className="gap-2 transition-transform hover:scale-105" 
+            size="sm"
+            aria-label="Edit profile"
+          >
+            <Edit className="w-4 h-4" aria-hidden="true" />
+            <span className="hidden sm:inline">Edit Profile</span>
+            <span className="sm:hidden">Edit</span>
+          </Button>
+        </header>
+
+        {/* Profile Completion Alert - Show only if not complete */}
+        {profileCompletionData.percentage < 100 && (
+          <Alert className="mb-6 bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
+            <Info className="h-4 w-4 text-blue-600" />
+            <AlertDescription className="text-blue-900 dark:text-blue-100">
+              <span className="font-semibold">Complete your profile</span> to unlock all features and enhance your experience. 
+              <span className="font-semibold ml-1">{profileCompletionData.missingFields.length} field{profileCompletionData.missingFields.length !== 1 ? 's' : ''} remaining.</span>
+            </AlertDescription>
+          </Alert>
+        )}
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left Column - Profile Card */}
+          <div className="lg:col-span-1">
+            <Card className="shadow-xl sticky top-4">
+              <CardHeader className="text-center pb-4">
+                <div className="flex justify-center mb-4">
+                  <div className="relative">
+                    <Avatar className="w-32 h-32 border-4 border-background shadow-lg ring-2 ring-primary/10">
+                      <AvatarImage 
+                        src={profile?.avatar_url || undefined} 
+                        alt={`${profile?.full_name || 'User'}'s profile picture`}
+                      />
+                      <AvatarFallback className="text-2xl font-bold bg-gradient-to-br from-primary to-secondary text-primary-foreground">
+                        {getInitials(profile?.full_name)}
+                      </AvatarFallback>
+                    </Avatar>
+                    {!profile?.avatar_url && (
+                      <div className="absolute -bottom-1 -right-1 w-8 h-8 bg-yellow-500 rounded-full flex items-center justify-center border-2 border-background">
+                        <AlertCircle className="w-4 h-4 text-white" />
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <CardTitle className="text-xl font-bold">
+                  {profile?.full_name || 'Anonymous User'}
+                </CardTitle>
+                <p className="text-sm text-muted-foreground">{user.email}</p>
+                <div className="flex flex-wrap items-center justify-center gap-2 mt-3">
+                  <Badge variant="secondary" className="flex items-center gap-1">
+                    <Clock className="w-3 h-3" aria-hidden="true" />
+                    {formatDate(profile?.created_at || '')}
+                  </Badge>
+                  <Badge variant="default" className="flex items-center gap-1 bg-green-500">
+                    <CheckCircle2 className="w-3 h-3" aria-hidden="true" />
+                    Verified
+                  </Badge>
+                </div>
+              </CardHeader>
+
+              <CardContent className="space-y-4">
+                {/* Profile Completion Card */}
+                <div className="bg-gradient-to-br from-orange-50 to-blue-50 dark:from-orange-950/20 dark:to-blue-950/20 rounded-lg p-4 border-2 border-orange-200 dark:border-orange-800">
+                  <div className="flex items-center justify-between mb-3">
+                    <div>
+                      <h3 className="font-semibold text-sm text-muted-foreground">Profile Completion</h3>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {profileCompletionData.percentage === 100 
+                          ? '🎉 Complete!' 
+                          : 'Complete to unlock all features'
+                        }
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-3xl font-bold text-orange-600 dark:text-orange-400">
+                        {profileCompletionData.percentage}%
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {/* Progress Bar */}
+                  <Progress 
+                    value={profileCompletionData.percentage} 
+                    className="h-3 mb-4"
+                  />
+
+                  {/* Field Breakdown */}
+                  <div className="space-y-2">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+                      Field Status
+                    </p>
+                    {profileCompletionData.allFields.map((field) => (
+                      <div 
+                        key={field.name}
+                        className={`flex items-center justify-between p-2 rounded-md ${
+                          field.completed 
+                            ? 'bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800' 
+                            : 'bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-800'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <div className={field.completed ? 'text-green-600' : 'text-yellow-600'}>
+                            {field.icon}
+                          </div>
+                          <span className={`text-sm font-medium ${
+                            field.completed ? 'text-green-900 dark:text-green-100' : 'text-yellow-900 dark:text-yellow-100'
+                          }`}>
+                            {field.label}
+                          </span>
+                        </div>
+                        {field.completed ? (
+                          <CheckCircle2 className="w-4 h-4 text-green-600" />
+                        ) : (
+                          <AlertCircle className="w-4 h-4 text-yellow-600" />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Missing Fields Alert */}
+                  {profileCompletionData.missingFields.length > 0 && (
+                    <div className="mt-4 pt-4 border-t">
+                      <p className="text-xs font-medium text-yellow-800 dark:text-yellow-200 mb-2">
+                        ⚠️ Missing Information:
+                      </p>
+                      <ul className="text-xs text-yellow-700 dark:text-yellow-300 space-y-1 ml-4">
+                        {profileCompletionData.missingFields.map((field) => (
+                          <li key={field.name} className="list-disc">
+                            Add your {field.label.toLowerCase()}
+                          </li>
+                        ))}
+                      </ul>
+                      <Button 
+                        onClick={handleEditProfile}
+                        size="sm"
+                        className="w-full mt-3 bg-orange-600 hover:bg-orange-700"
+                      >
+                        <Edit className="w-3 h-3 mr-2" />
+                        Complete Profile Now
+                      </Button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Account Status */}
+                <div className="bg-muted/30 rounded-lg p-4 border">
+                  <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
+                    <Award className="w-4 h-4 text-primary" />
+                    Account Status
+                  </h3>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground">Type</span>
+                      <Badge variant="default">Active Member</Badge>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground">Pixels Owned</span>
+                      <span className="font-semibold">{pixelStats.totalPixels}</span>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Right Column - Details & Pixels */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Personal Information Card */}
+            <Card className="shadow-lg">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <User className="w-5 h-5 text-primary" />
+                  Personal Information
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <InfoCard 
+                    icon={<Mail className="w-4 h-4" />}
+                    label="Email"
+                    value={user.email || 'Not provided'}
+                    completed={true}
+                  />
+                  <InfoCard 
+                    icon={<User className="w-4 h-4" />}
+                    label="Full Name"
+                    value={profile?.full_name || 'Not provided'}
+                    completed={Boolean(profile?.full_name)}
+                  />
+                  <InfoCard 
+                    icon={<Phone className="w-4 h-4" />}
+                    label="Phone Number"
+                    value={profile?.phone_number || 'Not provided'}
+                    completed={Boolean(profile?.phone_number)}
+                  />
+                  <InfoCard 
+                    icon={<Calendar className="w-4 h-4" />}
+                    label="Date of Birth"
+                    value={formatDate(profile?.date_of_birth)}
+                    completed={Boolean(profile?.date_of_birth)}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Pixels Section */}
+            <Card className="shadow-lg">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MapPin className="w-5 h-5 text-primary" />
+                  My Pixels
+                  <Badge variant="outline" className="ml-2">{pixelStats.totalPixels}</Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {pixelsLoading ? (
+                  <div className="space-y-3">
+                    <Skeleton className="h-24 w-full" />
+                    <Skeleton className="h-40 w-full" />
+                  </div>
+                ) : userPixels.length > 0 ? (
+                  <div className="space-y-4">
+                    {/* Stats Grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <StatCard 
+                        icon={<Eye className="w-5 h-5" />}
+                        label="Total Pixels"
+                        value={pixelStats.totalPixels.toString()}
+                        color="primary"
+                      />
+                      <StatCard 
+                        icon={<TrendingUp className="w-5 h-5" />}
+                        label="Total Investment"
+                        value={`₹${pixelStats.totalInvestment.toLocaleString()}`}
+                        color="success"
+                      />
+                      <StatCard 
+                        icon={<Award className="w-5 h-5" />}
+                        label="Avg. Price"
+                        value={`₹${Math.round(pixelStats.averagePrice).toLocaleString()}`}
+                        color="secondary"
+                      />
+                    </div>
+                    
+                    {/* Pixels List */}
+                    <div className="bg-muted/30 rounded-lg p-4 max-h-96 overflow-y-auto">
+                      <div className="space-y-2">
+                        {userPixels.map((pixel) => (
+                          <PixelItem 
+                            key={pixel.id}
+                            pixel={pixel}
+                            onVisit={handlePixelVisit}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <EmptyPixelsState />
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
+        {/* Edit Modal */}
+        <ProfileEditModal
+          isOpen={editModalOpen}
+          onClose={handleCloseModal}
+          profile={profile}
+          onProfileUpdate={fetchProfile}
+        />
+      </div>
+    </div>
+  );
+};
+
+// Sub-components
+interface InfoCardProps {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  completed?: boolean;
+}
+
+const InfoCard: React.FC<InfoCardProps> = ({ icon, label, value, completed = true }) => (
+  <div className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${
+    completed 
+      ? 'bg-muted/30 hover:bg-muted/50' 
+      : 'bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-800'
+  }`}>
+    <div className={completed ? 'text-muted-foreground' : 'text-yellow-600'} aria-hidden="true">
+      {icon}
+    </div>
+    <div className="flex-1 min-w-0">
+      <div className="flex items-center gap-2">
+        <p className="text-sm text-muted-foreground">{label}</p>
+        {!completed && (
+          <AlertCircle className="w-3 h-3 text-yellow-600" />
+        )}
+      </div>
+      <p className={`font-medium truncate ${!completed && value === 'Not provided' ? 'text-yellow-700 dark:text-yellow-400' : ''}`} title={value}>
+        {value}
+      </p>
+    </div>
+    {completed && value !== 'Not provided' && (
+      <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0" />
+    )}
+  </div>
+);
+
+interface StatCardProps {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  color: 'primary' | 'success' | 'secondary';
+}
+
+const StatCard: React.FC<StatCardProps> = ({ icon, label, value, color }) => {
+  const colorClasses = {
+    primary: 'text-primary',
+    success: 'text-green-600',
+    secondary: 'text-secondary'
+  };
+
+  return (
+    <div className="bg-muted/30 rounded-lg p-4 hover:shadow-md transition-shadow">
+      <div className="flex items-center gap-2 mb-2">
+        <div className={colorClasses[color]} aria-hidden="true">{icon}</div>
+        <span className="font-medium text-sm">{label}</span>
+      </div>
+      <p className={`text-2xl font-bold ${colorClasses[color]}`}>{value}</p>
+    </div>
+  );
+};
+
+interface PixelItemProps {
+  pixel: UserPixel;
+  onVisit: (url: string) => void;
+}
+
+const PixelItem: React.FC<PixelItemProps> = ({ pixel, onVisit }) => (
+  <div className="flex items-center justify-between py-3 px-4 bg-background rounded-lg border hover:border-primary/50 transition-all hover:shadow-sm">
+    <div className="flex items-center gap-3 flex-1 min-w-0">
+      {pixel.image_url && (
+        <img 
+          src={pixel.image_url} 
+          alt={pixel.alt_text || `Pixel at (${pixel.x}, ${pixel.y})`}
+          className="w-10 h-10 rounded object-cover flex-shrink-0"
+          loading="lazy"
+        />
+      )}
+      <div className="flex-1 min-w-0">
+        <p className="font-medium truncate">
+          {pixel.alt_text || `Pixel (${pixel.x}, ${pixel.y})`}
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Position: ({pixel.x}, {pixel.y}) • ₹{pixel.price_paid.toLocaleString()}
+        </p>
+      </div>
+    </div>
+    {pixel.link_url && (
+      <Button
+        size="sm"
+        variant="outline"
+        onClick={() => onVisit(pixel.link_url!)}
+        className="flex-shrink-0 gap-1"
+        aria-label={`Visit link for pixel at (${pixel.x}, ${pixel.y})`}
+      >
+        <span className="hidden sm:inline">Visit</span>
+        <ExternalLink className="w-4 h-4" aria-hidden="true" />
+      </Button>
+    )}
+  </div>
+);
+
+const EmptyPixelsState = () => (
+  <div className="text-center py-12 px-4">
+    <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-muted/50 mb-4">
+      <MapPin className="w-10 h-10 text-muted-foreground" aria-hidden="true" />
+    </div>
+    <h3 className="text-lg font-semibold mb-2">No Pixels Yet</h3>
+    <p className="text-muted-foreground mb-6 max-w-sm mx-auto">
+      Start building your digital real estate by purchasing your first pixels.
+    </p>
+    <Link to="/buy-pixels">
+      <Button className="gap-2">
+        <MapPin className="w-4 h-4" aria-hidden="true" />
+        Buy Your First Pixels
+      </Button>
+    </Link>
+  </div>
+);
+
+export default Profile;
