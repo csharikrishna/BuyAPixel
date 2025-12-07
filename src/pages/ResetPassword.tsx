@@ -89,14 +89,65 @@ const ResetPassword = () => {
         return;
       }
 
-      // Check for recovery type parameter
-      const type = searchParams.get('type');
+      // Check for PKCE code parameter (new flow)
+      const code = searchParams.get('code');
       
-      if (type !== 'recovery') {
-        console.warn('Invalid recovery type');
+      if (code) {
+        console.log('🔐 PKCE flow detected - exchanging code for session...');
+        
+        try {
+          // Exchange the code for a session
+          const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+          
+          if (exchangeError) {
+            console.error('Code exchange error:', exchangeError);
+            
+            let errorMessage = exchangeError.message;
+            
+            if (exchangeError.message.includes('expired')) {
+              errorMessage = 'Your password reset link has expired. Please request a new one.';
+            } else if (exchangeError.message.includes('invalid')) {
+              errorMessage = 'Invalid password reset link. Please request a new one.';
+            }
+            
+            toast({
+              title: "Session Error",
+              description: errorMessage,
+              variant: "destructive",
+            });
+            
+            setIsValidSession(false);
+            setTimeout(() => navigate('/forgot-password'), 2000);
+            return;
+          }
+          
+          console.log('✅ Code exchange successful', data.session ? 'Session created' : 'No session');
+          
+          if (data.session) {
+            setIsValidSession(true);
+            return;
+          }
+        } catch (err) {
+          console.error('Unexpected error during code exchange:', err);
+          toast({
+            title: "Error",
+            description: "Failed to verify reset link. Please try again.",
+            variant: "destructive",
+          });
+          setIsValidSession(false);
+          setTimeout(() => navigate('/forgot-password'), 2000);
+          return;
+        }
       }
 
-      // Check if user has a valid session from password reset email
+      // Check for recovery type parameter (legacy flow)
+      const type = searchParams.get('type');
+      
+      if (type === 'recovery') {
+        console.log('🔓 Legacy recovery flow detected');
+      }
+
+      // Check if user has a valid session
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
       if (sessionError) {
@@ -112,10 +163,10 @@ const ResetPassword = () => {
       }
 
       if (session) {
-        // Valid session exists
+        console.log('✅ Valid session found');
         setIsValidSession(true);
       } else {
-        // No session found
+        console.log('❌ No valid session');
         toast({
           title: "Invalid Session",
           description: "Please request a new password reset link.",
@@ -200,6 +251,9 @@ const ResetPassword = () => {
           title: "Password Reset Successful! 🎉",
           description: "Your password has been updated. Redirecting to sign in...",
         });
+        
+        // Sign out to clear session
+        await supabase.auth.signOut();
         
         setTimeout(() => {
           navigate('/signin', { 
