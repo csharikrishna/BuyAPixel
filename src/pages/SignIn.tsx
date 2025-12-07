@@ -24,11 +24,13 @@ const SignIn = () => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [oauthLoading, setOauthLoading] = useState(false);
+  const [magicLinkSent, setMagicLinkSent] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [formErrors, setFormErrors] = useState<{ email?: string; password?: string }>({});
   const [passwordStrength, setPasswordStrength] = useState(0);
   const [isTyping, setIsTyping] = useState(false);
+  const [signInMethod, setSignInMethod] = useState<'password' | 'magic-link'>('password');
   
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -54,23 +56,33 @@ const SignIn = () => {
     }
   }, []);
 
-  // Check for OAuth errors in URL
+  // Check for OAuth/Auth errors in URL
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const error = params.get('error');
     const errorDescription = params.get('error_description');
+    const errorCode = params.get('error_code');
 
-    if (error) {
-      let message = errorDescription || 'Authentication failed';
+    if (error || errorCode) {
+      let title = "Sign In Error";
+      let message = errorDescription 
+        ? decodeURIComponent(errorDescription.replace(/\+/g, ' '))
+        : 'Authentication failed';
       
-      if (error === 'auth_failed') {
+      if (errorCode === 'otp_expired' || error === 'access_denied') {
+        title = "Link Expired";
+        message = "Your sign-in link has expired. Please try again.";
+      } else if (error === 'auth_failed') {
         message = 'Authentication failed. Please try again.';
       } else if (error === 'unexpected') {
         message = 'An unexpected error occurred during sign in.';
+      } else if (errorCode === 'email_not_confirmed') {
+        title = "Email Not Confirmed";
+        message = "Please confirm your email address. Check your inbox for the confirmation link.";
       }
 
       toast({
-        title: "Sign In Error",
+        title,
         description: message,
         variant: "destructive",
       });
@@ -103,6 +115,7 @@ const SignIn = () => {
     const value = e.target.value;
     setEmail(value);
     setIsTyping(true);
+    setMagicLinkSent(false); // Reset magic link state
     
     // Debounced validation
     setTimeout(() => {
@@ -128,6 +141,12 @@ const SignIn = () => {
   // Sign in with email and password
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // If magic link mode, send magic link instead
+    if (signInMethod === 'magic-link') {
+      handleMagicLinkSignIn();
+      return;
+    }
     
     // Validate form data
     const validation = signInSchema.safeParse({ email, password });
@@ -169,6 +188,9 @@ const SignIn = () => {
         } else if (error.message.includes('too many requests')) {
           errorMessage = "Too many login attempts. Please wait a few minutes and try again.";
           errorTitle = "Rate Limit Exceeded";
+        } else if (error.message.includes('User not found')) {
+          errorMessage = "No account found with this email. Please sign up first.";
+          errorTitle = "Account Not Found";
         }
         
         toast({
@@ -202,14 +224,86 @@ const SignIn = () => {
     }
   };
 
+  // Magic link sign in
+  const handleMagicLinkSignIn = async () => {
+    // Validate email first
+    const emailError = validateEmail(email);
+    if (emailError) {
+      setFormErrors(prev => ({ ...prev, email: emailError }));
+      toast({
+        title: "Invalid Email",
+        description: emailError,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const redirectUrl = `${window.location.origin}/auth/callback`;
+      
+      const { error } = await supabase.auth.signInWithOtp({
+        email: email.trim(),
+        options: {
+          emailRedirectTo: redirectUrl,
+          shouldCreateUser: false, // Don't auto-create accounts, they should sign up first
+        },
+      });
+
+      if (error) {
+        let errorMessage = error.message;
+        let errorTitle = "Failed to Send Link";
+        
+        if (error.message.includes('rate limit')) {
+          errorMessage = "Too many requests. Please wait a few minutes before trying again.";
+          errorTitle = "Rate Limit Exceeded";
+        } else if (error.message.includes('User not found')) {
+          errorMessage = "No account found with this email. Please sign up first.";
+          errorTitle = "Account Not Found";
+        }
+        
+        toast({
+          title: errorTitle,
+          description: errorMessage,
+          variant: "destructive",
+        });
+      } else {
+        setMagicLinkSent(true);
+        
+        // Save email if remember me is checked
+        if (rememberMe) {
+          localStorage.setItem('remembered_email', email);
+        }
+        
+        toast({
+          title: "Check Your Email!",
+          description: `We've sent a magic link to ${email}. Click the link to sign in. The link expires in 60 minutes.`,
+        });
+      }
+    } catch (error) {
+      console.error('Magic link error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to send magic link. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Google OAuth sign in
   const handleGoogleSignIn = async () => {
     try {
       setOauthLoading(true);
       
-      const redirectUrl = `${window.location.origin}/auth/callback`;
+      // Include redirect parameter in callback URL
+      const redirectUrl = from !== '/' 
+        ? `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(from)}`
+        : `${window.location.origin}/auth/callback`;
       
-      const { data, error } = await supabase.auth.signInWithOAuth({
+      const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: redirectUrl,
@@ -228,7 +322,9 @@ const SignIn = () => {
         if (error.message.includes('redirect')) {
           errorMessage = 'OAuth redirect configuration error. Please contact support.';
         } else if (error.message.includes('not enabled')) {
-          errorMessage = 'Google authentication is not enabled. Please contact support.';
+          errorMessage = 'Google authentication is not enabled. Please use email/password sign in.';
+        } else if (error.message.includes('network')) {
+          errorMessage = 'Network error. Please check your connection and try again.';
         }
         
         toast({
@@ -351,222 +447,318 @@ const SignIn = () => {
               Back to Home
             </Link>
             <h2 className="text-3xl font-bold mb-2">Welcome Back</h2>
-            <p className="text-muted-foreground">Sign in to your account to continue</p>
+            <p className="text-muted-foreground">
+              {magicLinkSent 
+                ? 'Check your email for the magic link' 
+                : 'Sign in to your account to continue'}
+            </p>
           </div>
 
-          {/* Google Sign In Button */}
-          <Button
-            type="button"
-            variant="outline"
-            className="w-full h-12 mb-6 hover:bg-accent/50 transition-colors"
-            onClick={handleGoogleSignIn}
-            disabled={oauthLoading || loading}
-          >
-            {oauthLoading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Connecting to Google...
-              </>
-            ) : (
-              <>
-                <Chrome className="mr-2 h-4 w-4" />
-                Continue with Google
-              </>
-            )}
-          </Button>
-
-          {/* Divider */}
-          <div className="relative my-6">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-border"></div>
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">Or continue with email</span>
-            </div>
-          </div>
-
-          {/* Email/Password Form */}
-          <form onSubmit={handleSignIn} className="space-y-5" noValidate>
-            <div className="space-y-2">
-              <Label htmlFor="email">
-                Email Address
-                <span className="text-destructive ml-1" aria-label="required">*</span>
-              </Label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" aria-hidden="true" />
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="you@example.com"
-                  value={email}
-                  onChange={handleEmailChange}
-                  required
-                  autoComplete="email"
-                  className={cn(
-                    "pl-10 h-12 transition-all",
-                    formErrors.email && "border-destructive focus-visible:ring-destructive"
-                  )}
-                  aria-invalid={!!formErrors.email}
-                  aria-describedby={formErrors.email ? "email-error" : undefined}
-                />
-                {!isTyping && email && !formErrors.email && (
-                  <CheckCircle2 className="absolute right-3 top-3 h-4 w-4 text-green-500" aria-hidden="true" />
+          {!magicLinkSent ? (
+            <>
+              {/* Google Sign In Button */}
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full h-12 mb-6 hover:bg-accent/50 transition-colors"
+                onClick={handleGoogleSignIn}
+                disabled={oauthLoading || loading}
+              >
+                {oauthLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Connecting to Google...
+                  </>
+                ) : (
+                  <>
+                    <Chrome className="mr-2 h-4 w-4" />
+                    Continue with Google
+                  </>
                 )}
-                {formErrors.email && (
-                  <AlertCircle className="absolute right-3 top-3 h-4 w-4 text-destructive" aria-hidden="true" />
-                )}
+              </Button>
+
+              {/* Divider */}
+              <div className="relative my-6">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-border"></div>
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-background px-2 text-muted-foreground">Or continue with email</span>
+                </div>
               </div>
-              {formErrors.email && (
-                <p id="email-error" className="text-xs text-destructive flex items-center gap-1 mt-1" role="alert">
-                  <AlertCircle className="w-3 h-3" />
-                  {formErrors.email}
-                </p>
-              )}
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="password">
-                Password
-                <span className="text-destructive ml-1" aria-label="required">*</span>
-              </Label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" aria-hidden="true" />
-                <Input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  placeholder="Enter your password"
-                  value={password}
-                  onChange={handlePasswordChange}
-                  required
-                  autoComplete="current-password"
-                  className={cn(
-                    "pl-10 pr-10 h-12 transition-all",
-                    formErrors.password && "border-destructive focus-visible:ring-destructive"
-                  )}
-                  aria-invalid={!!formErrors.password}
-                  aria-describedby={formErrors.password ? "password-error" : "password-strength"}
-                />
+
+              {/* Sign In Method Toggle */}
+              <div className="flex gap-2 mb-6 p-1 bg-muted rounded-lg">
                 <button
                   type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-3 text-muted-foreground hover:text-foreground transition-colors"
-                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  onClick={() => setSignInMethod('password')}
+                  className={cn(
+                    "flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all",
+                    signInMethod === 'password'
+                      ? "bg-background shadow-sm"
+                      : "hover:bg-background/50"
+                  )}
                 >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  <Lock className="w-4 h-4 inline-block mr-2" />
+                  Password
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSignInMethod('magic-link')}
+                  className={cn(
+                    "flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all",
+                    signInMethod === 'magic-link'
+                      ? "bg-background shadow-sm"
+                      : "hover:bg-background/50"
+                  )}
+                >
+                  <Mail className="w-4 h-4 inline-block mr-2" />
+                  Magic Link
                 </button>
               </div>
-              
-              {/* Password Strength Indicator */}
-              {password && (
-                <div className="space-y-1" id="password-strength">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-muted-foreground">Password strength:</span>
-                    <span className={cn(
-                      "font-medium",
-                      strengthInfo.color.replace('bg-', 'text-')
-                    )}>
-                      {strengthInfo.text}
-                    </span>
-                  </div>
-                  <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden">
-                    <div 
-                      className={cn("h-full transition-all duration-300", strengthInfo.color)}
-                      style={{ width: strengthInfo.width }}
-                      role="progressbar"
-                      aria-valuenow={passwordStrength * 25}
-                      aria-valuemin={0}
-                      aria-valuemax={100}
+
+              {/* Email/Password Form */}
+              <form onSubmit={handleSignIn} className="space-y-5" noValidate>
+                <div className="space-y-2">
+                  <Label htmlFor="email">
+                    Email Address
+                    <span className="text-destructive ml-1" aria-label="required">*</span>
+                  </Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" aria-hidden="true" />
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="you@example.com"
+                      value={email}
+                      onChange={handleEmailChange}
+                      required
+                      autoComplete="email"
+                      className={cn(
+                        "pl-10 h-12 transition-all",
+                        formErrors.email && "border-destructive focus-visible:ring-destructive"
+                      )}
+                      aria-invalid={!!formErrors.email}
+                      aria-describedby={formErrors.email ? "email-error" : undefined}
                     />
+                    {!isTyping && email && !formErrors.email && (
+                      <CheckCircle2 className="absolute right-3 top-3 h-4 w-4 text-green-500" aria-hidden="true" />
+                    )}
+                    {formErrors.email && (
+                      <AlertCircle className="absolute right-3 top-3 h-4 w-4 text-destructive" aria-hidden="true" />
+                    )}
+                  </div>
+                  {formErrors.email && (
+                    <p id="email-error" className="text-xs text-destructive flex items-center gap-1 mt-1" role="alert">
+                      <AlertCircle className="w-3 h-3" />
+                      {formErrors.email}
+                    </p>
+                  )}
+                </div>
+                
+                {signInMethod === 'password' && (
+                  <div className="space-y-2">
+                    <Label htmlFor="password">
+                      Password
+                      <span className="text-destructive ml-1" aria-label="required">*</span>
+                    </Label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" aria-hidden="true" />
+                      <Input
+                        id="password"
+                        type={showPassword ? "text" : "password"}
+                        placeholder="Enter your password"
+                        value={password}
+                        onChange={handlePasswordChange}
+                        required
+                        autoComplete="current-password"
+                        className={cn(
+                          "pl-10 pr-10 h-12 transition-all",
+                          formErrors.password && "border-destructive focus-visible:ring-destructive"
+                        )}
+                        aria-invalid={!!formErrors.password}
+                        aria-describedby={formErrors.password ? "password-error" : "password-strength"}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-3 text-muted-foreground hover:text-foreground transition-colors"
+                        aria-label={showPassword ? "Hide password" : "Show password"}
+                      >
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                    
+                    {/* Password Strength Indicator */}
+                    {password && (
+                      <div className="space-y-1" id="password-strength">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-muted-foreground">Password strength:</span>
+                          <span className={cn(
+                            "font-medium",
+                            strengthInfo.color.replace('bg-', 'text-')
+                          )}>
+                            {strengthInfo.text}
+                          </span>
+                        </div>
+                        <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                          <div 
+                            className={cn("h-full transition-all duration-300", strengthInfo.color)}
+                            style={{ width: strengthInfo.width }}
+                            role="progressbar"
+                            aria-valuenow={passwordStrength * 25}
+                            aria-valuemin={0}
+                            aria-valuemax={100}
+                          />
+                        </div>
+                      </div>
+                    )}
+                    
+                    {formErrors.password && (
+                      <p id="password-error" className="text-xs text-destructive flex items-center gap-1 mt-1" role="alert">
+                        <AlertCircle className="w-3 h-3" />
+                        {formErrors.password}
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {signInMethod === 'magic-link' && (
+                  <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                    <div className="flex gap-3">
+                      <Mail className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+                      <div className="text-sm">
+                        <p className="font-medium text-blue-900 dark:text-blue-100 mb-1">
+                          Passwordless Sign In
+                        </p>
+                        <p className="text-blue-700 dark:text-blue-300">
+                          We'll send you a secure link to sign in instantly. No password needed!
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="remember" 
+                      checked={rememberMe}
+                      onCheckedChange={(checked) => setRememberMe(checked as boolean)}
+                      aria-label="Remember me"
+                    />
+                    <Label 
+                      htmlFor="remember" 
+                      className="text-sm font-normal cursor-pointer"
+                    >
+                      Remember me
+                    </Label>
+                  </div>
+                  {signInMethod === 'password' && (
+                    <Link 
+                      to="/forgot-password" 
+                      className="text-sm text-primary hover:underline focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded"
+                    >
+                      Forgot password?
+                    </Link>
+                  )}
+                </div>
+                
+                <Button 
+                  type="submit" 
+                  className="w-full h-12 btn-premium relative overflow-hidden group" 
+                  disabled={loading || oauthLoading || !!formErrors.email || (signInMethod === 'password' && !!formErrors.password)}
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      {signInMethod === 'magic-link' ? 'Sending link...' : 'Signing in...'}
+                    </>
+                  ) : (
+                    <>
+                      {signInMethod === 'magic-link' ? (
+                        <>
+                          <Mail className="mr-2 h-4 w-4 group-hover:scale-110 transition-transform" />
+                          Send Magic Link
+                        </>
+                      ) : (
+                        <>
+                          <KeyRound className="mr-2 h-4 w-4 group-hover:rotate-12 transition-transform" />
+                          Sign In
+                        </>
+                      )}
+                    </>
+                  )}
+                </Button>
+              </form>
+            </>
+          ) : (
+            // Magic Link Sent State
+            <div className="text-center py-8">
+              <div className="w-16 h-16 mx-auto mb-4 bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center">
+                <Mail className="w-8 h-8 text-green-600 dark:text-green-400" />
+              </div>
+              <h3 className="text-xl font-semibold mb-2">Check Your Email</h3>
+              <p className="text-muted-foreground mb-6">
+                We've sent a magic link to <strong>{email}</strong>
+              </p>
+              <div className="space-y-4 text-sm text-muted-foreground">
+                <p>Click the link in the email to sign in instantly.</p>
+                <p className="text-xs">⏱️ The link expires in 60 minutes</p>
+              </div>
+              <Button
+                variant="outline"
+                className="mt-6"
+                onClick={() => {
+                  setMagicLinkSent(false);
+                  setEmail('');
+                }}
+              >
+                Use a different email
+              </Button>
+            </div>
+          )}
+          
+          {!magicLinkSent && (
+            <>
+              {/* Sign Up Link */}
+              <div className="mt-8 text-center">
+                <p className="text-sm text-muted-foreground">
+                  Don't have an account?{' '}
+                  <Link 
+                    to="/signup" 
+                    className="text-primary hover:underline font-medium focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded"
+                  >
+                    Create one now
+                  </Link>
+                </p>
+              </div>
+              
+              {/* Support Link */}
+              <div className="mt-6 text-center">
+                <p className="text-xs text-muted-foreground">
+                  Need help?{' '}
+                  <Link 
+                    to="/contact" 
+                    className="text-secondary hover:underline focus:outline-none focus:ring-2 focus:ring-secondary focus:ring-offset-2 rounded"
+                  >
+                    Contact Support
+                  </Link>
+                </p>
+              </div>
+
+              {/* Security Notice */}
+              <div className="mt-8 p-4 bg-muted/50 rounded-lg border border-border">
+                <div className="flex items-start gap-3">
+                  <Shield className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+                  <div className="text-xs text-muted-foreground">
+                    <p className="font-medium text-foreground mb-1">Your security matters</p>
+                    <p>We use industry-standard encryption to protect your data. Your information is never shared with third parties.</p>
                   </div>
                 </div>
-              )}
-              
-              {formErrors.password && (
-                <p id="password-error" className="text-xs text-destructive flex items-center gap-1 mt-1" role="alert">
-                  <AlertCircle className="w-3 h-3" />
-                  {formErrors.password}
-                </p>
-              )}
-            </div>
-            
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <Checkbox 
-                  id="remember" 
-                  checked={rememberMe}
-                  onCheckedChange={(checked) => setRememberMe(checked as boolean)}
-                  aria-label="Remember me"
-                />
-                <Label 
-                  htmlFor="remember" 
-                  className="text-sm font-normal cursor-pointer"
-                >
-                  Remember me
-                </Label>
               </div>
-              <Link 
-                to="/forgot-password" 
-                className="text-sm text-primary hover:underline focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded"
-              >
-                Forgot password?
-              </Link>
-            </div>
-            
-            <Button 
-              type="submit" 
-              className="w-full h-12 btn-premium relative overflow-hidden group" 
-              disabled={loading || oauthLoading || !!formErrors.email || !!formErrors.password}
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Signing in...
-                </>
-              ) : (
-                <>
-                  <KeyRound className="mr-2 h-4 w-4 group-hover:rotate-12 transition-transform" />
-                  Sign In
-                </>
-              )}
-            </Button>
-          </form>
-          
-          {/* Sign Up Link */}
-          <div className="mt-8 text-center">
-            <p className="text-sm text-muted-foreground">
-              Don't have an account?{' '}
-              <Link 
-                to="/signup" 
-                className="text-primary hover:underline font-medium focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded"
-              >
-                Create one now
-              </Link>
-            </p>
-          </div>
-          
-          {/* Support Link */}
-          <div className="mt-6 text-center">
-            <p className="text-xs text-muted-foreground">
-              Need help?{' '}
-              <Link 
-                to="/contact" 
-                className="text-secondary hover:underline focus:outline-none focus:ring-2 focus:ring-secondary focus:ring-offset-2 rounded"
-              >
-                Contact Support
-              </Link>
-            </p>
-          </div>
-
-          {/* Security Notice */}
-          <div className="mt-8 p-4 bg-muted/50 rounded-lg border border-border">
-            <div className="flex items-start gap-3">
-              <Shield className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-              <div className="text-xs text-muted-foreground">
-                <p className="font-medium text-foreground mb-1">Your security matters</p>
-                <p>We use industry-standard encryption to protect your data. Your information is never shared with third parties.</p>
-              </div>
-            </div>
-          </div>
+            </>
+          )}
         </div>
       </div>
     </div>

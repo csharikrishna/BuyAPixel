@@ -1,21 +1,99 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Loader2, CheckCircle2, AlertCircle, Mail } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { Button } from '@/components/ui/button';
+
+type AuthStatus = 'loading' | 'success' | 'error' | 'expired';
 
 const AuthCallback = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
+  const [searchParams] = useSearchParams();
+  const [status, setStatus] = useState<AuthStatus>('loading');
   const [errorMessage, setErrorMessage] = useState('');
+  const [authType, setAuthType] = useState<'signin' | 'signup' | 'recovery'>('signin');
 
   useEffect(() => {
     const handleCallback = async () => {
       try {
-        // Get the session from the URL hash
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        // Check for errors in URL params (from Supabase redirects)
+        const errorCode = searchParams.get('error_code');
+        const errorDescription = searchParams.get('error_description');
+        const error = searchParams.get('error');
+
+        // Handle specific error cases
+        if (errorCode === 'otp_expired' || error === 'access_denied') {
+          console.warn('OTP expired or access denied');
+          setStatus('expired');
+          setErrorMessage(
+            errorDescription 
+              ? decodeURIComponent(errorDescription.replace(/\+/g, ' '))
+              : 'Your email link has expired. Please request a new one.'
+          );
+          
+          toast({
+            title: "Link Expired",
+            description: "Your email link has expired. Please sign in again to receive a new one.",
+            variant: "destructive",
+          });
+          
+          return;
+        }
+
+        // Handle other errors
+        if (error && error !== 'access_denied') {
+          console.error('Auth error:', error, errorDescription);
+          setStatus('error');
+          setErrorMessage(
+            errorDescription 
+              ? decodeURIComponent(errorDescription.replace(/\+/g, ' '))
+              : 'An authentication error occurred.'
+          );
+          
+          toast({
+            title: "Authentication Error",
+            description: errorMessage || "Please try signing in again.",
+            variant: "destructive",
+          });
+          
+          setTimeout(() => navigate('/signin'), 3000);
+          return;
+        }
+
+        // Check for type parameter (password recovery, signup, etc.)
+        const type = searchParams.get('type');
+        if (type === 'recovery') {
+          setAuthType('recovery');
+          // Redirect to reset password page
+          navigate('/reset-password', { replace: true });
+          return;
+        }
+
+        // Get session using exchangeCodeForSession for PKCE flow
+        const hashParams = new URLSearchParams(window.location.hash.substring(1));
+        const accessToken = hashParams.get('access_token');
+        const refreshToken = hashParams.get('refresh_token');
         
+        let session = null;
+        let sessionError = null;
+
+        // Try to get session from URL tokens first
+        if (accessToken && refreshToken) {
+          const { data, error } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          });
+          session = data.session;
+          sessionError = error;
+        } else {
+          // Fallback to getting existing session
+          const { data, error } = await supabase.auth.getSession();
+          session = data.session;
+          sessionError = error;
+        }
+
         if (sessionError) {
           console.error('Session error:', sessionError);
           setStatus('error');
@@ -32,14 +110,24 @@ const AuthCallback = () => {
         }
 
         if (!session) {
-          console.warn('No session found');
+          console.warn('No session found after callback');
           setStatus('error');
           setErrorMessage('No session found. Please try signing in again.');
+          
+          toast({
+            title: "Session Not Found",
+            description: "Please try signing in again.",
+            variant: "destructive",
+          });
+          
           setTimeout(() => navigate('/signin'), 3000);
           return;
         }
 
-        // Session exists, check/create profile
+        // Successfully authenticated - now handle profile
+        console.log('Session established for user:', session.user.id);
+
+        // Check if profile exists
         const { data: existingProfile, error: profileCheckError } = await supabase
           .from('profiles')
           .select('*')
@@ -48,42 +136,64 @@ const AuthCallback = () => {
 
         if (profileCheckError && profileCheckError.code !== 'PGRST116') {
           console.error('Profile check error:', profileCheckError);
-          // Don't fail here, continue with login
+          // Continue anyway - profile can be created later
         }
 
         // Create profile if it doesn't exist
         if (!existingProfile) {
-          console.log('Creating new profile for OAuth user');
+          console.log('Creating new profile for user');
           
+          const displayName = 
+            session.user.user_metadata?.full_name || 
+            session.user.user_metadata?.name ||
+            session.user.user_metadata?.preferred_username ||
+            session.user.email?.split('@')[0] ||
+            'User';
+
           const { error: insertError } = await supabase
             .from('profiles')
             .insert({
               user_id: session.user.id,
-              full_name: session.user.user_metadata?.full_name || 
-                         session.user.user_metadata?.name ||
-                         session.user.email?.split('@')[0],
-              avatar_url: session.user.user_metadata?.avatar_url ||
-                          session.user.user_metadata?.picture,
+              full_name: displayName,
+              avatar_url: 
+                session.user.user_metadata?.avatar_url ||
+                session.user.user_metadata?.picture ||
+                `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(displayName)}`,
               email: session.user.email,
+              created_at: new Date().toISOString(),
             });
 
           if (insertError) {
             console.error('Profile creation error:', insertError);
-            // Don't fail the login, user can update profile later
+            // Don't fail the login - user can update profile later
+            toast({
+              title: "Profile Setup",
+              description: "You can complete your profile setup later.",
+              variant: "default",
+            });
+          } else {
+            console.log('Profile created successfully');
+            setAuthType('signup');
           }
         }
 
         // Success!
         setStatus('success');
         
+        const welcomeMessage = authType === 'signup' 
+          ? 'Welcome to BuyAPixel! Your account has been created.'
+          : `Welcome back, ${session.user.email}!`;
+
         toast({
-          title: "Welcome!",
-          description: `Successfully signed in as ${session.user.email}`,
+          title: authType === 'signup' ? "Account Created!" : "Welcome Back!",
+          description: welcomeMessage,
         });
 
-        // Redirect to home after a brief delay
+        // Redirect based on where user should go
+        const redirectTo = searchParams.get('redirect') || '/';
+        
         setTimeout(() => {
-          navigate('/', { replace: true });
+          navigate(redirectTo, { replace: true });
         }, 1500);
 
       } catch (error) {
@@ -92,8 +202,8 @@ const AuthCallback = () => {
         setErrorMessage('An unexpected error occurred. Please try again.');
         
         toast({
-          title: "Error",
-          description: "An unexpected error occurred during sign in.",
+          title: "Unexpected Error",
+          description: "Something went wrong. Please try signing in again.",
           variant: "destructive",
         });
         
@@ -102,32 +212,81 @@ const AuthCallback = () => {
     };
 
     handleCallback();
-  }, [navigate, toast]);
+  }, [navigate, toast, searchParams]);
+
+  const handleReturnToSignIn = () => {
+    navigate('/signin');
+  };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-muted/20">
-      <div className="text-center max-w-md mx-auto p-8">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-muted/20 p-4">
+      <div className="text-center max-w-md mx-auto p-8 bg-card rounded-lg shadow-lg border">
         {status === 'loading' && (
           <>
             <div className="mb-6">
               <Loader2 className="w-16 h-16 animate-spin mx-auto text-primary" />
             </div>
-            <h2 className="text-2xl font-semibold mb-2">Completing sign in...</h2>
-            <p className="text-muted-foreground">Please wait while we set up your account</p>
+            <h2 className="text-2xl font-semibold mb-2">
+              {authType === 'recovery' ? 'Verifying link...' : 'Completing sign in...'}
+            </h2>
+            <p className="text-muted-foreground">
+              {authType === 'recovery' 
+                ? 'Please wait while we verify your password reset link'
+                : 'Please wait while we set up your account'}
+            </p>
+
+            {/* Loading dots animation */}
+            <div className="flex justify-center gap-2 mt-6">
+              <div className="w-2 h-2 bg-primary rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+              <div className="w-2 h-2 bg-primary rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+              <div className="w-2 h-2 bg-primary rounded-full animate-bounce"></div>
+            </div>
           </>
         )}
 
         {status === 'success' && (
           <>
             <div className="mb-6">
-              <div className="w-16 h-16 mx-auto bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center">
+              <div className="w-16 h-16 mx-auto bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center animate-scale-in">
                 <CheckCircle2 className="w-10 h-10 text-green-600 dark:text-green-400" />
               </div>
             </div>
             <h2 className="text-2xl font-semibold mb-2 text-green-600 dark:text-green-400">
-              Success!
+              {authType === 'signup' ? 'Account Created!' : 'Success!'}
             </h2>
-            <p className="text-muted-foreground">Redirecting you to the app...</p>
+            <p className="text-muted-foreground">
+              {authType === 'signup' 
+                ? 'Your account has been created. Redirecting...'
+                : 'Redirecting you to the app...'}
+            </p>
+          </>
+        )}
+
+        {status === 'expired' && (
+          <>
+            <div className="mb-6">
+              <div className="w-16 h-16 mx-auto bg-amber-100 dark:bg-amber-900/20 rounded-full flex items-center justify-center">
+                <Mail className="w-10 h-10 text-amber-600 dark:text-amber-400" />
+              </div>
+            </div>
+            <h2 className="text-2xl font-semibold mb-2 text-amber-600 dark:text-amber-400">
+              Link Expired
+            </h2>
+            <p className="text-muted-foreground mb-6">
+              {errorMessage || 'Your email link has expired or is invalid.'}
+            </p>
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                Email links expire after a few minutes for security.
+              </p>
+              <Button 
+                onClick={handleReturnToSignIn}
+                className="w-full"
+                size="lg"
+              >
+                Request New Link
+              </Button>
+            </div>
           </>
         )}
 
@@ -141,20 +300,41 @@ const AuthCallback = () => {
             <h2 className="text-2xl font-semibold mb-2 text-red-600 dark:text-red-400">
               Authentication Failed
             </h2>
-            <p className="text-muted-foreground mb-4">{errorMessage}</p>
-            <p className="text-sm text-muted-foreground">Redirecting to sign in...</p>
+            <p className="text-muted-foreground mb-4">
+              {errorMessage || 'An error occurred during authentication.'}
+            </p>
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                Redirecting to sign in page...
+              </p>
+              <Button 
+                onClick={handleReturnToSignIn}
+                variant="outline"
+                className="w-full"
+              >
+                Return Now
+              </Button>
+            </div>
           </>
         )}
-
-        {/* Loading dots animation */}
-        {status === 'loading' && (
-          <div className="flex justify-center gap-2 mt-6">
-            <div className="w-2 h-2 bg-primary rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-            <div className="w-2 h-2 bg-primary rounded-full animate-bounce [animation-delay:-0.15s]"></div>
-            <div className="w-2 h-2 bg-primary rounded-full animate-bounce"></div>
-          </div>
-        )}
       </div>
+
+      {/* Add custom animation styles */}
+      <style>{`
+        @keyframes scale-in {
+          from {
+            transform: scale(0);
+            opacity: 0;
+          }
+          to {
+            transform: scale(1);
+            opacity: 1;
+          }
+        }
+        .animate-scale-in {
+          animation: scale-in 0.3s ease-out;
+        }
+      `}</style>
     </div>
   );
 };

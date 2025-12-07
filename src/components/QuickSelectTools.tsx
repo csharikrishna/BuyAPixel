@@ -12,11 +12,12 @@ import {
   Square, 
   CircleDot,
   Zap,
-  Star,
   Package,
   Brush,
   RotateCw,
-  FlipHorizontal
+  FlipHorizontal,
+  ChevronDown,
+  ChevronUp
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -154,17 +155,13 @@ export const QuickSelectTools = ({
   gridHeight, 
   calculatePixelPrice 
 }: QuickSelectToolsProps) => {
-  const [selectedPattern, setSelectedPattern] = useState<any>(null);
+  const [isVisible, setIsVisible] = useState(true);
   const [rotation, setRotation] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
   const [isDrawMode, setIsDrawMode] = useState(false);
 
-  const applyPattern = (pattern: number[][], centerX?: number, centerY?: number) => {
-    // Default to center of grid if no position specified
-    const cx = centerX ?? Math.floor(gridWidth / 2);
-    const cy = centerY ?? Math.floor(gridHeight / 2);
-
-    let transformedPattern = [...pattern];
+  const transformPattern = (pattern: number[][]) => {
+    let transformed = [...pattern];
 
     // Apply rotation
     if (rotation !== 0) {
@@ -172,25 +169,31 @@ export const QuickSelectTools = ({
       const cos = Math.cos(rad);
       const sin = Math.sin(rad);
       
-      transformedPattern = transformedPattern.map(([x, y]) => {
-        const newX = Math.round(x * cos - y * sin);
-        const newY = Math.round(x * sin + y * cos);
-        return [newX, newY];
-      });
+      transformed = transformed.map(([x, y]) => [
+        Math.round(x * cos - y * sin),
+        Math.round(x * sin + y * cos)
+      ]);
     }
 
     // Apply flip
     if (isFlipped) {
-      transformedPattern = transformedPattern.map(([x, y]) => [-x, y]);
+      transformed = transformed.map(([x, y]) => [-x, y]);
     }
 
+    return transformed;
+  };
+
+  const applyPattern = (pattern: number[][], centerX?: number, centerY?: number) => {
+    const cx = centerX ?? Math.floor(gridWidth / 2);
+    const cy = centerY ?? Math.floor(gridHeight / 2);
+
+    const transformedPattern = transformPattern(pattern);
     const pixels: SelectedPixel[] = [];
     
     transformedPattern.forEach(([dx, dy]) => {
       const x = cx + dx;
       const y = cy + dy;
       
-      // Check bounds
       if (x >= 0 && x < gridWidth && y >= 0 && y < gridHeight) {
         pixels.push({
           x,
@@ -201,10 +204,13 @@ export const QuickSelectTools = ({
       }
     });
 
-    onPixelsSelected(pixels);
-    
-    const totalCost = pixels.reduce((sum, p) => sum + p.price, 0);
-    toast.success(`Selected ${pixels.length} pixels (₹${totalCost})`);
+    if (pixels.length > 0) {
+      onPixelsSelected(pixels);
+      const totalCost = pixels.reduce((sum, p) => sum + p.price, 0);
+      toast.success(`Selected ${pixels.length} pixels (₹${totalCost})`);
+    } else {
+      toast.error("Pattern doesn't fit within grid bounds");
+    }
   };
 
   const calculatePatternCost = (pattern: number[][]) => {
@@ -223,7 +229,7 @@ export const QuickSelectTools = ({
 
   const randomSelect = (count: number) => {
     const pixels: SelectedPixel[] = [];
-    const usedPositions = new Set();
+    const usedPositions = new Set<string>();
     
     while (pixels.length < count && usedPositions.size < gridWidth * gridHeight) {
       const x = Math.floor(Math.random() * gridWidth);
@@ -243,29 +249,117 @@ export const QuickSelectTools = ({
     
     onPixelsSelected(pixels);
     const totalCost = pixels.reduce((sum, p) => sum + p.price, 0);
-    toast.success(`Random selected ${pixels.length} pixels (₹${totalCost})`);
+    toast.success(`Randomly selected ${pixels.length} pixels (₹${totalCost})`);
+  };
+
+  const resetTransforms = () => {
+    setRotation(0);
+    setIsFlipped(false);
   };
 
   return (
     <Card className="card-premium">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Zap className="w-5 h-5 text-primary" />
-          Quick Select Tools
-        </CardTitle>
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <Zap className="w-5 h-5 text-primary" />
+            Quick Select Tools
+          </CardTitle>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setIsVisible(!isVisible)}
+            className="h-8"
+          >
+            {isVisible ? (
+              <ChevronUp className="w-4 h-4" />
+            ) : (
+              <ChevronDown className="w-4 h-4" />
+            )}
+          </Button>
+        </div>
       </CardHeader>
       
-      <CardContent>
-        <Tabs defaultValue="emoji" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="emoji">Emoji</TabsTrigger>
-            <TabsTrigger value="sizes">Sizes</TabsTrigger>
-            <TabsTrigger value="random">Random</TabsTrigger>
-          </TabsList>
+      {isVisible && (
+        <CardContent>
+          <Tabs defaultValue="emoji" className="w-full">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="emoji">Emoji</TabsTrigger>
+              <TabsTrigger value="sizes">Sizes</TabsTrigger>
+              <TabsTrigger value="random">Random</TabsTrigger>
+            </TabsList>
 
-          <TabsContent value="emoji" className="space-y-4 mt-4">
-            <div className="grid grid-cols-1 gap-3">
-              {PRESET_PACKS.map((pack) => {
+            <TabsContent value="emoji" className="space-y-4 mt-4">
+              <div className="grid gap-2">
+                {PRESET_PACKS.map((pack) => {
+                  const Icon = pack.icon;
+                  const estimatedCost = calculatePatternCost(pack.pattern);
+                  
+                  return (
+                    <Button
+                      key={pack.id}
+                      variant="outline"
+                      className="h-auto p-3 justify-start hover-scale"
+                      onClick={() => applyPattern(pack.pattern)}
+                    >
+                      <div className="flex items-center gap-3 w-full">
+                        <Icon className={`w-5 h-5 flex-shrink-0 ${pack.color}`} />
+                        <div className="flex-1 text-left min-w-0">
+                          <div className="font-medium">{pack.name}</div>
+                          <div className="text-xs text-muted-foreground truncate">
+                            {pack.description}
+                          </div>
+                        </div>
+                        <Badge variant="secondary" className="flex-shrink-0">
+                          ₹{estimatedCost}
+                        </Badge>
+                      </div>
+                    </Button>
+                  );
+                })}
+              </div>
+
+              {/* Transform Controls */}
+              <div className="border-t pt-4 space-y-3">
+                <div className="text-sm font-medium">Transform Pattern</div>
+                <div className="grid grid-cols-3 gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setRotation((rotation + 90) % 360)}
+                  >
+                    <RotateCw className="w-4 h-4 mr-1" />
+                    Rotate
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsFlipped(!isFlipped)}
+                  >
+                    <FlipHorizontal className="w-4 h-4 mr-1" />
+                    Flip
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={resetTransforms}
+                    disabled={rotation === 0 && !isFlipped}
+                  >
+                    Reset
+                  </Button>
+                </div>
+                {(rotation !== 0 || isFlipped) && (
+                  <div className="text-xs text-muted-foreground">
+                    {rotation !== 0 && `Rotated ${rotation}°`}
+                    {rotation !== 0 && isFlipped && ' • '}
+                    {isFlipped && 'Flipped horizontally'}
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="sizes" className="space-y-2 mt-4">
+              {SIZE_PACKS.map((pack) => {
                 const Icon = pack.icon;
                 const estimatedCost = calculatePatternCost(pack.pattern);
                 
@@ -273,140 +367,68 @@ export const QuickSelectTools = ({
                   <Button
                     key={pack.id}
                     variant="outline"
-                    className="h-auto p-3 justify-start hover-scale"
+                    className="h-auto p-3 justify-start hover-scale w-full"
                     onClick={() => applyPattern(pack.pattern)}
                   >
                     <div className="flex items-center gap-3 w-full">
-                      <Icon className={`w-5 h-5 ${pack.color}`} />
-                      <div className="flex-1 text-left">
+                      <Icon className="w-5 h-5 flex-shrink-0 text-primary" />
+                      <div className="flex-1 text-left min-w-0">
                         <div className="font-medium">{pack.name}</div>
-                        <div className="text-xs text-muted-foreground">{pack.description}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {pack.description}
+                        </div>
                       </div>
-                      <Badge variant="secondary">₹{estimatedCost}+</Badge>
+                      <div className="text-right flex-shrink-0">
+                        <div className="text-sm font-medium">{pack.size}</div>
+                        <Badge variant="secondary" className="mt-1">
+                          ₹{estimatedCost}
+                        </Badge>
+                      </div>
                     </div>
                   </Button>
                 );
               })}
-            </div>
+            </TabsContent>
 
-            {/* Transform Controls */}
-            <div className="border-t pt-4 space-y-3">
-              <div className="text-sm font-medium">Transform Pattern</div>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setRotation((rotation + 90) % 360)}
-                  className="flex-1"
-                >
-                  <RotateCw className="w-4 h-4 mr-1" />
-                  Rotate
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setIsFlipped(!isFlipped)}
-                  className="flex-1"
-                >
-                  <FlipHorizontal className="w-4 h-4 mr-1" />
-                  Flip
-                </Button>
+            <TabsContent value="random" className="space-y-3 mt-4">
+              <div className="grid gap-2">
+                {[
+                  { count: 1, label: 'Single Random Pixel', cost: '₹99-299' },
+                  { count: 10, label: '10 Random Pixels', cost: '₹990+' },
+                  { count: 50, label: '50 Random Pixels', cost: '₹4,950+' },
+                  { count: 100, label: '100 Random Pixels', cost: '₹9,900+' }
+                ].map(({ count, label, cost }) => (
+                  <Button
+                    key={count}
+                    variant="outline"
+                    className="w-full justify-between hover-scale"
+                    onClick={() => randomSelect(count)}
+                  >
+                    <span>{label}</span>
+                    <Badge variant="secondary">{cost}</Badge>
+                  </Button>
+                ))}
               </div>
-              {(rotation !== 0 || isFlipped) && (
-                <div className="text-xs text-muted-foreground">
-                  {rotation !== 0 && `Rotated ${rotation}°`}
-                  {rotation !== 0 && isFlipped && ' • '}
-                  {isFlipped && 'Flipped'}
-                </div>
-              )}
-            </div>
-          </TabsContent>
 
-          <TabsContent value="sizes" className="space-y-3 mt-4">
-            {SIZE_PACKS.map((pack) => {
-              const Icon = pack.icon;
-              const estimatedCost = calculatePatternCost(pack.pattern);
-              
-              return (
+              <div className="border-t pt-3 space-y-2">
                 <Button
-                  key={pack.id}
-                  variant="outline"
-                  className="h-auto p-3 justify-start hover-scale"
-                  onClick={() => applyPattern(pack.pattern)}
+                  variant={isDrawMode ? "default" : "outline"}
+                  className="w-full"
+                  onClick={() => setIsDrawMode(!isDrawMode)}
                 >
-                  <div className="flex items-center gap-3 w-full">
-                    <Icon className="w-5 h-5 text-primary" />
-                    <div className="flex-1 text-left">
-                      <div className="font-medium">{pack.name}</div>
-                      <div className="text-xs text-muted-foreground">{pack.description}</div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-sm font-medium">{pack.size}</div>
-                      <Badge variant="secondary" className="mt-1">₹{estimatedCost}+</Badge>
-                    </div>
-                  </div>
+                  <Brush className="w-4 h-4 mr-2" />
+                  {isDrawMode ? 'Exit Draw Mode' : 'Enter Draw Mode'}
                 </Button>
-              );
-            })}
-          </TabsContent>
-
-          <TabsContent value="random" className="space-y-3 mt-4">
-            <div className="space-y-3">
-              <Button
-                variant="outline"
-                className="w-full justify-between hover-scale"
-                onClick={() => randomSelect(1)}
-              >
-                <span>Single Random Pixel</span>
-                <Badge variant="secondary">₹99-299</Badge>
-              </Button>
-              
-              <Button
-                variant="outline"
-                className="w-full justify-between hover-scale"
-                onClick={() => randomSelect(10)}
-              >
-                <span>10 Random Pixels</span>
-                <Badge variant="secondary">₹990+</Badge>
-              </Button>
-              
-              <Button
-                variant="outline"
-                className="w-full justify-between hover-scale"
-                onClick={() => randomSelect(50)}
-              >
-                <span>50 Random Pixels</span>
-                <Badge variant="secondary">₹4,950+</Badge>
-              </Button>
-              
-              <Button
-                variant="outline"
-                className="w-full justify-between hover-scale"
-                onClick={() => randomSelect(100)}
-              >
-                <span>100 Random Pixels</span>
-                <Badge variant="secondary">₹9,900+</Badge>
-              </Button>
-            </div>
-
-            <div className="border-t pt-3">
-              <Button
-                variant={isDrawMode ? "default" : "outline"}
-                className="w-full"
-                onClick={() => setIsDrawMode(!isDrawMode)}
-              >
-                <Brush className="w-4 h-4 mr-2" />
-                {isDrawMode ? 'Exit Draw Mode' : 'Enter Draw Mode'}
-              </Button>
-              {isDrawMode && (
-                <p className="text-xs text-muted-foreground mt-2">
-                  Click and drag on the canvas to draw your selection
-                </p>
-              )}
-            </div>
-          </TabsContent>
-        </Tabs>
-      </CardContent>
+                {isDrawMode && (
+                  <p className="text-xs text-muted-foreground text-center">
+                    Click and drag on the canvas to draw your selection
+                  </p>
+                )}
+              </div>
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      )}
     </Card>
   );
 };

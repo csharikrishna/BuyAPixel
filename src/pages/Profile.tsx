@@ -11,9 +11,10 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { 
   Edit, ArrowLeft, Mail, Phone, Calendar, 
   User, MapPin, Eye, TrendingUp, ExternalLink,
-  Award, Clock, CheckCircle2, AlertCircle, Info
+  Award, Clock, CheckCircle2, AlertCircle, Info,
+  RefreshCw, Loader2
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import ProfileEditModal from '@/components/ProfileEditModal';
 import { RealtimeChannel } from '@supabase/supabase-js';
@@ -26,6 +27,7 @@ interface Profile {
   phone_number: string | null;
   date_of_birth: string | null;
   avatar_url: string | null;
+  email: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -86,12 +88,14 @@ const ProfileSkeleton = () => (
 
 const Profile = () => {
   const { user, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [profileLoading, setProfileLoading] = useState(true);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [userPixels, setUserPixels] = useState<UserPixel[]>([]);
   const [pixelsLoading, setPixelsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Calculate profile completion with detailed breakdown
   const profileCompletionData = useMemo<ProfileCompletionData>(() => {
@@ -108,7 +112,7 @@ const Profile = () => {
       {
         name: 'full_name',
         label: 'Full Name',
-        completed: Boolean(profile.full_name),
+        completed: Boolean(profile.full_name && profile.full_name.trim().length >= 2),
         value: profile.full_name,
         icon: <User className="w-4 h-4" />
       },
@@ -129,7 +133,7 @@ const Profile = () => {
       {
         name: 'avatar_url',
         label: 'Profile Picture',
-        completed: Boolean(profile.avatar_url),
+        completed: Boolean(profile.avatar_url && !profile.avatar_url.includes('dicebear.com')),
         value: profile.avatar_url,
         icon: <User className="w-4 h-4" />
       }
@@ -150,14 +154,14 @@ const Profile = () => {
   // Memoized pixel statistics
   const pixelStats = useMemo<PixelStats>(() => {
     const totalPixels = userPixels.length;
-    const totalInvestment = userPixels.reduce((sum, p) => sum + p.price_paid, 0);
+    const totalInvestment = userPixels.reduce((sum, p) => sum + (p.price_paid || 0), 0);
     const averagePrice = totalPixels > 0 ? totalInvestment / totalPixels : 0;
     
     return { totalPixels, totalInvestment, averagePrice };
   }, [userPixels]);
 
   // Fetch profile data
-  const fetchProfile = useCallback(async () => {
+  const fetchProfile = useCallback(async (showToast = false) => {
     if (!user?.id) return;
     
     setProfileLoading(true);
@@ -171,7 +175,45 @@ const Profile = () => {
         .maybeSingle();
 
       if (fetchError) throw fetchError;
-      setProfile(data);
+      
+      if (!data) {
+        // Profile doesn't exist - try to create one
+        console.warn('Profile not found, attempting to create one');
+        
+        const { data: newProfile, error: createError } = await supabase
+          .from('profiles')
+          .insert({
+            user_id: user.id,
+            full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
+            email: user.email || null,
+            avatar_url: user.user_metadata?.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(user.email || 'User')}`,
+            phone_number: null,
+            date_of_birth: null,
+          })
+          .select()
+          .single();
+        
+        if (createError) {
+          console.error('Error creating profile:', createError);
+          throw new Error('Failed to create profile. Please try again or contact support.');
+        }
+        
+        setProfile({
+          ...newProfile,
+          email: newProfile.email ?? user.email ?? null
+        });
+        if (showToast) {
+          toast.success("Profile created successfully");
+        }
+      } else {
+        setProfile({
+          ...data,
+          email: data.email ?? user.email ?? null
+        });
+        if (showToast) {
+          toast.success("Profile refreshed successfully");
+        }
+      }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to load profile';
       console.error('Error fetching profile:', err);
@@ -180,10 +222,10 @@ const Profile = () => {
     } finally {
       setProfileLoading(false);
     }
-  }, [user?.id]);
+  }, [user?.id, user?.email, user?.user_metadata]);
 
   // Fetch user pixels
-  const fetchUserPixels = useCallback(async () => {
+  const fetchUserPixels = useCallback(async (showToast = false) => {
     if (!user?.id) return;
     
     setPixelsLoading(true);
@@ -205,10 +247,13 @@ const Profile = () => {
         link_url: row.link_url || undefined,
         alt_text: row.alt_text || undefined,
         price_paid: row.price_paid || 0,
-        purchased_at: row.purchased_at || ''
+        purchased_at: row.purchased_at || new Date().toISOString()
       }));
       
       setUserPixels(pixels);
+      if (showToast && pixels.length > 0) {
+        toast.success(`Loaded ${pixels.length} pixel${pixels.length !== 1 ? 's' : ''}`);
+      }
     } catch (err) {
       console.error('Error fetching user pixels:', err);
       toast.error("Failed to load your pixels");
@@ -216,6 +261,16 @@ const Profile = () => {
       setPixelsLoading(false);
     }
   }, [user?.id]);
+
+  // Refresh all data
+  const handleRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+    await Promise.all([
+      fetchProfile(true),
+      fetchUserPixels(true)
+    ]);
+    setIsRefreshing(false);
+  }, [fetchProfile, fetchUserPixels]);
 
   // Initial data fetch
   useEffect(() => {
@@ -225,6 +280,14 @@ const Profile = () => {
     }
   }, [user?.id, fetchProfile, fetchUserPixels]);
 
+  // Redirect to signin if not authenticated after loading
+  useEffect(() => {
+    if (!authLoading && !user) {
+      toast.error("Please sign in to view your profile");
+      navigate('/signin', { state: { from: '/profile' } });
+    }
+  }, [authLoading, user, navigate]);
+
   // Real-time subscription
   useEffect(() => {
     if (!user?.id) return;
@@ -233,14 +296,24 @@ const Profile = () => {
 
     const setupSubscription = async () => {
       channel = supabase
-        .channel(`user-pixels-${user.id}`)
+        .channel(`user-profile-${user.id}`)
         .on('postgres_changes', { 
           event: '*', 
           schema: 'public', 
           table: 'pixels',
           filter: `owner_id=eq.${user.id}`
-        }, () => {
+        }, (payload) => {
+          console.log('Pixel change detected:', payload);
           fetchUserPixels();
+        })
+        .on('postgres_changes', {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'profiles',
+          filter: `user_id=eq.${user.id}`
+        }, (payload) => {
+          console.log('Profile change detected:', payload);
+          fetchProfile();
         })
         .subscribe();
     };
@@ -252,13 +325,16 @@ const Profile = () => {
         supabase.removeChannel(channel);
       }
     };
-  }, [user?.id, fetchUserPixels]);
+  }, [user?.id, fetchUserPixels, fetchProfile]);
 
   // Utility functions
   const formatDate = useCallback((dateString: string | null): string => {
     if (!dateString) return 'Not provided';
     try {
-      return new Date(dateString).toLocaleDateString('en-US', {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return 'Invalid date';
+      
+      return date.toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'long',
         day: 'numeric'
@@ -268,10 +344,30 @@ const Profile = () => {
     }
   }, []);
 
+  const formatRelativeDate = useCallback((dateString: string): string => {
+    try {
+      const date = new Date(dateString);
+      const now = new Date();
+      const diffInMs = now.getTime() - date.getTime();
+      const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+      
+      if (diffInDays === 0) return 'Today';
+      if (diffInDays === 1) return 'Yesterday';
+      if (diffInDays < 7) return `${diffInDays} days ago`;
+      if (diffInDays < 30) return `${Math.floor(diffInDays / 7)} weeks ago`;
+      if (diffInDays < 365) return `${Math.floor(diffInDays / 30)} months ago`;
+      return `${Math.floor(diffInDays / 365)} years ago`;
+    } catch {
+      return formatDate(dateString);
+    }
+  }, [formatDate]);
+
   const getInitials = useCallback((name: string | null): string => {
-    if (!name) return 'U';
+    if (!name || name.trim().length === 0) return 'U';
     return name
+      .trim()
       .split(' ')
+      .filter(n => n.length > 0)
       .map(n => n[0])
       .join('')
       .toUpperCase()
@@ -287,34 +383,39 @@ const Profile = () => {
   }, []);
 
   const handlePixelVisit = useCallback((url: string) => {
-    window.open(url, '_blank', 'noopener,noreferrer');
+    if (!url) return;
+    try {
+      const validUrl = url.startsWith('http://') || url.startsWith('https://') 
+        ? url 
+        : `https://${url}`;
+      window.open(validUrl, '_blank', 'noopener,noreferrer');
+    } catch (err) {
+      console.error('Invalid URL:', err);
+      toast.error("Invalid URL format");
+    }
   }, []);
+
+  const handleSignOut = useCallback(async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      
+      toast.success("Signed out successfully");
+      navigate('/');
+    } catch (err) {
+      console.error('Sign out error:', err);
+      toast.error("Failed to sign out");
+    }
+  }, [navigate]);
 
   // Loading state
   if (authLoading || (profileLoading && !profile)) {
     return <ProfileSkeleton />;
   }
 
-  // Unauthenticated state
+  // Unauthenticated state (shouldn't normally reach here due to useEffect redirect)
   if (!user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <Card className="w-full max-w-md">
-          <CardContent className="p-6 text-center space-y-4">
-            <User className="w-16 h-16 mx-auto text-muted-foreground" />
-            <div>
-              <h2 className="text-xl font-semibold mb-2">Authentication Required</h2>
-              <p className="text-muted-foreground">
-                Please sign in to view your profile and manage your pixels.
-              </p>
-            </div>
-            <Link to="/signin" className="block">
-              <Button className="w-full">Sign In</Button>
-            </Link>
-          </CardContent>
-        </Card>
-      </div>
-    );
+    return null;
   }
 
   // Error state
@@ -323,13 +424,22 @@ const Profile = () => {
       <div className="min-h-screen flex items-center justify-center p-4">
         <Card className="w-full max-w-md border-destructive">
           <CardContent className="p-6 text-center space-y-4">
-            <div className="text-destructive">
-              <h2 className="text-xl font-semibold mb-2">Error Loading Profile</h2>
-              <p className="text-sm">{error}</p>
+            <div className="w-16 h-16 mx-auto bg-destructive/10 rounded-full flex items-center justify-center">
+              <AlertCircle className="w-8 h-8 text-destructive" />
             </div>
-            <Button onClick={() => fetchProfile()} variant="outline">
-              Retry
-            </Button>
+            <div>
+              <h2 className="text-xl font-semibold mb-2">Error Loading Profile</h2>
+              <p className="text-sm text-muted-foreground">{error}</p>
+            </div>
+            <div className="flex gap-2 justify-center">
+              <Button onClick={() => fetchProfile()} variant="outline">
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Retry
+              </Button>
+              <Button onClick={() => navigate('/')} variant="ghost">
+                Go Home
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -343,8 +453,8 @@ const Profile = () => {
         <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 md:mb-8">
           <div className="flex items-center space-x-3 md:space-x-4">
             <Link to="/" aria-label="Back to home">
-              <Button variant="ghost" size="sm">
-                <ArrowLeft className="w-4 h-4 mr-2" aria-hidden="true" />
+              <Button variant="ghost" size="sm" className="group">
+                <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" aria-hidden="true" />
                 <span className="hidden sm:inline">Back to Home</span>
                 <span className="sm:hidden">Back</span>
               </Button>
@@ -358,16 +468,28 @@ const Profile = () => {
               </p>
             </div>
           </div>
-          <Button 
-            onClick={handleEditProfile} 
-            className="gap-2 transition-transform hover:scale-105" 
-            size="sm"
-            aria-label="Edit profile"
-          >
-            <Edit className="w-4 h-4" aria-hidden="true" />
-            <span className="hidden sm:inline">Edit Profile</span>
-            <span className="sm:hidden">Edit</span>
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button 
+              onClick={handleRefresh} 
+              variant="outline"
+              size="sm"
+              disabled={isRefreshing}
+              aria-label="Refresh data"
+            >
+              <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} aria-hidden="true" />
+              <span className="hidden sm:inline ml-2">Refresh</span>
+            </Button>
+            <Button 
+              onClick={handleEditProfile} 
+              className="gap-2 transition-transform hover:scale-105" 
+              size="sm"
+              aria-label="Edit profile"
+            >
+              <Edit className="w-4 h-4" aria-hidden="true" />
+              <span className="hidden sm:inline">Edit Profile</span>
+              <span className="sm:hidden">Edit</span>
+            </Button>
+          </div>
         </header>
 
         {/* Profile Completion Alert - Show only if not complete */}
@@ -397,7 +519,7 @@ const Profile = () => {
                         {getInitials(profile?.full_name)}
                       </AvatarFallback>
                     </Avatar>
-                    {!profile?.avatar_url && (
+                    {(!profile?.avatar_url || profile.avatar_url.includes('dicebear.com')) && (
                       <div className="absolute -bottom-1 -right-1 w-8 h-8 bg-yellow-500 rounded-full flex items-center justify-center border-2 border-background">
                         <AlertCircle className="w-4 h-4 text-white" />
                       </div>
@@ -407,11 +529,11 @@ const Profile = () => {
                 <CardTitle className="text-xl font-bold">
                   {profile?.full_name || 'Anonymous User'}
                 </CardTitle>
-                <p className="text-sm text-muted-foreground">{user.email}</p>
+                <p className="text-sm text-muted-foreground break-all">{user.email}</p>
                 <div className="flex flex-wrap items-center justify-center gap-2 mt-3">
-                  <Badge variant="secondary" className="flex items-center gap-1">
+                  <Badge variant="secondary" className="flex items-center gap-1" title={`Joined ${formatDate(profile?.created_at || '')}`}>
                     <Clock className="w-3 h-3" aria-hidden="true" />
-                    {formatDate(profile?.created_at || '')}
+                    {formatRelativeDate(profile?.created_at || '')}
                   </Badge>
                   <Badge variant="default" className="flex items-center gap-1 bg-green-500">
                     <CheckCircle2 className="w-3 h-3" aria-hidden="true" />
@@ -454,7 +576,7 @@ const Profile = () => {
                     {profileCompletionData.allFields.map((field) => (
                       <div 
                         key={field.name}
-                        className={`flex items-center justify-between p-2 rounded-md ${
+                        className={`flex items-center justify-between p-2 rounded-md transition-colors ${
                           field.completed 
                             ? 'bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800' 
                             : 'bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-800'
@@ -519,8 +641,22 @@ const Profile = () => {
                       <span className="text-muted-foreground">Pixels Owned</span>
                       <span className="font-semibold">{pixelStats.totalPixels}</span>
                     </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground">Member Since</span>
+                      <span className="font-semibold text-xs">{formatRelativeDate(profile?.created_at || '')}</span>
+                    </div>
                   </div>
                 </div>
+
+                {/* Sign Out Button */}
+                <Button 
+                  onClick={handleSignOut}
+                  variant="outline"
+                  className="w-full"
+                  size="sm"
+                >
+                  Sign Out
+                </Button>
               </CardContent>
             </Card>
           </div>
@@ -547,7 +683,7 @@ const Profile = () => {
                     icon={<User className="w-4 h-4" />}
                     label="Full Name"
                     value={profile?.full_name || 'Not provided'}
-                    completed={Boolean(profile?.full_name)}
+                    completed={Boolean(profile?.full_name && profile.full_name.trim().length >= 2)}
                   />
                   <InfoCard 
                     icon={<Phone className="w-4 h-4" />}
@@ -568,11 +704,23 @@ const Profile = () => {
             {/* Pixels Section */}
             <Card className="shadow-lg">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <MapPin className="w-5 h-5 text-primary" />
-                  My Pixels
-                  <Badge variant="outline" className="ml-2">{pixelStats.totalPixels}</Badge>
-                </CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    <MapPin className="w-5 h-5 text-primary" />
+                    My Pixels
+                    <Badge variant="outline" className="ml-2">{pixelStats.totalPixels}</Badge>
+                  </CardTitle>
+                  {userPixels.length > 0 && (
+                    <Button 
+                      onClick={() => fetchUserPixels(true)}
+                      variant="ghost"
+                      size="sm"
+                      disabled={pixelsLoading}
+                    >
+                      <RefreshCw className={`w-4 h-4 ${pixelsLoading ? 'animate-spin' : ''}`} />
+                    </Button>
+                  )}
+                </div>
               </CardHeader>
               <CardContent>
                 {pixelsLoading ? (
@@ -630,7 +778,7 @@ const Profile = () => {
           isOpen={editModalOpen}
           onClose={handleCloseModal}
           profile={profile}
-          onProfileUpdate={fetchProfile}
+          onProfileUpdate={() => fetchProfile(true)}
         />
       </div>
     </div>
