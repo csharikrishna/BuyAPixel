@@ -4,27 +4,63 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Mail, Lock, User, Phone, Calendar, ArrowLeft, Star, Users, Palette, Eye, EyeOff, CheckCircle2, X, AlertCircle, Chrome, ShieldCheck } from 'lucide-react';
+import {
+  Loader2,
+  Mail,
+  Lock,
+  User,
+  Phone,
+  Calendar,
+  ArrowLeft,
+  Star,
+  Users,
+  Palette,
+  Eye,
+  EyeOff,
+  CheckCircle2,
+  X,
+  AlertCircle,
+  Chrome,
+  ShieldCheck,
+} from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { z } from 'zod';
 
-const signUpSchema = z.object({
-  email: z.string().trim().email({ message: "Please enter a valid email address" }).max(255),
-  password: z.string().min(8, { message: "Password must be at least 8 characters" }).max(72),
-  confirmPassword: z.string(),
-  fullName: z.string().trim().min(2, { message: "Full name must be at least 2 characters" }).max(100),
-  phoneNumber: z.string().trim().max(20).optional().or(z.literal('')),
-  dateOfBirth: z.string().optional().or(z.literal('')),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords do not match",
-  path: ["confirmPassword"],
-});
+const signUpSchema = z
+  .object({
+    email: z
+      .string()
+      .trim()
+      .email({ message: 'Please enter a valid email address' })
+      .max(255),
+    password: z
+      .string()
+      .min(8, { message: 'Password must be at least 8 characters' })
+      .max(72),
+    confirmPassword: z.string(),
+    fullName: z
+      .string()
+      .trim()
+      .min(2, { message: 'Full name must be at least 2 characters' })
+      .max(100),
+    phoneNumber: z
+      .string()
+      .trim()
+      .max(20)
+      .optional()
+      .or(z.literal('')),
+    dateOfBirth: z.string().optional().or(z.literal('')),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: 'Passwords do not match',
+    path: ['confirmPassword'],
+  });
 
 // Password strength evaluation function
 const evaluatePasswordStrength = (password: string) => {
   if (!password) return { score: 0, label: '', color: '' };
-  
+
   let score = 0;
   const checks = {
     length: password.length >= 8,
@@ -52,6 +88,12 @@ const evaluatePasswordStrength = (password: string) => {
   return { score, ...strength[score as keyof typeof strength], checks };
 };
 
+interface LocationState {
+  from?: {
+    pathname: string;
+  };
+}
+
 const SignUp = () => {
   const [formData, setFormData] = useState({
     email: '',
@@ -59,23 +101,28 @@ const SignUp = () => {
     confirmPassword: '',
     fullName: '',
     phoneNumber: '',
-    dateOfBirth: ''
+    dateOfBirth: '',
   });
   const [loading, setLoading] = useState(false);
   const [oauthLoading, setOauthLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [passwordStrength, setPasswordStrength] = useState(evaluatePasswordStrength(''));
+  const [passwordStrength, setPasswordStrength] = useState(
+    evaluatePasswordStrength('')
+  );
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-  const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>({});
+  const [touchedFields, setTouchedFields] = useState<
+    Record<string, boolean>
+  >({});
   const { toast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
   const { isAuthenticated } = useAuth();
 
-  // Get redirect path from location state
-  const from = (location.state as any)?.from?.pathname || '/';
+  // Get redirect path from location state (typed)
+  const from =
+    (location.state as LocationState | null)?.from?.pathname || '/';
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -130,9 +177,9 @@ const SignUp = () => {
         break;
     }
 
-    setFieldErrors(prev => ({ ...prev, ...errors }));
+    setFieldErrors((prev) => ({ ...prev, ...errors }));
     if (!errors[name]) {
-      setFieldErrors(prev => {
+      setFieldErrors((prev) => {
         const newErrors = { ...prev };
         delete newErrors[name];
         return newErrors;
@@ -142,9 +189,10 @@ const SignUp = () => {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
 
     // Update password strength for password field
@@ -165,19 +213,21 @@ const SignUp = () => {
 
   const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setTouchedFields(prev => ({ ...prev, [name]: true }));
+    setTouchedFields((prev) => ({ ...prev, [name]: true }));
     validateField(name, value);
   };
 
   const handleGoogleSignIn = async () => {
     try {
       setOauthLoading(true);
-      
-      // Include redirect parameter in callback URL
-      const redirectUrl = from !== '/' 
-        ? `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(from)}`
-        : `${window.location.origin}/auth/callback`;
-      
+
+      const redirectUrl =
+        from !== '/'
+          ? `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(
+              from
+            )}`
+          : `${window.location.origin}/auth/callback`;
+
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
@@ -186,37 +236,46 @@ const SignUp = () => {
             access_type: 'offline',
             prompt: 'consent',
           },
-        }
+        },
       });
 
       if (error) {
         console.error('Google OAuth error:', error);
-        
+
         let errorMessage = error.message;
-        let errorTitle = "Sign Up Failed";
-        
+        let errorTitle = 'Sign Up Failed';
+
         if (error.message.includes('redirect')) {
-          errorMessage = 'OAuth redirect configuration error. Please contact support.';
+          errorMessage =
+            'OAuth redirect configuration error. Please contact support.';
         } else if (error.message.includes('not enabled')) {
-          errorMessage = 'Google authentication is not enabled. Please use email/password sign up.';
+          errorMessage =
+            'Google authentication is not enabled. Please use email/password sign up.';
         } else if (error.message.includes('network')) {
-          errorMessage = 'Network error. Please check your connection and try again.';
+          errorMessage =
+            'Network error. Please check your connection and try again.';
         }
-        
+
         toast({
           title: errorTitle,
           description: errorMessage,
-          variant: "destructive",
+          variant: 'destructive',
         });
         setOauthLoading(false);
       }
-      // Don't reset loading on success - user is being redirected
+
+      // If success, Supabase will redirect.
+      // Fallback in case redirect silently fails.
+      setTimeout(() => {
+        setOauthLoading(false);
+      }, 10000);
     } catch (error) {
       console.error('Unexpected Google OAuth error:', error);
       toast({
-        title: "Error",
-        description: "Failed to initiate Google sign up. Please try again.",
-        variant: "destructive",
+        title: 'Error',
+        description:
+          'Failed to initiate Google sign up. Please try again.',
+        variant: 'destructive',
       });
       setOauthLoading(false);
     }
@@ -224,25 +283,27 @@ const SignUp = () => {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Mark all fields as touched
     const allFields = Object.keys(formData);
     const touched: Record<string, boolean> = {};
-    allFields.forEach(field => touched[field] = true);
+    allFields.forEach((field) => (touched[field] = true));
     setTouchedFields(touched);
 
     // Validate all fields
-    allFields.forEach(field => validateField(field, formData[field as keyof typeof formData]));
+    allFields.forEach((field) =>
+      validateField(field, formData[field as keyof typeof formData])
+    );
 
     // Validate form data with Zod
     const validation = signUpSchema.safeParse(formData);
-    
+
     if (!validation.success) {
       const firstError = validation.error.errors[0];
       toast({
-        title: "Validation Error",
+        title: 'Validation Error',
         description: firstError.message,
-        variant: "destructive",
+        variant: 'destructive',
       });
       return;
     }
@@ -250,31 +311,43 @@ const SignUp = () => {
     // Check if there are any field errors
     if (Object.keys(fieldErrors).length > 0) {
       toast({
-        title: "Please fix errors",
-        description: "Please correct the errors in the form before submitting.",
-        variant: "destructive",
+        title: 'Please fix errors',
+        description:
+          'Please correct the errors in the form before submitting.',
+        variant: 'destructive',
       });
       return;
     }
 
-    // Check password strength
-    if (passwordStrength.score < 3) {
+    // Password strength check:
+    // - Block very weak/weak (score < 2)
+    // - Allow Fair+ but warn if < 3
+    if (passwordStrength.score < 2) {
       toast({
-        title: "Weak Password",
-        description: "Please choose a stronger password with uppercase, lowercase, numbers, and special characters.",
-        variant: "destructive",
+        title: 'Weak Password',
+        description:
+          'Your password is too weak. Please use uppercase, lowercase, numbers, and special characters.',
+        variant: 'destructive',
       });
       return;
+    } else if (passwordStrength.score < 3) {
+      toast({
+        title: 'Password Could Be Stronger',
+        description:
+          'For better security, consider adding uppercase, lowercase, numbers, and special characters.',
+      });
     }
 
     setLoading(true);
 
     try {
-      // Updated redirect URL to go to auth callback
-      const redirectUrl = from !== '/' 
-        ? `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(from)}`
-        : `${window.location.origin}/auth/callback`;
-      
+      const redirectUrl =
+        from !== '/'
+          ? `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(
+              from
+            )}`
+          : `${window.location.origin}/auth/callback`;
+
       const { error, data } = await supabase.auth.signUp({
         email: validation.data.email,
         password: validation.data.password,
@@ -284,70 +357,70 @@ const SignUp = () => {
             full_name: validation.data.fullName,
             phone_number: validation.data.phoneNumber || null,
             date_of_birth: validation.data.dateOfBirth || null,
-          }
-        }
+          },
+        },
       });
 
       if (error) {
         let errorMessage = error.message;
-        let errorTitle = "Sign Up Failed";
-        
-        // Enhanced error messages
+        let errorTitle = 'Sign Up Failed';
+
         if (error.message.includes('User already registered')) {
-          errorMessage = "An account with this email already exists. Please sign in instead.";
-          errorTitle = "Account Already Exists";
+          errorMessage =
+            'An account with this email already exists. Please sign in instead.';
+          errorTitle = 'Account Already Exists';
         } else if (error.message.includes('Password should be')) {
-          errorMessage = "Password is too weak. Please use a stronger password with uppercase, lowercase, numbers, and special characters.";
-          errorTitle = "Weak Password";
+          errorMessage =
+            'Password is too weak. Please use a stronger password with uppercase, lowercase, numbers, and special characters.';
+          errorTitle = 'Weak Password';
         } else if (error.message.includes('rate limit')) {
-          errorMessage = "Too many signup attempts. Please wait a few minutes and try again.";
-          errorTitle = "Rate Limit Exceeded";
+          errorMessage =
+            'Too many signup attempts. Please wait a few minutes and try again.';
+          errorTitle = 'Rate Limit Exceeded';
         } else if (error.message.includes('Invalid email')) {
-          errorMessage = "Please provide a valid email address.";
-          errorTitle = "Invalid Email";
-        } else if (error.message.includes('Anonymous sign-ins are disabled')) {
-          errorMessage = "Email confirmation is required. Please use a valid email address.";
-          errorTitle = "Email Required";
+          errorMessage = 'Please provide a valid email address.';
+          errorTitle = 'Invalid Email';
+        } else if (
+          error.message.includes('Anonymous sign-ins are disabled')
+        ) {
+          errorMessage =
+            'Email confirmation is required. Please use a valid email address.';
+          errorTitle = 'Email Required';
         }
-        
+
         toast({
           title: errorTitle,
           description: errorMessage,
-          variant: "destructive",
+          variant: 'destructive',
         });
       } else {
-        // Check if email confirmation is required
         const needsEmailConfirmation = data.user && !data.session;
-        
+
         if (needsEmailConfirmation) {
-          // Email confirmation required
           setEmailSent(true);
-          
           toast({
-            title: "Account Created! 🎉",
-            description: "Please check your email for a confirmation link to activate your account.",
+            title: 'Account Created! 🎉',
+            description:
+              'Please check your email for a confirmation link to activate your account.',
             duration: 8000,
           });
         } else {
-          // Auto-confirmed (will be handled by AuthCallback)
           toast({
-            title: "Welcome to BuyAPixel! 🎉",
-            description: "Your account has been created successfully. Setting up your profile...",
+            title: 'Welcome to BuyAPixel! 🎉',
+            description:
+              'Your account has been created successfully. Setting up your profile...',
             duration: 5000,
           });
-          
-          // User will be redirected by Supabase auth state change
+          // AuthCallback / auth state listener should handle redirect + profile creation
         }
-        
-        // Note: Profile creation is now handled by AuthCallback.tsx
-        // No need to create profile here to avoid conflicts
       }
     } catch (error) {
       console.error('Sign up error:', error);
       toast({
-        title: "Error",
-        description: "An unexpected error occurred during sign up. Please try again.",
-        variant: "destructive",
+        title: 'Error',
+        description:
+          'An unexpected error occurred during sign up. Please try again.',
+        variant: 'destructive',
       });
     } finally {
       setLoading(false);
@@ -363,9 +436,12 @@ const SignUp = () => {
             <div className="w-20 h-20 mx-auto mb-6 bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center">
               <Mail className="w-10 h-10 text-green-600 dark:text-green-400" />
             </div>
-            <h2 className="text-3xl font-bold mb-4">Check Your Email! 📧</h2>
+            <h2 className="text-3xl font-bold mb-4">
+              Check Your Email! 📧
+            </h2>
             <p className="text-muted-foreground mb-6">
-              We've sent a confirmation link to <strong>{formData.email}</strong>
+              We&apos;ve sent a confirmation link to{' '}
+              <strong>{formData.email}</strong>
             </p>
           </div>
 
@@ -376,23 +452,32 @@ const SignUp = () => {
             </h3>
             <ol className="space-y-3 text-sm text-muted-foreground">
               <li className="flex gap-3">
-                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold">1</span>
+                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold">
+                  1
+                </span>
                 <span>Check your inbox for an email from BuyAPixel</span>
               </li>
               <li className="flex gap-3">
-                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold">2</span>
+                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold">
+                  2
+                </span>
                 <span>Click the confirmation link in the email</span>
               </li>
               <li className="flex gap-3">
-                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold">3</span>
-                <span>You'll be automatically signed in and redirected</span>
+                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold">
+                  3
+                </span>
+                <span>
+                  You&apos;ll be automatically signed in and redirected
+                </span>
               </li>
             </ol>
           </div>
 
           <div className="mt-8 space-y-4">
             <p className="text-xs text-muted-foreground">
-              Didn't receive the email? Check your spam folder or wait a few minutes.
+              Didn&apos;t receive the email? Check your spam folder or wait
+              a few minutes.
             </p>
             <div className="flex gap-3 justify-center">
               <Button
@@ -420,16 +505,20 @@ const SignUp = () => {
       <div className="flex-1 flex items-center justify-center p-4 sm:p-8 bg-background">
         <div className="w-full max-w-md">
           <div className="mb-8">
-            <Link 
-              to="/" 
+            <Link
+              to="/"
               className="inline-flex items-center text-muted-foreground hover:text-foreground transition-colors mb-6 group"
               aria-label="Back to home page"
             >
               <ArrowLeft className="h-4 w-4 mr-2 group-hover:-translate-x-1 transition-transform" />
               Back to Home
             </Link>
-            <h1 className="text-3xl font-bold mb-2">Create Your Account</h1>
-            <p className="text-muted-foreground">Join India's first pixel marketplace</p>
+            <h1 className="text-3xl font-bold mb-2">
+              Create Your Account
+            </h1>
+            <p className="text-muted-foreground">
+              Join India&apos;s first pixel marketplace
+            </p>
           </div>
 
           {/* Social Authentication */}
@@ -454,7 +543,7 @@ const SignUp = () => {
                 </>
               )}
             </Button>
-            
+
             <div className="relative my-6">
               <div className="absolute inset-0 flex items-center">
                 <span className="w-full border-t" />
@@ -485,16 +574,31 @@ const SignUp = () => {
                   onBlur={handleBlur}
                   required
                   autoComplete="name"
-                  className={`pl-10 h-11 ${fieldErrors.fullName && touchedFields.fullName ? 'border-destructive focus-visible:ring-destructive' : ''}`}
-                  aria-invalid={fieldErrors.fullName && touchedFields.fullName ? 'true' : 'false'}
-                  aria-describedby={fieldErrors.fullName ? 'fullName-error' : undefined}
+                  className={`pl-10 h-11 ${
+                    fieldErrors.fullName && touchedFields.fullName
+                      ? 'border-destructive focus-visible:ring-destructive'
+                      : ''
+                  }`}
+                  aria-invalid={
+                    fieldErrors.fullName && touchedFields.fullName
+                      ? 'true'
+                      : 'false'
+                  }
+                  aria-describedby={
+                    fieldErrors.fullName ? 'fullName-error' : undefined
+                  }
                 />
-                {!fieldErrors.fullName && touchedFields.fullName && formData.fullName && (
-                  <CheckCircle2 className="absolute right-3 top-3 h-4 w-4 text-green-500" />
-                )}
+                {!fieldErrors.fullName &&
+                  touchedFields.fullName &&
+                  formData.fullName && (
+                    <CheckCircle2 className="absolute right-3 top-3 h-4 w-4 text-green-500" />
+                  )}
               </div>
               {fieldErrors.fullName && touchedFields.fullName && (
-                <p id="fullName-error" className="text-sm text-destructive flex items-center gap-1">
+                <p
+                  id="fullName-error"
+                  className="text-sm text-destructive flex items-center gap-1"
+                >
                   <AlertCircle className="h-3 w-3" />
                   {fieldErrors.fullName}
                 </p>
@@ -518,16 +622,31 @@ const SignUp = () => {
                   onBlur={handleBlur}
                   required
                   autoComplete="email"
-                  className={`pl-10 h-11 ${fieldErrors.email && touchedFields.email ? 'border-destructive focus-visible:ring-destructive' : ''}`}
-                  aria-invalid={fieldErrors.email && touchedFields.email ? 'true' : 'false'}
-                  aria-describedby={fieldErrors.email ? 'email-error' : undefined}
+                  className={`pl-10 h-11 ${
+                    fieldErrors.email && touchedFields.email
+                      ? 'border-destructive focus-visible:ring-destructive'
+                      : ''
+                  }`}
+                  aria-invalid={
+                    fieldErrors.email && touchedFields.email
+                      ? 'true'
+                      : 'false'
+                  }
+                  aria-describedby={
+                    fieldErrors.email ? 'email-error' : undefined
+                  }
                 />
-                {!fieldErrors.email && touchedFields.email && formData.email && (
-                  <CheckCircle2 className="absolute right-3 top-3 h-4 w-4 text-green-500" />
-                )}
+                {!fieldErrors.email &&
+                  touchedFields.email &&
+                  formData.email && (
+                    <CheckCircle2 className="absolute right-3 top-3 h-4 w-4 text-green-500" />
+                  )}
               </div>
               {fieldErrors.email && touchedFields.email && (
-                <p id="email-error" className="text-sm text-destructive flex items-center gap-1">
+                <p
+                  id="email-error"
+                  className="text-sm text-destructive flex items-center gap-1"
+                >
                   <AlertCircle className="h-3 w-3" />
                   {fieldErrors.email}
                 </p>
@@ -549,16 +668,27 @@ const SignUp = () => {
                     onChange={handleInputChange}
                     onBlur={handleBlur}
                     autoComplete="tel"
-                    className={`pl-10 h-11 ${fieldErrors.phoneNumber && touchedFields.phoneNumber ? 'border-destructive focus-visible:ring-destructive' : ''}`}
-                    aria-invalid={fieldErrors.phoneNumber && touchedFields.phoneNumber ? 'true' : 'false'}
+                    className={`pl-10 h-11 ${
+                      fieldErrors.phoneNumber &&
+                      touchedFields.phoneNumber
+                        ? 'border-destructive focus-visible:ring-destructive'
+                        : ''
+                    }`}
+                    aria-invalid={
+                      fieldErrors.phoneNumber &&
+                      touchedFields.phoneNumber
+                        ? 'true'
+                        : 'false'
+                    }
                   />
                 </div>
-                {fieldErrors.phoneNumber && touchedFields.phoneNumber && (
-                  <p className="text-sm text-destructive flex items-center gap-1">
-                    <AlertCircle className="h-3 w-3" />
-                    {fieldErrors.phoneNumber}
-                  </p>
-                )}
+                {fieldErrors.phoneNumber &&
+                  touchedFields.phoneNumber && (
+                    <p className="text-sm text-destructive flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3" />
+                      {fieldErrors.phoneNumber}
+                    </p>
+                  )}
               </div>
 
               <div className="space-y-2">
@@ -574,15 +704,21 @@ const SignUp = () => {
                     onBlur={handleBlur}
                     max={new Date().toISOString().split('T')[0]}
                     autoComplete="bday"
-                    className={`pl-10 h-11 ${fieldErrors.dateOfBirth && touchedFields.dateOfBirth ? 'border-destructive focus-visible:ring-destructive' : ''}`}
+                    className={`pl-10 h-11 ${
+                      fieldErrors.dateOfBirth &&
+                      touchedFields.dateOfBirth
+                        ? 'border-destructive focus-visible:ring-destructive'
+                        : ''
+                    }`}
                   />
                 </div>
-                {fieldErrors.dateOfBirth && touchedFields.dateOfBirth && (
-                  <p className="text-sm text-destructive flex items-center gap-1">
-                    <AlertCircle className="h-3 w-3" />
-                    {fieldErrors.dateOfBirth}
-                  </p>
-                )}
+                {fieldErrors.dateOfBirth &&
+                  touchedFields.dateOfBirth && (
+                    <p className="text-sm text-destructive flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3" />
+                      {fieldErrors.dateOfBirth}
+                    </p>
+                  )}
               </div>
             </div>
 
@@ -604,69 +740,145 @@ const SignUp = () => {
                   required
                   minLength={8}
                   autoComplete="new-password"
-                  className={`pl-10 pr-10 h-11 ${fieldErrors.password && touchedFields.password ? 'border-destructive focus-visible:ring-destructive' : ''}`}
-                  aria-invalid={fieldErrors.password && touchedFields.password ? 'true' : 'false'}
+                  className={`pl-10 pr-10 h-11 ${
+                    fieldErrors.password && touchedFields.password
+                      ? 'border-destructive focus-visible:ring-destructive'
+                      : ''
+                  }`}
+                  aria-invalid={
+                    fieldErrors.password && touchedFields.password
+                      ? 'true'
+                      : 'false'
+                  }
                   aria-describedby="password-strength password-requirements"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-3 text-muted-foreground hover:text-foreground transition-colors"
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  aria-label={
+                    showPassword ? 'Hide password' : 'Show password'
+                  }
                 >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
                 </button>
               </div>
-              
+
               {/* Password Strength Meter */}
               {formData.password && (
                 <div id="password-strength" className="space-y-2">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="text-muted-foreground">Password Strength:</span>
-                    <span className={`font-medium ${
-                      passwordStrength.score >= 4 ? 'text-green-600' : 
-                      passwordStrength.score >= 3 ? 'text-yellow-600' : 
-                      'text-red-600'
-                    }`}>
+                    <span className="text-muted-foreground">
+                      Password Strength:
+                    </span>
+                    <span
+                      className={`font-medium ${
+                        passwordStrength.score >= 4
+                          ? 'text-green-600'
+                          : passwordStrength.score >= 3
+                          ? 'text-yellow-600'
+                          : 'text-red-600'
+                      }`}
+                    >
                       {passwordStrength.label}
                     </span>
                   </div>
                   <div className="h-2 bg-muted rounded-full overflow-hidden">
-                    <div 
+                    <div
                       className={`h-full transition-all duration-300 ${passwordStrength.color}`}
-                      style={{ width: `${(passwordStrength.score / 5) * 100}%` }}
+                      style={{
+                        width: `${(passwordStrength.score / 5) * 100}%`,
+                      }}
                       role="progressbar"
                       aria-valuenow={passwordStrength.score * 20}
                       aria-valuemin={0}
                       aria-valuemax={100}
                     />
                   </div>
-                  
+
                   {/* Password Requirements */}
-                  {'checks' in passwordStrength && passwordStrength.checks && (
-                    <div id="password-requirements" className="text-xs space-y-1 mt-2">
-                      <div className={`flex items-center gap-1 ${passwordStrength.checks.length ? 'text-green-600' : 'text-muted-foreground'}`}>
-                        {passwordStrength.checks.length ? <CheckCircle2 className="h-3 w-3" /> : <X className="h-3 w-3" />}
-                        At least 8 characters
+                  {'checks' in passwordStrength &&
+                    passwordStrength.checks && (
+                      <div
+                        id="password-requirements"
+                        className="text-xs space-y-1 mt-2"
+                      >
+                        <div
+                          className={`flex items-center gap-1 ${
+                            passwordStrength.checks.length
+                              ? 'text-green-600'
+                              : 'text-muted-foreground'
+                          }`}
+                        >
+                          {passwordStrength.checks.length ? (
+                            <CheckCircle2 className="h-3 w-3" />
+                          ) : (
+                            <X className="h-3 w-3" />
+                          )}
+                          At least 8 characters
+                        </div>
+                        <div
+                          className={`flex items-center gap-1 ${
+                            passwordStrength.checks.uppercase
+                              ? 'text-green-600'
+                              : 'text-muted-foreground'
+                          }`}
+                        >
+                          {passwordStrength.checks.uppercase ? (
+                            <CheckCircle2 className="h-3 w-3" />
+                          ) : (
+                            <X className="h-3 w-3" />
+                          )}
+                          One uppercase letter
+                        </div>
+                        <div
+                          className={`flex items-center gap-1 ${
+                            passwordStrength.checks.lowercase
+                              ? 'text-green-600'
+                              : 'text-muted-foreground'
+                          }`}
+                        >
+                          {passwordStrength.checks.lowercase ? (
+                            <CheckCircle2 className="h-3 w-3" />
+                          ) : (
+                            <X className="h-3 w-3" />
+                          )}
+                          One lowercase letter
+                        </div>
+                        <div
+                          className={`flex items-center gap-1 ${
+                            passwordStrength.checks.number
+                              ? 'text-green-600'
+                              : 'text-muted-foreground'
+                          }`}
+                        >
+                          {passwordStrength.checks.number ? (
+                            <CheckCircle2 className="h-3 w-3" />
+                          ) : (
+                            <X className="h-3 w-3" />
+                          )}
+                          One number
+                        </div>
+                        <div
+                          className={`flex items-center gap-1 ${
+                            passwordStrength.checks.special
+                              ? 'text-green-600'
+                              : 'text-muted-foreground'
+                          }`}
+                        >
+                          {passwordStrength.checks.special ? (
+                            <CheckCircle2 className="h-3 w-3" />
+                          ) : (
+                            <X className="h-3 w-3" />
+                          )}
+                          One special character
+                        </div>
                       </div>
-                      <div className={`flex items-center gap-1 ${passwordStrength.checks.uppercase ? 'text-green-600' : 'text-muted-foreground'}`}>
-                        {passwordStrength.checks.uppercase ? <CheckCircle2 className="h-3 w-3" /> : <X className="h-3 w-3" />}
-                        One uppercase letter
-                      </div>
-                      <div className={`flex items-center gap-1 ${passwordStrength.checks.lowercase ? 'text-green-600' : 'text-muted-foreground'}`}>
-                        {passwordStrength.checks.lowercase ? <CheckCircle2 className="h-3 w-3" /> : <X className="h-3 w-3" />}
-                        One lowercase letter
-                      </div>
-                      <div className={`flex items-center gap-1 ${passwordStrength.checks.number ? 'text-green-600' : 'text-muted-foreground'}`}>
-                        {passwordStrength.checks.number ? <CheckCircle2 className="h-3 w-3" /> : <X className="h-3 w-3" />}
-                        One number
-                      </div>
-                      <div className={`flex items-center gap-1 ${passwordStrength.checks.special ? 'text-green-600' : 'text-muted-foreground'}`}>
-                        {passwordStrength.checks.special ? <CheckCircle2 className="h-3 w-3" /> : <X className="h-3 w-3" />}
-                        One special character
-                      </div>
-                    </div>
-                  )}
+                    )}
                 </div>
               )}
             </div>
@@ -674,7 +886,8 @@ const SignUp = () => {
             {/* Confirm Password */}
             <div className="space-y-2">
               <Label htmlFor="confirmPassword">
-                Confirm Password <span className="text-destructive">*</span>
+                Confirm Password{' '}
+                <span className="text-destructive">*</span>
               </Label>
               <div className="relative">
                 <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
@@ -689,34 +902,70 @@ const SignUp = () => {
                   required
                   minLength={8}
                   autoComplete="new-password"
-                  className={`pl-10 pr-10 h-11 ${fieldErrors.confirmPassword && touchedFields.confirmPassword ? 'border-destructive focus-visible:ring-destructive' : ''}`}
-                  aria-invalid={fieldErrors.confirmPassword && touchedFields.confirmPassword ? 'true' : 'false'}
-                  aria-describedby={fieldErrors.confirmPassword ? 'confirmPassword-error' : undefined}
+                  className={`pl-10 pr-10 h-11 ${
+                    fieldErrors.confirmPassword &&
+                    touchedFields.confirmPassword
+                      ? 'border-destructive focus-visible:ring-destructive'
+                      : ''
+                  }`}
+                  aria-invalid={
+                    fieldErrors.confirmPassword &&
+                    touchedFields.confirmPassword
+                      ? 'true'
+                      : 'false'
+                  }
+                  aria-describedby={
+                    fieldErrors.confirmPassword
+                      ? 'confirmPassword-error'
+                      : undefined
+                  }
                 />
                 <button
                   type="button"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  onClick={() =>
+                    setShowConfirmPassword(!showConfirmPassword)
+                  }
                   className="absolute right-3 top-3 text-muted-foreground hover:text-foreground transition-colors"
-                  aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
+                  aria-label={
+                    showConfirmPassword
+                      ? 'Hide password'
+                      : 'Show password'
+                  }
                 >
-                  {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  {showConfirmPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
                 </button>
-                {!fieldErrors.confirmPassword && touchedFields.confirmPassword && formData.confirmPassword && formData.password === formData.confirmPassword && (
-                  <CheckCircle2 className="absolute right-10 top-3 h-4 w-4 text-green-500" />
-                )}
+                {!fieldErrors.confirmPassword &&
+                  touchedFields.confirmPassword &&
+                  formData.confirmPassword &&
+                  formData.password === formData.confirmPassword && (
+                    <CheckCircle2 className="absolute right-10 top-3 h-4 w-4 text-green-500" />
+                  )}
               </div>
-              {fieldErrors.confirmPassword && touchedFields.confirmPassword && (
-                <p id="confirmPassword-error" className="text-sm text-destructive flex items-center gap-1">
-                  <AlertCircle className="h-3 w-3" />
-                  {fieldErrors.confirmPassword}
-                </p>
-              )}
+              {fieldErrors.confirmPassword &&
+                touchedFields.confirmPassword && (
+                  <p
+                    id="confirmPassword-error"
+                    className="text-sm text-destructive flex items-center gap-1"
+                  >
+                    <AlertCircle className="h-3 w-3" />
+                    {fieldErrors.confirmPassword}
+                  </p>
+                )}
             </div>
 
-            <Button 
-              type="submit" 
-              className="w-full h-12 btn-premium" 
-              disabled={loading || oauthLoading || Object.keys(fieldErrors).length > 0 || passwordStrength.score < 3}
+            <Button
+              type="submit"
+              className="w-full h-12 btn-premium"
+              disabled={
+                loading ||
+                oauthLoading ||
+                Object.keys(fieldErrors).length > 0 ||
+                passwordStrength.score < 2
+              }
             >
               {loading ? (
                 <>
@@ -731,11 +980,14 @@ const SignUp = () => {
               )}
             </Button>
           </form>
-          
+
           <div className="mt-6 text-center">
             <p className="text-sm text-muted-foreground">
               Already have an account?{' '}
-              <Link to="/signin" className="text-primary hover:underline font-medium">
+              <Link
+                to="/signin"
+                className="text-primary hover:underline font-medium"
+              >
                 Sign in here
               </Link>
             </p>
@@ -743,9 +995,13 @@ const SignUp = () => {
 
           <p className="text-xs text-muted-foreground text-center mt-4">
             By signing up, you agree to our{' '}
-            <Link to="/terms" className="text-primary hover:underline">Terms of Service</Link>
-            {' '}and{' '}
-            <Link to="/privacy" className="text-primary hover:underline">Privacy Policy</Link>
+            <Link to="/terms" className="text-primary hover:underline">
+              Terms of Service
+            </Link>{' '}
+            and{' '}
+            <Link to="/privacy" className="text-primary hover:underline">
+              Privacy Policy
+            </Link>
           </p>
         </div>
       </div>
@@ -754,7 +1010,7 @@ const SignUp = () => {
       <div className="hidden lg:flex lg:flex-1 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-bl from-accent via-secondary to-primary opacity-90" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent" />
-        
+
         {/* Animated Background Pattern */}
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-20 right-10 w-32 h-32 bg-white rounded-full animate-pulse" />
@@ -762,7 +1018,7 @@ const SignUp = () => {
           <div className="absolute bottom-32 right-20 w-40 h-40 bg-white rounded-full animate-pulse [animation-delay:2s]" />
           <div className="absolute bottom-60 left-40 w-28 h-28 bg-white rounded-full animate-pulse [animation-delay:0.5s]" />
         </div>
-        
+
         <div className="relative z-10 flex flex-col justify-center items-start p-12 text-white">
           <div className="mb-8">
             <h2 className="text-5xl font-bold mb-6 leading-tight">
@@ -772,44 +1028,59 @@ const SignUp = () => {
               </span>
             </h2>
             <p className="text-xl text-white/90 mb-8 max-w-md">
-              Join thousands of creators and businesses building their digital presence on India's premier pixel marketplace.
+              Join thousands of creators and businesses building their
+              digital presence on India&apos;s premier pixel marketplace.
             </p>
           </div>
-          
+
           <div className="space-y-6">
             <div className="flex items-center space-x-4">
               <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
                 <Star className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h3 className="font-semibold text-lg">Premium Quality</h3>
-                <p className="text-white/80">High-resolution canvas with permanent pixels</p>
+                <h3 className="font-semibold text-lg">
+                  Premium Quality
+                </h3>
+                <p className="text-white/80">
+                  High-resolution canvas with permanent pixels
+                </p>
               </div>
             </div>
-            
+
             <div className="flex items-center space-x-4">
               <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
                 <Users className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h3 className="font-semibold text-lg">Growing Community</h3>
-                <p className="text-white/80">Connect with thousands of pixel artists</p>
+                <h3 className="font-semibold text-lg">
+                  Growing Community
+                </h3>
+                <p className="text-white/80">
+                  Connect with thousands of pixel artists
+                </p>
               </div>
             </div>
-            
+
             <div className="flex items-center space-x-4">
               <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
                 <Palette className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h3 className="font-semibold text-lg">Creative Tools</h3>
-                <p className="text-white/80">Advanced tools to bring your vision to life</p>
+                <h3 className="font-semibold text-lg">
+                  Creative Tools
+                </h3>
+                <p className="text-white/80">
+                  Advanced tools to bring your vision to life
+                </p>
               </div>
             </div>
           </div>
-          
+
           <div className="mt-12 pt-8 border-t border-white/20">
-            <p className="text-sm text-white/70 mb-3">Trusted by creators and businesses</p>
+            <p className="text-sm text-white/70 mb-3">
+              Trusted by creators and businesses
+            </p>
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="w-4 h-4 text-green-300" />

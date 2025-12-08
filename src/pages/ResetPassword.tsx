@@ -4,18 +4,33 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Lock, ArrowLeft, Shield, CheckCircle2, Eye, EyeOff, AlertCircle, X } from 'lucide-react';
+import {
+  Loader2,
+  Lock,
+  ArrowLeft,
+  Shield,
+  CheckCircle2,
+  Eye,
+  EyeOff,
+  AlertCircle,
+  X,
+} from 'lucide-react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { z } from 'zod';
 import { cn } from '@/lib/utils';
 
-const resetPasswordSchema = z.object({
-  password: z.string().min(8, { message: "Password must be at least 8 characters" }).max(72),
-  confirmPassword: z.string(),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords do not match",
-  path: ["confirmPassword"],
-});
+const resetPasswordSchema = z
+  .object({
+    password: z
+      .string()
+      .min(8, { message: 'Password must be at least 8 characters' })
+      .max(72),
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: 'Passwords do not match',
+    path: ['confirmPassword'],
+  });
 
 // Password strength evaluation
 const evaluatePasswordStrength = (password: string) => {
@@ -28,7 +43,7 @@ const evaluatePasswordStrength = (password: string) => {
   };
 
   if (!password) return { score: 0, label: '', color: '', checks };
-  
+
   let score = 0;
 
   if (checks.length) score += 1;
@@ -56,7 +71,9 @@ const ResetPassword = () => {
   const [isValidSession, setIsValidSession] = useState<boolean | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [passwordStrength, setPasswordStrength] = useState(evaluatePasswordStrength(''));
+  const [passwordStrength, setPasswordStrength] = useState(
+    evaluatePasswordStrength('')
+  );
   const [resetSuccess, setResetSuccess] = useState(false);
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
@@ -74,22 +91,28 @@ const ResetPassword = () => {
         const errorDescription = searchParams.get('error_description');
 
         if (error || errorCode) {
-          let message = errorDescription 
+          let message = errorDescription
             ? decodeURIComponent(errorDescription.replace(/\+/g, ' '))
             : 'Invalid or expired password reset link';
-          
+
           if (errorCode === 'otp_expired') {
-            message = 'Your password reset link has expired. Please request a new one.';
+            message =
+              'Your password reset link has expired. Please request a new one.';
           }
-          
-          console.error('❌ Password reset error:', error, errorCode, message);
-          
+
+          console.error(
+            '❌ Password reset error:',
+            error,
+            errorCode,
+            message
+          );
+
           toast({
-            title: "Link Expired",
+            title: 'Link Expired',
             description: message,
-            variant: "destructive",
+            variant: 'destructive',
           });
-          
+
           setIsValidSession(false);
           setTimeout(() => navigate('/forgot-password'), 3000);
           return;
@@ -97,21 +120,25 @@ const ResetPassword = () => {
 
         // Check for recovery type parameter
         const type = searchParams.get('type');
-        
+
         if (type === 'recovery') {
           console.log('🔓 Password recovery flow detected');
         }
 
         // Check if user has a valid session (should be set by AuthCallback)
         console.log('📋 Checking for valid session...');
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        
+        const {
+          data: { session },
+          error: sessionError,
+        } = await supabase.auth.getSession();
+
         if (sessionError) {
           console.error('❌ Session error:', sessionError);
           toast({
-            title: "Session Error",
-            description: "Unable to verify your session. Please request a new reset link.",
-            variant: "destructive",
+            title: 'Session Error',
+            description:
+              'Unable to verify your session. Please request a new reset link.',
+            variant: 'destructive',
           });
           setIsValidSession(false);
           setTimeout(() => navigate('/forgot-password'), 3000);
@@ -121,14 +148,18 @@ const ResetPassword = () => {
         if (session) {
           console.log('✅ Valid session found for password reset');
           console.log('User ID:', session.user.id);
-          console.log('Session expires at:', new Date(session.expires_at || 0).toLocaleString());
+          console.log(
+            'Session expires at:',
+            new Date(session.expires_at || 0).toLocaleString()
+          );
           setIsValidSession(true);
         } else {
           console.log('❌ No valid session found');
           toast({
-            title: "Invalid Session",
-            description: "Your session has expired. Please request a new password reset link.",
-            variant: "destructive",
+            title: 'Invalid Session',
+            description:
+              'Your session has expired. Please request a new password reset link.',
+            variant: 'destructive',
           });
           setIsValidSession(false);
           setTimeout(() => navigate('/forgot-password'), 3000);
@@ -136,9 +167,9 @@ const ResetPassword = () => {
       } catch (err) {
         console.error('❌ Unexpected error in checkSession:', err);
         toast({
-          title: "Error",
-          description: "An unexpected error occurred. Please try again.",
-          variant: "destructive",
+          title: 'Error',
+          description: 'An unexpected error occurred. Please try again.',
+          variant: 'destructive',
         });
         setIsValidSession(false);
         setTimeout(() => navigate('/forgot-password'), 3000);
@@ -156,28 +187,32 @@ const ResetPassword = () => {
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     console.log('🔐 Attempting password reset...');
 
     // Validate passwords
-    const validation = resetPasswordSchema.safeParse({ password, confirmPassword });
-    
+    const validation = resetPasswordSchema.safeParse({
+      password,
+      confirmPassword,
+    });
+
     if (!validation.success) {
       const firstError = validation.error.errors[0];
       toast({
-        title: "Validation Error",
+        title: 'Validation Error',
         description: firstError.message,
-        variant: "destructive",
+        variant: 'destructive',
       });
       return;
     }
 
-    // Check password strength
+    // Check password strength - STRICT requirement for password reset
     if (passwordStrength.score < 3) {
       toast({
-        title: "Weak Password",
-        description: "Please choose a stronger password with uppercase, lowercase, numbers, and special characters.",
-        variant: "destructive",
+        title: 'Weak Password',
+        description:
+          'Please choose a stronger password with uppercase, lowercase, numbers, and special characters.',
+        variant: 'destructive',
       });
       return;
     }
@@ -186,14 +221,17 @@ const ResetPassword = () => {
 
     try {
       // Verify session one more time before updating
-      const { data: { session } } = await supabase.auth.getSession();
-      
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
       if (!session) {
         console.error('❌ No session available for password update');
         toast({
-          title: "Session Expired",
-          description: "Your session has expired. Please request a new password reset link.",
-          variant: "destructive",
+          title: 'Session Expired',
+          description:
+            'Your session has expired. Please request a new password reset link.',
+          variant: 'destructive',
         });
         setTimeout(() => navigate('/forgot-password'), 2000);
         return;
@@ -206,56 +244,74 @@ const ResetPassword = () => {
 
       if (error) {
         let errorMessage = error.message;
-        let errorTitle = "Password Reset Failed";
-        
+        let errorTitle = 'Password Reset Failed';
+
         console.error('❌ Password update error:', error);
-        
+
         // Enhanced error messages
-        if (error.message.includes('same as the old password') || error.message.includes('New password should be different')) {
-          errorMessage = "New password must be different from your old password.";
-          errorTitle = "Same Password";
+        if (
+          error.message.includes('same as the old password') ||
+          error.message.includes('New password should be different')
+        ) {
+          errorMessage =
+            'New password must be different from your old password.';
+          errorTitle = 'Same Password';
         } else if (error.message.includes('Password should be')) {
-          errorMessage = "Password is too weak. Use a mix of uppercase, lowercase, numbers, and special characters.";
-          errorTitle = "Weak Password";
-        } else if (error.message.includes('session') || error.message.includes('token')) {
-          errorMessage = "Your session has expired. Please request a new password reset link.";
-          errorTitle = "Session Expired";
+          errorMessage =
+            'Password is too weak. Use a mix of uppercase, lowercase, numbers, and special characters.';
+          errorTitle = 'Weak Password';
+        } else if (
+          error.message.includes('session') ||
+          error.message.includes('token')
+        ) {
+          errorMessage =
+            'Your session has expired. Please request a new password reset link.';
+          errorTitle = 'Session Expired';
+          setTimeout(() => navigate('/forgot-password'), 2000);
+        } else if (error.message.includes('not authenticated')) {
+          errorMessage =
+            'Authentication failed. Please request a new password reset link.';
+          errorTitle = 'Authentication Error';
           setTimeout(() => navigate('/forgot-password'), 2000);
         }
-        
+
         toast({
           title: errorTitle,
           description: errorMessage,
-          variant: "destructive",
+          variant: 'destructive',
         });
       } else {
         // Success!
         console.log('✅ Password reset successful');
         setResetSuccess(true);
-        
+
         toast({
-          title: "Password Reset Successful! 🎉",
-          description: "Your password has been updated. Redirecting to sign in...",
+          title: 'Password Reset Successful! 🎉',
+          description:
+            'Your password has been updated. Redirecting to sign in...',
         });
-        
+
         // Sign out to ensure user signs in with new password
         console.log('🚪 Signing out user...');
         await supabase.auth.signOut();
-        
+
         setTimeout(() => {
-          navigate('/signin', { 
-            state: { 
-              message: 'Password reset successful! You can now sign in with your new password.' 
-            } 
+          navigate('/signin', {
+            state: {
+              message:
+                'Password reset successful! You can now sign in with your new password.',
+            },
           });
         }, 2000);
       }
     } catch (error: any) {
       console.error('❌ Unexpected password reset error:', error);
       toast({
-        title: "Error",
-        description: error?.message || "An unexpected error occurred. Please try again.",
-        variant: "destructive",
+        title: 'Error',
+        description:
+          error?.message ||
+          'An unexpected error occurred. Please try again.',
+        variant: 'destructive',
       });
     } finally {
       setLoading(false);
@@ -268,8 +324,12 @@ const ResetPassword = () => {
       <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-background via-muted/30 to-background">
         <div className="text-center">
           <Loader2 className="w-12 h-12 animate-spin mx-auto mb-4 text-primary" />
-          <p className="text-muted-foreground">Verifying your password reset link...</p>
-          <p className="text-xs text-muted-foreground mt-2">This may take a few seconds</p>
+          <p className="text-muted-foreground">
+            Verifying your password reset link...
+          </p>
+          <p className="text-xs text-muted-foreground mt-2">
+            This may take a few seconds
+          </p>
         </div>
       </div>
     );
@@ -289,7 +349,10 @@ const ResetPassword = () => {
           <p className="text-muted-foreground mb-6">
             This password reset link is invalid or has expired.
           </p>
-          <Button onClick={() => navigate('/forgot-password')} className="w-full">
+          <Button
+            onClick={() => navigate('/forgot-password')}
+            className="w-full"
+          >
             Request New Link
           </Button>
         </div>
@@ -328,21 +391,23 @@ const ResetPassword = () => {
       <div className="w-full max-w-md">
         <div className="bg-card border border-border rounded-2xl shadow-2xl p-6 sm:p-8">
           <div className="mb-8">
-            <Link 
-              to="/signin" 
+            <Link
+              to="/signin"
               className="inline-flex items-center text-muted-foreground hover:text-foreground transition-colors mb-6 group"
             >
               <ArrowLeft className="h-4 w-4 mr-2 group-hover:-translate-x-1 transition-transform" />
               Back to Sign In
             </Link>
-            
+
             <div className="flex items-center justify-center mb-6">
               <div className="w-16 h-16 bg-gradient-to-br from-primary to-accent rounded-2xl flex items-center justify-center">
                 <Shield className="h-8 w-8 text-white" />
               </div>
             </div>
-            
-            <h2 className="text-2xl sm:text-3xl font-bold mb-2 text-center">Reset Your Password</h2>
+
+            <h2 className="text-2xl sm:text-3xl font-bold mb-2 text-center">
+              Reset Your Password
+            </h2>
             <p className="text-muted-foreground text-center text-sm sm:text-base">
               Choose a new strong password for your account
             </p>
@@ -373,44 +438,65 @@ const ResetPassword = () => {
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-3 text-muted-foreground hover:text-foreground transition-colors"
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  aria-label={
+                    showPassword ? 'Hide password' : 'Show password'
+                  }
                 >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
                 </button>
               </div>
-              
+
               {/* Password Strength Meter */}
               {password && (
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="text-muted-foreground">Password Strength:</span>
-                    <span className={cn(
-                      "font-medium",
-                      passwordStrength.score >= 4 ? 'text-green-600' : 
-                      passwordStrength.score >= 3 ? 'text-yellow-600' : 
-                      'text-red-600'
-                    )}>
+                    <span className="text-muted-foreground">
+                      Password Strength:
+                    </span>
+                    <span
+                      className={cn(
+                        'font-medium',
+                        passwordStrength.score >= 4
+                          ? 'text-green-600'
+                          : passwordStrength.score >= 3
+                          ? 'text-yellow-600'
+                          : 'text-red-600'
+                      )}
+                    >
                       {passwordStrength.label}
                     </span>
                   </div>
                   <div className="h-2 bg-muted rounded-full overflow-hidden">
-                    <div 
-                      className={cn("h-full transition-all duration-300", passwordStrength.color)}
-                      style={{ width: `${(passwordStrength.score / 5) * 100}%` }}
+                    <div
+                      className={cn(
+                        'h-full transition-all duration-300',
+                        passwordStrength.color
+                      )}
+                      style={{
+                        width: `${(passwordStrength.score / 5) * 100}%`,
+                      }}
                       role="progressbar"
                       aria-valuenow={passwordStrength.score * 20}
                       aria-valuemin={0}
                       aria-valuemax={100}
                     />
                   </div>
-                  
+
                   {/* Password Requirements */}
                   <div className="text-xs space-y-1 mt-3 p-3 bg-muted/50 rounded-lg">
                     <p className="font-medium mb-2">Password must contain:</p>
-                    <div className={cn(
-                      "flex items-center gap-2",
-                      passwordStrength.checks?.length ? 'text-green-600' : 'text-muted-foreground'
-                    )}>
+                    <div
+                      className={cn(
+                        'flex items-center gap-2',
+                        passwordStrength.checks?.length
+                          ? 'text-green-600'
+                          : 'text-muted-foreground'
+                      )}
+                    >
                       {passwordStrength.checks?.length ? (
                         <CheckCircle2 className="h-3 w-3" />
                       ) : (
@@ -418,10 +504,14 @@ const ResetPassword = () => {
                       )}
                       At least 8 characters
                     </div>
-                    <div className={cn(
-                      "flex items-center gap-2",
-                      passwordStrength.checks?.uppercase ? 'text-green-600' : 'text-muted-foreground'
-                    )}>
+                    <div
+                      className={cn(
+                        'flex items-center gap-2',
+                        passwordStrength.checks?.uppercase
+                          ? 'text-green-600'
+                          : 'text-muted-foreground'
+                      )}
+                    >
                       {passwordStrength.checks?.uppercase ? (
                         <CheckCircle2 className="h-3 w-3" />
                       ) : (
@@ -429,10 +519,14 @@ const ResetPassword = () => {
                       )}
                       One uppercase letter
                     </div>
-                    <div className={cn(
-                      "flex items-center gap-2",
-                      passwordStrength.checks?.lowercase ? 'text-green-600' : 'text-muted-foreground'
-                    )}>
+                    <div
+                      className={cn(
+                        'flex items-center gap-2',
+                        passwordStrength.checks?.lowercase
+                          ? 'text-green-600'
+                          : 'text-muted-foreground'
+                      )}
+                    >
                       {passwordStrength.checks?.lowercase ? (
                         <CheckCircle2 className="h-3 w-3" />
                       ) : (
@@ -440,10 +534,14 @@ const ResetPassword = () => {
                       )}
                       One lowercase letter
                     </div>
-                    <div className={cn(
-                      "flex items-center gap-2",
-                      passwordStrength.checks?.number ? 'text-green-600' : 'text-muted-foreground'
-                    )}>
+                    <div
+                      className={cn(
+                        'flex items-center gap-2',
+                        passwordStrength.checks?.number
+                          ? 'text-green-600'
+                          : 'text-muted-foreground'
+                      )}
+                    >
                       {passwordStrength.checks?.number ? (
                         <CheckCircle2 className="h-3 w-3" />
                       ) : (
@@ -451,10 +549,14 @@ const ResetPassword = () => {
                       )}
                       One number
                     </div>
-                    <div className={cn(
-                      "flex items-center gap-2",
-                      passwordStrength.checks?.special ? 'text-green-600' : 'text-muted-foreground'
-                    )}>
+                    <div
+                      className={cn(
+                        'flex items-center gap-2',
+                        passwordStrength.checks?.special
+                          ? 'text-green-600'
+                          : 'text-muted-foreground'
+                      )}
+                    >
                       {passwordStrength.checks?.special ? (
                         <CheckCircle2 className="h-3 w-3" />
                       ) : (
@@ -470,7 +572,8 @@ const ResetPassword = () => {
             {/* Confirm Password */}
             <div className="space-y-2">
               <Label htmlFor="confirmPassword">
-                Confirm New Password <span className="text-destructive">*</span>
+                Confirm New Password{' '}
+                <span className="text-destructive">*</span>
               </Label>
               <div className="relative">
                 <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
@@ -485,17 +588,27 @@ const ResetPassword = () => {
                   maxLength={72}
                   autoComplete="new-password"
                   className={cn(
-                    "pl-10 pr-10 h-12",
-                    confirmPassword && password !== confirmPassword && "border-destructive"
+                    'pl-10 pr-10 h-12',
+                    confirmPassword &&
+                      password !== confirmPassword &&
+                      'border-destructive'
                   )}
                 />
                 <button
                   type="button"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  onClick={() =>
+                    setShowConfirmPassword(!showConfirmPassword)
+                  }
                   className="absolute right-3 top-3 text-muted-foreground hover:text-foreground transition-colors"
-                  aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
+                  aria-label={
+                    showConfirmPassword ? 'Hide password' : 'Show password'
+                  }
                 >
-                  {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  {showConfirmPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
                 </button>
                 {confirmPassword && password === confirmPassword && (
                   <CheckCircle2 className="absolute right-10 top-3 h-4 w-4 text-green-500" />
@@ -508,11 +621,16 @@ const ResetPassword = () => {
                 </p>
               )}
             </div>
-            
-            <Button 
-              type="submit" 
-              className="w-full h-12 btn-premium" 
-              disabled={loading || passwordStrength.score < 3 || password !== confirmPassword || !password}
+
+            <Button
+              type="submit"
+              className="w-full h-12 btn-premium"
+              disabled={
+                loading ||
+                passwordStrength.score < 3 ||
+                password !== confirmPassword ||
+                !password
+              }
             >
               {loading ? (
                 <>
@@ -533,9 +651,11 @@ const ResetPassword = () => {
             <div className="flex items-start gap-3">
               <Shield className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
               <div className="text-xs text-muted-foreground">
-                <p className="font-medium text-foreground mb-1">Security Tips</p>
+                <p className="font-medium text-foreground mb-1">
+                  Security Tips
+                </p>
                 <ul className="space-y-1 list-disc list-inside">
-                  <li>Use a unique password you don't use elsewhere</li>
+                  <li>Use a unique password you don&apos;t use elsewhere</li>
                   <li>Avoid common words and personal information</li>
                   <li>Consider using a password manager</li>
                 </ul>

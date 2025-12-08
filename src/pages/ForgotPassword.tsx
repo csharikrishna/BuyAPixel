@@ -4,13 +4,26 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Mail, ArrowLeft, KeyRound, CheckCircle2, AlertCircle, Shield, Clock, Info } from 'lucide-react';
+import {
+  Loader2,
+  Mail,
+  ArrowLeft,
+  KeyRound,
+  CheckCircle2,
+  AlertCircle,
+  Shield,
+  Clock,
+  Info,
+} from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { z } from 'zod';
 import { cn } from '@/lib/utils';
 
 const forgotPasswordSchema = z.object({
-  email: z.string().trim().email({ message: "Please enter a valid email address" }),
+  email: z
+    .string()
+    .trim()
+    .email({ message: 'Please enter a valid email address' }),
 });
 
 const ForgotPassword = () => {
@@ -19,6 +32,7 @@ const ForgotPassword = () => {
   const [emailSent, setEmailSent] = useState(false);
   const [emailError, setEmailError] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [lastSentTime, setLastSentTime] = useState<number | null>(null);
   const { toast } = useToast();
 
   // Real-time email validation
@@ -40,7 +54,7 @@ const ForgotPassword = () => {
     setEmail(value);
     setIsTyping(true);
     setEmailSent(false); // Reset sent state when email changes
-    
+
     // Debounced validation
     setTimeout(() => {
       validateEmail(value);
@@ -50,17 +64,32 @@ const ForgotPassword = () => {
 
   const handleResetPassword = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    
+
+    // Check rate limit (60 seconds)
+    if (lastSentTime) {
+      const timeSinceLastSent = Date.now() - lastSentTime;
+      const secondsRemaining = Math.ceil((60000 - timeSinceLastSent) / 1000);
+
+      if (secondsRemaining > 0) {
+        toast({
+          title: 'Please Wait',
+          description: `You can request another link in ${secondsRemaining} seconds.`,
+          variant: 'destructive',
+        });
+        return;
+      }
+    }
+
     // Validate email
     const validation = forgotPasswordSchema.safeParse({ email });
-    
+
     if (!validation.success) {
       const firstError = validation.error.errors[0];
       setEmailError(firstError.message);
       toast({
-        title: "Validation Error",
+        title: 'Validation Error',
         description: firstError.message,
-        variant: "destructive",
+        variant: 'destructive',
       });
       return;
     }
@@ -68,20 +97,22 @@ const ForgotPassword = () => {
     setLoading(true);
 
     try {
-      console.log('🔐 Sending password reset email to:', validation.data.email);
-      
-      // Use auth/callback which will handle the redirect
-      const redirectUrl = `${window.location.origin}/auth/callback`;
+      console.log(
+        '🔐 Sending password reset email to:',
+        validation.data.email
+      );
+
+      // IMPROVED: Add type=recovery parameter for better callback handling
+      const redirectUrl = `${window.location.origin}/auth/callback?type=recovery`;
       console.log('📍 Redirect URL:', redirectUrl);
-      
+
       const { data, error } = await supabase.auth.resetPasswordForEmail(
-        validation.data.email, 
+        validation.data.email,
         {
           redirectTo: redirectUrl,
         }
       );
 
-      // ✅ LOG THE FULL RESPONSE
       console.log('📧 Reset password response:', { data, error });
 
       if (error) {
@@ -89,53 +120,70 @@ const ForgotPassword = () => {
         console.error('Error code:', error.code);
         console.error('Error message:', error.message);
         console.error('Error status:', error.status);
-        
+
         let errorMessage = error.message;
-        let errorTitle = "Password Reset Failed";
-        
+        let errorTitle = 'Password Reset Failed';
+
         // Enhanced error messages
-        if (error.message.includes('rate limit') || error.message.includes('Email rate limit exceeded')) {
-          errorMessage = "Too many requests. Please wait 60 seconds before trying again.";
-          errorTitle = "Rate Limit Exceeded";
-        } else if (error.message.includes('SMTP') || error.message.includes('email') && error.message.includes('not configured')) {
-          errorMessage = "Email service is temporarily unavailable. Please try again in a few minutes or contact support.";
-          errorTitle = "Email Configuration Error";
+        if (
+          error.message.includes('rate limit') ||
+          error.message.includes('Email rate limit exceeded')
+        ) {
+          errorMessage =
+            'Too many requests. Please wait 60 seconds before trying again.';
+          errorTitle = 'Rate Limit Exceeded';
+        } else if (
+          error.message.includes('SMTP') ||
+          (error.message.includes('email') &&
+            error.message.includes('not configured'))
+        ) {
+          errorMessage =
+            'Email service is temporarily unavailable. Please try again in a few minutes or contact support.';
+          errorTitle = 'Email Configuration Error';
           console.error('⚠️ SMTP configuration issue detected');
         } else if (error.message.includes('User not found')) {
           // Don't reveal if user exists for security
-          errorMessage = "If an account exists with this email, you will receive a password reset link.";
-          errorTitle = "Check Your Email";
+          errorMessage =
+            'If an account exists with this email, you will receive a password reset link.';
+          errorTitle = 'Check Your Email';
           // Still show success state for security
           setEmailSent(true);
+          setLastSentTime(Date.now());
         } else if (error.message.includes('Invalid email')) {
-          errorMessage = "Please provide a valid email address.";
-          errorTitle = "Invalid Email";
+          errorMessage = 'Please provide a valid email address.';
+          errorTitle = 'Invalid Email';
         } else if (error.message.includes('Email not confirmed')) {
-          errorMessage = "Your email is not confirmed. Please check your inbox for the confirmation email first.";
-          errorTitle = "Email Not Confirmed";
+          errorMessage =
+            'Your email is not confirmed. Please check your inbox for the confirmation email first.';
+          errorTitle = 'Email Not Confirmed';
         } else if (error.message.includes('For security purposes')) {
-          errorMessage = "For security reasons, please wait 60 seconds before requesting another link.";
-          errorTitle = "Rate Limit";
+          errorMessage =
+            'For security reasons, please wait 60 seconds before requesting another link.';
+          errorTitle = 'Rate Limit';
         }
-        
+
         toast({
           title: errorTitle,
           description: errorMessage,
-          variant: error.message.includes('User not found') ? "default" : "destructive",
+          variant: error.message.includes('User not found')
+            ? 'default'
+            : 'destructive',
           duration: 8000,
         });
-        
+
         // Set email sent to true even if user not found (security)
         if (error.message.includes('User not found')) {
           setEmailSent(true);
+          setLastSentTime(Date.now());
         }
       } else {
         console.log('✅ Password reset email sent successfully');
         console.log('📨 Response data:', data);
         setEmailSent(true);
-        
+        setLastSentTime(Date.now());
+
         toast({
-          title: "Email Sent! 📧",
+          title: 'Email Sent! 📧',
           description: `Please check ${email} for the password reset link.`,
           duration: 8000,
         });
@@ -144,11 +192,13 @@ const ForgotPassword = () => {
       console.error('❌ Unexpected error during password reset:', error);
       console.error('Error type:', typeof error);
       console.error('Error details:', JSON.stringify(error, null, 2));
-      
+
       toast({
-        title: "Unexpected Error",
-        description: error?.message || "An unexpected error occurred. Please try again or contact support.",
-        variant: "destructive",
+        title: 'Unexpected Error',
+        description:
+          error?.message ||
+          'An unexpected error occurred. Please try again or contact support.',
+        variant: 'destructive',
         duration: 8000,
       });
     } finally {
@@ -156,8 +206,22 @@ const ForgotPassword = () => {
     }
   };
 
-  // Handle resend
+  // Handle resend with rate limit check
   const handleResend = async () => {
+    if (lastSentTime) {
+      const timeSinceLastSent = Date.now() - lastSentTime;
+      const secondsRemaining = Math.ceil((60000 - timeSinceLastSent) / 1000);
+
+      if (secondsRemaining > 0) {
+        toast({
+          title: 'Please Wait',
+          description: `You can resend in ${secondsRemaining} seconds.`,
+          variant: 'destructive',
+        });
+        return;
+      }
+    }
+
     console.log('🔄 Resending password reset email...');
     setEmailSent(false);
     // Wait a moment for state to update, then resend
@@ -171,27 +235,27 @@ const ForgotPassword = () => {
       <div className="w-full max-w-md">
         <div className="bg-card border border-border rounded-2xl shadow-2xl p-6 sm:p-8">
           <div className="mb-8">
-            <Link 
-              to="/signin" 
+            <Link
+              to="/signin"
               className="inline-flex items-center text-muted-foreground hover:text-foreground transition-colors mb-6 group"
             >
               <ArrowLeft className="h-4 w-4 mr-2 group-hover:-translate-x-1 transition-transform" />
               Back to Sign In
             </Link>
-            
+
             <div className="flex items-center justify-center mb-6">
               <div className="w-16 h-16 bg-gradient-to-br from-primary to-accent rounded-2xl flex items-center justify-center">
                 <KeyRound className="h-8 w-8 text-white" />
               </div>
             </div>
-            
+
             <h2 className="text-2xl sm:text-3xl font-bold mb-2 text-center">
-              {emailSent ? "Check Your Email" : "Forgot Password?"}
+              {emailSent ? 'Check Your Email' : 'Forgot Password?'}
             </h2>
             <p className="text-muted-foreground text-center text-sm sm:text-base">
-              {emailSent 
-                ? "We've sent you a password reset link" 
-                : "Enter your email to receive a password reset link"}
+              {emailSent
+                ? "We've sent you a password reset link"
+                : 'Enter your email to receive a password reset link'}
             </p>
           </div>
 
@@ -214,11 +278,14 @@ const ForgotPassword = () => {
                       autoComplete="email"
                       autoFocus
                       className={cn(
-                        "pl-10 h-12",
-                        emailError && "border-destructive focus-visible:ring-destructive"
+                        'pl-10 h-12',
+                        emailError &&
+                          'border-destructive focus-visible:ring-destructive'
                       )}
                       aria-invalid={!!emailError}
-                      aria-describedby={emailError ? "email-error" : undefined}
+                      aria-describedby={
+                        emailError ? 'email-error' : undefined
+                      }
                     />
                     {!isTyping && email && !emailError && (
                       <CheckCircle2 className="absolute right-3 top-3 h-4 w-4 text-green-500" />
@@ -228,16 +295,20 @@ const ForgotPassword = () => {
                     )}
                   </div>
                   {emailError && (
-                    <p id="email-error" className="text-xs text-destructive flex items-center gap-1" role="alert">
+                    <p
+                      id="email-error"
+                      className="text-xs text-destructive flex items-center gap-1"
+                      role="alert"
+                    >
                       <AlertCircle className="h-3 w-3" />
                       {emailError}
                     </p>
                   )}
                 </div>
-                
-                <Button 
-                  type="submit" 
-                  className="w-full h-12 btn-premium" 
+
+                <Button
+                  type="submit"
+                  className="w-full h-12 btn-premium"
                   disabled={loading || !!emailError || !email}
                 >
                   {loading ? (
@@ -263,10 +334,10 @@ const ForgotPassword = () => {
                       What happens next?
                     </p>
                     <ul className="text-blue-700 dark:text-blue-300 space-y-1 text-xs">
-                      <li>• You'll receive an email with a reset link</li>
+                      <li>• You&apos;ll receive an email with a reset link</li>
                       <li>• The link expires in 60 minutes</li>
                       <li>• Click the link to set a new password</li>
-                      <li>• Check spam folder if you don't see it</li>
+                      <li>• Check spam folder if you don&apos;t see it</li>
                     </ul>
                   </div>
                 </div>
@@ -281,7 +352,8 @@ const ForgotPassword = () => {
                     <Mail className="w-8 h-8 text-green-600 dark:text-green-400" />
                   </div>
                   <p className="text-center text-muted-foreground mb-6">
-                    We've sent a password reset link to <strong className="text-foreground">{email}</strong>
+                    We&apos;ve sent a password reset link to{' '}
+                    <strong className="text-foreground">{email}</strong>
                   </p>
                 </div>
 
@@ -293,15 +365,21 @@ const ForgotPassword = () => {
                   </h3>
                   <ol className="space-y-2 text-sm text-muted-foreground">
                     <li className="flex gap-2">
-                      <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center text-xs font-semibold text-primary">1</span>
+                      <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center text-xs font-semibold text-primary">
+                        1
+                      </span>
                       <span>Check your email inbox (and spam folder)</span>
                     </li>
                     <li className="flex gap-2">
-                      <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center text-xs font-semibold text-primary">2</span>
+                      <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center text-xs font-semibold text-primary">
+                        2
+                      </span>
                       <span>Click the password reset link</span>
                     </li>
                     <li className="flex gap-2">
-                      <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center text-xs font-semibold text-primary">3</span>
+                      <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center text-xs font-semibold text-primary">
+                        3
+                      </span>
                       <span>Create a new strong password</span>
                     </li>
                   </ol>
@@ -326,22 +404,22 @@ const ForgotPassword = () => {
                 {/* Didn't receive email */}
                 <div className="pt-4 space-y-3">
                   <p className="text-xs text-muted-foreground text-center font-medium">
-                    Didn't receive the email?
+                    Didn&apos;t receive the email?
                   </p>
                   <div className="flex flex-col gap-2">
-                    <Button 
+                    <Button
                       onClick={() => {
                         setEmailSent(false);
                         setEmail('');
                       }}
-                      variant="outline" 
+                      variant="outline"
                       className="w-full"
                     >
                       Try Different Email
                     </Button>
-                    <Button 
+                    <Button
                       onClick={handleResend}
-                      variant="ghost" 
+                      variant="ghost"
                       className="w-full"
                       disabled={loading}
                     >
@@ -364,11 +442,14 @@ const ForgotPassword = () => {
               </div>
             </>
           )}
-          
+
           <div className="mt-6 text-center">
             <p className="text-sm text-muted-foreground">
               Remember your password?{' '}
-              <Link to="/signin" className="text-primary hover:underline font-medium">
+              <Link
+                to="/signin"
+                className="text-primary hover:underline font-medium"
+              >
                 Sign in here
               </Link>
             </p>
@@ -380,10 +461,13 @@ const ForgotPassword = () => {
               <div className="flex items-start gap-3">
                 <Shield className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
                 <div className="text-xs text-muted-foreground">
-                  <p className="font-medium text-foreground mb-1">Security Note</p>
+                  <p className="font-medium text-foreground mb-1">
+                    Security Note
+                  </p>
                   <p>
-                    For security reasons, we won't confirm whether an account exists with this email.
-                    If an account exists, you'll receive a reset link.
+                    For security reasons, we won&apos;t confirm whether an
+                    account exists with this email. If an account exists,
+                    you&apos;ll receive a reset link.
                   </p>
                 </div>
               </div>

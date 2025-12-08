@@ -5,7 +5,12 @@ import { Loader2, CheckCircle2, AlertCircle, Mail } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 
-type AuthStatus = 'loading' | 'success' | 'error' | 'expired' | 'email_confirmed';
+type AuthStatus =
+  | 'loading'
+  | 'success'
+  | 'error'
+  | 'expired'
+  | 'email_confirmed';
 
 const AuthCallback = () => {
   const navigate = useNavigate();
@@ -13,7 +18,9 @@ const AuthCallback = () => {
   const [searchParams] = useSearchParams();
   const [status, setStatus] = useState<AuthStatus>('loading');
   const [errorMessage, setErrorMessage] = useState('');
-  const [authType, setAuthType] = useState<'signin' | 'signup' | 'recovery' | 'oauth' | 'email_confirmation'>('signin');
+  const [authType, setAuthType] = useState<
+    'signin' | 'signup' | 'recovery' | 'oauth' | 'email_confirmation'
+  >('signin');
 
   useEffect(() => {
     const handleCallback = async () => {
@@ -26,7 +33,6 @@ const AuthCallback = () => {
         const errorDescription = searchParams.get('error_description');
         const error = searchParams.get('error');
         const type = searchParams.get('type');
-        const tokenHash = searchParams.get('token_hash');
         const code = searchParams.get('code');
 
         // Handle errors in URL
@@ -34,14 +40,15 @@ const AuthCallback = () => {
           console.warn('⚠️ OTP expired or access denied');
           setStatus('expired');
           setErrorMessage(
-            errorDescription 
+            errorDescription
               ? decodeURIComponent(errorDescription.replace(/\+/g, ' '))
               : 'Your email link has expired. Please request a new one.'
           );
           toast({
-            title: "Link Expired",
-            description: "Your email link has expired. Please request a new link.",
-            variant: "destructive",
+            title: 'Link Expired',
+            description:
+              'Your email link has expired. Please request a new link.',
+            variant: 'destructive',
           });
           return;
         }
@@ -50,227 +57,208 @@ const AuthCallback = () => {
           console.error('❌ Auth error:', error, errorDescription);
           setStatus('error');
           setErrorMessage(
-            errorDescription 
+            errorDescription
               ? decodeURIComponent(errorDescription.replace(/\+/g, ' '))
               : 'An authentication error occurred.'
           );
           toast({
-            title: "Authentication Error",
-            description: errorMessage || "Please try signing in again.",
-            variant: "destructive",
+            title: 'Authentication Error',
+            description: errorMessage || 'Please try signing in again.',
+            variant: 'destructive',
           });
           setTimeout(() => navigate('/signin'), 3000);
           return;
         }
 
-        // ✅ HANDLE EMAIL CONFIRMATION (type=signup with token_hash)
-        if (type === 'signup' && tokenHash) {
-          console.log('📧 Email confirmation detected with token_hash');
-          setAuthType('email_confirmation');
-          
-          try {
-            // Verify the email confirmation token
-            const { data, error: verifyError } = await supabase.auth.verifyOtp({
-              token_hash: tokenHash,
-              type: 'signup'
-            });
-
-            if (verifyError) {
-              console.error('❌ Email verification error:', verifyError);
-              setStatus('error');
-              setErrorMessage('Failed to verify email. The link may have expired.');
-              toast({
-                title: "Verification Failed",
-                description: "Your email verification link is invalid or expired.",
-                variant: "destructive",
-              });
-              setTimeout(() => navigate('/signin'), 3000);
-              return;
-            }
-
-            if (data?.session) {
-              console.log('✅ Email verified and session created!');
-              
-              // Create profile if it doesn't exist
-              await handleProfileCreation(data.session);
-              
-              setStatus('success');
-              toast({
-                title: "Email Verified! 🎉",
-                description: "Your account is now active. Welcome to BuyAPixel!",
-              });
-              
-              setTimeout(() => navigate('/', { replace: true }), 1500);
-              return;
-            } else {
-              // Email confirmed but no session (this is the normal Supabase behavior)
-              console.log('✅ Email confirmed! User needs to sign in.');
-              setStatus('email_confirmed');
-              setErrorMessage('Your email has been confirmed! Please sign in to continue.');
-              toast({
-                title: "Email Confirmed! ✅",
-                description: "You can now sign in with your credentials.",
-              });
-              setTimeout(() => navigate('/signin'), 3000);
-              return;
-            }
-          } catch (err) {
-            console.error('❌ Error during email verification:', err);
-            setStatus('error');
-            setErrorMessage('Failed to verify your email.');
-            setTimeout(() => navigate('/signin'), 3000);
-            return;
-          }
-        }
-
-        // Handle password recovery
-        if (type === 'recovery') {
-          setAuthType('recovery');
-          console.log('🔓 Password recovery flow detected');
-          
-          // Check if we have a valid session for password reset
-          const { data: { session } } = await supabase.auth.getSession();
-          
-          if (!session) {
-            console.error('❌ No session for password recovery');
-            setStatus('error');
-            setErrorMessage('Invalid password reset link. Please request a new one.');
-            toast({
-              title: "Invalid Link",
-              description: "Your password reset link is invalid or expired.",
-              variant: "destructive",
-            });
-            setTimeout(() => navigate('/forgot-password'), 3000);
-            return;
-          }
-          
-          navigate('/reset-password', { replace: true });
-          return;
-        }
-
-        // ✅ Handle PKCE code exchange (magic links, OAuth, password reset)
+        // ✅ FIXED: Handle PKCE code exchange (ALL email links use this now)
+        // This includes: signup confirmation, magic links, OAuth, password reset
         if (code) {
-          console.log('🔑 PKCE code detected, exchanging...');
-          
+          console.log('🔑 PKCE code detected, exchanging for session...');
+
           try {
-            const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
-            
+            const { data, error: exchangeError } =
+              await supabase.auth.exchangeCodeForSession(code);
+
             if (exchangeError) {
               console.error('❌ Code exchange error:', exchangeError);
-              
+
               let errorMsg = exchangeError.message;
-              let errorTitle = "Authentication Failed";
-              
+              let errorTitle = 'Authentication Failed';
+
               // Handle specific PKCE errors
               if (exchangeError.message.includes('code verifier')) {
-                errorMsg = 'Invalid authentication link. This may be caused by an outdated email template. Please request a new link.';
-                errorTitle = "Invalid Link";
-                console.error('⚠️ PKCE code verifier missing - email template may be outdated');
+                errorMsg =
+                  'Invalid authentication link. This may be caused by an outdated email template. Please request a new link.';
+                errorTitle = 'Invalid Link';
+                console.error(
+                  '⚠️ PKCE code verifier missing - email template may be outdated'
+                );
               } else if (exchangeError.message.includes('expired')) {
-                errorMsg = 'Your authentication link has expired. Please request a new one.';
-                errorTitle = "Link Expired";
+                errorMsg =
+                  'Your authentication link has expired. Please request a new one.';
+                errorTitle = 'Link Expired';
+              } else if (
+                exchangeError.message.includes('already been used')
+              ) {
+                errorMsg =
+                  'This link has already been used. Please sign in or request a new link.';
+                errorTitle = 'Link Already Used';
               }
-              
+
               setStatus('error');
               setErrorMessage(errorMsg);
               toast({
                 title: errorTitle,
                 description: errorMsg,
-                variant: "destructive",
+                variant: 'destructive',
               });
               setTimeout(() => navigate('/signin'), 3000);
               return;
             }
 
             if (data?.session) {
-              console.log('✅ Session created via code exchange');
-              
-              // Determine auth type
-              if (data.session.user.app_metadata.provider === 'google') {
+              console.log('✅ Session created via PKCE code exchange');
+
+              // Determine auth type based on type parameter and provider
+              const isOAuth =
+                data.session.user.app_metadata.provider === 'google';
+              const isRecovery = type === 'recovery';
+              const isEmailConfirmation = type === 'signup';
+
+              if (isRecovery) {
+                setAuthType('recovery');
+                console.log('🔓 Password recovery confirmed');
+
+                // Redirect to reset password page
+                toast({
+                  title: 'Link Verified',
+                  description: 'Please enter your new password.',
+                });
+                navigate('/reset-password', { replace: true });
+                return;
+              } else if (isEmailConfirmation) {
+                setAuthType('email_confirmation');
+                console.log('📧 Email confirmed via PKCE');
+              } else if (isOAuth) {
                 setAuthType('oauth');
+                console.log('🔐 OAuth sign-in via PKCE');
+              } else {
+                setAuthType('signin');
+                console.log('🔑 Magic link sign-in via PKCE');
               }
-              
-              // Create profile if needed
+
+              // Create profile if needed (with race condition protection)
               await handleProfileCreation(data.session);
-              
+
               setStatus('success');
-              const welcomeMessage = data.session.user.app_metadata.provider === 'google'
-                ? 'Welcome back via Google!'
-                : 'Welcome back!';
-              
+
+              // Customize success message based on auth type
+              let title = 'Welcome Back! 👋';
+              let description = "You're now signed in.";
+
+              if (isEmailConfirmation) {
+                title = 'Email Verified! 🎉';
+                description =
+                  'Your account is now active. Welcome to BuyAPixel!';
+              } else if (isOAuth) {
+                title = 'Success! 🎉';
+                description = 'Welcome back via Google!';
+              }
+
               toast({
-                title: "Success! 🎉",
-                description: welcomeMessage,
+                title,
+                description,
               });
 
               const redirectTo = searchParams.get('redirect') || '/';
-              setTimeout(() => navigate(redirectTo, { replace: true }), 1500);
+              setTimeout(
+                () => navigate(redirectTo, { replace: true }),
+                1500
+              );
+              return;
+            } else {
+              // Edge case: code exchange succeeded but no session
+              console.warn('⚠️ Code exchange succeeded but no session created');
+              setStatus('error');
+              setErrorMessage(
+                'Authentication completed but session was not created. Please sign in.'
+              );
+              setTimeout(() => navigate('/signin'), 3000);
               return;
             }
           } catch (err: any) {
-            console.error('❌ Unexpected error during code exchange:', err);
+            console.error(
+              '❌ Unexpected error during code exchange:',
+              err
+            );
             setStatus('error');
-            setErrorMessage('Failed to complete authentication. Please try again.');
+            setErrorMessage(
+              'Failed to complete authentication. Please try again.'
+            );
             setTimeout(() => navigate('/signin'), 3000);
             return;
           }
         }
 
-        // Check for existing session (fallback)
-        console.log('📋 Checking for existing session...');
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        // Fallback: Check for existing session (shouldn't normally reach here)
+        console.log('📋 No code found, checking for existing session...');
+        const {
+          data: { session },
+          error: sessionError,
+        } = await supabase.auth.getSession();
 
         if (sessionError) {
           console.error('❌ Session error:', sessionError);
           setStatus('error');
           setErrorMessage(sessionError.message);
           toast({
-            title: "Authentication Failed",
+            title: 'Authentication Failed',
             description: sessionError.message,
-            variant: "destructive",
+            variant: 'destructive',
           });
           setTimeout(() => navigate('/signin'), 3000);
           return;
         }
 
         if (!session) {
-          console.warn('⚠️ No session found after callback');
+          console.warn('⚠️ No session or code found in callback');
           setStatus('error');
-          setErrorMessage('No session found. Please try signing in again.');
+          setErrorMessage(
+            'No authentication data found. Please try signing in again.'
+          );
           toast({
-            title: "Session Not Found",
-            description: "Please try signing in again.",
-            variant: "destructive",
+            title: 'Session Not Found',
+            description: 'Please try signing in again.',
+            variant: 'destructive',
           });
           setTimeout(() => navigate('/signin'), 3000);
           return;
         }
 
-        // Session found - success!
-        console.log('✅ Session found for user:', session.user.id);
-        
+        // Session found (edge case - user already authenticated)
+        console.log('✅ Existing session found for user:', session.user.id);
+
         await handleProfileCreation(session);
-        
+
         setStatus('success');
         toast({
-          title: "Welcome Back! 👋",
-          description: "You're now signed in.",
+          title: 'Welcome Back! 👋',
+          description: "You're already signed in.",
         });
 
         const redirectTo = searchParams.get('redirect') || '/';
         setTimeout(() => navigate(redirectTo, { replace: true }), 1500);
-
       } catch (error: any) {
         console.error('❌ Unexpected error during auth callback:', error);
         setStatus('error');
         setErrorMessage('An unexpected error occurred. Please try again.');
-        
+
         toast({
-          title: "Unexpected Error",
-          description: "Something went wrong. Please try signing in again.",
-          variant: "destructive",
+          title: 'Unexpected Error',
+          description: 'Something went wrong. Please try signing in again.',
+          variant: 'destructive',
         });
-        
+
         setTimeout(() => navigate('/signin'), 3000);
       }
     };
@@ -278,49 +266,79 @@ const AuthCallback = () => {
     handleCallback();
   }, [navigate, toast, searchParams]);
 
-  // Helper function to create profile if it doesn't exist
+  // FIXED: Helper function with race condition protection
   const handleProfileCreation = async (session: any) => {
     try {
-      const { data: existingProfile } = await supabase
+      console.log('🔍 Checking for existing profile...');
+
+      // Check if profile exists
+      const { data: existingProfile, error: fetchError } = await supabase
         .from('profiles')
         .select('*')
         .eq('user_id', session.user.id)
         .maybeSingle();
 
-      if (!existingProfile) {
-        console.log('📝 Creating new profile...');
-        
-        const displayName = 
-          session.user.user_metadata?.full_name || 
-          session.user.user_metadata?.name ||
-          session.user.email?.split('@')[0] ||
-          'User';
+      if (fetchError) {
+        console.error('Error fetching profile:', fetchError);
+        // Don't throw - profile creation failure shouldn't block auth
+        return;
+      }
 
-        const avatarUrl = 
-          session.user.user_metadata?.avatar_url ||
-          session.user.user_metadata?.picture ||
-          `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(displayName)}`;
+      if (existingProfile) {
+        console.log('✅ Profile already exists');
+        return;
+      }
 
-        const { error: insertError } = await supabase
-          .from('profiles')
-          .insert({
+      console.log('📝 Creating new profile...');
+
+      const displayName =
+        session.user.user_metadata?.full_name ||
+        session.user.user_metadata?.name ||
+        session.user.email?.split('@')[0] ||
+        'User';
+
+      const avatarUrl =
+        session.user.user_metadata?.avatar_url ||
+        session.user.user_metadata?.picture ||
+        `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(
+          displayName
+        )}`;
+
+      // FIXED: Use upsert instead of insert to handle race conditions
+      const { error: upsertError } = await supabase
+        .from('profiles')
+        .upsert(
+          {
             user_id: session.user.id,
             full_name: displayName,
             avatar_url: avatarUrl,
             email: session.user.email,
+            phone_number: session.user.user_metadata?.phone_number || null,
+            date_of_birth: session.user.user_metadata?.date_of_birth || null,
             created_at: new Date().toISOString(),
-          });
+            updated_at: new Date().toISOString(),
+          },
+          {
+            onConflict: 'user_id', // Specify the unique constraint
+            ignoreDuplicates: false, // Update if exists
+          }
+        );
 
-        if (insertError) {
-          console.error('Profile creation error:', insertError);
-        } else {
-          console.log('✅ Profile created successfully');
-        }
+      if (upsertError) {
+        console.error('Profile creation error:', upsertError);
+        // Don't throw - continue with auth even if profile creation fails
+        toast({
+          title: 'Profile Setup Warning',
+          description:
+            'Your account was created but profile setup encountered an issue. You can update it later.',
+          variant: 'destructive',
+        });
       } else {
-        console.log('✅ Profile already exists');
+        console.log('✅ Profile created/updated successfully');
       }
     } catch (err) {
       console.error('Error handling profile:', err);
+      // Don't throw - allow auth to continue
     }
   };
 
@@ -329,10 +347,21 @@ const AuthCallback = () => {
   };
 
   const handleRequestNewLink = () => {
-    navigate('/forgot-password', { 
-      state: { 
-        message: 'Please request a new password reset link' 
-      } 
+    const authTypeMap = {
+      recovery: '/forgot-password',
+      email_confirmation: '/signup',
+      signin: '/signin',
+      signup: '/signup',
+      oauth: '/signin',
+    };
+
+    navigate(authTypeMap[authType] || '/signin', {
+      state: {
+        message:
+          authType === 'recovery'
+            ? 'Please request a new password reset link'
+            : 'Please request a new verification link',
+      },
     });
   };
 
@@ -345,14 +374,14 @@ const AuthCallback = () => {
               <Loader2 className="w-16 h-16 animate-spin mx-auto text-primary" />
             </div>
             <h2 className="text-2xl font-semibold mb-2">
-              {authType === 'recovery' 
-                ? 'Verifying password reset link...' 
+              {authType === 'recovery'
+                ? 'Verifying password reset link...'
                 : authType === 'email_confirmation'
                 ? 'Confirming your email...'
                 : 'Completing sign in...'}
             </h2>
             <p className="text-muted-foreground">
-              {authType === 'email_confirmation' 
+              {authType === 'email_confirmation'
                 ? 'Verifying your email address...'
                 : 'Please wait while we set up your account'}
             </p>
@@ -373,14 +402,16 @@ const AuthCallback = () => {
               </div>
             </div>
             <h2 className="text-2xl font-semibold mb-2 text-green-600 dark:text-green-400">
-              {authType === 'email_confirmation' ? 'Email Verified! 🎉' : 'Success! ✨'}
+              {authType === 'email_confirmation'
+                ? 'Email Verified! 🎉'
+                : 'Success! ✨'}
             </h2>
             <p className="text-muted-foreground">
-              {authType === 'email_confirmation' 
+              {authType === 'email_confirmation'
                 ? 'Your account is now active!'
                 : 'Redirecting you to the app...'}
             </p>
-            
+
             <div className="flex justify-center gap-2 mt-6">
               <div className="w-2 h-2 bg-green-500 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
               <div className="w-2 h-2 bg-green-500 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
@@ -400,13 +431,14 @@ const AuthCallback = () => {
               Email Confirmed! ✅
             </h2>
             <p className="text-muted-foreground mb-6">
-              {errorMessage || 'Your email has been verified. You can now sign in with your credentials.'}
+              {errorMessage ||
+                'Your email has been verified. You can now sign in with your credentials.'}
             </p>
             <div className="space-y-3">
               <p className="text-sm text-muted-foreground">
                 Redirecting to sign in page in 3 seconds...
               </p>
-              <Button 
+              <Button
                 onClick={handleReturnToSignIn}
                 className="w-full"
                 size="lg"
@@ -434,7 +466,7 @@ const AuthCallback = () => {
               <p className="text-sm text-muted-foreground">
                 Email links expire after 60 minutes for security.
               </p>
-              <Button 
+              <Button
                 onClick={handleRequestNewLink}
                 className="w-full"
                 size="lg"
@@ -462,7 +494,7 @@ const AuthCallback = () => {
               <p className="text-sm text-muted-foreground">
                 Redirecting to sign in page in 3 seconds...
               </p>
-              <Button 
+              <Button
                 onClick={handleReturnToSignIn}
                 variant="outline"
                 className="w-full"
