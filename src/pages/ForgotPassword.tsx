@@ -39,6 +39,7 @@ const ForgotPassword = () => {
     const value = e.target.value;
     setEmail(value);
     setIsTyping(true);
+    setEmailSent(false); // Reset sent state when email changes
     
     // Debounced validation
     setTimeout(() => {
@@ -47,8 +48,8 @@ const ForgotPassword = () => {
     }, 500);
   };
 
-  const handleResetPassword = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleResetPassword = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     
     // Validate email
     const validation = forgotPasswordSchema.safeParse({ email });
@@ -67,7 +68,9 @@ const ForgotPassword = () => {
     setLoading(true);
 
     try {
-      // Updated to use auth/callback which will handle the redirect
+      console.log('🔐 Sending password reset email to:', email);
+      
+      // Use auth/callback which will handle the redirect
       const redirectUrl = `${window.location.origin}/auth/callback`;
       
       const { error } = await supabase.auth.resetPasswordForEmail(validation.data.email, {
@@ -75,15 +78,17 @@ const ForgotPassword = () => {
       });
 
       if (error) {
+        console.error('Password reset error:', error);
+        
         let errorMessage = error.message;
         let errorTitle = "Password Reset Failed";
         
         // Enhanced error messages
-        if (error.message.includes('rate limit')) {
+        if (error.message.includes('rate limit') || error.message.includes('Email rate limit exceeded')) {
           errorMessage = "Too many requests. Please wait a few minutes before trying again.";
           errorTitle = "Rate Limit Exceeded";
         } else if (error.message.includes('User not found')) {
-          // Don't reveal if user exists for security, but handle the error
+          // Don't reveal if user exists for security
           errorMessage = "If an account exists with this email, you will receive a password reset link.";
           errorTitle = "Check Your Email";
           // Still show success state for security
@@ -94,6 +99,9 @@ const ForgotPassword = () => {
         } else if (error.message.includes('Email not confirmed')) {
           errorMessage = "Your email is not confirmed. Please check your inbox for the confirmation email first.";
           errorTitle = "Email Not Confirmed";
+        } else if (error.message.includes('For security purposes')) {
+          errorMessage = "For security reasons, please wait 60 seconds before requesting another link.";
+          errorTitle = "Rate Limit";
         }
         
         toast({
@@ -107,23 +115,34 @@ const ForgotPassword = () => {
           setEmailSent(true);
         }
       } else {
+        console.log('✅ Password reset email sent successfully');
         setEmailSent(true);
+        
         toast({
           title: "Email Sent! 📧",
           description: "Please check your email for the password reset link.",
           duration: 6000,
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Password reset error:', error);
       toast({
         title: "Error",
-        description: "An unexpected error occurred. Please try again.",
+        description: error?.message || "An unexpected error occurred. Please try again.",
         variant: "destructive",
       });
     } finally {
       setLoading(false);
     }
+  };
+
+  // Handle resend
+  const handleResend = async () => {
+    setEmailSent(false);
+    // Wait a moment for state to update, then resend
+    setTimeout(() => {
+      handleResetPassword();
+    }, 100);
   };
 
   return (
@@ -236,7 +255,7 @@ const ForgotPassword = () => {
               {/* Success State */}
               <div className="space-y-4">
                 <div className="mb-6">
-                  <div className="w-16 h-16 mx-auto mb-4 bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center">
+                  <div className="w-16 h-16 mx-auto mb-4 bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center animate-scale-in">
                     <Mail className="w-8 h-8 text-green-600 dark:text-green-400" />
                   </div>
                   <p className="text-center text-muted-foreground mb-6">
@@ -291,14 +310,19 @@ const ForgotPassword = () => {
                       Try Different Email
                     </Button>
                     <Button 
-                      onClick={() => {
-                        setEmailSent(false);
-                        // Keep the same email for resending
-                      }}
+                      onClick={handleResend}
                       variant="ghost" 
                       className="w-full"
+                      disabled={loading}
                     >
-                      Resend Link
+                      {loading ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Resending...
+                        </>
+                      ) : (
+                        'Resend Link'
+                      )}
                     </Button>
                   </div>
                   <p className="text-xs text-muted-foreground text-center mt-2">
@@ -347,6 +371,23 @@ const ForgotPassword = () => {
           </div>
         )}
       </div>
+
+      {/* Add animation styles */}
+      <style>{`
+        @keyframes scale-in {
+          from {
+            transform: scale(0);
+            opacity: 0;
+          }
+          to {
+            transform: scale(1);
+            opacity: 1;
+          }
+        }
+        .animate-scale-in {
+          animation: scale-in 0.3s ease-out;
+        }
+      `}</style>
     </div>
   );
 };
