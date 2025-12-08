@@ -28,12 +28,64 @@ const AuthCallback = () => {
         console.log('🔐 Auth callback started');
         console.log('URL params:', Object.fromEntries(searchParams));
 
+        // FIXED: Wait for auth state to settle and check session first
+        await new Promise(resolve => setTimeout(resolve, 300));
+
         // Get URL parameters
         const errorCode = searchParams.get('error_code');
         const errorDescription = searchParams.get('error_description');
         const error = searchParams.get('error');
         const type = searchParams.get('type');
         const code = searchParams.get('code');
+
+        // FIXED: Check for existing session FIRST (prevents false errors)
+        const { data: { session: existingSession } } = await supabase.auth.getSession();
+        
+        if (existingSession && !error && !errorCode) {
+          console.log('✅ Valid session already exists, skipping error checks');
+          
+          // Determine auth type
+          const isOAuth = existingSession.user.app_metadata.provider === 'google';
+          const isRecovery = type === 'recovery';
+          const isEmailConfirmation = type === 'signup';
+
+          if (isRecovery) {
+            setAuthType('recovery');
+            console.log('🔓 Password recovery confirmed');
+            toast({
+              title: 'Link Verified',
+              description: 'Please enter your new password.',
+            });
+            navigate('/reset-password', { replace: true });
+            return;
+          } else if (isEmailConfirmation) {
+            setAuthType('email_confirmation');
+          } else if (isOAuth) {
+            setAuthType('oauth');
+          } else {
+            setAuthType('signin');
+          }
+
+          await handleProfileCreation(existingSession);
+          setStatus('success');
+
+          let title = 'Welcome Back! 👋';
+          let description = "You're now signed in.";
+
+          if (isEmailConfirmation) {
+            title = 'Email Verified! 🎉';
+            description = 'Your account is now active. Welcome to BuyAPixel!';
+          } else if (isOAuth) {
+            title = 'Success! 🎉';
+            description = 'Welcome back via Google!';
+          }
+
+          toast({ title, description });
+
+          const redirectTo = searchParams.get('redirect') || '/';
+          setTimeout(() => navigate(redirectTo, { replace: true }), 1000);
+          return;
+        }
 
         // Handle errors in URL
         if (errorCode === 'otp_expired' || error === 'access_denied') {
@@ -70,8 +122,7 @@ const AuthCallback = () => {
           return;
         }
 
-        // ✅ FIXED: Handle PKCE code exchange (ALL email links use this now)
-        // This includes: signup confirmation, magic links, OAuth, password reset
+        // ✅ Handle PKCE code exchange (ALL email links use this now)
         if (code) {
           console.log('🔑 PKCE code detected, exchanging for session...');
 
@@ -82,10 +133,58 @@ const AuthCallback = () => {
             if (exchangeError) {
               console.error('❌ Code exchange error:', exchangeError);
 
+              // FIXED: Check if session exists despite error (race condition handling)
+              const { data: { session: fallbackSession } } = await supabase.auth.getSession();
+              
+              if (fallbackSession) {
+                console.log('✅ Session exists despite exchange error - continuing with success flow');
+                
+                const isOAuth = fallbackSession.user.app_metadata.provider === 'google';
+                const isRecovery = type === 'recovery';
+                const isEmailConfirmation = type === 'signup';
+
+                if (isRecovery) {
+                  setAuthType('recovery');
+                  console.log('🔓 Password recovery confirmed');
+                  toast({
+                    title: 'Link Verified',
+                    description: 'Please enter your new password.',
+                  });
+                  navigate('/reset-password', { replace: true });
+                  return;
+                } else if (isEmailConfirmation) {
+                  setAuthType('email_confirmation');
+                } else if (isOAuth) {
+                  setAuthType('oauth');
+                } else {
+                  setAuthType('signin');
+                }
+
+                await handleProfileCreation(fallbackSession);
+                setStatus('success');
+
+                let title = 'Welcome Back! 👋';
+                let description = "You're now signed in.";
+
+                if (isEmailConfirmation) {
+                  title = 'Email Verified! 🎉';
+                  description = 'Your account is now active. Welcome to BuyAPixel!';
+                } else if (isOAuth) {
+                  title = 'Success! 🎉';
+                  description = 'Welcome back via Google!';
+                }
+
+                toast({ title, description });
+
+                const redirectTo = searchParams.get('redirect') || '/';
+                setTimeout(() => navigate(redirectTo, { replace: true }), 1000);
+                return;
+              }
+
+              // If truly no session, handle the error
               let errorMsg = exchangeError.message;
               let errorTitle = 'Authentication Failed';
 
-              // Handle specific PKCE errors
               if (exchangeError.message.includes('code verifier')) {
                 errorMsg =
                   'Invalid authentication link. This may be caused by an outdated email template. Please request a new link.';
@@ -112,14 +211,13 @@ const AuthCallback = () => {
                 description: errorMsg,
                 variant: 'destructive',
               });
-              setTimeout(() => navigate('/signin'), 3000);
+              setTimeout(() => navigate('/signin'), 5000);
               return;
             }
 
             if (data?.session) {
               console.log('✅ Session created via PKCE code exchange');
 
-              // Determine auth type based on type parameter and provider
               const isOAuth =
                 data.session.user.app_metadata.provider === 'google';
               const isRecovery = type === 'recovery';
@@ -129,7 +227,6 @@ const AuthCallback = () => {
                 setAuthType('recovery');
                 console.log('🔓 Password recovery confirmed');
 
-                // Redirect to reset password page
                 toast({
                   title: 'Link Verified',
                   description: 'Please enter your new password.',
@@ -147,12 +244,10 @@ const AuthCallback = () => {
                 console.log('🔑 Magic link sign-in via PKCE');
               }
 
-              // Create profile if needed (with race condition protection)
               await handleProfileCreation(data.session);
 
               setStatus('success');
 
-              // Customize success message based on auth type
               let title = 'Welcome Back! 👋';
               let description = "You're now signed in.";
 
@@ -173,11 +268,10 @@ const AuthCallback = () => {
               const redirectTo = searchParams.get('redirect') || '/';
               setTimeout(
                 () => navigate(redirectTo, { replace: true }),
-                1500
+                1000
               );
               return;
             } else {
-              // Edge case: code exchange succeeded but no session
               console.warn('⚠️ Code exchange succeeded but no session created');
               setStatus('error');
               setErrorMessage(
@@ -191,6 +285,23 @@ const AuthCallback = () => {
               '❌ Unexpected error during code exchange:',
               err
             );
+            
+            // FIXED: Check for session in catch block too
+            const { data: { session: catchFallbackSession } } = await supabase.auth.getSession();
+            
+            if (catchFallbackSession) {
+              console.log('✅ Session exists despite catch error - continuing');
+              await handleProfileCreation(catchFallbackSession);
+              setStatus('success');
+              toast({
+                title: 'Welcome! 👋',
+                description: "You're now signed in.",
+              });
+              const redirectTo = searchParams.get('redirect') || '/';
+              setTimeout(() => navigate(redirectTo, { replace: true }), 1000);
+              return;
+            }
+            
             setStatus('error');
             setErrorMessage(
               'Failed to complete authentication. Please try again.'
@@ -200,7 +311,7 @@ const AuthCallback = () => {
           }
         }
 
-        // Fallback: Check for existing session (shouldn't normally reach here)
+        // Fallback: Check for existing session
         console.log('📋 No code found, checking for existing session...');
         const {
           data: { session },
@@ -235,7 +346,7 @@ const AuthCallback = () => {
           return;
         }
 
-        // Session found (edge case - user already authenticated)
+        // Session found
         console.log('✅ Existing session found for user:', session.user.id);
 
         await handleProfileCreation(session);
@@ -247,7 +358,7 @@ const AuthCallback = () => {
         });
 
         const redirectTo = searchParams.get('redirect') || '/';
-        setTimeout(() => navigate(redirectTo, { replace: true }), 1500);
+        setTimeout(() => navigate(redirectTo, { replace: true }), 1000);
       } catch (error: any) {
         console.error('❌ Unexpected error during auth callback:', error);
         setStatus('error');
@@ -266,12 +377,11 @@ const AuthCallback = () => {
     handleCallback();
   }, [navigate, toast, searchParams]);
 
-  // FIXED: Helper function with race condition protection
+  // Helper function with race condition protection
   const handleProfileCreation = async (session: any) => {
     try {
       console.log('🔍 Checking for existing profile...');
 
-      // Check if profile exists
       const { data: existingProfile, error: fetchError } = await supabase
         .from('profiles')
         .select('*')
@@ -280,7 +390,6 @@ const AuthCallback = () => {
 
       if (fetchError) {
         console.error('Error fetching profile:', fetchError);
-        // Don't throw - profile creation failure shouldn't block auth
         return;
       }
 
@@ -304,7 +413,6 @@ const AuthCallback = () => {
           displayName
         )}`;
 
-      // FIXED: Use upsert instead of insert to handle race conditions
       const { error: upsertError } = await supabase
         .from('profiles')
         .upsert(
@@ -319,14 +427,13 @@ const AuthCallback = () => {
             updated_at: new Date().toISOString(),
           },
           {
-            onConflict: 'user_id', // Specify the unique constraint
-            ignoreDuplicates: false, // Update if exists
+            onConflict: 'user_id',
+            ignoreDuplicates: false,
           }
         );
 
       if (upsertError) {
         console.error('Profile creation error:', upsertError);
-        // Don't throw - continue with auth even if profile creation fails
         toast({
           title: 'Profile Setup Warning',
           description:
@@ -338,7 +445,6 @@ const AuthCallback = () => {
       }
     } catch (err) {
       console.error('Error handling profile:', err);
-      // Don't throw - allow auth to continue
     }
   };
 
@@ -492,7 +598,7 @@ const AuthCallback = () => {
             </p>
             <div className="space-y-3">
               <p className="text-sm text-muted-foreground">
-                Redirecting to sign in page in 3 seconds...
+                Redirecting to sign in page in 5 seconds...
               </p>
               <Button
                 onClick={handleReturnToSignIn}
