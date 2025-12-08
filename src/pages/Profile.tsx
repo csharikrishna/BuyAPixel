@@ -2,22 +2,34 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Progress } from '@/components/ui/progress';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { 
   Edit, ArrowLeft, Mail, Phone, Calendar, 
   User, MapPin, Eye, TrendingUp, ExternalLink,
   Award, Clock, CheckCircle2, AlertCircle, Info,
-  RefreshCw, Loader2
+  RefreshCw, Loader2, Download, Trash2, Shield,
+  AlertTriangle, Copy, Check
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import ProfileEditModal from '@/components/ProfileEditModal';
 import { RealtimeChannel } from '@supabase/supabase-js';
+import { Input } from '@/components/ui/input';
 
 // Type definitions
 interface Profile {
@@ -96,6 +108,11 @@ const Profile = () => {
   const [pixelsLoading, setPixelsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [exportLoading, setExportLoading] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   // Calculate profile completion with detailed breakdown
   const profileCompletionData = useMemo<ProfileCompletionData>(() => {
@@ -177,7 +194,6 @@ const Profile = () => {
       if (fetchError) throw fetchError;
       
       if (!data) {
-        // Profile doesn't exist - try to create one
         console.warn('Profile not found, attempting to create one');
         
         const { data: newProfile, error: createError } = await supabase
@@ -200,7 +216,7 @@ const Profile = () => {
         
         setProfile({
           ...newProfile,
-          email: newProfile.email ?? user.email ?? null
+          email: user.email ?? null
         });
         if (showToast) {
           toast.success("Profile created successfully");
@@ -208,7 +224,7 @@ const Profile = () => {
       } else {
         setProfile({
           ...data,
-          email: data.email ?? user.email ?? null
+          email: user.email ?? null
         });
         if (showToast) {
           toast.success("Profile refreshed successfully");
@@ -261,6 +277,115 @@ const Profile = () => {
       setPixelsLoading(false);
     }
   }, [user?.id]);
+
+  // Export user data as JSON
+  const handleExportData = useCallback(async () => {
+    setExportLoading(true);
+    
+    try {
+      const exportData = {
+        profile: profile,
+        pixels: userPixels,
+        stats: pixelStats,
+        exportDate: new Date().toISOString(),
+        exportedBy: user?.email
+      };
+
+      const dataStr = JSON.stringify(exportData, null, 2);
+      const dataBlob = new Blob([dataStr], { type: 'application/json' });
+      const url = URL.createObjectURL(dataBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `buyapixel-data-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      toast.success("Your data has been exported successfully!");
+    } catch (err) {
+      console.error('Error exporting data:', err);
+      toast.error("Failed to export data");
+    } finally {
+      setExportLoading(false);
+    }
+  }, [profile, userPixels, pixelStats, user?.email]);
+
+  // Copy user ID to clipboard
+  const handleCopyUserId = useCallback(() => {
+    if (!user?.id) return;
+    
+    navigator.clipboard.writeText(user.id).then(() => {
+      setCopied(true);
+      toast.success("User ID copied to clipboard");
+      setTimeout(() => setCopied(false), 2000);
+    }).catch(() => {
+      toast.error("Failed to copy User ID");
+    });
+  }, [user?.id]);
+
+  // Delete account
+  const handleDeleteAccount = useCallback(async () => {
+    if (deleteConfirmText.toLowerCase() !== 'delete my account') {
+      toast.error('Please type "delete my account" to confirm');
+      return;
+    }
+
+    setDeleteLoading(true);
+
+    try {
+      console.log('🗑️ Starting account deletion process...');
+
+      // Delete user pixels first (if any)
+      if (userPixels.length > 0) {
+        const { error: pixelsError } = await supabase
+          .from('pixels')
+          .delete()
+          .eq('owner_id', user!.id);
+
+        if (pixelsError) {
+          console.error('Error deleting pixels:', pixelsError);
+          toast.error('Failed to delete your pixels. Please contact support.');
+          setDeleteLoading(false);
+          return;
+        }
+      }
+
+      // Delete profile
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('user_id', user!.id);
+
+      if (profileError) {
+        console.error('Error deleting profile:', profileError);
+      }
+
+      // Sign out the user
+      const { error: signOutError } = await supabase.auth.signOut();
+      
+      if (signOutError) {
+        console.error('Error signing out:', signOutError);
+      }
+
+      toast.success('Your account has been deleted. We hope to see you again!', {
+        duration: 5000
+      });
+
+      // Redirect to home after a short delay
+      setTimeout(() => {
+        navigate('/', { replace: true });
+      }, 2000);
+
+    } catch (err) {
+      console.error('Error deleting account:', err);
+      toast.error('Failed to delete account. Please try again or contact support.');
+    } finally {
+      setDeleteLoading(false);
+      setDeleteDialogOpen(false);
+      setDeleteConfirmText('');
+    }
+  }, [deleteConfirmText, userPixels, user, navigate]);
 
   // Refresh all data
   const handleRefresh = useCallback(async () => {
@@ -413,7 +538,7 @@ const Profile = () => {
     return <ProfileSkeleton />;
   }
 
-  // Unauthenticated state (shouldn't normally reach here due to useEffect redirect)
+  // Unauthenticated state
   if (!user) {
     return null;
   }
@@ -492,7 +617,7 @@ const Profile = () => {
           </div>
         </header>
 
-        {/* Profile Completion Alert - Show only if not complete */}
+        {/* Profile Completion Alert */}
         {profileCompletionData.percentage < 100 && (
           <Alert className="mb-6 bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
             <Info className="h-4 w-4 text-blue-600" />
@@ -562,7 +687,6 @@ const Profile = () => {
                     </div>
                   </div>
                   
-                  {/* Progress Bar */}
                   <Progress 
                     value={profileCompletionData.percentage} 
                     className="h-3 mb-4"
@@ -648,15 +772,75 @@ const Profile = () => {
                   </div>
                 </div>
 
-                {/* Sign Out Button */}
-                <Button 
-                  onClick={handleSignOut}
-                  variant="outline"
-                  className="w-full"
-                  size="sm"
-                >
-                  Sign Out
-                </Button>
+                {/* User ID Card */}
+                <div className="bg-muted/30 rounded-lg p-4 border">
+                  <h3 className="font-semibold text-sm mb-2 flex items-center gap-2">
+                    <Shield className="w-4 h-4 text-primary" />
+                    User ID
+                  </h3>
+                  <div className="flex items-center gap-2">
+                    <code className="flex-1 text-xs bg-background p-2 rounded border font-mono truncate">
+                      {user.id}
+                    </code>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={handleCopyUserId}
+                      className="flex-shrink-0"
+                    >
+                      {copied ? (
+                        <Check className="w-4 h-4 text-green-500" />
+                      ) : (
+                        <Copy className="w-4 h-4" />
+                      )}
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Use this ID for support inquiries
+                  </p>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="space-y-2">
+                  <Button 
+                    onClick={handleExportData}
+                    variant="outline"
+                    className="w-full"
+                    size="sm"
+                    disabled={exportLoading}
+                  >
+                    {exportLoading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Exporting...
+                      </>
+                    ) : (
+                      <>
+                        <Download className="w-4 h-4 mr-2" />
+                        Export My Data
+                      </>
+                    )}
+                  </Button>
+
+                  <Button 
+                    onClick={handleSignOut}
+                    variant="outline"
+                    className="w-full"
+                    size="sm"
+                  >
+                    Sign Out
+                  </Button>
+
+                  <Button 
+                    onClick={() => setDeleteDialogOpen(true)}
+                    variant="destructive"
+                    className="w-full"
+                    size="sm"
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Delete Account
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           </div>
@@ -780,6 +964,83 @@ const Profile = () => {
           profile={profile}
           onProfileUpdate={() => fetchProfile(true)}
         />
+
+        {/* Delete Account Dialog */}
+        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+                <AlertTriangle className="w-5 h-5" />
+                Delete Account Permanently?
+              </AlertDialogTitle>
+              <AlertDialogDescription className="space-y-3">
+                <p>
+                  This action <strong className="text-destructive">cannot be undone</strong>. This will permanently delete your account and remove all your data from our servers.
+                </p>
+                
+                <div className="bg-muted/50 rounded-lg p-3 space-y-2 text-sm">
+                  <p className="font-semibold">What will be deleted:</p>
+                  <ul className="space-y-1 ml-4">
+                    <li className="flex items-start gap-2">
+                      <span className="text-destructive">•</span>
+                      <span>Your profile and personal information</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-destructive">•</span>
+                      <span>All {pixelStats.totalPixels} pixel{pixelStats.totalPixels !== 1 ? 's' : ''} you own</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-destructive">•</span>
+                      <span>Your purchase history and data</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-destructive">•</span>
+                      <span>Your account access (you'll be signed out)</span>
+                    </li>
+                  </ul>
+                </div>
+
+                <p className="text-xs text-muted-foreground">
+                  💡 <strong>Tip:</strong> Consider exporting your data before deleting your account.
+                </p>
+
+                <div className="space-y-2 pt-2">
+                  <label htmlFor="delete-confirm" className="text-sm font-medium text-destructive">
+                    Type <code className="text-destructive">"delete my account"</code> to confirm:
+                  </label>
+                  <Input
+                    id="delete-confirm"
+                    type="text"
+                    placeholder="delete my account"
+                    value={deleteConfirmText}
+                    onChange={(e) => setDeleteConfirmText(e.target.value)}
+                    className="border-destructive focus-visible:ring-destructive"
+                  />
+                </div>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={deleteLoading}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDeleteAccount}
+                disabled={deleteLoading || deleteConfirmText.toLowerCase() !== 'delete my account'}
+                className="bg-destructive hover:bg-destructive/90"
+              >
+                {deleteLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Deleting...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Delete Account
+                  </>
+                )}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   );

@@ -5,7 +5,7 @@ import { Loader2, CheckCircle2, AlertCircle, Mail } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 
-type AuthStatus = 'loading' | 'success' | 'error' | 'expired';
+type AuthStatus = 'loading' | 'success' | 'error' | 'expired' | 'email_confirmed';
 
 const AuthCallback = () => {
   const navigate = useNavigate();
@@ -13,19 +13,25 @@ const AuthCallback = () => {
   const [searchParams] = useSearchParams();
   const [status, setStatus] = useState<AuthStatus>('loading');
   const [errorMessage, setErrorMessage] = useState('');
-  const [authType, setAuthType] = useState<'signin' | 'signup' | 'recovery' | 'oauth'>('signin');
+  const [authType, setAuthType] = useState<'signin' | 'signup' | 'recovery' | 'oauth' | 'email_confirmation'>('signin');
 
   useEffect(() => {
     const handleCallback = async () => {
       try {
-        // Check for errors in URL params
+        console.log('🔐 Auth callback started');
+        console.log('URL params:', Object.fromEntries(searchParams));
+
+        // Get URL parameters
         const errorCode = searchParams.get('error_code');
         const errorDescription = searchParams.get('error_description');
         const error = searchParams.get('error');
+        const type = searchParams.get('type');
+        const tokenHash = searchParams.get('token_hash');
+        const code = searchParams.get('code');
 
-        // Handle error cases
+        // Handle errors in URL
         if (errorCode === 'otp_expired' || error === 'access_denied') {
-          console.warn('OTP expired or access denied');
+          console.warn('⚠️ OTP expired or access denied');
           setStatus('expired');
           setErrorMessage(
             errorDescription 
@@ -41,7 +47,7 @@ const AuthCallback = () => {
         }
 
         if (error && error !== 'access_denied') {
-          console.error('Auth error:', error, errorDescription);
+          console.error('❌ Auth error:', error, errorDescription);
           setStatus('error');
           setErrorMessage(
             errorDescription 
@@ -57,8 +63,67 @@ const AuthCallback = () => {
           return;
         }
 
-        // Check for password recovery
-        const type = searchParams.get('type');
+        // ✅ HANDLE EMAIL CONFIRMATION (type=signup with token_hash)
+        if (type === 'signup' && tokenHash) {
+          console.log('📧 Email confirmation detected with token_hash');
+          setAuthType('email_confirmation');
+          
+          try {
+            // Verify the email confirmation token
+            const { data, error: verifyError } = await supabase.auth.verifyOtp({
+              token_hash: tokenHash,
+              type: 'signup'
+            });
+
+            if (verifyError) {
+              console.error('❌ Email verification error:', verifyError);
+              setStatus('error');
+              setErrorMessage('Failed to verify email. The link may have expired.');
+              toast({
+                title: "Verification Failed",
+                description: "Your email verification link is invalid or expired.",
+                variant: "destructive",
+              });
+              setTimeout(() => navigate('/signin'), 3000);
+              return;
+            }
+
+            if (data?.session) {
+              console.log('✅ Email verified and session created!');
+              
+              // Create profile if it doesn't exist
+              await handleProfileCreation(data.session);
+              
+              setStatus('success');
+              toast({
+                title: "Email Verified! 🎉",
+                description: "Your account is now active. Welcome to BuyAPixel!",
+              });
+              
+              setTimeout(() => navigate('/', { replace: true }), 1500);
+              return;
+            } else {
+              // Email confirmed but no session (this is the normal Supabase behavior)
+              console.log('✅ Email confirmed! User needs to sign in.');
+              setStatus('email_confirmed');
+              setErrorMessage('Your email has been confirmed! Please sign in to continue.');
+              toast({
+                title: "Email Confirmed! ✅",
+                description: "You can now sign in with your credentials.",
+              });
+              setTimeout(() => navigate('/signin'), 3000);
+              return;
+            }
+          } catch (err) {
+            console.error('❌ Error during email verification:', err);
+            setStatus('error');
+            setErrorMessage('Failed to verify your email.');
+            setTimeout(() => navigate('/signin'), 3000);
+            return;
+          }
+        }
+
+        // Handle password recovery
         if (type === 'recovery') {
           setAuthType('recovery');
           console.log('🔓 Password recovery flow detected');
@@ -66,12 +131,48 @@ const AuthCallback = () => {
           return;
         }
 
-        // Get the current session (should already be set by Supabase)
+        // Handle PKCE code exchange (magic links, OAuth)
+        if (code) {
+          console.log('🔑 PKCE code detected, exchanging...');
+          
+          const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+          
+          if (exchangeError) {
+            console.error('❌ Code exchange error:', exchangeError);
+            setStatus('error');
+            setErrorMessage(exchangeError.message || 'Failed to verify authentication.');
+            setTimeout(() => navigate('/signin'), 3000);
+            return;
+          }
+
+          if (data?.session) {
+            console.log('✅ Session created via code exchange');
+            
+            // Create profile if needed
+            await handleProfileCreation(data.session);
+            
+            setStatus('success');
+            const welcomeMessage = data.session.user.app_metadata.provider === 'google'
+              ? 'Welcome back via Google!'
+              : 'Welcome back!';
+            
+            toast({
+              title: "Success! 🎉",
+              description: welcomeMessage,
+            });
+
+            const redirectTo = searchParams.get('redirect') || '/';
+            setTimeout(() => navigate(redirectTo, { replace: true }), 1500);
+            return;
+          }
+        }
+
+        // Check for existing session
         console.log('📋 Checking for existing session...');
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
         if (sessionError) {
-          console.error('Session error:', sessionError);
+          console.error('❌ Session error:', sessionError);
           setStatus('error');
           setErrorMessage(sessionError.message);
           toast({
@@ -84,7 +185,7 @@ const AuthCallback = () => {
         }
 
         if (!session) {
-          console.warn('No session found after callback');
+          console.warn('⚠️ No session found after callback');
           setStatus('error');
           setErrorMessage('No session found. Please try signing in again.');
           toast({
@@ -96,89 +197,21 @@ const AuthCallback = () => {
           return;
         }
 
-        // Successfully authenticated
-        console.log('✅ Session established for user:', session.user.id);
-        console.log('User email:', session.user.email);
+        // Session found - success!
+        console.log('✅ Session found for user:', session.user.id);
         
-        // Determine if OAuth or magic link
-        if (session.user.app_metadata.provider === 'google') {
-          setAuthType('oauth');
-        }
-
-        // Check if profile exists
-        const { data: existingProfile, error: profileCheckError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('user_id', session.user.id)
-          .maybeSingle();
-
-        if (profileCheckError && profileCheckError.code !== 'PGRST116') {
-          console.error('Profile check error:', profileCheckError);
-        }
-
-        // Create profile if it doesn't exist
-        if (!existingProfile) {
-          console.log('📝 Creating new profile for user...');
-          
-          const displayName = 
-            session.user.user_metadata?.full_name || 
-            session.user.user_metadata?.name ||
-            session.user.user_metadata?.preferred_username ||
-            session.user.email?.split('@')[0] ||
-            'User';
-
-          const avatarUrl = 
-            session.user.user_metadata?.avatar_url ||
-            session.user.user_metadata?.picture ||
-            `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(displayName)}`;
-
-          const { error: insertError } = await supabase
-            .from('profiles')
-            .insert({
-              user_id: session.user.id,
-              full_name: displayName,
-              avatar_url: avatarUrl,
-              email: session.user.email,
-              created_at: new Date().toISOString(),
-            });
-
-          if (insertError) {
-            console.error('Profile creation error:', insertError);
-            toast({
-              title: "Profile Setup",
-              description: "You can complete your profile setup later.",
-              variant: "default",
-            });
-          } else {
-            console.log('✅ Profile created successfully');
-            setAuthType('signup');
-          }
-        } else {
-          console.log('✅ Existing profile found');
-        }
-
-        // Success!
+        await handleProfileCreation(session);
+        
         setStatus('success');
-        
-        const welcomeMessage = authType === 'signup' 
-          ? 'Welcome to BuyAPixel! Your account has been created.'
-          : authType === 'oauth'
-          ? `Welcome, ${existingProfile?.full_name || session.user.email}!`
-          : `Welcome back!`;
-
         toast({
-          title: authType === 'signup' ? "Account Created! 🎉" : "Welcome Back! 👋",
-          description: welcomeMessage,
+          title: "Welcome Back! 👋",
+          description: "You're now signed in.",
         });
 
-        // Redirect
         const redirectTo = searchParams.get('redirect') || '/';
-        
-        setTimeout(() => {
-          navigate(redirectTo, { replace: true });
-        }, 1500);
+        setTimeout(() => navigate(redirectTo, { replace: true }), 1500);
 
-      } catch (error) {
+      } catch (error: any) {
         console.error('❌ Unexpected error during auth callback:', error);
         setStatus('error');
         setErrorMessage('An unexpected error occurred. Please try again.');
@@ -195,6 +228,52 @@ const AuthCallback = () => {
 
     handleCallback();
   }, [navigate, toast, searchParams]);
+
+  // Helper function to create profile if it doesn't exist
+  const handleProfileCreation = async (session: any) => {
+    try {
+      const { data: existingProfile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .maybeSingle();
+
+      if (!existingProfile) {
+        console.log('📝 Creating new profile...');
+        
+        const displayName = 
+          session.user.user_metadata?.full_name || 
+          session.user.user_metadata?.name ||
+          session.user.email?.split('@')[0] ||
+          'User';
+
+        const avatarUrl = 
+          session.user.user_metadata?.avatar_url ||
+          session.user.user_metadata?.picture ||
+          `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(displayName)}`;
+
+        const { error: insertError } = await supabase
+          .from('profiles')
+          .insert({
+            user_id: session.user.id,
+            full_name: displayName,
+            avatar_url: avatarUrl,
+            email: session.user.email,
+            created_at: new Date().toISOString(),
+          });
+
+        if (insertError) {
+          console.error('Profile creation error:', insertError);
+        } else {
+          console.log('✅ Profile created successfully');
+        }
+      } else {
+        console.log('✅ Profile already exists');
+      }
+    } catch (err) {
+      console.error('Error handling profile:', err);
+    }
+  };
 
   const handleReturnToSignIn = () => {
     navigate('/signin');
@@ -219,15 +298,16 @@ const AuthCallback = () => {
             <h2 className="text-2xl font-semibold mb-2">
               {authType === 'recovery' 
                 ? 'Verifying link...' 
-                : authType === 'oauth'
-                ? 'Completing sign in...'
+                : authType === 'email_confirmation'
+                ? 'Confirming your email...'
                 : 'Completing sign in...'}
             </h2>
             <p className="text-muted-foreground">
-              Please wait while we set up your account
+              {authType === 'email_confirmation' 
+                ? 'Verifying your email address...'
+                : 'Please wait while we set up your account'}
             </p>
 
-            {/* Loading dots animation */}
             <div className="flex justify-center gap-2 mt-6">
               <div className="w-2 h-2 bg-primary rounded-full animate-bounce [animation-delay:-0.3s]"></div>
               <div className="w-2 h-2 bg-primary rounded-full animate-bounce [animation-delay:-0.15s]"></div>
@@ -244,17 +324,46 @@ const AuthCallback = () => {
               </div>
             </div>
             <h2 className="text-2xl font-semibold mb-2 text-green-600 dark:text-green-400">
-              {authType === 'signup' ? 'Account Created! 🎉' : 'Success! ✨'}
+              {authType === 'email_confirmation' ? 'Email Verified! 🎉' : 'Success! ✨'}
             </h2>
             <p className="text-muted-foreground">
-              Redirecting you to the app...
+              {authType === 'email_confirmation' 
+                ? 'Your account is now active!'
+                : 'Redirecting you to the app...'}
             </p>
             
-            {/* Success animation */}
             <div className="flex justify-center gap-2 mt-6">
               <div className="w-2 h-2 bg-green-500 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
               <div className="w-2 h-2 bg-green-500 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
               <div className="w-2 h-2 bg-green-500 rounded-full animate-bounce"></div>
+            </div>
+          </>
+        )}
+
+        {status === 'email_confirmed' && (
+          <>
+            <div className="mb-6">
+              <div className="w-16 h-16 mx-auto bg-blue-100 dark:bg-blue-900/20 rounded-full flex items-center justify-center animate-scale-in">
+                <CheckCircle2 className="w-10 h-10 text-blue-600 dark:text-blue-400" />
+              </div>
+            </div>
+            <h2 className="text-2xl font-semibold mb-2 text-blue-600 dark:text-blue-400">
+              Email Confirmed! ✅
+            </h2>
+            <p className="text-muted-foreground mb-6">
+              {errorMessage || 'Your email has been verified. You can now sign in with your credentials.'}
+            </p>
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                Redirecting to sign in page in 3 seconds...
+              </p>
+              <Button 
+                onClick={handleReturnToSignIn}
+                className="w-full"
+                size="lg"
+              >
+                Sign In Now
+              </Button>
             </div>
           </>
         )}
@@ -274,7 +383,7 @@ const AuthCallback = () => {
             </p>
             <div className="space-y-3">
               <p className="text-sm text-muted-foreground">
-                Email links expire after a few minutes for security.
+                Email links expire after 60 minutes for security.
               </p>
               <Button 
                 onClick={handleRequestNewLink}
@@ -316,7 +425,6 @@ const AuthCallback = () => {
         )}
       </div>
 
-      {/* Add custom animation styles */}
       <style>{`
         @keyframes scale-in {
           from {
