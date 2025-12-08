@@ -64,112 +64,75 @@ const ResetPassword = () => {
 
   useEffect(() => {
     const checkSession = async () => {
-      // Check for error parameters in URL
-      const error = searchParams.get('error');
-      const errorCode = searchParams.get('error_code');
-      const errorDescription = searchParams.get('error_description');
+      try {
+        // Check for error parameters in URL
+        const error = searchParams.get('error');
+        const errorCode = searchParams.get('error_code');
+        const errorDescription = searchParams.get('error_description');
 
-      if (error || errorCode) {
-        let message = errorDescription 
-          ? decodeURIComponent(errorDescription.replace(/\+/g, ' '))
-          : 'Invalid or expired password reset link';
-        
-        if (errorCode === 'otp_expired') {
-          message = 'Your password reset link has expired. Please request a new one.';
-        }
-        
-        toast({
-          title: "Link Expired",
-          description: message,
-          variant: "destructive",
-        });
-        
-        setIsValidSession(false);
-        setTimeout(() => navigate('/forgot-password'), 2000);
-        return;
-      }
-
-      // Check for PKCE code parameter (new flow)
-      const code = searchParams.get('code');
-      
-      if (code) {
-        console.log('🔐 PKCE flow detected - exchanging code for session...');
-        
-        try {
-          // Exchange the code for a session
-          const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+        if (error || errorCode) {
+          let message = errorDescription 
+            ? decodeURIComponent(errorDescription.replace(/\+/g, ' '))
+            : 'Invalid or expired password reset link';
           
-          if (exchangeError) {
-            console.error('Code exchange error:', exchangeError);
-            
-            let errorMessage = exchangeError.message;
-            
-            if (exchangeError.message.includes('expired')) {
-              errorMessage = 'Your password reset link has expired. Please request a new one.';
-            } else if (exchangeError.message.includes('invalid')) {
-              errorMessage = 'Invalid password reset link. Please request a new one.';
-            }
-            
-            toast({
-              title: "Session Error",
-              description: errorMessage,
-              variant: "destructive",
-            });
-            
-            setIsValidSession(false);
-            setTimeout(() => navigate('/forgot-password'), 2000);
-            return;
+          if (errorCode === 'otp_expired') {
+            message = 'Your password reset link has expired. Please request a new one.';
           }
           
-          console.log('✅ Code exchange successful', data.session ? 'Session created' : 'No session');
+          console.error('Password reset error:', error, errorCode, message);
           
-          if (data.session) {
-            setIsValidSession(true);
-            return;
-          }
-        } catch (err) {
-          console.error('Unexpected error during code exchange:', err);
           toast({
-            title: "Error",
-            description: "Failed to verify reset link. Please try again.",
+            title: "Link Expired",
+            description: message,
+            variant: "destructive",
+          });
+          
+          setIsValidSession(false);
+          setTimeout(() => navigate('/forgot-password'), 2000);
+          return;
+        }
+
+        // Check for recovery type parameter
+        const type = searchParams.get('type');
+        
+        if (type === 'recovery') {
+          console.log('🔓 Password recovery flow detected');
+        }
+
+        // Check if user has a valid session (should be set by AuthCallback)
+        console.log('📋 Checking for valid session...');
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError) {
+          console.error('Session error:', sessionError);
+          toast({
+            title: "Session Error",
+            description: "Unable to verify your session. Please try again.",
             variant: "destructive",
           });
           setIsValidSession(false);
           setTimeout(() => navigate('/forgot-password'), 2000);
           return;
         }
-      }
 
-      // Check for recovery type parameter (legacy flow)
-      const type = searchParams.get('type');
-      
-      if (type === 'recovery') {
-        console.log('🔓 Legacy recovery flow detected');
-      }
-
-      // Check if user has a valid session
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      
-      if (sessionError) {
-        console.error('Session error:', sessionError);
+        if (session) {
+          console.log('✅ Valid session found for password reset');
+          setIsValidSession(true);
+        } else {
+          console.log('❌ No valid session');
+          toast({
+            title: "Invalid Session",
+            description: "Please request a new password reset link.",
+            variant: "destructive",
+          });
+          setIsValidSession(false);
+          setTimeout(() => navigate('/forgot-password'), 2000);
+        }
+      } catch (err) {
+        console.error('Unexpected error in checkSession:', err);
         toast({
-          title: "Session Error",
-          description: "Unable to verify your session. Please try again.",
-          variant: "destructive",
-        });
-        setIsValidSession(false);
-        setTimeout(() => navigate('/forgot-password'), 2000);
-        return;
-      }
-
-      if (session) {
-        console.log('✅ Valid session found');
-        setIsValidSession(true);
-      } else {
-        console.log('❌ No valid session');
-        toast({
-          title: "Invalid Session",
-          description: "Please request a new password reset link.",
+          title: "Error",
+          description: "An unexpected error occurred. Please try again.",
           variant: "destructive",
         });
         setIsValidSession(false);
@@ -238,6 +201,8 @@ const ResetPassword = () => {
           errorTitle = "Session Expired";
         }
         
+        console.error('Password update error:', error);
+        
         toast({
           title: errorTitle,
           description: errorMessage,
@@ -245,6 +210,7 @@ const ResetPassword = () => {
         });
       } else {
         // Success!
+        console.log('✅ Password reset successful');
         setResetSuccess(true);
         
         toast({
@@ -252,7 +218,7 @@ const ResetPassword = () => {
           description: "Your password has been updated. Redirecting to sign in...",
         });
         
-        // Sign out to clear session
+        // Sign out to ensure user signs in with new password
         await supabase.auth.signOut();
         
         setTimeout(() => {
@@ -326,9 +292,9 @@ const ResetPassword = () => {
             Your password has been updated. Redirecting you to sign in...
           </p>
           <div className="flex justify-center gap-2">
-            <div className="w-2 h-2 bg-primary rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-            <div className="w-2 h-2 bg-primary rounded-full animate-bounce [animation-delay:-0.15s]"></div>
-            <div className="w-2 h-2 bg-primary rounded-full animate-bounce"></div>
+            <div className="w-2 h-2 bg-green-500 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+            <div className="w-2 h-2 bg-green-500 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+            <div className="w-2 h-2 bg-green-500 rounded-full animate-bounce"></div>
           </div>
         </div>
       </div>
@@ -378,6 +344,7 @@ const ResetPassword = () => {
                   minLength={8}
                   maxLength={72}
                   autoComplete="new-password"
+                  autoFocus
                   className="pl-10 pr-10 h-12"
                 />
                 <button
@@ -523,7 +490,7 @@ const ResetPassword = () => {
             <Button 
               type="submit" 
               className="w-full h-12 btn-premium" 
-              disabled={loading || passwordStrength.score < 3 || password !== confirmPassword}
+              disabled={loading || passwordStrength.score < 3 || password !== confirmPassword || !password}
             >
               {loading ? (
                 <>
