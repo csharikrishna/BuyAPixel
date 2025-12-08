@@ -18,12 +18,12 @@ const AuthCallback = () => {
   useEffect(() => {
     const handleCallback = async () => {
       try {
-        // Check for errors in URL params (from Supabase redirects)
+        // Check for errors in URL params
         const errorCode = searchParams.get('error_code');
         const errorDescription = searchParams.get('error_description');
         const error = searchParams.get('error');
 
-        // Handle specific error cases
+        // Handle error cases
         if (errorCode === 'otp_expired' || error === 'access_denied') {
           console.warn('OTP expired or access denied');
           setStatus('expired');
@@ -32,17 +32,14 @@ const AuthCallback = () => {
               ? decodeURIComponent(errorDescription.replace(/\+/g, ' '))
               : 'Your email link has expired. Please request a new one.'
           );
-          
           toast({
             title: "Link Expired",
-            description: "Your email link has expired. Please sign in again to receive a new one.",
+            description: "Your email link has expired. Please sign in again.",
             variant: "destructive",
           });
-          
           return;
         }
 
-        // Handle OAuth errors
         if (error && error !== 'access_denied') {
           console.error('Auth error:', error, errorDescription);
           setStatus('error');
@@ -51,91 +48,37 @@ const AuthCallback = () => {
               ? decodeURIComponent(errorDescription.replace(/\+/g, ' '))
               : 'An authentication error occurred.'
           );
-          
           toast({
             title: "Authentication Error",
             description: errorMessage || "Please try signing in again.",
             variant: "destructive",
           });
-          
           setTimeout(() => navigate('/signin'), 3000);
           return;
         }
 
-        // Check for type parameter (password recovery, signup, etc.)
+        // Check for password recovery
         const type = searchParams.get('type');
         if (type === 'recovery') {
           setAuthType('recovery');
           console.log('🔓 Password recovery flow detected');
-          // Don't redirect yet - let ResetPassword handle it
           navigate('/reset-password', { replace: true });
           return;
         }
 
-        // Check for PKCE code parameter (OAuth flow)
-        const code = searchParams.get('code');
-        
-        let session = null;
-        let sessionError = null;
-
-        if (code) {
-          // PKCE flow - exchange code for session
-          console.log('🔐 PKCE flow detected - exchanging code for session...');
-          setAuthType('oauth');
-          
-          const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
-          
-          if (exchangeError) {
-            console.error('Code exchange error:', exchangeError);
-            setStatus('error');
-            setErrorMessage(exchangeError.message);
-            
-            toast({
-              title: "Authentication Failed",
-              description: exchangeError.message,
-              variant: "destructive",
-            });
-            
-            setTimeout(() => navigate('/signin'), 3000);
-            return;
-          }
-          
-          session = data.session;
-          console.log('✅ Code exchange successful', session ? 'Session created' : 'No session');
-        } else {
-          // Try to get session from URL hash (magic link flow)
-          const hashParams = new URLSearchParams(window.location.hash.substring(1));
-          const accessToken = hashParams.get('access_token');
-          const refreshToken = hashParams.get('refresh_token');
-          
-          if (accessToken && refreshToken) {
-            console.log('🔗 Magic link flow detected - setting session from tokens...');
-            const { data, error } = await supabase.auth.setSession({
-              access_token: accessToken,
-              refresh_token: refreshToken,
-            });
-            session = data.session;
-            sessionError = error;
-          } else {
-            // Fallback to getting existing session
-            console.log('📋 Checking for existing session...');
-            const { data, error } = await supabase.auth.getSession();
-            session = data.session;
-            sessionError = error;
-          }
-        }
+        // Get the current session (should already be set by Supabase)
+        console.log('📋 Checking for existing session...');
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
         if (sessionError) {
           console.error('Session error:', sessionError);
           setStatus('error');
           setErrorMessage(sessionError.message);
-          
           toast({
             title: "Authentication Failed",
             description: sessionError.message,
             variant: "destructive",
           });
-          
           setTimeout(() => navigate('/signin'), 3000);
           return;
         }
@@ -144,20 +87,23 @@ const AuthCallback = () => {
           console.warn('No session found after callback');
           setStatus('error');
           setErrorMessage('No session found. Please try signing in again.');
-          
           toast({
             title: "Session Not Found",
             description: "Please try signing in again.",
             variant: "destructive",
           });
-          
           setTimeout(() => navigate('/signin'), 3000);
           return;
         }
 
-        // Successfully authenticated - now handle profile
+        // Successfully authenticated
         console.log('✅ Session established for user:', session.user.id);
         console.log('User email:', session.user.email);
+        
+        // Determine if OAuth or magic link
+        if (session.user.app_metadata.provider === 'google') {
+          setAuthType('oauth');
+        }
 
         // Check if profile exists
         const { data: existingProfile, error: profileCheckError } = await supabase
@@ -168,7 +114,6 @@ const AuthCallback = () => {
 
         if (profileCheckError && profileCheckError.code !== 'PGRST116') {
           console.error('Profile check error:', profileCheckError);
-          // Continue anyway - profile can be created later
         }
 
         // Create profile if it doesn't exist
@@ -199,7 +144,6 @@ const AuthCallback = () => {
 
           if (insertError) {
             console.error('Profile creation error:', insertError);
-            // Don't fail the login - user can update profile later
             toast({
               title: "Profile Setup",
               description: "You can complete your profile setup later.",
@@ -220,14 +164,14 @@ const AuthCallback = () => {
           ? 'Welcome to BuyAPixel! Your account has been created.'
           : authType === 'oauth'
           ? `Welcome, ${existingProfile?.full_name || session.user.email}!`
-          : `Welcome back, ${session.user.email}!`;
+          : `Welcome back!`;
 
         toast({
           title: authType === 'signup' ? "Account Created! 🎉" : "Welcome Back! 👋",
           description: welcomeMessage,
         });
 
-        // Redirect based on where user should go
+        // Redirect
         const redirectTo = searchParams.get('redirect') || '/';
         
         setTimeout(() => {
@@ -276,15 +220,11 @@ const AuthCallback = () => {
               {authType === 'recovery' 
                 ? 'Verifying link...' 
                 : authType === 'oauth'
-                ? 'Completing OAuth sign in...'
+                ? 'Completing sign in...'
                 : 'Completing sign in...'}
             </h2>
             <p className="text-muted-foreground">
-              {authType === 'recovery' 
-                ? 'Please wait while we verify your password reset link'
-                : authType === 'oauth'
-                ? 'Please wait while we connect your account'
-                : 'Please wait while we set up your account'}
+              Please wait while we set up your account
             </p>
 
             {/* Loading dots animation */}
@@ -307,11 +247,7 @@ const AuthCallback = () => {
               {authType === 'signup' ? 'Account Created! 🎉' : 'Success! ✨'}
             </h2>
             <p className="text-muted-foreground">
-              {authType === 'signup' 
-                ? 'Your account has been created. Redirecting...'
-                : authType === 'oauth'
-                ? 'OAuth sign in successful. Redirecting...'
-                : 'Redirecting you to the app...'}
+              Redirecting you to the app...
             </p>
             
             {/* Success animation */}
