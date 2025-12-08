@@ -65,6 +65,9 @@ const ResetPassword = () => {
   useEffect(() => {
     const checkSession = async () => {
       try {
+        console.log('🔓 ResetPassword component mounted');
+        console.log('URL params:', Object.fromEntries(searchParams));
+
         // Check for error parameters in URL
         const error = searchParams.get('error');
         const errorCode = searchParams.get('error_code');
@@ -79,7 +82,7 @@ const ResetPassword = () => {
             message = 'Your password reset link has expired. Please request a new one.';
           }
           
-          console.error('Password reset error:', error, errorCode, message);
+          console.error('❌ Password reset error:', error, errorCode, message);
           
           toast({
             title: "Link Expired",
@@ -88,7 +91,7 @@ const ResetPassword = () => {
           });
           
           setIsValidSession(false);
-          setTimeout(() => navigate('/forgot-password'), 2000);
+          setTimeout(() => navigate('/forgot-password'), 3000);
           return;
         }
 
@@ -104,39 +107,41 @@ const ResetPassword = () => {
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         
         if (sessionError) {
-          console.error('Session error:', sessionError);
+          console.error('❌ Session error:', sessionError);
           toast({
             title: "Session Error",
-            description: "Unable to verify your session. Please try again.",
+            description: "Unable to verify your session. Please request a new reset link.",
             variant: "destructive",
           });
           setIsValidSession(false);
-          setTimeout(() => navigate('/forgot-password'), 2000);
+          setTimeout(() => navigate('/forgot-password'), 3000);
           return;
         }
 
         if (session) {
           console.log('✅ Valid session found for password reset');
+          console.log('User ID:', session.user.id);
+          console.log('Session expires at:', new Date(session.expires_at || 0).toLocaleString());
           setIsValidSession(true);
         } else {
-          console.log('❌ No valid session');
+          console.log('❌ No valid session found');
           toast({
             title: "Invalid Session",
-            description: "Please request a new password reset link.",
+            description: "Your session has expired. Please request a new password reset link.",
             variant: "destructive",
           });
           setIsValidSession(false);
-          setTimeout(() => navigate('/forgot-password'), 2000);
+          setTimeout(() => navigate('/forgot-password'), 3000);
         }
       } catch (err) {
-        console.error('Unexpected error in checkSession:', err);
+        console.error('❌ Unexpected error in checkSession:', err);
         toast({
           title: "Error",
           description: "An unexpected error occurred. Please try again.",
           variant: "destructive",
         });
         setIsValidSession(false);
-        setTimeout(() => navigate('/forgot-password'), 2000);
+        setTimeout(() => navigate('/forgot-password'), 3000);
       }
     };
 
@@ -152,6 +157,8 @@ const ResetPassword = () => {
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    console.log('🔐 Attempting password reset...');
+
     // Validate passwords
     const validation = resetPasswordSchema.safeParse({ password, confirmPassword });
     
@@ -178,6 +185,21 @@ const ResetPassword = () => {
     setLoading(true);
 
     try {
+      // Verify session one more time before updating
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        console.error('❌ No session available for password update');
+        toast({
+          title: "Session Expired",
+          description: "Your session has expired. Please request a new password reset link.",
+          variant: "destructive",
+        });
+        setTimeout(() => navigate('/forgot-password'), 2000);
+        return;
+      }
+
+      console.log('📝 Updating password...');
       const { error } = await supabase.auth.updateUser({
         password: validation.data.password,
       });
@@ -186,22 +208,20 @@ const ResetPassword = () => {
         let errorMessage = error.message;
         let errorTitle = "Password Reset Failed";
         
+        console.error('❌ Password update error:', error);
+        
         // Enhanced error messages
-        if (error.message.includes('same as the old password')) {
+        if (error.message.includes('same as the old password') || error.message.includes('New password should be different')) {
           errorMessage = "New password must be different from your old password.";
           errorTitle = "Same Password";
-        } else if (error.message.includes('New password should be different')) {
-          errorMessage = "Please choose a different password than your previous one.";
-          errorTitle = "Password Too Similar";
         } else if (error.message.includes('Password should be')) {
           errorMessage = "Password is too weak. Use a mix of uppercase, lowercase, numbers, and special characters.";
           errorTitle = "Weak Password";
-        } else if (error.message.includes('session')) {
+        } else if (error.message.includes('session') || error.message.includes('token')) {
           errorMessage = "Your session has expired. Please request a new password reset link.";
           errorTitle = "Session Expired";
+          setTimeout(() => navigate('/forgot-password'), 2000);
         }
-        
-        console.error('Password update error:', error);
         
         toast({
           title: errorTitle,
@@ -219,21 +239,22 @@ const ResetPassword = () => {
         });
         
         // Sign out to ensure user signs in with new password
+        console.log('🚪 Signing out user...');
         await supabase.auth.signOut();
         
         setTimeout(() => {
           navigate('/signin', { 
             state: { 
-              message: 'Password reset successful. You can now sign in with your new password.' 
+              message: 'Password reset successful! You can now sign in with your new password.' 
             } 
           });
         }, 2000);
       }
-    } catch (error) {
-      console.error('Password reset error:', error);
+    } catch (error: any) {
+      console.error('❌ Unexpected password reset error:', error);
       toast({
         title: "Error",
-        description: "An unexpected error occurred. Please try again.",
+        description: error?.message || "An unexpected error occurred. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -248,6 +269,7 @@ const ResetPassword = () => {
         <div className="text-center">
           <Loader2 className="w-12 h-12 animate-spin mx-auto mb-4 text-primary" />
           <p className="text-muted-foreground">Verifying your password reset link...</p>
+          <p className="text-xs text-muted-foreground mt-2">This may take a few seconds</p>
         </div>
       </div>
     );
@@ -267,7 +289,7 @@ const ResetPassword = () => {
           <p className="text-muted-foreground mb-6">
             This password reset link is invalid or has expired.
           </p>
-          <Button onClick={() => navigate('/forgot-password')}>
+          <Button onClick={() => navigate('/forgot-password')} className="w-full">
             Request New Link
           </Button>
         </div>

@@ -40,7 +40,7 @@ const AuthCallback = () => {
           );
           toast({
             title: "Link Expired",
-            description: "Your email link has expired. Please sign in again.",
+            description: "Your email link has expired. Please request a new link.",
             variant: "destructive",
           });
           return;
@@ -127,47 +127,96 @@ const AuthCallback = () => {
         if (type === 'recovery') {
           setAuthType('recovery');
           console.log('🔓 Password recovery flow detected');
+          
+          // Check if we have a valid session for password reset
+          const { data: { session } } = await supabase.auth.getSession();
+          
+          if (!session) {
+            console.error('❌ No session for password recovery');
+            setStatus('error');
+            setErrorMessage('Invalid password reset link. Please request a new one.');
+            toast({
+              title: "Invalid Link",
+              description: "Your password reset link is invalid or expired.",
+              variant: "destructive",
+            });
+            setTimeout(() => navigate('/forgot-password'), 3000);
+            return;
+          }
+          
           navigate('/reset-password', { replace: true });
           return;
         }
 
-        // Handle PKCE code exchange (magic links, OAuth)
+        // ✅ Handle PKCE code exchange (magic links, OAuth, password reset)
         if (code) {
           console.log('🔑 PKCE code detected, exchanging...');
           
-          const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
-          
-          if (exchangeError) {
-            console.error('❌ Code exchange error:', exchangeError);
+          try {
+            const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+            
+            if (exchangeError) {
+              console.error('❌ Code exchange error:', exchangeError);
+              
+              let errorMsg = exchangeError.message;
+              let errorTitle = "Authentication Failed";
+              
+              // Handle specific PKCE errors
+              if (exchangeError.message.includes('code verifier')) {
+                errorMsg = 'Invalid authentication link. This may be caused by an outdated email template. Please request a new link.';
+                errorTitle = "Invalid Link";
+                console.error('⚠️ PKCE code verifier missing - email template may be outdated');
+              } else if (exchangeError.message.includes('expired')) {
+                errorMsg = 'Your authentication link has expired. Please request a new one.';
+                errorTitle = "Link Expired";
+              }
+              
+              setStatus('error');
+              setErrorMessage(errorMsg);
+              toast({
+                title: errorTitle,
+                description: errorMsg,
+                variant: "destructive",
+              });
+              setTimeout(() => navigate('/signin'), 3000);
+              return;
+            }
+
+            if (data?.session) {
+              console.log('✅ Session created via code exchange');
+              
+              // Determine auth type
+              if (data.session.user.app_metadata.provider === 'google') {
+                setAuthType('oauth');
+              }
+              
+              // Create profile if needed
+              await handleProfileCreation(data.session);
+              
+              setStatus('success');
+              const welcomeMessage = data.session.user.app_metadata.provider === 'google'
+                ? 'Welcome back via Google!'
+                : 'Welcome back!';
+              
+              toast({
+                title: "Success! 🎉",
+                description: welcomeMessage,
+              });
+
+              const redirectTo = searchParams.get('redirect') || '/';
+              setTimeout(() => navigate(redirectTo, { replace: true }), 1500);
+              return;
+            }
+          } catch (err: any) {
+            console.error('❌ Unexpected error during code exchange:', err);
             setStatus('error');
-            setErrorMessage(exchangeError.message || 'Failed to verify authentication.');
+            setErrorMessage('Failed to complete authentication. Please try again.');
             setTimeout(() => navigate('/signin'), 3000);
-            return;
-          }
-
-          if (data?.session) {
-            console.log('✅ Session created via code exchange');
-            
-            // Create profile if needed
-            await handleProfileCreation(data.session);
-            
-            setStatus('success');
-            const welcomeMessage = data.session.user.app_metadata.provider === 'google'
-              ? 'Welcome back via Google!'
-              : 'Welcome back!';
-            
-            toast({
-              title: "Success! 🎉",
-              description: welcomeMessage,
-            });
-
-            const redirectTo = searchParams.get('redirect') || '/';
-            setTimeout(() => navigate(redirectTo, { replace: true }), 1500);
             return;
           }
         }
 
-        // Check for existing session
+        // Check for existing session (fallback)
         console.log('📋 Checking for existing session...');
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
@@ -280,9 +329,9 @@ const AuthCallback = () => {
   };
 
   const handleRequestNewLink = () => {
-    navigate('/signin', { 
+    navigate('/forgot-password', { 
       state: { 
-        message: 'Please sign in to receive a new email link' 
+        message: 'Please request a new password reset link' 
       } 
     });
   };
@@ -297,7 +346,7 @@ const AuthCallback = () => {
             </div>
             <h2 className="text-2xl font-semibold mb-2">
               {authType === 'recovery' 
-                ? 'Verifying link...' 
+                ? 'Verifying password reset link...' 
                 : authType === 'email_confirmation'
                 ? 'Confirming your email...'
                 : 'Completing sign in...'}
