@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Mail, ArrowLeft, KeyRound, CheckCircle2, AlertCircle, Shield, Clock } from 'lucide-react';
+import { Loader2, Mail, ArrowLeft, KeyRound, CheckCircle2, AlertCircle, Shield, Clock, Info } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { z } from 'zod';
 import { cn } from '@/lib/utils';
@@ -68,25 +68,39 @@ const ForgotPassword = () => {
     setLoading(true);
 
     try {
-      console.log('🔐 Sending password reset email to:', email);
+      console.log('🔐 Sending password reset email to:', validation.data.email);
       
       // Use auth/callback which will handle the redirect
       const redirectUrl = `${window.location.origin}/auth/callback`;
+      console.log('📍 Redirect URL:', redirectUrl);
       
-      const { error } = await supabase.auth.resetPasswordForEmail(validation.data.email, {
-        redirectTo: redirectUrl,
-      });
+      const { data, error } = await supabase.auth.resetPasswordForEmail(
+        validation.data.email, 
+        {
+          redirectTo: redirectUrl,
+        }
+      );
+
+      // ✅ LOG THE FULL RESPONSE
+      console.log('📧 Reset password response:', { data, error });
 
       if (error) {
-        console.error('Password reset error:', error);
+        console.error('❌ Password reset error:', error);
+        console.error('Error code:', error.code);
+        console.error('Error message:', error.message);
+        console.error('Error status:', error.status);
         
         let errorMessage = error.message;
         let errorTitle = "Password Reset Failed";
         
         // Enhanced error messages
         if (error.message.includes('rate limit') || error.message.includes('Email rate limit exceeded')) {
-          errorMessage = "Too many requests. Please wait a few minutes before trying again.";
+          errorMessage = "Too many requests. Please wait 60 seconds before trying again.";
           errorTitle = "Rate Limit Exceeded";
+        } else if (error.message.includes('SMTP') || error.message.includes('email') && error.message.includes('not configured')) {
+          errorMessage = "Email service is temporarily unavailable. Please try again in a few minutes or contact support.";
+          errorTitle = "Email Configuration Error";
+          console.error('⚠️ SMTP configuration issue detected');
         } else if (error.message.includes('User not found')) {
           // Don't reveal if user exists for security
           errorMessage = "If an account exists with this email, you will receive a password reset link.";
@@ -108,6 +122,7 @@ const ForgotPassword = () => {
           title: errorTitle,
           description: errorMessage,
           variant: error.message.includes('User not found') ? "default" : "destructive",
+          duration: 8000,
         });
         
         // Set email sent to true even if user not found (security)
@@ -116,20 +131,25 @@ const ForgotPassword = () => {
         }
       } else {
         console.log('✅ Password reset email sent successfully');
+        console.log('📨 Response data:', data);
         setEmailSent(true);
         
         toast({
           title: "Email Sent! 📧",
-          description: "Please check your email for the password reset link.",
-          duration: 6000,
+          description: `Please check ${email} for the password reset link.`,
+          duration: 8000,
         });
       }
     } catch (error: any) {
-      console.error('Password reset error:', error);
+      console.error('❌ Unexpected error during password reset:', error);
+      console.error('Error type:', typeof error);
+      console.error('Error details:', JSON.stringify(error, null, 2));
+      
       toast({
-        title: "Error",
-        description: error?.message || "An unexpected error occurred. Please try again.",
+        title: "Unexpected Error",
+        description: error?.message || "An unexpected error occurred. Please try again or contact support.",
         variant: "destructive",
+        duration: 8000,
       });
     } finally {
       setLoading(false);
@@ -138,6 +158,7 @@ const ForgotPassword = () => {
 
   // Handle resend
   const handleResend = async () => {
+    console.log('🔄 Resending password reset email...');
     setEmailSent(false);
     // Wait a moment for state to update, then resend
     setTimeout(() => {
@@ -236,7 +257,7 @@ const ForgotPassword = () => {
               {/* Information Box */}
               <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
                 <div className="flex gap-3">
-                  <Shield className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+                  <Info className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
                   <div className="text-sm">
                     <p className="font-medium text-blue-900 dark:text-blue-100 mb-1">
                       What happens next?
@@ -245,6 +266,7 @@ const ForgotPassword = () => {
                       <li>• You'll receive an email with a reset link</li>
                       <li>• The link expires in 60 minutes</li>
                       <li>• Click the link to set a new password</li>
+                      <li>• Check spam folder if you don't see it</li>
                     </ul>
                   </div>
                 </div>
@@ -272,7 +294,7 @@ const ForgotPassword = () => {
                   <ol className="space-y-2 text-sm text-muted-foreground">
                     <li className="flex gap-2">
                       <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center text-xs font-semibold text-primary">1</span>
-                      <span>Check your email inbox</span>
+                      <span>Check your email inbox (and spam folder)</span>
                     </li>
                     <li className="flex gap-2">
                       <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center text-xs font-semibold text-primary">2</span>
@@ -285,17 +307,25 @@ const ForgotPassword = () => {
                   </ol>
                 </div>
 
+                {/* Email Delivery Info */}
+                <div className="flex items-center gap-2 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                  <Info className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                  <p className="text-xs text-blue-700 dark:text-blue-300">
+                    Email delivery usually takes 1-2 minutes
+                  </p>
+                </div>
+
                 {/* Expiry Warning */}
                 <div className="flex items-center gap-2 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
                   <Clock className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0" />
                   <p className="text-xs text-amber-700 dark:text-amber-300">
-                    The reset link expires in 60 minutes
+                    The reset link expires in 60 minutes for security
                   </p>
                 </div>
 
                 {/* Didn't receive email */}
                 <div className="pt-4 space-y-3">
-                  <p className="text-xs text-muted-foreground text-center">
+                  <p className="text-xs text-muted-foreground text-center font-medium">
                     Didn't receive the email?
                   </p>
                   <div className="flex flex-col gap-2">
@@ -325,9 +355,11 @@ const ForgotPassword = () => {
                       )}
                     </Button>
                   </div>
-                  <p className="text-xs text-muted-foreground text-center mt-2">
-                    Check your spam folder if you don't see it
-                  </p>
+                  <div className="text-center pt-2">
+                    <p className="text-xs text-muted-foreground">
+                      ⚠️ Please wait 60 seconds between resend attempts
+                    </p>
+                  </div>
                 </div>
               </div>
             </>
