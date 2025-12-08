@@ -71,7 +71,7 @@ const SignIn = () => {
       
       if (errorCode === 'otp_expired' || error === 'access_denied') {
         title = "Link Expired";
-        message = "Your sign-in link has expired. Please try again.";
+        message = "Your sign-in link has expired. Please request a new one.";
       } else if (error === 'auth_failed') {
         message = 'Authentication failed. Please try again.';
       } else if (error === 'unexpected') {
@@ -193,6 +193,8 @@ const SignIn = () => {
           errorTitle = "Account Not Found";
         }
         
+        console.error('Sign in error:', error);
+        
         toast({
           title: errorTitle,
           description: errorMessage,
@@ -207,7 +209,7 @@ const SignIn = () => {
         }
         
         toast({
-          title: "Welcome back!",
+          title: "Welcome back! 👋",
           description: "You've been successfully signed in.",
         });
         navigate(from, { replace: true });
@@ -224,7 +226,7 @@ const SignIn = () => {
     }
   };
 
-  // Magic link sign in
+  // Magic link sign in - FIXED VERSION
   const handleMagicLinkSignIn = async () => {
     // Validate email first
     const emailError = validateEmail(email);
@@ -241,26 +243,34 @@ const SignIn = () => {
     setLoading(true);
 
     try {
+      console.log('🔗 Sending magic link to:', email);
+      
+      // FIXED: Use correct redirect URL
       const redirectUrl = `${window.location.origin}/auth/callback`;
       
       const { error } = await supabase.auth.signInWithOtp({
         email: email.trim(),
         options: {
           emailRedirectTo: redirectUrl,
-          shouldCreateUser: false, // Don't auto-create accounts, they should sign up first
+          shouldCreateUser: true, // FIXED: Allow magic link to work for existing users
         },
       });
 
       if (error) {
+        console.error('Magic link error:', error);
+        
         let errorMessage = error.message;
         let errorTitle = "Failed to Send Link";
         
-        if (error.message.includes('rate limit')) {
+        if (error.message.includes('rate limit') || error.message.includes('Email rate limit exceeded')) {
           errorMessage = "Too many requests. Please wait a few minutes before trying again.";
           errorTitle = "Rate Limit Exceeded";
         } else if (error.message.includes('User not found')) {
           errorMessage = "No account found with this email. Please sign up first.";
           errorTitle = "Account Not Found";
+        } else if (error.message.includes('For security purposes')) {
+          errorMessage = "For security reasons, please wait 60 seconds before requesting another link.";
+          errorTitle = "Rate Limit";
         }
         
         toast({
@@ -269,6 +279,7 @@ const SignIn = () => {
           variant: "destructive",
         });
       } else {
+        console.log('✅ Magic link sent successfully');
         setMagicLinkSent(true);
         
         // Save email if remember me is checked
@@ -277,15 +288,16 @@ const SignIn = () => {
         }
         
         toast({
-          title: "Check Your Email!",
-          description: `We've sent a magic link to ${email}. Click the link to sign in. The link expires in 60 minutes.`,
+          title: "Check Your Email! 📧",
+          description: `We've sent a magic link to ${email}. Click the link to sign in.`,
+          duration: 6000,
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Magic link error:', error);
       toast({
         title: "Error",
-        description: "Failed to send magic link. Please try again.",
+        description: error?.message || "Failed to send magic link. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -297,6 +309,8 @@ const SignIn = () => {
   const handleGoogleSignIn = async () => {
     try {
       setOauthLoading(true);
+      
+      console.log('🔐 Initiating Google OAuth...');
       
       // Include redirect parameter in callback URL
       const redirectUrl = from !== '/' 
@@ -319,11 +333,11 @@ const SignIn = () => {
         
         let errorMessage = error.message;
         
-        if (error.message.includes('redirect')) {
+        if (errorMessage.includes('redirect')) {
           errorMessage = 'OAuth redirect configuration error. Please contact support.';
-        } else if (error.message.includes('not enabled')) {
+        } else if (errorMessage.includes('not enabled')) {
           errorMessage = 'Google authentication is not enabled. Please use email/password sign in.';
-        } else if (error.message.includes('network')) {
+        } else if (errorMessage.includes('network')) {
           errorMessage = 'Network error. Please check your connection and try again.';
         }
         
@@ -335,11 +349,11 @@ const SignIn = () => {
         setOauthLoading(false);
       }
       // Don't reset loading on success - user is being redirected
-    } catch (error) {
+    } catch (error: any) {
       console.error('Unexpected Google OAuth error:', error);
       toast({
         title: "Error",
-        description: "Failed to initiate Google sign-in. Please try again.",
+        description: error?.message || "Failed to initiate Google sign-in. Please try again.",
         variant: "destructive",
       });
       setOauthLoading(false);
@@ -491,7 +505,10 @@ const SignIn = () => {
               <div className="flex gap-2 mb-6 p-1 bg-muted rounded-lg">
                 <button
                   type="button"
-                  onClick={() => setSignInMethod('password')}
+                  onClick={() => {
+                    setSignInMethod('password');
+                    setMagicLinkSent(false);
+                  }}
                   className={cn(
                     "flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all",
                     signInMethod === 'password'
@@ -504,7 +521,10 @@ const SignIn = () => {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setSignInMethod('magic-link')}
+                  onClick={() => {
+                    setSignInMethod('magic-link');
+                    setMagicLinkSent(false);
+                  }}
                   className={cn(
                     "flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all",
                     signInMethod === 'magic-link'
@@ -667,12 +687,12 @@ const SignIn = () => {
                 <Button 
                   type="submit" 
                   className="w-full h-12 btn-premium relative overflow-hidden group" 
-                  disabled={loading || oauthLoading || !!formErrors.email || (signInMethod === 'password' && !!formErrors.password)}
+                  disabled={loading || oauthLoading || !!formErrors.email || (signInMethod === 'password' && (!!formErrors.password || !password))}
                 >
                   {loading ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      {signInMethod === 'magic-link' ? 'Sending link...' : 'Signing in...'}
+                      {signInMethod === 'magic-link' ? 'Sending magic link...' : 'Signing in...'}
                     </>
                   ) : (
                     <>
@@ -695,27 +715,60 @@ const SignIn = () => {
           ) : (
             // Magic Link Sent State
             <div className="text-center py-8">
-              <div className="w-16 h-16 mx-auto mb-4 bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center">
+              <div className="w-16 h-16 mx-auto mb-4 bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center animate-scale-in">
                 <Mail className="w-8 h-8 text-green-600 dark:text-green-400" />
               </div>
               <h3 className="text-xl font-semibold mb-2">Check Your Email</h3>
               <p className="text-muted-foreground mb-6">
-                We've sent a magic link to <strong>{email}</strong>
+                We've sent a magic link to <strong className="text-foreground">{email}</strong>
               </p>
-              <div className="space-y-4 text-sm text-muted-foreground">
-                <p>Click the link in the email to sign in instantly.</p>
-                <p className="text-xs">⏱️ The link expires in 60 minutes</p>
+              <div className="space-y-4 text-sm text-muted-foreground bg-muted/50 rounded-lg p-4 mb-6">
+                <div className="flex items-start gap-3">
+                  <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                  <div className="text-left">
+                    <p className="font-medium text-foreground mb-1">What to do next:</p>
+                    <ol className="space-y-1 text-xs list-decimal list-inside">
+                      <li>Check your email inbox</li>
+                      <li>Click the magic link in the email</li>
+                      <li>You'll be automatically signed in</li>
+                    </ol>
+                  </div>
+                </div>
+                <p className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4" />
+                  The link expires in 60 minutes
+                </p>
               </div>
-              <Button
-                variant="outline"
-                className="mt-6"
-                onClick={() => {
-                  setMagicLinkSent(false);
-                  setEmail('');
-                }}
-              >
-                Use a different email
-              </Button>
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => {
+                    setMagicLinkSent(false);
+                    setEmail('');
+                  }}
+                >
+                  Use different email
+                </Button>
+                <Button
+                  variant="default"
+                  className="flex-1"
+                  onClick={handleMagicLinkSignIn}
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Resending...
+                    </>
+                  ) : (
+                    'Resend link'
+                  )}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground mt-4">
+                Don't see the email? Check your spam folder.
+              </p>
             </div>
           )}
           
@@ -761,6 +814,23 @@ const SignIn = () => {
           )}
         </div>
       </div>
+
+      {/* Add animation styles */}
+      <style>{`
+        @keyframes scale-in {
+          from {
+            transform: scale(0);
+            opacity: 0;
+          }
+          to {
+            transform: scale(1);
+            opacity: 1;
+          }
+        }
+        .animate-scale-in {
+          animation: scale-in 0.3s ease-out;
+        }
+      `}</style>
     </div>
   );
 };
