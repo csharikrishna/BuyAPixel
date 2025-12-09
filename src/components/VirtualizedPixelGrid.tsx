@@ -1,13 +1,46 @@
-import { useState, useRef, useEffect, useCallback, useLayoutEffect, useMemo } from "react";
-import { useAuth } from "@/hooks/useAuth";
-import { Badge } from "@/components/ui/badge";
+import {
+  useState,
+  useRef,
+  useEffect,
+  useCallback,
+  useLayoutEffect,
+  useMemo,
+} from "react";
+import { useAuth } from "@/hooks/useAuth"; // Ensure this path is correct
 import { PixelTooltip } from "./PixelTooltip";
 import { MiniMap } from "./MiniMap";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
-import { Star, ExternalLink, Move } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client"; // Ensure this path is correct
+import { Star, ExternalLink, Loader2 } from "lucide-react";
 
-// --- Interfaces ---
+// ============================================
+// 🎯 CONFIGURATION CONSTANTS
+// ============================================
+
+const GRID_CONFIG = {
+  // Initial Zoom Settings
+  INITIAL_ZOOM: 1.5,
+  MAX_INITIAL_ZOOM: 3.5,
+  MIN_ZOOM: 0.1,
+  MAX_ZOOM: 8,
+
+  // Featured Billboard Size
+  BILLBOARD_WIDTH: 60,
+  BILLBOARD_HEIGHT: 34,
+
+  // Price Zone Sizes (Radius from center)
+  PREMIUM_ZONE_SIZE: 120,
+  GOLD_ZONE_SIZE: 60,
+
+  // Interaction Settings
+  ZOOM_FACTOR: 1.05,
+  PAN_CLAMP_BUFFER: 100,
+} as const;
+
+// ============================================
+// 📦 TYPES
+// ============================================
+
 interface SelectedPixel {
   x: number;
   y: number;
@@ -38,7 +71,10 @@ interface VirtualizedPixelGridProps {
   showMyPixels?: boolean;
 }
 
-// --- Component ---
+// ============================================
+// 🚀 COMPONENT
+// ============================================
+
 export const VirtualizedPixelGrid = ({
   selectedPixels,
   onSelectionChange,
@@ -54,93 +90,123 @@ export const VirtualizedPixelGrid = ({
   const { user } = useAuth();
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // --- State ---
+  // -- State: Viewport & Interaction --
   const [viewportOffset, setViewportOffset] = useState({ x: 0, y: 0 });
   const [containerSize, setContainerSize] = useState({ width: 800, height: 600 });
-  
-  // Interaction State
+  const [isMobile, setIsMobile] = useState(false); // Hydration safe
+
+  // -- State: Dragging & Gestures --
   const [isDragging, setIsDragging] = useState(false);
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null);
   const [dragDistance, setDragDistance] = useState(0);
-  
+  const [touchStart, setTouchStart] = useState<{ x: number; y: number; dist: number } | null>(null);
+  const [initialZoom, setInitialZoom] = useState(zoom);
+
+  // -- State: Data & Selection --
   const [hoveredPixel, setHoveredPixel] = useState<{ x: number; y: number } | null>(null);
   const [rangeStart, setRangeStart] = useState<{ x: number; y: number } | null>(null);
   const [purchasedPixels, setPurchasedPixels] = useState<PurchasedPixel[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [hasInitialized, setHasInitialized] = useState(false);
 
-  // Featured Billboard State
+  // -- State: Billboard Rotation --
   const [currentFeaturedIndex, setCurrentFeaturedIndex] = useState(0);
 
-  // Touch State
-  const [touchStart, setTouchStart] = useState<{ x: number; y: number; dist: number } | null>(null);
-  const [initialZoom, setInitialZoom] = useState(zoom);
-
-  // Refs
+  // -- Refs --
   const hoverTimeoutRef = useRef<NodeJS.Timeout>();
 
-  // --- 1. BOUNDING LOGIC (Prevents getting lost) ---
-  const clampOffset = useCallback((x: number, y: number, currentScale: number) => {
-    // Calculate total size of the grid at current zoom
-    const totalGridWidth = gridWidth * pixelSize * currentScale;
-    const totalGridHeight = gridHeight * pixelSize * currentScale;
+  // ---------------------------------------------------------------------------
+  // 📏 Helpers & Calculations
+  // ---------------------------------------------------------------------------
 
-    // Buffer: How many pixels must remain on screen?
-    const buffer = 100; 
+  const scaledPixelSize = pixelSize * zoom;
 
-    // Calculate bounds
-    // The left edge (x) cannot be greater than the container width minus buffer
-    const max_X = containerSize.width - buffer;
-    // The right edge (x + totalWidth) cannot be less than buffer
-    const min_X = -totalGridWidth + buffer;
+  // Clamp panning so user doesn't lose the grid
+  const clampOffset = useCallback(
+    (x: number, y: number, currentScale: number) => {
+      const totalGridWidth = gridWidth * pixelSize * currentScale;
+      const totalGridHeight = gridHeight * pixelSize * currentScale;
+      const buffer = GRID_CONFIG.PAN_CLAMP_BUFFER;
 
-    // Same for Y
-    const max_Y = containerSize.height - buffer;
-    const min_Y = -totalGridHeight + buffer;
+      const max_X = containerSize.width - buffer;
+      const min_X = -totalGridWidth + buffer;
+      const max_Y = containerSize.height - buffer;
+      const min_Y = -totalGridHeight + buffer;
 
-    return {
-      x: Math.min(Math.max(x, min_X), max_X),
-      y: Math.min(Math.max(y, min_Y), max_Y)
-    };
-  }, [containerSize, gridWidth, gridHeight, pixelSize]);
+      return {
+        x: Math.min(Math.max(x, min_X), max_X),
+        y: Math.min(Math.max(y, min_Y), max_Y),
+      };
+    },
+    [containerSize, gridWidth, gridHeight, pixelSize]
+  );
 
-  // --- BILLBOARD CONFIGURATION ---
+  // Determine Billboard Position
   const billboardConfig = useMemo(() => {
-    const width = 32; 
-    const height = 18; 
+    const width = GRID_CONFIG.BILLBOARD_WIDTH;
+    const height = GRID_CONFIG.BILLBOARD_HEIGHT;
     const x = Math.floor((gridWidth - width) / 2);
     const y = Math.floor((gridHeight - height) / 2);
     return { x, y, width, height };
   }, [gridWidth, gridHeight]);
 
-  // --- LOGIC: Filter Real Images ---
-  const featuredPixelsList = useMemo(() => {
-    return purchasedPixels.filter(p => p.image_url && p.image_url.length > 0);
-  }, [purchasedPixels]);
+  // Pricing Logic (Radial)
+  const calculatePixelPrice = useCallback(
+    (x: number, y: number) => {
+      const centerX = gridWidth / 2.0;
+      const centerY = gridHeight / 2.0;
+      const distanceFromCenter = Math.sqrt(
+        Math.pow(x - centerX, 2) + Math.pow(y - centerY, 2)
+      );
+      const maxDistance = Math.sqrt(Math.pow(centerX, 2) + Math.pow(centerY, 2));
+      const normalizedDistance = distanceFromCenter / maxDistance;
 
-  const currentFeaturedPixel = featuredPixelsList.length > 0 
-    ? featuredPixelsList[currentFeaturedIndex] 
-    : null;
+      if (normalizedDistance < 0.212) return 299; // Gold
+      if (normalizedDistance < 0.424) return 199; // Premium
+      return 99; // Standard
+    },
+    [gridWidth, gridHeight]
+  );
 
-  // --- Effect: Cycle Images ---
+  // Culling: Check if a pixel is currently inside the viewport
+  const isVisible = useCallback(
+    (px: number, py: number) => {
+      const xPos = px * scaledPixelSize + viewportOffset.x;
+      const yPos = py * scaledPixelSize + viewportOffset.y;
+      // Add a small buffer of 1 pixel size to prevent pop-in
+      const buffer = scaledPixelSize * 2;
+      
+      return (
+        xPos > -buffer &&
+        xPos < containerSize.width + buffer &&
+        yPos > -buffer &&
+        yPos < containerSize.height + buffer
+      );
+    },
+    [scaledPixelSize, viewportOffset, containerSize]
+  );
+
+  // ---------------------------------------------------------------------------
+  // 🔄 Effects: Initialization & Data
+  // ---------------------------------------------------------------------------
+
+  // Handle Hydration / Resize
   useEffect(() => {
-    if (featuredPixelsList.length === 0) return;
-    const interval = setInterval(() => {
-      setCurrentFeaturedIndex((prev) => (prev + 1) % featuredPixelsList.length);
-    }, 3000); 
-    return () => clearInterval(interval);
-  }, [featuredPixelsList.length]);
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
 
-  // --- Optimization: Resize Observer ---
+  // Container Resize Observer
   useEffect(() => {
     if (!containerRef.current) return;
     const updateSize = () => {
-      if (containerRef.current) {
-        setContainerSize({
-          width: containerRef.current.clientWidth,
-          height: containerRef.current.clientHeight
-        });
-      }
+      if (!containerRef.current) return;
+      setContainerSize({
+        width: containerRef.current.clientWidth,
+        height: containerRef.current.clientHeight,
+      });
     };
     updateSize();
     const resizeObserver = new ResizeObserver(updateSize);
@@ -148,35 +214,47 @@ export const VirtualizedPixelGrid = ({
     return () => resizeObserver.disconnect();
   }, []);
 
-  // --- Memos ---
-  const purchasedPixelsMap = useMemo(() => {
-    const map = new Map<string, PurchasedPixel>();
-    purchasedPixels.forEach(pixel => map.set(`${pixel.x}-${pixel.y}`, pixel));
-    return map;
-  }, [purchasedPixels]);
+  // Initial Zoom Fit
+  useLayoutEffect(() => {
+    if (!containerRef.current || hasInitialized) return;
+    const { clientWidth, clientHeight } = containerRef.current;
+    if (clientWidth === 0 || clientHeight === 0) return;
 
-  const selectedPixelsSet = useMemo(() => {
-    const set = new Set<string>();
-    selectedPixels.forEach(pixel => set.add(pixel.id));
-    return set;
-  }, [selectedPixels]);
+    const fullGridW = gridWidth * pixelSize;
+    const fullGridH = gridHeight * pixelSize;
 
-  // --- 2. Load Data ---
+    const fitScaleX = (clientWidth - 40) / fullGridW;
+    const fitScaleY = (clientHeight - 40) / fullGridH;
+    const fitScale = Math.min(fitScaleX, fitScaleY);
+
+    const initialScale = Math.min(
+      Math.max(GRID_CONFIG.INITIAL_ZOOM, fitScale),
+      GRID_CONFIG.MAX_INITIAL_ZOOM
+    );
+
+    onZoomChange(initialScale);
+    const initialX = (clientWidth - fullGridW * initialScale) / 2;
+    const initialY = (clientHeight - fullGridH * initialScale) / 2;
+    setViewportOffset({ x: initialX, y: initialY });
+    setHasInitialized(true);
+  }, [gridWidth, gridHeight, pixelSize, onZoomChange, hasInitialized]);
+
+  // Load Data from Supabase
   useEffect(() => {
     const loadPurchased = async () => {
       setIsLoading(true);
       const { data, error } = await supabase
-        .from('pixels')
-        .select('id, x, y, owner_id, image_url, link_url, alt_text')
-        .not('owner_id', 'is', null);
-      
+        .from("pixels")
+        .select("id, x, y, owner_id, image_url, link_url, alt_text")
+        .not("owner_id", "is", null);
+
       if (error) {
-        console.error('Failed to load purchased pixels', error);
+        console.error("Failed to load purchased pixels", error);
         toast.error("Failed to load map data");
         setIsLoading(false);
         return;
       }
-      
+
       const formattedPixels: PurchasedPixel[] = (data || []).map((row) => ({
         id: row.id,
         x: row.x,
@@ -186,7 +264,7 @@ export const VirtualizedPixelGrid = ({
         link_url: row.link_url,
         alt_text: row.alt_text,
       }));
-      
+
       setPurchasedPixels(formattedPixels);
       setIsLoading(false);
     };
@@ -194,8 +272,8 @@ export const VirtualizedPixelGrid = ({
     loadPurchased();
 
     const channel = supabase
-      .channel('pixels-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'pixels' }, () => {
+      .channel("pixels-changes")
+      .on("postgres_changes", { event: "*", schema: "public", table: "pixels" }, () => {
         loadPurchased();
       })
       .subscribe();
@@ -206,304 +284,320 @@ export const VirtualizedPixelGrid = ({
     };
   }, []);
 
-  // --- 3. Auto-Fit Logic (Initial) ---
-  useLayoutEffect(() => {
-    if (!containerRef.current || hasInitialized) return;
-    const { clientWidth, clientHeight } = containerRef.current;
-    if (clientWidth === 0 || clientHeight === 0) return;
+  // ---------------------------------------------------------------------------
+  // 💾 Memos & Derived State
+  // ---------------------------------------------------------------------------
 
-    const fullGridW = gridWidth * pixelSize;
-    const fullGridH = gridHeight * pixelSize;
-    const scaleX = (clientWidth - 40) / fullGridW;
-    const scaleY = (clientHeight - 40) / fullGridH;
-    const initialScale = Math.min(scaleX, scaleY, 1.5);
-    
-    onZoomChange(initialScale);
-    
-    // Center initially
-    const initialX = (clientWidth - (fullGridW * initialScale)) / 2;
-    const initialY = (clientHeight - (fullGridH * initialScale)) / 2;
+  const purchasedPixelsMap = useMemo(() => {
+    const map = new Map<string, PurchasedPixel>();
+    purchasedPixels.forEach((pixel) => map.set(`${pixel.x}-${pixel.y}`, pixel));
+    return map;
+  }, [purchasedPixels]);
 
-    setViewportOffset({ x: initialX, y: initialY });
-    setHasInitialized(true);
-  }, [gridWidth, gridHeight, pixelSize, onZoomChange, hasInitialized]);
+  const selectedPixelsSet = useMemo(() => {
+    const set = new Set<string>();
+    selectedPixels.forEach((pixel) => set.add(pixel.id));
+    return set;
+  }, [selectedPixels]);
 
-  // --- 4. Helper Functions ---
-  const scaledPixelSize = pixelSize * zoom;
+  const featuredPixelsList = useMemo(
+    () => purchasedPixels.filter((p) => p.image_url && p.image_url.length > 0),
+    [purchasedPixels]
+  );
 
-  const isVisible = useCallback((px: number, py: number) => {
-    const xPos = px * scaledPixelSize + viewportOffset.x;
-    const yPos = py * scaledPixelSize + viewportOffset.y;
-    return (
-      xPos > -scaledPixelSize * 2 && 
-      xPos < containerSize.width + scaledPixelSize * 2 && 
-      yPos > -scaledPixelSize * 2 && 
-      yPos < containerSize.height + scaledPixelSize * 2
-    );
-  }, [scaledPixelSize, viewportOffset, containerSize]);
+  const currentFeaturedPixel =
+    featuredPixelsList.length > 0 ? featuredPixelsList[currentFeaturedIndex] : null;
 
-  const calculatePixelPrice = useCallback((x: number, y: number) => {
-    const centerX = gridWidth / 2.0;
-    const centerY = gridHeight / 2.0;
-    const distanceFromCenter = Math.sqrt(Math.pow(x - centerX, 2) + Math.pow(y - centerY, 2));
-    const maxDistance = Math.sqrt(Math.pow(centerX, 2) + Math.pow(centerY, 2));
-    const normalizedDistance = distanceFromCenter / maxDistance;
-    
-    if (normalizedDistance < 0.212) return 299;
-    if (normalizedDistance < 0.424) return 199;
-    return 99;
-  }, [gridWidth, gridHeight]);
+  // Cycle Billboard Images
+  useEffect(() => {
+    if (featuredPixelsList.length === 0) return;
+    const interval = setInterval(() => {
+      setCurrentFeaturedIndex((prev) => (prev + 1) % featuredPixelsList.length);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [featuredPixelsList.length]);
 
-  const getPixelStatus = useCallback((x: number, y: number) => {
-    if (
-        x >= billboardConfig.x && 
+  const getPixelStatus = useCallback(
+    (x: number, y: number) => {
+      if (
+        x >= billboardConfig.x &&
         x < billboardConfig.x + billboardConfig.width &&
         y >= billboardConfig.y &&
         y < billboardConfig.y + billboardConfig.height
-    ) {
-        return 'restricted';
-    }
+      ) {
+        return "restricted";
+      }
 
-    const purchased = purchasedPixelsMap.get(`${x}-${y}`);
-    if (purchased) {
-      return purchased.owner_id === user?.id ? 'yours' : 'sold';
-    }
+      const purchased = purchasedPixelsMap.get(`${x}-${y}`);
+      if (purchased) {
+        return purchased.owner_id === user?.id ? "yours" : "sold";
+      }
 
-    return selectedPixelsSet.has(`${x}-${y}`) ? 'selected' : 'available';
-  }, [purchasedPixelsMap, selectedPixelsSet, user?.id, billboardConfig]);
+      return selectedPixelsSet.has(`${x}-${y}`) ? "selected" : "available";
+    },
+    [purchasedPixelsMap, selectedPixelsSet, user?.id, billboardConfig]
+  );
 
-  // --- 5. Selection Handler ---
-  const handlePixelClick = useCallback((x: number, y: number, event: React.MouseEvent | React.TouchEvent) => {
-    if (!isSelecting) return;
+  // ---------------------------------------------------------------------------
+  // 🎮 Event Handlers (Click, Drag, Touch)
+  // ---------------------------------------------------------------------------
 
-    const status = getPixelStatus(x, y);
-    
-    if (status === 'restricted') {
-      toast.info("Featured Billboard Area", {
-        description: "Reserved for featured community pixels.",
-        icon: <Star className="w-4 h-4 text-yellow-500" />
-      });
-      return;
-    }
-    if (status === 'sold') {
-      toast.error("This pixel is already owned!");
-      return;
-    }
+  const handlePixelClick = useCallback(
+    (x: number, y: number, event: React.MouseEvent | React.TouchEvent) => {
+      if (!isSelecting) return;
 
-    const price = calculatePixelPrice(x, y);
-    const pixelId = `${x}-${y}`;
+      const status = getPixelStatus(x, y);
 
-    if ((event as React.MouseEvent).shiftKey && rangeStart) {
-      const startX = Math.min(rangeStart.x, x);
-      const endX = Math.max(rangeStart.x, x);
-      const startY = Math.min(rangeStart.y, y);
-      const endY = Math.max(rangeStart.y, y);
-      const area = (endX - startX + 1) * (endY - startY + 1);
-      
-      if (area > 2500) {
-        toast.error("Selection too large! Max 2500 pixels.");
+      if (status === "restricted") {
+        toast.info("Featured Billboard Area", {
+          description: "Reserved for featured community pixels.",
+          icon: <Star className="w-4 h-4 text-yellow-500" />,
+        });
+        return;
+      }
+      if (status === "sold") {
+        toast.error("This pixel is already owned!");
         return;
       }
 
-      const newPixels: SelectedPixel[] = [];
-      for (let px = startX; px <= endX; px++) {
-        for (let py = startY; py <= endY; py++) {
-          const s = getPixelStatus(px, py);
-          if (s === 'available') {
-            newPixels.push({
-              x: px,
-              y: py,
-              price: calculatePixelPrice(px, py),
-              id: `${px}-${py}`
-            });
+      const price = calculatePixelPrice(x, y);
+      const pixelId = `${x}-${y}`;
+
+      // Range Selection (Shift + Click)
+      if ("shiftKey" in event && (event as React.MouseEvent).shiftKey && rangeStart) {
+        const startX = Math.min(rangeStart.x, x);
+        const endX = Math.max(rangeStart.x, x);
+        const startY = Math.min(rangeStart.y, y);
+        const endY = Math.max(rangeStart.y, y);
+        const area = (endX - startX + 1) * (endY - startY + 1);
+
+        if (area > 2500) {
+          toast.error("Selection too large! Max 2500 pixels.");
+          return;
+        }
+
+        const newPixels: SelectedPixel[] = [];
+        for (let px = startX; px <= endX; px++) {
+          for (let py = startY; py <= endY; py++) {
+            const s = getPixelStatus(px, py);
+            if (s === "available") {
+              newPixels.push({
+                x: px,
+                y: py,
+                price: calculatePixelPrice(px, py),
+                id: `${px}-${py}`,
+              });
+            }
           }
         }
-      }
 
-      const existingPixelIds = new Set(selectedPixels.map(p => p.id));
-      const uniqueNewPixels = newPixels.filter(p => !existingPixelIds.has(p.id));
-      
-      onSelectionChange([...selectedPixels, ...uniqueNewPixels]);
-      toast.success(`Selected ${uniqueNewPixels.length} pixels`);
-      setRangeStart(null);
-    } else {
-      const existingIndex = selectedPixels.findIndex(p => p.id === pixelId);
-      if (existingIndex >= 0) {
-        onSelectionChange(selectedPixels.filter((_, index) => index !== existingIndex));
-      } else {
-        onSelectionChange([...selectedPixels, { x, y, price, id: pixelId }]);
-      }
-      setRangeStart({ x, y });
-    }
-  }, [isSelecting, getPixelStatus, calculatePixelPrice, selectedPixels, onSelectionChange, rangeStart]);
+        // Merge keeping uniqueness
+        const existingPixelIds = new Set(selectedPixels.map((p) => p.id));
+        const uniqueNewPixels = newPixels.filter((p) => !existingPixelIds.has(p.id));
 
-  // --- 6. Mouse Events (With Clamping) ---
-  const handleMouseDown = useCallback((event: React.MouseEvent) => {
-    if (event.button !== 0 && event.button !== 1) return;
-    setIsDragging(true);
-    setDragDistance(0);
-    setDragStart({
-      x: event.clientX - viewportOffset.x,
-      y: event.clientY - viewportOffset.y
-    });
-  }, [viewportOffset]);
-
-  const handleMouseMove = useCallback((event: React.MouseEvent) => {
-    if (!isDragging) {
-      // Hover Logic
-      const rect = containerRef.current?.getBoundingClientRect();
-      if (rect) {
-        const relativeX = event.clientX - rect.left - viewportOffset.x;
-        const relativeY = event.clientY - rect.top - viewportOffset.y;
-        const pixelX = Math.floor(relativeX / scaledPixelSize);
-        const pixelY = Math.floor(relativeY / scaledPixelSize);
-
-        if (pixelX >= 0 && pixelX < gridWidth && pixelY >= 0 && pixelY < gridHeight) {
-          if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
-          hoverTimeoutRef.current = setTimeout(() => {
-            setHoveredPixel({ x: pixelX, y: pixelY });
-          }, 5); 
+        onSelectionChange([...selectedPixels, ...uniqueNewPixels]);
+        toast.success(`Selected ${uniqueNewPixels.length} pixels`);
+        setRangeStart(null);
+      } 
+      // Single Selection
+      else {
+        const existingIndex = selectedPixels.findIndex((p) => p.id === pixelId);
+        if (existingIndex >= 0) {
+          onSelectionChange(selectedPixels.filter((_, index) => index !== existingIndex));
         } else {
-          setHoveredPixel(null);
+          onSelectionChange([...selectedPixels, { x, y, price, id: pixelId }]);
         }
+        setRangeStart({ x, y });
       }
-      return;
-    }
-    
-    // Drag Logic (Clamped)
-    if (dragStart) {
-      const newX = event.clientX - dragStart.x;
-      const newY = event.clientY - dragStart.y;
-      const dist = Math.sqrt(Math.pow(newX - viewportOffset.x, 2) + Math.pow(newY - viewportOffset.y, 2));
-      setDragDistance(prev => prev + dist);
+    },
+    [isSelecting, getPixelStatus, calculatePixelPrice, selectedPixels, onSelectionChange, rangeStart]
+  );
+
+  const handleMouseDown = useCallback(
+    (event: React.MouseEvent) => {
+      if (event.button !== 0 && event.button !== 1) return;
+      setIsDragging(true);
+      setDragDistance(0);
+      setHoveredPixel(null); // Clear tooltip immediately
+      if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
       
-      // Apply Clamping here!
-      const clamped = clampOffset(newX, newY, zoom);
-      setViewportOffset(clamped);
-    }
-  }, [isDragging, dragStart, scaledPixelSize, viewportOffset, gridWidth, gridHeight, clampOffset, zoom]);
+      setDragStart({
+        x: event.clientX - viewportOffset.x,
+        y: event.clientY - viewportOffset.y,
+      });
+    },
+    [viewportOffset]
+  );
+
+  const handleMouseMove = useCallback(
+    (event: React.MouseEvent) => {
+      if (!isDragging) {
+        // --- Hover Logic ---
+        const rect = containerRef.current?.getBoundingClientRect();
+        if (rect) {
+          const relativeX = event.clientX - rect.left - viewportOffset.x;
+          const relativeY = event.clientY - rect.top - viewportOffset.y;
+          const pixelX = Math.floor(relativeX / scaledPixelSize);
+          const pixelY = Math.floor(relativeY / scaledPixelSize);
+
+          if (pixelX >= 0 && pixelX < gridWidth && pixelY >= 0 && pixelY < gridHeight) {
+            if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+            hoverTimeoutRef.current = setTimeout(() => {
+              setHoveredPixel({ x: pixelX, y: pixelY });
+            }, 5);
+          } else {
+            setHoveredPixel(null);
+          }
+        }
+        return;
+      }
+
+      // --- Drag Logic ---
+      if (dragStart) {
+        const newX = event.clientX - dragStart.x;
+        const newY = event.clientY - dragStart.y;
+        
+        // Calculate distance for click rejection
+        const dist = Math.sqrt(
+          Math.pow(newX - viewportOffset.x, 2) + Math.pow(newY - viewportOffset.y, 2)
+        );
+        setDragDistance((prev) => prev + dist);
+
+        const clamped = clampOffset(newX, newY, zoom);
+        setViewportOffset(clamped);
+      }
+    },
+    [isDragging, dragStart, scaledPixelSize, viewportOffset, gridWidth, gridHeight, clampOffset, zoom]
+  );
 
   const handleMouseUp = useCallback(() => {
     setIsDragging(false);
   }, []);
 
-  const handleContainerClick = useCallback((event: React.MouseEvent) => {
-    if (dragDistance > 5) return;
-    if (!isSelecting) return;
-    
-    const rect = containerRef.current?.getBoundingClientRect();
-    if (!rect) return;
+  const handleContainerClick = useCallback(
+    (event: React.MouseEvent) => {
+      if (dragDistance > 5) return; // Ignore if user dragged
+      if (!isSelecting) return;
 
-    const relativeX = event.clientX - rect.left - viewportOffset.x;
-    const relativeY = event.clientY - rect.top - viewportOffset.y;
-    const pixelX = Math.floor(relativeX / scaledPixelSize);
-    const pixelY = Math.floor(relativeY / scaledPixelSize);
+      const rect = containerRef.current?.getBoundingClientRect();
+      if (!rect) return;
 
-    if (pixelX >= 0 && pixelX < gridWidth && pixelY >= 0 && pixelY < gridHeight) {
-      handlePixelClick(pixelX, pixelY, event);
-    }
-  }, [isSelecting, dragDistance, scaledPixelSize, viewportOffset, gridWidth, gridHeight, handlePixelClick]);
+      const relativeX = event.clientX - rect.left - viewportOffset.x;
+      const relativeY = event.clientY - rect.top - viewportOffset.y;
+      const pixelX = Math.floor(relativeX / scaledPixelSize);
+      const pixelY = Math.floor(relativeY / scaledPixelSize);
 
-  // --- 7. Event Listeners (Zoom & Touch with Clamping) ---
+      if (pixelX >= 0 && pixelX < gridWidth && pixelY >= 0 && pixelY < gridHeight) {
+        handlePixelClick(pixelX, pixelY, event);
+      }
+    },
+    [isSelecting, dragDistance, scaledPixelSize, viewportOffset, gridWidth, gridHeight, handlePixelClick]
+  );
+
+  // --- Wheel & Touch Event Listeners ---
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
     const handleWheel = (event: WheelEvent) => {
-      event.preventDefault();
-      const zoomFactor = 1.05;
+      event.preventDefault(); // Stop page scroll
+      const zoomFactor = GRID_CONFIG.ZOOM_FACTOR;
       const newZoom = event.deltaY < 0 ? zoom * zoomFactor : zoom / zoomFactor;
-      // Clamp zoom levels
-      const safeZoom = Math.max(0.1, Math.min(8, newZoom));
-      
+      const safeZoom = Math.max(GRID_CONFIG.MIN_ZOOM, Math.min(GRID_CONFIG.MAX_ZOOM, newZoom));
       onZoomChange(safeZoom);
-      
-      // Note: Advanced zooming towards mouse pointer requires complex math. 
-      // For now, we allow the center to drift slightly but clamp it on next move.
     };
 
     const handleTouchStart = (e: TouchEvent) => {
-        if (e.touches.length === 2) {
-            const dx = e.touches[0].clientX - e.touches[1].clientX;
-            const dy = e.touches[0].clientY - e.touches[1].clientY;
-            const dist = Math.sqrt(dx * dx + dy * dy);
-            setTouchStart({ x: 0, y: 0, dist });
-            setInitialZoom(zoom);
-        } else if (e.touches.length === 1) {
-            setIsDragging(true);
-            setDragDistance(0);
-            setDragStart({ x: e.touches[0].clientX, y: e.touches[0].clientY });
-        }
+      if (e.touches.length === 2) {
+        // Pinch start
+        const dx = e.touches[0].clientX - e.touches[1].clientX;
+        const dy = e.touches[0].clientY - e.touches[1].clientY;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        setTouchStart({ x: 0, y: 0, dist });
+        setInitialZoom(zoom);
+      } else if (e.touches.length === 1) {
+        // Drag start
+        setIsDragging(true);
+        setDragDistance(0);
+        setHoveredPixel(null);
+        setDragStart({ x: e.touches[0].clientX, y: e.touches[0].clientY });
+      }
     };
 
     const handleTouchMove = (e: TouchEvent) => {
       if (e.touches.length === 2 && touchStart) {
-        e.preventDefault(); 
+        // Pinch Move
+        e.preventDefault();
         const dx = e.touches[0].clientX - e.touches[1].clientX;
         const dy = e.touches[0].clientY - e.touches[1].clientY;
         const dist = Math.sqrt(dx * dx + dy * dy);
         if (dist > 0 && touchStart.dist > 0) {
           const scale = dist / touchStart.dist;
-          const newZoom = Math.min(8, Math.max(0.1, initialZoom * scale));
+          const newZoom = Math.min(
+            GRID_CONFIG.MAX_ZOOM,
+            Math.max(GRID_CONFIG.MIN_ZOOM, initialZoom * scale)
+          );
           onZoomChange(newZoom);
         }
       } else if (e.touches.length === 1 && isDragging && dragStart) {
-        e.preventDefault(); 
+        // Drag Move
+        e.preventDefault();
         const deltaX = e.touches[0].clientX - dragStart.x;
         const deltaY = e.touches[0].clientY - dragStart.y;
-        
-        setDragDistance(prev => prev + Math.abs(deltaX) + Math.abs(deltaY));
-        
-        const rawNewX = viewportOffset.x + deltaX; // Touch uses delta logic
-        const rawNewY = viewportOffset.y + deltaY;
 
-        // Apply Clamping
+        setDragDistance((prev) => prev + Math.abs(deltaX) + Math.abs(deltaY));
+
+        const rawNewX = viewportOffset.x + deltaX;
+        const rawNewY = viewportOffset.y + deltaY;
         const clamped = clampOffset(rawNewX, rawNewY, zoom);
-        
+
         setViewportOffset(clamped);
         setDragStart({ x: e.touches[0].clientX, y: e.touches[0].clientY });
       }
     };
 
     const handleTouchEnd = () => {
-        setIsDragging(false);
-        setTouchStart(null);
+      setIsDragging(false);
+      setTouchStart(null);
     };
 
-    container.addEventListener('wheel', handleWheel, { passive: false });
-    container.addEventListener('touchstart', handleTouchStart, { passive: false });
-    container.addEventListener('touchmove', handleTouchMove, { passive: false });
-    container.addEventListener('touchend', handleTouchEnd);
+    // Use { passive: false } to allow preventDefault()
+    container.addEventListener("wheel", handleWheel, { passive: false });
+    container.addEventListener("touchstart", handleTouchStart, { passive: false });
+    container.addEventListener("touchmove", handleTouchMove, { passive: false });
+    container.addEventListener("touchend", handleTouchEnd);
+    container.addEventListener("touchcancel", handleTouchEnd);
 
     return () => {
-      container.removeEventListener('wheel', handleWheel);
-      container.removeEventListener('touchstart', handleTouchStart);
-      container.removeEventListener('touchmove', handleTouchMove);
-      container.removeEventListener('touchend', handleTouchEnd);
+      container.removeEventListener("wheel", handleWheel);
+      container.removeEventListener("touchstart", handleTouchStart);
+      container.removeEventListener("touchmove", handleTouchMove);
+      container.removeEventListener("touchend", handleTouchEnd);
+      container.removeEventListener("touchcancel", handleTouchEnd);
     };
   }, [zoom, onZoomChange, touchStart, initialZoom, isDragging, dragStart, clampOffset, viewportOffset]);
 
-  // Define isMobileDevice for rendering conditionals
-  const isMobileDevice = typeof window !== 'undefined' && window.innerWidth < 768;
+  // ============================================
+  // 🎨 RENDER
+  // ============================================
 
   return (
     <div className="relative w-full max-w-full">
       <div className="relative p-0 sm:p-2 md:p-6 rounded-none sm:rounded-2xl bg-gradient-to-br from-blue-50 via-white to-purple-50">
-        
-        {/* CANVAS CONTAINER */}
         <div
           ref={containerRef}
-          className="relative overflow-hidden border-y-4 sm:border-4 border-indigo-500 sm:rounded-xl bg-white select-none shadow-2xl mx-auto"
-          style={{ 
-            width: '100%', 
-            height: 'calc(100vh - 200px)',
-            maxHeight: '800px',
-            minHeight: '400px',
-            touchAction: 'none',
-            WebkitUserSelect: 'none',
-            cursor: isDragging ? 'grabbing' : (isSelecting ? 'crosshair' : 'grab'),
-            // Added distinct border/shadow to separate grid from "void"
-            backgroundColor: '#f8fafc', // Very light slate background for the "void"
+          className="relative overflow-hidden sm:rounded-xl bg-white select-none shadow-2xl mx-auto sm:!border-4 sm:!border-indigo-500"
+          style={{
+            width: "100%",
+            height: "calc(100vh - 200px)",
+            maxHeight: "800px",
+            minHeight: "400px",
+            touchAction: "none",
+            WebkitUserSelect: "none",
+            cursor: isDragging ? "grabbing" : isSelecting ? "crosshair" : "grab",
+            backgroundColor: "#f8fafc",
+            borderTop: "4px solid #6366f1",
+            borderBottom: "4px solid #6366f1",
           }}
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
@@ -513,7 +607,7 @@ export const VirtualizedPixelGrid = ({
         >
           {isLoading && (
             <div className="absolute inset-0 bg-white/90 backdrop-blur-sm flex items-center justify-center z-50">
-              <div className="animate-spin rounded-full h-12 w-12 border-4 border-purple-500 border-t-transparent"></div>
+              <Loader2 className="h-12 w-12 animate-spin text-indigo-600" />
             </div>
           )}
 
@@ -521,190 +615,201 @@ export const VirtualizedPixelGrid = ({
             CANVAS
           </div>
 
-          <div 
+          <div
             style={{
               transform: `translate3d(${viewportOffset.x}px, ${viewportOffset.y}px, 0)`,
-              willChange: 'transform',
-              transformOrigin: '0 0',
+              willChange: "transform",
+              transformOrigin: "0 0",
             }}
           >
-            {/* Grid Boundary Shadow (Visual cue for end of world) */}
-            <div 
-                className="absolute pointer-events-none shadow-[0_0_50px_rgba(0,0,0,0.15)]"
-                style={{
-                    width: gridWidth * scaledPixelSize,
-                    height: gridHeight * scaledPixelSize,
-                    backgroundColor: 'white', // Ensure grid has white background
-                }}
+            {/* 1. Grid Background Layer */}
+            <div
+              className="absolute pointer-events-none shadow-[0_0_50px_rgba(0,0,0,0.15)]"
+              style={{
+                width: gridWidth * scaledPixelSize,
+                height: gridHeight * scaledPixelSize,
+                backgroundColor: "white",
+              }}
             />
 
-            {/* Grid Background */}
+            {/* 2. Grid Lines (Only when zoomed in) */}
             {showGrid && zoom > 0.5 && (
-              <div 
+              <div
                 className="absolute pointer-events-none"
                 style={{
                   width: gridWidth * scaledPixelSize,
                   height: gridHeight * scaledPixelSize,
-                  backgroundImage: `
-                    linear-gradient(to right, rgba(100, 116, 139, 0.4) 1px, transparent 1px),
-                    linear-gradient(to bottom, rgba(100, 116, 139, 0.4) 1px, transparent 1px)
-                  `,
+                  backgroundImage:
+                    "linear-gradient(to right, rgba(100,116,139,0.4) 1px, transparent 1px), linear-gradient(to bottom, rgba(100,116,139,0.4) 1px, transparent 1px)",
                   backgroundSize: `${scaledPixelSize}px ${scaledPixelSize}px`,
                 }}
               />
             )}
 
-            {/* Price Zone Borders */}
+            {/* 3. Price Zones */}
             <div className="absolute pointer-events-none">
+              {/* Premium Zone */}
               <div
-                className="absolute border-2 border-blue-400/50 rounded-sm"
+                className="absolute rounded-sm"
                 style={{
-                  left: (gridWidth / 2 - 45) * scaledPixelSize,
-                  top: (gridHeight / 2 - 45) * scaledPixelSize,
-                  width: 90 * scaledPixelSize,
-                  height: 90 * scaledPixelSize,
-                  boxShadow: '0 0 15px rgba(59, 130, 246, 0.1)',
+                  left: (gridWidth / 2 - GRID_CONFIG.PREMIUM_ZONE_SIZE / 2) * scaledPixelSize,
+                  top: (gridHeight / 2 - GRID_CONFIG.PREMIUM_ZONE_SIZE / 2) * scaledPixelSize,
+                  width: GRID_CONFIG.PREMIUM_ZONE_SIZE * scaledPixelSize,
+                  height: GRID_CONFIG.PREMIUM_ZONE_SIZE * scaledPixelSize,
+                  border: "3px solid rgba(96, 165, 250, 0.6)",
+                  boxShadow: "0 0 20px rgba(59,130,246,0.2)",
                 }}
               />
+              {/* Gold Zone */}
               <div
-                className="absolute border-2 border-amber-400/60 rounded-sm shadow-lg"
+                className="absolute rounded-sm shadow-lg"
                 style={{
-                  left: (gridWidth / 2 - 22.5) * scaledPixelSize,
-                  top: (gridHeight / 2 - 22.5) * scaledPixelSize,
-                  width: 45 * scaledPixelSize,
-                  height: 45 * scaledPixelSize,
-                  boxShadow: '0 0 20px rgba(251, 191, 36, 0.2)',
+                  left: (gridWidth / 2 - GRID_CONFIG.GOLD_ZONE_SIZE / 2) * scaledPixelSize,
+                  top: (gridHeight / 2 - GRID_CONFIG.GOLD_ZONE_SIZE / 2) * scaledPixelSize,
+                  width: GRID_CONFIG.GOLD_ZONE_SIZE * scaledPixelSize,
+                  height: GRID_CONFIG.GOLD_ZONE_SIZE * scaledPixelSize,
+                  border: "3px solid rgba(251, 191, 36, 0.8)",
+                  boxShadow: "0 0 25px rgba(251,191,36,0.3)",
                 }}
               />
             </div>
 
-            {/* --- FEATURED BILLBOARD (Dynamic User Images) --- */}
+            {/* 4. Billboard */}
             <div
-                className="absolute z-30 shadow-2xl border-4 border-yellow-500 bg-black overflow-hidden flex flex-col items-center justify-center group"
-                style={{
-                    left: billboardConfig.x * scaledPixelSize,
-                    top: billboardConfig.y * scaledPixelSize,
-                    width: billboardConfig.width * scaledPixelSize,
-                    height: billboardConfig.height * scaledPixelSize,
-                    pointerEvents: 'auto', 
-                }}
+              className="absolute z-30 shadow-2xl bg-black overflow-hidden flex flex-col items-center justify-center group"
+              style={{
+                left: billboardConfig.x * scaledPixelSize,
+                top: billboardConfig.y * scaledPixelSize,
+                width: billboardConfig.width * scaledPixelSize,
+                height: billboardConfig.height * scaledPixelSize,
+                pointerEvents: "auto",
+                border: "5px solid #eab308",
+              }}
             >
-                {/* Fallback if no images found in grid */}
-                {!currentFeaturedPixel ? (
-                   <div className="flex flex-col items-center justify-center h-full w-full bg-neutral-900 text-center p-2">
-                      <Star className="w-8 h-8 text-yellow-500 mb-1 animate-pulse" />
-                      <p className="text-yellow-500 font-bold text-[8px] md:text-[10px] uppercase">
-                        Premium Spot
-                      </p>
-                      <p className="text-white/60 text-[6px] md:text-[8px]">
-                        Your Ad Here
-                      </p>
-                   </div>
-                ) : (
-                  <>
-                    <div 
-                      className="absolute inset-0 bg-cover bg-center transition-all duration-1000 ease-in-out"
-                      style={{
-                        backgroundImage: `url(${currentFeaturedPixel.image_url})`,
-                        opacity: 0.95
-                      }}
-                    />
-                    
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-black/30 flex flex-col items-center justify-between p-2 md:p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                       <div className="bg-yellow-500 text-black text-[10px] md:text-xs font-black uppercase px-2 py-0.5 rounded shadow-lg flex items-center gap-1">
-                          <Star className="w-3 h-3 fill-black" /> Featured
-                       </div>
-                       
-                       {currentFeaturedPixel.link_url && (
-                         <button 
-                            className="bg-white/95 hover:bg-white text-black text-[10px] font-bold px-3 py-1 rounded-full shadow-lg transition-transform hover:scale-105 active:scale-95 flex items-center gap-1"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              window.open(currentFeaturedPixel.link_url || '#', '_blank');
-                              toast.success(`Visiting ${currentFeaturedPixel.alt_text || 'Partner'}...`);
-                            }}
-                         >
-                            Visit Partner <ExternalLink className="w-3 h-3" />
-                         </button>
-                       )}
+              {!currentFeaturedPixel ? (
+                <div className="flex flex-col items-center justify-center h-full w-full bg-neutral-900 text-center p-3">
+                  <Star className="w-16 h-16 text-yellow-500 mb-2 animate-pulse" />
+                  <p className="text-yellow-500 font-bold text-sm md:text-base uppercase">
+                    Premium Spot
+                  </p>
+                  <p className="text-white/60 text-xs md:text-sm">Your Ad Here</p>
+                </div>
+              ) : (
+                <>
+                  <div
+                    className="absolute inset-0 bg-cover bg-center transition-all duration-1000 ease-in-out"
+                    style={{
+                      backgroundImage: `url(${currentFeaturedPixel.image_url})`,
+                      opacity: 0.95,
+                    }}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-black/30 flex flex-col items-center justify-between p-4 md:p-5 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <div className="bg-yellow-500 text-black text-sm md:text-base font-black uppercase px-4 py-1.5 rounded shadow-lg flex items-center gap-2">
+                      <Star className="w-5 h-5 fill-black" /> Featured
                     </div>
-                  </>
-                )}
+                    {currentFeaturedPixel.link_url && (
+                      <button
+                        className="bg-white/95 hover:bg-white text-black text-sm md:text-base font-bold px-5 py-2.5 rounded-full shadow-lg transition-transform hover:scale-105 active:scale-95 flex items-center gap-2"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          window.open(currentFeaturedPixel.link_url || "#", "_blank");
+                        }}
+                      >
+                        Visit Partner <ExternalLink className="w-5 h-5" />
+                      </button>
+                    )}
+                  </div>
+                </>
+              )}
             </div>
 
-            {/* Selected Pixels */}
+            {/* 5. Selected Pixels (Rendering Layer) */}
             {selectedPixels.map(({ x, y, id }) => {
               if (!isVisible(x, y)) return null;
               return (
                 <div
                   key={`sel-${id}`}
-                  className="absolute border border-purple-500 pointer-events-none"
+                  className="absolute pointer-events-none"
                   style={{
                     left: x * scaledPixelSize,
                     top: y * scaledPixelSize,
                     width: scaledPixelSize,
                     height: scaledPixelSize,
-                    backgroundColor: 'rgba(168, 85, 247, 0.5)',
+                    backgroundColor: "rgba(168,85,247,0.5)",
+                    border: "1px solid #a855f7",
                   }}
                 />
               );
             })}
 
-            {/* Purchased Pixels */}
+            {/* 6. Purchased Pixels (Rendering Layer) */}
             {purchasedPixels.map((pixel) => {
               const { x, y, id, owner_id, image_url, link_url, alt_text } = pixel;
               if (!isVisible(x, y)) return null;
               if (showMyPixels && owner_id !== user?.id) return null;
-              
+
               const isOwner = owner_id === user?.id;
-              
+
               return (
                 <div
                   key={`sold-${id}`}
                   role="button"
                   tabIndex={link_url ? 0 : -1}
-                  className={`absolute border ${isOwner ? 'border-green-500 z-10' : 'border-slate-300 z-0'} ${link_url ? 'cursor-pointer' : ''}`}
+                  className={link_url ? "cursor-pointer" : ""}
                   style={{
+                    position: "absolute",
                     left: x * scaledPixelSize,
                     top: y * scaledPixelSize,
                     width: scaledPixelSize,
                     height: scaledPixelSize,
-                    backgroundColor: image_url ? 'transparent' : (isOwner ? '#10b981' : '#ef4444'),
-                    backgroundImage: image_url ? `url(${image_url})` : 'none',
-                    backgroundSize: 'cover',
+                    backgroundColor: image_url ? "transparent" : isOwner ? "#10b981" : "#ef4444",
+                    backgroundImage: image_url ? `url(${image_url})` : "none",
+                    backgroundSize: "cover",
                     opacity: isOwner ? 1 : 0.85,
-                    boxShadow: isOwner ? '0 0 6px rgba(16, 185, 129, 0.6)' : 'none',
+                    boxShadow: isOwner ? "0 0 6px rgba(16,185,129,0.6)" : "none",
+                    border: isOwner ? "1px solid #10b981" : "1px solid #cbd5e1",
+                    zIndex: isOwner ? 10 : 0,
                   }}
                   onClick={(e) => {
                     if (link_url) {
                       e.stopPropagation();
-                      window.open(link_url, '_blank');
-                      toast.success(`Opening ${alt_text || 'pixel link'}...`);
+                      window.open(link_url, "_blank");
+                      toast.success(`Opening ${alt_text || "pixel link"}...`);
                     }
                   }}
                 />
               );
             })}
 
-            {/* Hover Highlight (Single Pixel) */}
+            {/* 7. Hover Indicator */}
             {hoveredPixel && isSelecting && !isDragging && (
-                <div 
-                   className={`absolute border pointer-events-none ${
-                     getPixelStatus(hoveredPixel.x, hoveredPixel.y) === 'restricted' 
-                       ? 'border-red-500 bg-red-500/30' 
-                       : 'border-dashed border-indigo-400 bg-indigo-500/20'
-                   }`}
-                   style={{
-                     left: hoveredPixel.x * scaledPixelSize,
-                     top: hoveredPixel.y * scaledPixelSize,
-                     width: scaledPixelSize,
-                     height: scaledPixelSize,
-                   }}
-                />
+              <div
+                className="absolute pointer-events-none"
+                style={{
+                  left: hoveredPixel.x * scaledPixelSize,
+                  top: hoveredPixel.y * scaledPixelSize,
+                  width: scaledPixelSize,
+                  height: scaledPixelSize,
+                  backgroundColor:
+                    getPixelStatus(hoveredPixel.x, hoveredPixel.y) === "restricted"
+                      ? "rgba(239, 68, 68, 0.3)"
+                      : "rgba(99, 102, 241, 0.2)",
+                  borderStyle:
+                    getPixelStatus(hoveredPixel.x, hoveredPixel.y) === "restricted"
+                      ? "solid"
+                      : "dashed",
+                  borderWidth: "1px",
+                  borderColor:
+                    getPixelStatus(hoveredPixel.x, hoveredPixel.y) === "restricted"
+                      ? "#ef4444"
+                      : "#818cf8",
+                }}
+              />
             )}
           </div>
 
-          <div className="absolute top-3 left-3 pointer-events-none bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-full text-xs font-semibold border border-slate-200 shadow-lg">
+          {/* 8. HUD Elements */}
+          <div className="absolute top-3 left-3 pointer-events-none bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-full text-xs font-semibold shadow-lg border border-slate-200">
             <span className="text-slate-700">{Math.round(zoom * 100)}%</span>
           </div>
 
@@ -716,16 +821,21 @@ export const VirtualizedPixelGrid = ({
         </div>
       </div>
 
-      {hoveredPixel && !isMobileDevice && (
-        <PixelTooltip 
+      {/* 9. Tooltip (Desktop Only) */}
+      {hoveredPixel && !isMobile && (
+        <PixelTooltip
           x={hoveredPixel.x}
           y={hoveredPixel.y}
           price={calculatePixelPrice(hoveredPixel.x, hoveredPixel.y)}
-          status={getPixelStatus(hoveredPixel.x, hoveredPixel.y)}
+          status={(() => {
+            const pixelStatus = getPixelStatus(hoveredPixel.x, hoveredPixel.y);
+            return pixelStatus === 'restricted' ? 'available' : pixelStatus;
+          })()}
         />
       )}
 
-      {!isMobileDevice && (
+      {/* 10. Minimap (Desktop Only) */}
+      {!isMobile && (
         <MiniMap
           gridWidth={gridWidth}
           gridHeight={gridHeight}

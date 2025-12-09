@@ -1,13 +1,18 @@
-import { useState, useRef } from 'react';
-import { useAuth } from '@/hooks/useAuth';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Camera, Upload, Loader2 } from 'lucide-react';
-import { toast } from '@/hooks/use-toast';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Loader2, Upload, User } from "lucide-react";
+import { toast } from "sonner";
 
 interface Profile {
   id: string;
@@ -16,6 +21,7 @@ interface Profile {
   phone_number: string | null;
   date_of_birth: string | null;
   avatar_url: string | null;
+  email: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -27,237 +33,265 @@ interface ProfileEditModalProps {
   onProfileUpdate: () => void;
 }
 
-const ProfileEditModal = ({ isOpen, onClose, profile, onProfileUpdate }: ProfileEditModalProps) => {
-  const { user } = useAuth();
-  const fileInputRef = useRef<HTMLInputElement>(null);
+const ProfileEditModal: React.FC<ProfileEditModalProps> = ({
+  isOpen,
+  onClose,
+  profile,
+  onProfileUpdate
+}) => {
   const [loading, setLoading] = useState(false);
-  const [avatarUploading, setAvatarUploading] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [formData, setFormData] = useState({
-    full_name: profile?.full_name || '',
-    phone_number: profile?.phone_number || '',
-    date_of_birth: profile?.date_of_birth || '',
+    full_name: '',
+    phone_number: '',
+    date_of_birth: '',
+    avatar_url: ''
   });
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(profile?.avatar_url || null);
 
-  const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+  useEffect(() => {
+    if (profile) {
+      setFormData({
+        full_name: profile.full_name || '',
+        phone_number: profile.phone_number || '',
+        date_of_birth: profile.date_of_birth || '',
+        avatar_url: profile.avatar_url || ''
+      });
+    }
+  }, [profile]);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleAvatarUpload = async (file: File) => {
-    if (!user) return;
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !profile) return;
 
-    setAvatarUploading(true);
+    // Validate file size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('Image must be less than 2MB');
+      return;
+    }
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please upload an image file');
+      return;
+    }
+
+    setUploading(true);
+
     try {
-      // Create a unique filename
       const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}/avatar.${fileExt}`;
+      const fileName = `${profile.user_id}-${Date.now()}.${fileExt}`;
+      const filePath = `avatars/${fileName}`;
 
-      // Delete existing avatar if any
-      if (profile?.avatar_url) {
-        const oldFileName = profile.avatar_url.split('/').pop();
-        if (oldFileName) {
-          await supabase.storage
-            .from('avatars')
-            .remove([`${user.id}/${oldFileName}`]);
-        }
-      }
-
-      // Upload new avatar
       const { error: uploadError } = await supabase.storage
         .from('avatars')
-        .upload(fileName, file, { upsert: true });
+        .upload(filePath, file, { upsert: true });
 
       if (uploadError) throw uploadError;
 
-      // Get the public URL
       const { data: { publicUrl } } = supabase.storage
         .from('avatars')
-        .getPublicUrl(fileName);
+        .getPublicUrl(filePath);
 
-      // Update the profile with new avatar URL
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ avatar_url: publicUrl })
-        .eq('user_id', user.id);
-
-      if (updateError) throw updateError;
-
-      setAvatarPreview(publicUrl);
-      toast({
-        title: "Success",
-        description: "Profile picture updated successfully",
-      });
-
+      setFormData(prev => ({ ...prev, avatar_url: publicUrl }));
+      toast.success('Avatar uploaded successfully');
     } catch (error) {
       console.error('Error uploading avatar:', error);
-      toast({
-        title: "Error",
-        description: "Failed to upload profile picture",
-        variant: "destructive",
-      });
+      toast.error('Failed to upload avatar');
     } finally {
-      setAvatarUploading(false);
+      setUploading(false);
     }
   };
 
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      // Validate file type
-      if (!file.type.startsWith('image/')) {
-        toast({
-          title: "Error",
-          description: "Please select an image file",
-          variant: "destructive",
-        });
-        return;
-      }
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!profile) return;
 
-      // Validate file size (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        toast({
-          title: "Error",
-          description: "File size must be less than 5MB",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      handleAvatarUpload(file);
+    // Validate required fields
+    if (!formData.full_name?.trim()) {
+      toast.error('Full name is required');
+      return;
     }
-  };
 
-  const handleSave = async () => {
-    if (!user) return;
+    if (formData.full_name.trim().length < 2) {
+      toast.error('Full name must be at least 2 characters');
+      return;
+    }
 
     setLoading(true);
+
     try {
       const { error } = await supabase
         .from('profiles')
         .update({
-          full_name: formData.full_name || null,
-          phone_number: formData.phone_number || null,
+          full_name: formData.full_name.trim(),
+          phone_number: formData.phone_number.trim() || null,
           date_of_birth: formData.date_of_birth || null,
+          avatar_url: formData.avatar_url || null,
+          updated_at: new Date().toISOString()
         })
-        .eq('user_id', user.id);
+        .eq('user_id', profile.user_id);
 
       if (error) throw error;
 
-      toast({
-        title: "Success",
-        description: "Profile updated successfully",
-      });
-
+      toast.success('Profile updated successfully');
       onProfileUpdate();
       onClose();
     } catch (error) {
       console.error('Error updating profile:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update profile",
-        variant: "destructive",
-      });
+      toast.error('Failed to update profile');
     } finally {
       setLoading(false);
     }
   };
 
-  const getInitials = (name: string | null) => {
-    if (!name) return 'U';
-    return name.split(' ').map(n => n[0]).join('').toUpperCase();
+  const getInitials = (name: string | null): string => {
+    if (!name || name.trim().length === 0) return 'U';
+    return name
+      .trim()
+      .split(' ')
+      .filter(n => n.length > 0)
+      .map(n => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>Edit Profile</DialogTitle>
+          <DialogDescription>
+            Update your personal information and profile details. Click save when you're done.
+          </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6">
-          {/* Avatar Section */}
-          <div className="flex flex-col items-center space-y-4">
-            <div className="relative">
-              <Avatar className="w-24 h-24 border-4 border-background shadow-lg">
-                <AvatarImage 
-                  src={avatarPreview || `https://images.unsplash.com/photo-1535268647677-300dbf3d78d1?w=150&h=150&fit=crop&crop=face`} 
-                  alt="Profile picture" 
-                />
-                <AvatarFallback className="text-xl font-bold">
-                  {getInitials(formData.full_name)}
-                </AvatarFallback>
-              </Avatar>
-              
-              {avatarUploading && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full">
-                  <Loader2 className="w-6 h-6 text-white animate-spin" />
-                </div>
-              )}
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Avatar Upload */}
+          <div className="flex flex-col items-center gap-4">
+            <Avatar className="w-24 h-24 border-4 border-background shadow-lg">
+              <AvatarImage 
+                src={formData.avatar_url || undefined} 
+                alt={formData.full_name || 'User'}
+              />
+              <AvatarFallback className="text-2xl font-bold bg-gradient-to-br from-primary to-secondary text-primary-foreground">
+                {getInitials(formData.full_name)}
+              </AvatarFallback>
+            </Avatar>
+            
+            <div className="flex flex-col items-center gap-2">
+              <Label 
+                htmlFor="avatar-upload" 
+                className="cursor-pointer"
+              >
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={uploading}
+                  asChild
+                >
+                  <span>
+                    {uploading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Uploading...
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="w-4 h-4 mr-2" />
+                        Change Avatar
+                      </>
+                    )}
+                  </span>
+                </Button>
+              </Label>
+              <input
+                id="avatar-upload"
+                type="file"
+                accept="image/*"
+                onChange={handleAvatarUpload}
+                className="hidden"
+                disabled={uploading}
+              />
+              <p className="text-xs text-muted-foreground">
+                Max 2MB • JPG, PNG, or GIF
+              </p>
             </div>
-
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={avatarUploading}
-              className="gap-2"
-            >
-              {avatarUploading ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Camera className="w-4 h-4" />
-              )}
-              Change Photo
-            </Button>
-
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleFileSelect}
-              className="hidden"
-            />
           </div>
 
           {/* Form Fields */}
           <div className="space-y-4">
-            <div>
-              <Label htmlFor="full_name">Full Name</Label>
-              <Input
-                id="full_name"
-                value={formData.full_name}
-                onChange={(e) => handleInputChange('full_name', e.target.value)}
-                placeholder="Enter your full name"
-              />
+            {/* Full Name */}
+            <div className="space-y-2">
+              <Label htmlFor="full_name">
+                Full Name <span className="text-destructive">*</span>
+              </Label>
+              <div className="relative">
+                <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="full_name"
+                  name="full_name"
+                  type="text"
+                  placeholder="John Doe"
+                  value={formData.full_name}
+                  onChange={handleInputChange}
+                  className="pl-10"
+                  required
+                  minLength={2}
+                  maxLength={100}
+                />
+              </div>
             </div>
 
-            <div>
+            {/* Phone Number */}
+            <div className="space-y-2">
               <Label htmlFor="phone_number">Phone Number</Label>
               <Input
                 id="phone_number"
+                name="phone_number"
+                type="tel"
+                placeholder="+91 1234567890"
                 value={formData.phone_number}
-                onChange={(e) => handleInputChange('phone_number', e.target.value)}
-                placeholder="Enter your phone number"
+                onChange={handleInputChange}
+                maxLength={20}
               />
             </div>
 
-            <div>
+            {/* Date of Birth */}
+            <div className="space-y-2">
               <Label htmlFor="date_of_birth">Date of Birth</Label>
               <Input
                 id="date_of_birth"
+                name="date_of_birth"
                 type="date"
                 value={formData.date_of_birth}
-                onChange={(e) => handleInputChange('date_of_birth', e.target.value)}
+                onChange={handleInputChange}
+                max={new Date().toISOString().split('T')[0]}
               />
             </div>
           </div>
 
           {/* Action Buttons */}
-          <div className="flex justify-end space-x-2">
-            <Button variant="outline" onClick={onClose}>
+          <div className="flex justify-end gap-3 pt-4 border-t">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              disabled={loading}
+            >
               Cancel
             </Button>
-            <Button onClick={handleSave} disabled={loading}>
+            <Button
+              type="submit"
+              disabled={loading || uploading}
+              className="min-w-[100px]"
+            >
               {loading ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -268,7 +302,7 @@ const ProfileEditModal = ({ isOpen, onClose, profile, onProfileUpdate }: Profile
               )}
             </Button>
           </div>
-        </div>
+        </form>
       </DialogContent>
     </Dialog>
   );

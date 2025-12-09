@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo, CSSProperties } from 'react';
 import { Pause, Play, Eye } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
 
 interface TickerMessage {
   id: number;
@@ -9,6 +10,9 @@ interface TickerMessage {
 }
 
 const LiveTicker: React.FC = () => {
+  const location = useLocation();
+  
+  // ✅ MOVE ALL HOOKS BEFORE ANY CONDITIONAL RETURNS
   const [messages, setMessages] = useState<TickerMessage[]>([
     { id: 1, message: "TechCorp purchased 25 pixels for ₹2,475", emoji: "🔥", type: 'buy' },
     { id: 2, message: "StartupHub listed 10 pixels on marketplace", emoji: "🚀", type: 'resale' },
@@ -26,7 +30,6 @@ const LiveTicker: React.FC = () => {
   const messageIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const isMountedRef = useRef(true);
 
-  // Enhanced message pool with more realistic variations
   const newMessagesPool = useMemo(() => [
     { message: "Anonymous bought 8 pixels for ₹792", emoji: "🔥", type: 'buy' as const },
     { message: "BrandX listed 20 pixels for resale", emoji: "🚀", type: 'resale' as const },
@@ -38,44 +41,35 @@ const LiveTicker: React.FC = () => {
     { message: "DigitalAgency claimed 30 pixels", emoji: "🚀", type: 'buy' as const },
   ], []);
 
-  // More sophisticated viewer calculation with smoother transitions
   const getViewerRangeByHour = useCallback((): [number, number] => {
     const now = new Date();
     const hour = now.getHours();
     const day = now.getDay();
     const minute = now.getMinutes();
     
-    // Calculate if today is viral day (deterministic but seems random)
     const weekNumber = Math.floor(Date.now() / (7 * 24 * 60 * 60 * 1000));
     const viralDay = weekNumber % 7;
     const isViralDay = day === viralDay;
     
-    // Weekend boost (Saturday = 6, Sunday = 0)
     const isWeekend = day === 0 || day === 6;
     const weekendMultiplier = isWeekend ? 1.3 : 1;
     
-    // Gradual transitions between time periods (using minutes for smoothness)
     let baseMin = 100;
     let baseMax = 300;
     
     if (hour >= 0 && hour < 6) {
-      // Late night: 50-200
       baseMin = 50;
       baseMax = 200;
     } else if (hour >= 6 && hour < 10) {
-      // Morning ramp up: 150-350
-      baseMin = 150 + Math.floor((hour - 6) * 25); // Gradual increase
+      baseMin = 150 + Math.floor((hour - 6) * 25);
       baseMax = 350;
     } else if (hour >= 10 && hour < 14) {
-      // Daytime peak: 300-700
       baseMin = 300;
       baseMax = 700;
     } else if (hour >= 14 && hour < 18) {
-      // Afternoon dip: 200-450
       baseMin = 200;
       baseMax = 450;
     } else if (hour >= 18 && hour < 22) {
-      // Evening MEGA peak: 600-2000 (or viral: 1500-5000)
       if (isViralDay) {
         baseMin = 1500 + Math.floor((hour - 18) * 100);
         baseMax = 5000;
@@ -84,23 +78,19 @@ const LiveTicker: React.FC = () => {
         baseMax = 2000;
       }
     } else if (hour >= 22) {
-      // Late evening decline: 150-400
       baseMin = 150;
       baseMax = 400 - Math.floor((hour - 22) * 50);
     }
     
-    // Apply weekend multiplier
     baseMin = Math.floor(baseMin * weekendMultiplier);
     baseMax = Math.floor(baseMax * weekendMultiplier);
     
-    // Add minute-based variance for ultra-smooth transitions
     const minuteVariance = Math.floor((minute / 60) * 50);
     baseMin += minuteVariance;
     
     return [baseMin, baseMax];
   }, []);
 
-  // Detect mobile on mount
   useEffect(() => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth <= 768);
@@ -112,7 +102,6 @@ const LiveTicker: React.FC = () => {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Initialize viewer count with realistic value
   useEffect(() => {
     const [min, max] = getViewerRangeByHour();
     const initialCount = Math.floor(Math.random() * (max - min + 1)) + min;
@@ -122,7 +111,6 @@ const LiveTicker: React.FC = () => {
     }
   }, [getViewerRangeByHour]);
 
-  // Ultra-realistic viewer count updates with natural fluctuations
   useEffect(() => {
     const updateViewers = () => {
       if (!isMountedRef.current) return;
@@ -130,47 +118,35 @@ const LiveTicker: React.FC = () => {
       setViewerCount(prev => {
         const [min, max] = getViewerRangeByHour();
         
-        // More natural fluctuation pattern
-        // 70% chance of small change (-10 to +15)
-        // 20% chance of medium change (-20 to +30)
-        // 10% chance of larger change (-30 to +50)
         const rand = Math.random();
         let change;
         
         if (rand < 0.7) {
-          // Small, frequent changes
           change = Math.floor(Math.random() * 26) - 10;
         } else if (rand < 0.9) {
-          // Medium changes
           change = Math.floor(Math.random() * 51) - 20;
         } else {
-          // Larger spikes (simulating groups joining/leaving)
           change = Math.floor(Math.random() * 81) - 30;
         }
         
         let newCount = prev + change;
         
-        // Soft boundaries - allow brief excursions outside range
         const softMin = min - 20;
         const softMax = max + 30;
         
-        // Hard boundaries
         newCount = Math.max(softMin, Math.min(softMax, newCount));
         
-        // Gentle pull back towards target range
         if (newCount < min) {
           newCount += Math.floor((min - newCount) * 0.3);
         } else if (newCount > max) {
           newCount -= Math.floor((newCount - max) * 0.3);
         }
         
-        // Ensure minimum of 50 viewers always
         newCount = Math.max(50, newCount);
         
         return Math.floor(newCount);
       });
       
-      // Variable update intervals (2-7 seconds) for more organic feel
       if (isMountedRef.current) {
         const randomInterval = Math.floor(Math.random() * 5000) + 2000;
         viewerTimerRef.current = setTimeout(updateViewers, randomInterval);
@@ -187,7 +163,6 @@ const LiveTicker: React.FC = () => {
     };
   }, [getViewerRangeByHour]);
 
-  // Add new messages with realistic timing
   useEffect(() => {
     if (isPaused || !isMountedRef.current) return;
 
@@ -201,7 +176,6 @@ const LiveTicker: React.FC = () => {
       });
     };
 
-    // Messages appear every 7-12 seconds for realistic pacing
     const interval = Math.floor(Math.random() * 5000) + 7000;
     messageIntervalRef.current = setInterval(addMessage, interval);
     
@@ -213,7 +187,6 @@ const LiveTicker: React.FC = () => {
     };
   }, [isPaused, newMessagesPool]);
 
-  // Cleanup on unmount
   useEffect(() => {
     isMountedRef.current = true;
     
@@ -238,14 +211,13 @@ const LiveTicker: React.FC = () => {
 
   const getStrongColor = useCallback((type: string) => {
     switch(type) {
-      case 'premium': return '#8b5cf6'; // Purple
-      case 'buy': return '#10b981';     // Green
-      case 'resale': return '#f59e0b';  // Orange
-      default: return '#6366f1';        // Blue
+      case 'premium': return '#8b5cf6';
+      case 'buy': return '#10b981';
+      case 'resale': return '#f59e0b';
+      default: return '#6366f1';
     }
   }, []);
 
-  // Optimized inline styles
   const styles: { [key: string]: CSSProperties } = {
     wrapper: {
       position: 'fixed',
@@ -261,8 +233,18 @@ const LiveTicker: React.FC = () => {
       background: 'rgba(255, 255, 255, 0.95)',
       backdropFilter: 'blur(12px)',
       WebkitBackdropFilter: 'blur(12px)',
-      border: isMobile ? 'none' : '1px solid rgba(0, 0, 0, 0.08)',
-      borderTop: '1px solid rgba(0, 0, 0, 0.08)',
+      borderTopWidth: '1px',
+      borderTopStyle: 'solid',
+      borderTopColor: 'rgba(0, 0, 0, 0.08)',
+      borderRightWidth: isMobile ? '0' : '1px',
+      borderRightStyle: 'solid',
+      borderRightColor: 'rgba(0, 0, 0, 0.08)',
+      borderBottomWidth: isMobile ? '0' : '1px',
+      borderBottomStyle: 'solid',
+      borderBottomColor: 'rgba(0, 0, 0, 0.08)',
+      borderLeftWidth: isMobile ? '0' : '1px',
+      borderLeftStyle: 'solid',
+      borderLeftColor: 'rgba(0, 0, 0, 0.08)',
       borderRadius: isMobile ? '0' : '99px',
       boxShadow: '0 -2px 20px rgba(0,0,0,0.08)',
       display: 'flex',
@@ -277,7 +259,9 @@ const LiveTicker: React.FC = () => {
       display: 'flex',
       alignItems: 'center',
       padding: isMobile ? '0 8px' : '0 12px',
-      borderRight: '1px solid rgba(0, 0, 0, 0.08)',
+      borderRightWidth: '1px',
+      borderRightStyle: 'solid',
+      borderRightColor: 'rgba(0, 0, 0, 0.08)',
       background: 'rgba(255,255,255,0.6)',
       height: '100%',
       flexShrink: 0,
@@ -330,7 +314,8 @@ const LiveTicker: React.FC = () => {
     },
     iconBtn: {
       background: 'transparent',
-      border: 'none',
+      borderWidth: '0',
+      borderStyle: 'none',
       width: '32px',
       height: '32px',
       borderRadius: '50%',
@@ -378,7 +363,6 @@ const LiveTicker: React.FC = () => {
     },
   };
 
-  // Inject keyframes and responsive styles
   useEffect(() => {
     const styleId = 'live-ticker-animations';
     if (document.getElementById(styleId)) return;
@@ -410,11 +394,20 @@ const LiveTicker: React.FC = () => {
     };
   }, []);
 
+  // ✅ NOW CHECK PATH AND RETURN NULL AT THE END (after all hooks)
+  const excludedPaths = ['/signin', '/signup', '/login', '/forgot-password', '/reset-password' , '/profile'];
+  const shouldHideTicker = excludedPaths.some(path => 
+    location.pathname.toLowerCase().includes(path.toLowerCase())
+  );
+
+  if (shouldHideTicker) {
+    return null;
+  }
+
   return (
     <div style={styles.wrapper}>
       <div style={styles.glassPanel}>
         
-        {/* Left Sidebar: Live Indicator & Viewer Count */}
         <div style={styles.sidebar}>
           <div style={styles.liveBadge}>
             <span style={styles.liveDot} aria-hidden="true"></span>
@@ -452,7 +445,6 @@ const LiveTicker: React.FC = () => {
           )}
         </div>
 
-        {/* Right Side: Scrolling Activity Feed */}
         <div style={styles.trackContainer} role="region" aria-live="polite" aria-label="Live activity feed">
           <div 
             style={{
