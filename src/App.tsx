@@ -15,6 +15,7 @@ import ResetPassword from "./pages/ResetPassword";
 import MarketplacePage from "./pages/MarketplacePage";
 import AuthCallback from "./pages/AuthCallback";
 import NotFound from "./pages/NotFound";
+import LiveTicker from "./components/LiveTicker";
 
 const queryClient = new QueryClient();
 
@@ -24,6 +25,9 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
+        {/* Global LiveTicker - Shows on all pages */}
+        <LiveTicker />
+        
         <Routes>
           <Route path="/" element={<BuyPixels />} />
           <Route path="/about" element={<Index />} />
