@@ -57,7 +57,6 @@ const signUpSchema = z
     path: ['confirmPassword'],
   });
 
-// Password strength evaluation function
 const evaluatePasswordStrength = (password: string) => {
   if (!password) return { score: 0, label: '', color: '' };
 
@@ -112,26 +111,22 @@ const SignUp = () => {
     evaluatePasswordStrength('')
   );
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-  const [touchedFields, setTouchedFields] = useState<
-    Record<string, boolean>
-  >({});
+  const [touchedFields, setTouchedFields] =
+    useState<Record<string, boolean>>({});
   const { toast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
   const { isAuthenticated } = useAuth();
 
-  // Get redirect path from location state (typed)
   const from =
     (location.state as LocationState | null)?.from?.pathname || '/';
 
-  // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated) {
       navigate(from, { replace: true });
     }
   }, [isAuthenticated, navigate, from]);
 
-  // Real-time field validation
   const validateField = (name: string, value: string) => {
     const errors: Record<string, string> = {};
 
@@ -195,17 +190,14 @@ const SignUp = () => {
       [name]: value,
     }));
 
-    // Update password strength for password field
     if (name === 'password') {
       setPasswordStrength(evaluatePasswordStrength(value));
     }
 
-    // Real-time validation for touched fields
     if (touchedFields[name]) {
       validateField(name, value);
     }
 
-    // Validate confirm password when password changes
     if (name === 'password' && touchedFields.confirmPassword) {
       validateField('confirmPassword', formData.confirmPassword);
     }
@@ -264,8 +256,6 @@ const SignUp = () => {
         setOauthLoading(false);
       }
 
-      // If success, Supabase will redirect.
-      // Fallback in case redirect silently fails.
       setTimeout(() => {
         setOauthLoading(false);
       }, 10000);
@@ -284,18 +274,15 @@ const SignUp = () => {
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Mark all fields as touched
     const allFields = Object.keys(formData);
     const touched: Record<string, boolean> = {};
     allFields.forEach((field) => (touched[field] = true));
     setTouchedFields(touched);
 
-    // Validate all fields
     allFields.forEach((field) =>
       validateField(field, formData[field as keyof typeof formData])
     );
 
-    // Validate form data with Zod
     const validation = signUpSchema.safeParse(formData);
 
     if (!validation.success) {
@@ -308,7 +295,6 @@ const SignUp = () => {
       return;
     }
 
-    // Check if there are any field errors
     if (Object.keys(fieldErrors).length > 0) {
       toast({
         title: 'Please fix errors',
@@ -319,9 +305,6 @@ const SignUp = () => {
       return;
     }
 
-    // Password strength check:
-    // - Block very weak/weak (score < 2)
-    // - Allow Fair+ but warn if < 3
     if (passwordStrength.score < 2) {
       toast({
         title: 'Weak Password',
@@ -411,7 +394,6 @@ const SignUp = () => {
               'Your account has been created successfully. Setting up your profile...',
             duration: 5000,
           });
-          // AuthCallback / auth state listener should handle redirect + profile creation
         }
       }
     } catch (error) {
@@ -427,19 +409,17 @@ const SignUp = () => {
     }
   };
 
-  // If email confirmation link was sent, show confirmation message
+  // Email confirmation screen
   if (emailSent) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-background via-background to-muted/20">
-        <div className="w-full max-w-md text-center">
-          <div className="mb-8">
+        <div className="w-full max-w-md text-center space-y-6">
+          <div>
             <div className="w-20 h-20 mx-auto mb-6 bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center">
               <Mail className="w-10 h-10 text-green-600 dark:text-green-400" />
             </div>
-            <h2 className="text-3xl font-bold mb-4">
-              Check Your Email! 📧
-            </h2>
-            <p className="text-muted-foreground mb-6">
+            <h2 className="text-3xl font-bold mb-4">Check Your Email! 📧</h2>
+            <p className="text-muted-foreground">
               We&apos;ve sent a confirmation link to{' '}
               <strong>{formData.email}</strong>
             </p>
@@ -467,29 +447,21 @@ const SignUp = () => {
                 <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold">
                   3
                 </span>
-                <span>
-                  You&apos;ll be automatically signed in and redirected
-                </span>
+                <span>You&apos;ll be automatically signed in and redirected</span>
               </li>
             </ol>
           </div>
 
-          <div className="mt-8 space-y-4">
+          <div className="space-y-4">
             <p className="text-xs text-muted-foreground">
-              Didn&apos;t receive the email? Check your spam folder or wait
-              a few minutes.
+              Didn&apos;t receive the email? Check your spam folder or wait a
+              few minutes.
             </p>
             <div className="flex gap-3 justify-center">
-              <Button
-                variant="outline"
-                onClick={() => setEmailSent(false)}
-              >
+              <Button variant="outline" onClick={() => setEmailSent(false)}>
                 Use Different Email
               </Button>
-              <Button
-                variant="default"
-                onClick={() => navigate('/signin')}
-              >
+              <Button variant="default" onClick={() => navigate('/signin')}>
                 Go to Sign In
               </Button>
             </div>
@@ -499,34 +471,37 @@ const SignUp = () => {
     );
   }
 
+  // Main sign-up page - FIXED VERSION WITHOUT SCROLLING
   return (
-    <div className="min-h-screen flex flex-col-reverse lg:flex-row">
+    <div className="min-h-screen lg:h-screen grid grid-cols-1 lg:grid-cols-2">
       {/* Left Side - Sign Up Form */}
-      <div className="flex-1 flex items-center justify-center p-4 sm:p-8 bg-background">
+      <div className="flex items-center justify-center bg-background px-4 sm:px-8 py-8 lg:py-0">
+        {/* Form container - no max-height, no overflow scroll */}
         <div className="w-full max-w-md">
-          <div className="mb-8">
+          <div className="mb-6 flex items-center justify-between">
             <Link
               to="/"
-              className="inline-flex items-center text-muted-foreground hover:text-foreground transition-colors mb-6 group"
+              className="inline-flex items-center text-muted-foreground hover:text-foreground transition-colors group"
               aria-label="Back to home page"
             >
               <ArrowLeft className="h-4 w-4 mr-2 group-hover:-translate-x-1 transition-transform" />
               Back to Home
             </Link>
-            <h1 className="text-3xl font-bold mb-2">
-              Create Your Account
-            </h1>
+          </div>
+
+          <div className="mb-6">
+            <h1 className="text-3xl font-bold mb-2">Create Your Account</h1>
             <p className="text-muted-foreground">
               Join India&apos;s first pixel marketplace
             </p>
           </div>
 
           {/* Social Authentication */}
-          <div className="mb-6">
+          <div className="mb-4">
             <Button
               type="button"
               variant="outline"
-              className="w-full h-12 hover:bg-accent/50 transition-colors"
+              className="w-full h-11 hover:bg-accent/50 transition-colors"
               onClick={handleGoogleSignIn}
               disabled={oauthLoading || loading}
               aria-label="Sign up with Google"
@@ -544,7 +519,7 @@ const SignUp = () => {
               )}
             </Button>
 
-            <div className="relative my-6">
+            <div className="relative my-4">
               <div className="absolute inset-0 flex items-center">
                 <span className="w-full border-t" />
               </div>
@@ -556,48 +531,53 @@ const SignUp = () => {
             </div>
           </div>
 
-          <form onSubmit={handleSignUp} className="space-y-4" noValidate>
+          {/* Form content */}
+          <form onSubmit={handleSignUp} className="space-y-3" noValidate>
             {/* Full Name */}
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label htmlFor="fullName">
                 Full Name <span className="text-destructive">*</span>
               </Label>
-              <div className="relative">
-                <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="fullName"
-                  name="fullName"
-                  type="text"
-                  placeholder="Enter your full name"
-                  value={formData.fullName}
-                  onChange={handleInputChange}
-                  onBlur={handleBlur}
-                  required
-                  autoComplete="name"
-                  className={`pl-10 h-11 ${
-                    fieldErrors.fullName && touchedFields.fullName
-                      ? 'border-destructive focus-visible:ring-destructive'
-                      : ''
-                  }`}
-                  aria-invalid={
-                    fieldErrors.fullName && touchedFields.fullName
-                      ? 'true'
-                      : 'false'
-                  }
-                  aria-describedby={
-                    fieldErrors.fullName ? 'fullName-error' : undefined
-                  }
-                />
-                {!fieldErrors.fullName &&
-                  touchedFields.fullName &&
-                  formData.fullName && (
-                    <CheckCircle2 className="absolute right-3 top-3 h-4 w-4 text-green-500" />
-                  )}
+              <div className="flex items-center gap-2">
+                <div className="flex h-11 w-9 items-center justify-center rounded-md bg-muted text-muted-foreground">
+                  <User className="h-4 w-4" />
+                </div>
+                <div className="relative flex-1">
+                  <Input
+                    id="fullName"
+                    name="fullName"
+                    type="text"
+                    placeholder="Enter your full name"
+                    value={formData.fullName}
+                    onChange={handleInputChange}
+                    onBlur={handleBlur}
+                    required
+                    autoComplete="name"
+                    className={`h-11 pr-8 ${
+                      fieldErrors.fullName && touchedFields.fullName
+                        ? 'border-destructive focus-visible:ring-destructive'
+                        : ''
+                    }`}
+                    aria-invalid={
+                      fieldErrors.fullName && touchedFields.fullName
+                        ? 'true'
+                        : 'false'
+                    }
+                    aria-describedby={
+                      fieldErrors.fullName ? 'fullName-error' : undefined
+                    }
+                  />
+                  {!fieldErrors.fullName &&
+                    touchedFields.fullName &&
+                    formData.fullName && (
+                      <CheckCircle2 className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-green-500 pointer-events-none" />
+                    )}
+                </div>
               </div>
               {fieldErrors.fullName && touchedFields.fullName && (
                 <p
                   id="fullName-error"
-                  className="text-sm text-destructive flex items-center gap-1"
+                  className="text-xs text-destructive flex items-center gap-1"
                 >
                   <AlertCircle className="h-3 w-3" />
                   {fieldErrors.fullName}
@@ -606,46 +586,50 @@ const SignUp = () => {
             </div>
 
             {/* Email */}
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label htmlFor="email">
                 Email Address <span className="text-destructive">*</span>
               </Label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  placeholder="you@example.com"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  onBlur={handleBlur}
-                  required
-                  autoComplete="email"
-                  className={`pl-10 h-11 ${
-                    fieldErrors.email && touchedFields.email
-                      ? 'border-destructive focus-visible:ring-destructive'
-                      : ''
-                  }`}
-                  aria-invalid={
-                    fieldErrors.email && touchedFields.email
-                      ? 'true'
-                      : 'false'
-                  }
-                  aria-describedby={
-                    fieldErrors.email ? 'email-error' : undefined
-                  }
-                />
-                {!fieldErrors.email &&
-                  touchedFields.email &&
-                  formData.email && (
-                    <CheckCircle2 className="absolute right-3 top-3 h-4 w-4 text-green-500" />
-                  )}
+              <div className="flex items-center gap-2">
+                <div className="flex h-11 w-9 items-center justify-center rounded-md bg-muted text-muted-foreground">
+                  <Mail className="h-4 w-4" />
+                </div>
+                <div className="relative flex-1">
+                  <Input
+                    id="email"
+                    name="email"
+                    type="email"
+                    placeholder="you@example.com"
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    onBlur={handleBlur}
+                    required
+                    autoComplete="email"
+                    className={`h-11 pr-8 ${
+                      fieldErrors.email && touchedFields.email
+                        ? 'border-destructive focus-visible:ring-destructive'
+                        : ''
+                    }`}
+                    aria-invalid={
+                      fieldErrors.email && touchedFields.email
+                        ? 'true'
+                        : 'false'
+                    }
+                    aria-describedby={
+                      fieldErrors.email ? 'email-error' : undefined
+                    }
+                  />
+                  {!fieldErrors.email &&
+                    touchedFields.email &&
+                    formData.email && (
+                      <CheckCircle2 className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-green-500 pointer-events-none" />
+                    )}
+                </div>
               </div>
               {fieldErrors.email && touchedFields.email && (
                 <p
                   id="email-error"
-                  className="text-sm text-destructive flex items-center gap-1"
+                  className="text-xs text-destructive flex items-center gap-1"
                 >
                   <AlertCircle className="h-3 w-3" />
                   {fieldErrors.email}
@@ -653,12 +637,14 @@ const SignUp = () => {
               )}
             </div>
 
-            {/* Optional Fields */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
+            {/* Phone & DOB */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1.5">
                 <Label htmlFor="phoneNumber">Phone (optional)</Label>
-                <div className="relative">
-                  <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <div className="flex items-center gap-2">
+                  <div className="flex h-11 w-9 items-center justify-center rounded-md bg-muted text-muted-foreground">
+                    <Phone className="h-4 w-4" />
+                  </div>
                   <Input
                     id="phoneNumber"
                     name="phoneNumber"
@@ -668,33 +654,32 @@ const SignUp = () => {
                     onChange={handleInputChange}
                     onBlur={handleBlur}
                     autoComplete="tel"
-                    className={`pl-10 h-11 ${
-                      fieldErrors.phoneNumber &&
-                      touchedFields.phoneNumber
+                    className={`h-11 ${
+                      fieldErrors.phoneNumber && touchedFields.phoneNumber
                         ? 'border-destructive focus-visible:ring-destructive'
                         : ''
                     }`}
                     aria-invalid={
-                      fieldErrors.phoneNumber &&
-                      touchedFields.phoneNumber
+                      fieldErrors.phoneNumber && touchedFields.phoneNumber
                         ? 'true'
                         : 'false'
                     }
                   />
                 </div>
-                {fieldErrors.phoneNumber &&
-                  touchedFields.phoneNumber && (
-                    <p className="text-sm text-destructive flex items-center gap-1">
-                      <AlertCircle className="h-3 w-3" />
-                      {fieldErrors.phoneNumber}
-                    </p>
-                  )}
+                {fieldErrors.phoneNumber && touchedFields.phoneNumber && (
+                  <p className="text-xs text-destructive flex items-center gap-1">
+                    <AlertCircle className="h-3 w-3" />
+                    {fieldErrors.phoneNumber}
+                  </p>
+                )}
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <Label htmlFor="dateOfBirth">Birth Date (optional)</Label>
-                <div className="relative">
-                  <Calendar className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <div className="flex items-center gap-2">
+                  <div className="flex h-11 w-9 items-center justify-center rounded-md bg-muted text-muted-foreground">
+                    <Calendar className="h-4 w-4" />
+                  </div>
                   <Input
                     id="dateOfBirth"
                     name="dateOfBirth"
@@ -704,73 +689,72 @@ const SignUp = () => {
                     onBlur={handleBlur}
                     max={new Date().toISOString().split('T')[0]}
                     autoComplete="bday"
-                    className={`pl-10 h-11 ${
-                      fieldErrors.dateOfBirth &&
-                      touchedFields.dateOfBirth
+                    className={`h-11 ${
+                      fieldErrors.dateOfBirth && touchedFields.dateOfBirth
                         ? 'border-destructive focus-visible:ring-destructive'
                         : ''
                     }`}
                   />
                 </div>
-                {fieldErrors.dateOfBirth &&
-                  touchedFields.dateOfBirth && (
-                    <p className="text-sm text-destructive flex items-center gap-1">
-                      <AlertCircle className="h-3 w-3" />
-                      {fieldErrors.dateOfBirth}
-                    </p>
-                  )}
+                {fieldErrors.dateOfBirth && touchedFields.dateOfBirth && (
+                  <p className="text-xs text-destructive flex items-center gap-1">
+                    <AlertCircle className="h-3 w-3" />
+                    {fieldErrors.dateOfBirth}
+                  </p>
+                )}
               </div>
             </div>
 
             {/* Password */}
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label htmlFor="password">
                 Password <span className="text-destructive">*</span>
               </Label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="password"
-                  name="password"
-                  type={showPassword ? 'text' : 'password'}
-                  placeholder="Choose a strong password"
-                  value={formData.password}
-                  onChange={handleInputChange}
-                  onBlur={handleBlur}
-                  required
-                  minLength={8}
-                  autoComplete="new-password"
-                  className={`pl-10 pr-10 h-11 ${
-                    fieldErrors.password && touchedFields.password
-                      ? 'border-destructive focus-visible:ring-destructive'
-                      : ''
-                  }`}
-                  aria-invalid={
-                    fieldErrors.password && touchedFields.password
-                      ? 'true'
-                      : 'false'
-                  }
-                  aria-describedby="password-strength password-requirements"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-3 text-muted-foreground hover:text-foreground transition-colors"
-                  aria-label={
-                    showPassword ? 'Hide password' : 'Show password'
-                  }
-                >
-                  {showPassword ? (
-                    <EyeOff className="h-4 w-4" />
-                  ) : (
-                    <Eye className="h-4 w-4" />
-                  )}
-                </button>
+              <div className="flex items-center gap-2">
+                <div className="flex h-11 w-9 items-center justify-center rounded-md bg-muted text-muted-foreground">
+                  <Lock className="h-4 w-4" />
+                </div>
+                <div className="relative flex-1">
+                  <Input
+                    id="password"
+                    name="password"
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="Choose a strong password"
+                    value={formData.password}
+                    onChange={handleInputChange}
+                    onBlur={handleBlur}
+                    required
+                    minLength={8}
+                    autoComplete="new-password"
+                    className={`h-11 pr-9 ${
+                      fieldErrors.password && touchedFields.password
+                        ? 'border-destructive focus-visible:ring-destructive'
+                        : ''
+                    }`}
+                    aria-invalid={
+                      fieldErrors.password && touchedFields.password
+                        ? 'true'
+                        : 'false'
+                    }
+                    aria-describedby="password-strength password-requirements"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
               </div>
 
-              {/* Password Strength Meter */}
               {formData.password && (
-                <div id="password-strength" className="space-y-2">
+                <div id="password-strength" className="space-y-1.5">
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-muted-foreground">
                       Password Strength:
@@ -800,156 +784,155 @@ const SignUp = () => {
                     />
                   </div>
 
-                  {/* Password Requirements */}
-                  {'checks' in passwordStrength &&
-                    passwordStrength.checks && (
+                  {'checks' in passwordStrength && passwordStrength.checks && (
+                    <div
+                      id="password-requirements"
+                      className="text-[11px] space-y-0.5 mt-1.5"
+                    >
                       <div
-                        id="password-requirements"
-                        className="text-xs space-y-1 mt-2"
+                        className={`flex items-center gap-1 ${
+                          passwordStrength.checks.length
+                            ? 'text-green-600'
+                            : 'text-muted-foreground'
+                        }`}
                       >
-                        <div
-                          className={`flex items-center gap-1 ${
-                            passwordStrength.checks.length
-                              ? 'text-green-600'
-                              : 'text-muted-foreground'
-                          }`}
-                        >
-                          {passwordStrength.checks.length ? (
-                            <CheckCircle2 className="h-3 w-3" />
-                          ) : (
-                            <X className="h-3 w-3" />
-                          )}
-                          At least 8 characters
-                        </div>
-                        <div
-                          className={`flex items-center gap-1 ${
-                            passwordStrength.checks.uppercase
-                              ? 'text-green-600'
-                              : 'text-muted-foreground'
-                          }`}
-                        >
-                          {passwordStrength.checks.uppercase ? (
-                            <CheckCircle2 className="h-3 w-3" />
-                          ) : (
-                            <X className="h-3 w-3" />
-                          )}
-                          One uppercase letter
-                        </div>
-                        <div
-                          className={`flex items-center gap-1 ${
-                            passwordStrength.checks.lowercase
-                              ? 'text-green-600'
-                              : 'text-muted-foreground'
-                          }`}
-                        >
-                          {passwordStrength.checks.lowercase ? (
-                            <CheckCircle2 className="h-3 w-3" />
-                          ) : (
-                            <X className="h-3 w-3" />
-                          )}
-                          One lowercase letter
-                        </div>
-                        <div
-                          className={`flex items-center gap-1 ${
-                            passwordStrength.checks.number
-                              ? 'text-green-600'
-                              : 'text-muted-foreground'
-                          }`}
-                        >
-                          {passwordStrength.checks.number ? (
-                            <CheckCircle2 className="h-3 w-3" />
-                          ) : (
-                            <X className="h-3 w-3" />
-                          )}
-                          One number
-                        </div>
-                        <div
-                          className={`flex items-center gap-1 ${
-                            passwordStrength.checks.special
-                              ? 'text-green-600'
-                              : 'text-muted-foreground'
-                          }`}
-                        >
-                          {passwordStrength.checks.special ? (
-                            <CheckCircle2 className="h-3 w-3" />
-                          ) : (
-                            <X className="h-3 w-3" />
-                          )}
-                          One special character
-                        </div>
+                        {passwordStrength.checks.length ? (
+                          <CheckCircle2 className="h-3 w-3" />
+                        ) : (
+                          <X className="h-3 w-3" />
+                        )}
+                        At least 8 characters
                       </div>
-                    )}
+                      <div
+                        className={`flex items-center gap-1 ${
+                          passwordStrength.checks.uppercase
+                            ? 'text-green-600'
+                            : 'text-muted-foreground'
+                        }`}
+                      >
+                        {passwordStrength.checks.uppercase ? (
+                          <CheckCircle2 className="h-3 w-3" />
+                        ) : (
+                          <X className="h-3 w-3" />
+                        )}
+                        One uppercase letter
+                      </div>
+                      <div
+                        className={`flex items-center gap-1 ${
+                          passwordStrength.checks.lowercase
+                            ? 'text-green-600'
+                            : 'text-muted-foreground'
+                        }`}
+                      >
+                        {passwordStrength.checks.lowercase ? (
+                          <CheckCircle2 className="h-3 w-3" />
+                        ) : (
+                          <X className="h-3 w-3" />
+                        )}
+                        One lowercase letter
+                      </div>
+                      <div
+                        className={`flex items-center gap-1 ${
+                          passwordStrength.checks.number
+                            ? 'text-green-600'
+                            : 'text-muted-foreground'
+                        }`}
+                      >
+                        {passwordStrength.checks.number ? (
+                          <CheckCircle2 className="h-3 w-3" />
+                        ) : (
+                          <X className="h-3 w-3" />
+                        )}
+                        One number
+                      </div>
+                      <div
+                        className={`flex items-center gap-1 ${
+                          passwordStrength.checks.special
+                            ? 'text-green-600'
+                            : 'text-muted-foreground'
+                        }`}
+                      >
+                        {passwordStrength.checks.special ? (
+                          <CheckCircle2 className="h-3 w-3" />
+                        ) : (
+                          <X className="h-3 w-3" />
+                        )}
+                        One special character
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
 
             {/* Confirm Password */}
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label htmlFor="confirmPassword">
-                Confirm Password{' '}
-                <span className="text-destructive">*</span>
+                Confirm Password <span className="text-destructive">*</span>
               </Label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="confirmPassword"
-                  name="confirmPassword"
-                  type={showConfirmPassword ? 'text' : 'password'}
-                  placeholder="Confirm your password"
-                  value={formData.confirmPassword}
-                  onChange={handleInputChange}
-                  onBlur={handleBlur}
-                  required
-                  minLength={8}
-                  autoComplete="new-password"
-                  className={`pl-10 pr-10 h-11 ${
-                    fieldErrors.confirmPassword &&
-                    touchedFields.confirmPassword
-                      ? 'border-destructive focus-visible:ring-destructive'
-                      : ''
-                  }`}
-                  aria-invalid={
-                    fieldErrors.confirmPassword &&
-                    touchedFields.confirmPassword
-                      ? 'true'
-                      : 'false'
-                  }
-                  aria-describedby={
-                    fieldErrors.confirmPassword
-                      ? 'confirmPassword-error'
-                      : undefined
-                  }
-                />
-                <button
-                  type="button"
-                  onClick={() =>
-                    setShowConfirmPassword(!showConfirmPassword)
-                  }
-                  className="absolute right-3 top-3 text-muted-foreground hover:text-foreground transition-colors"
-                  aria-label={
-                    showConfirmPassword
-                      ? 'Hide password'
-                      : 'Show password'
-                  }
-                >
-                  {showConfirmPassword ? (
-                    <EyeOff className="h-4 w-4" />
-                  ) : (
-                    <Eye className="h-4 w-4" />
-                  )}
-                </button>
-                {!fieldErrors.confirmPassword &&
-                  touchedFields.confirmPassword &&
-                  formData.confirmPassword &&
-                  formData.password === formData.confirmPassword && (
-                    <CheckCircle2 className="absolute right-10 top-3 h-4 w-4 text-green-500" />
-                  )}
+              <div className="flex items-center gap-2">
+                <div className="flex h-11 w-9 items-center justify-center rounded-md bg-muted text-muted-foreground">
+                  <Lock className="h-4 w-4" />
+                </div>
+                <div className="relative flex-1">
+                  <Input
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    placeholder="Confirm your password"
+                    value={formData.confirmPassword}
+                    onChange={handleInputChange}
+                    onBlur={handleBlur}
+                    required
+                    minLength={8}
+                    autoComplete="new-password"
+                    className={`h-11 pr-9 ${
+                      fieldErrors.confirmPassword &&
+                      touchedFields.confirmPassword
+                        ? 'border-destructive focus-visible:ring-destructive'
+                        : ''
+                    }`}
+                    aria-invalid={
+                      fieldErrors.confirmPassword &&
+                      touchedFields.confirmPassword
+                        ? 'true'
+                        : 'false'
+                    }
+                    aria-describedby={
+                      fieldErrors.confirmPassword
+                        ? 'confirmPassword-error'
+                        : undefined
+                    }
+                  />
+                  {!fieldErrors.confirmPassword &&
+                    touchedFields.confirmPassword &&
+                    formData.confirmPassword &&
+                    formData.password === formData.confirmPassword && (
+                      <CheckCircle2 className="absolute right-7 top-1/2 -translate-y-1/2 h-4 w-4 text-green-500 pointer-events-none" />
+                    )}
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setShowConfirmPassword(!showConfirmPassword)
+                    }
+                    className="absolute right-1.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    aria-label={
+                      showConfirmPassword ? 'Hide password' : 'Show password'
+                    }
+                  >
+                    {showConfirmPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
               </div>
               {fieldErrors.confirmPassword &&
                 touchedFields.confirmPassword && (
                   <p
                     id="confirmPassword-error"
-                    className="text-sm text-destructive flex items-center gap-1"
+                    className="text-xs text-destructive flex items-center gap-1"
                   >
                     <AlertCircle className="h-3 w-3" />
                     {fieldErrors.confirmPassword}
@@ -959,7 +942,7 @@ const SignUp = () => {
 
             <Button
               type="submit"
-              className="w-full h-12 btn-premium"
+              className="w-full h-11 mt-1"
               disabled={
                 loading ||
                 oauthLoading ||
@@ -981,7 +964,7 @@ const SignUp = () => {
             </Button>
           </form>
 
-          <div className="mt-6 text-center">
+          <div className="mt-4 text-center">
             <p className="text-sm text-muted-foreground">
               Already have an account?{' '}
               <Link
@@ -993,7 +976,7 @@ const SignUp = () => {
             </p>
           </div>
 
-          <p className="text-xs text-muted-foreground text-center mt-4">
+          <p className="text-[11px] text-muted-foreground text-center mt-3 mb-1">
             By signing up, you agree to our{' '}
             <Link to="/terms" className="text-primary hover:underline">
               Terms of Service
@@ -1007,11 +990,10 @@ const SignUp = () => {
       </div>
 
       {/* Right Side - Features/Benefits */}
-      <div className="hidden lg:flex lg:flex-1 relative overflow-hidden">
+      <div className="hidden lg:flex relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-bl from-accent via-secondary to-primary opacity-90" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent" />
 
-        {/* Animated Background Pattern */}
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-20 right-10 w-32 h-32 bg-white rounded-full animate-pulse" />
           <div className="absolute top-60 left-20 w-24 h-24 bg-white rounded-full animate-pulse [animation-delay:1s]" />
@@ -1028,8 +1010,8 @@ const SignUp = () => {
               </span>
             </h2>
             <p className="text-xl text-white/90 mb-8 max-w-md">
-              Join thousands of creators and businesses building their
-              digital presence on India&apos;s premier pixel marketplace.
+              Join thousands of creators and businesses building their digital
+              presence on India&apos;s premier pixel marketplace.
             </p>
           </div>
 
@@ -1039,9 +1021,7 @@ const SignUp = () => {
                 <Star className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h3 className="font-semibold text-lg">
-                  Premium Quality
-                </h3>
+                <h3 className="font-semibold text-lg">Premium Quality</h3>
                 <p className="text-white/80">
                   High-resolution canvas with permanent pixels
                 </p>
@@ -1053,9 +1033,7 @@ const SignUp = () => {
                 <Users className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h3 className="font-semibold text-lg">
-                  Growing Community
-                </h3>
+                <h3 className="font-semibold text-lg">Growing Community</h3>
                 <p className="text-white/80">
                   Connect with thousands of pixel artists
                 </p>
@@ -1067,9 +1045,7 @@ const SignUp = () => {
                 <Palette className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h3 className="font-semibold text-lg">
-                  Creative Tools
-                </h3>
+                <h3 className="font-semibold text-lg">Creative Tools</h3>
                 <p className="text-white/80">
                   Advanced tools to bring your vision to life
                 </p>
@@ -1077,7 +1053,7 @@ const SignUp = () => {
             </div>
           </div>
 
-          <div className="mt-12 pt-8 border-t border-white/20">
+          <div className="mt-10 pt-6 border-t border-white/20">
             <p className="text-sm text-white/70 mb-3">
               Trusted by creators and businesses
             </p>

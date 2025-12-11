@@ -1,0 +1,19 @@
+8d57847 Fri Dec 12 00:51:10 2025 Majot updates on signin and signup and other utilis
+a99c84f Wed Dec 10 01:39:09 2025 updates
+e66c4f5 Wed Dec 10 00:45:03 2025 added liveticker and live online count
+3f647e9 Mon Dec 8 14:59:53 2025 authcallback updATES
+ed095c5 Mon Dec 8 14:48:40 2025 updates in authentication
+aa0019a Mon Dec 8 14:19:32 2025 minor updates
+ffba132 Mon Dec 8 14:09:28 2025 updates in forgetpassword with better logging
+2c4a06a Mon Dec 8 13:59:13 2025 updates on profile and authcallback
+f208568 Mon Dec 8 12:58:20 2025 updated forgetpassword
+ec9d1c6 Mon Dec 8 12:44:32 2025 updates on magic link in signin
+c2d3a91 Mon Dec 8 10:06:01 2025 updated resetpass and forgetpass
+461c90f Mon Dec 8 09:56:57 2025 updated authcallback
+2dc27eb Sun Dec 7 18:22:59 2025 fix: use esbuild for minification instead of terser
+181fff3 Sun Dec 7 18:22:36 2025 fix: add terser as dev dependency for build minification
+bb7741e Sun Dec 7 18:19:50 2025 updated vite.config.ts
+610bcff Sun Dec 7 18:16:44 2025 update
+0c02807 Sun Dec 7 18:04:54 2025 update
+d1b4204 Sun Dec 7 17:57:36 2025 authentication update
+0600ff6 Sun Dec 7 16:12:41 2025 Initial commit: BuyAPixel full-stack application

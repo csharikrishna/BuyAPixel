@@ -25,6 +25,7 @@ import { cn } from "@/lib/utils";
 import { RealtimeChannel } from "@supabase/supabase-js";
 
 interface LeaderboardUser {
+  id: string;
   user_id: string;
   full_name: string | null;
   avatar_url: string | null;
@@ -64,7 +65,7 @@ const Skeleton = ({ className = "", circle = false }: { className?: string; circ
 
 const StatCardSkeleton = () => (
   <Card>
-    <CardContent className="p-4 md:p-6 text-center space-y-3">
+    <CardContent className="p-6 text-center space-y-3">
       <Skeleton circle className="w-12 h-12 mx-auto" />
       <Skeleton className="h-8 w-20 mx-auto" />
       <Skeleton className="h-4 w-24 mx-auto" />
@@ -73,10 +74,10 @@ const StatCardSkeleton = () => (
 );
 
 const LeaderboardRowSkeleton = () => (
-  <div className="flex items-center justify-between p-3 md:p-4 rounded-lg border bg-card">
+  <div className="flex items-center justify-between p-4 rounded-lg border bg-card">
     <div className="flex items-center gap-3 flex-1">
       <Skeleton circle className="w-8 h-8" />
-      <Skeleton circle className="w-10 h-10 md:w-12 md:h-12" />
+      <Skeleton circle className="w-12 h-12" />
       <div className="flex-1 space-y-2">
         <Skeleton className="h-4 w-32" />
         <Skeleton className="h-3 w-24" />
@@ -101,7 +102,6 @@ const Leaderboard = () => {
     recentGrowth: 0
   });
   
-  // New state for filters and features
   const [searchQuery, setSearchQuery] = useState("");
   const [timePeriod, setTimePeriod] = useState<TimePeriod>('all');
   const [activeTab, setActiveTab] = useState("pixels");
@@ -151,7 +151,6 @@ const Leaderboard = () => {
         profileMap.set(profile.user_id, profile);
       });
 
-      // Process leaderboard with rank tracking
       if (allPixels) {
         const pixelCounts: Record<string, LeaderboardUser> = {};
         const spendingTotals: Record<string, LeaderboardUser> = {};
@@ -188,7 +187,6 @@ const Leaderboard = () => {
           spendingTotals[userId].total_spent += pricePaid;
         });
 
-        // Sort and add rank tracking
         const sortedByPixels = Object.values(pixelCounts)
           .sort((a, b) => b.pixel_count - a.pixel_count)
           .slice(0, 100);
@@ -237,7 +235,7 @@ const Leaderboard = () => {
           totalRevenue,
           totalUsers: allProfiles?.length || 0,
           averagePrice,
-          recentGrowth: 12.5 // This would be calculated from historical data
+          recentGrowth: 12.5
         });
       }
 
@@ -253,7 +251,7 @@ const Leaderboard = () => {
     fetchLeaderboardData();
   }, [fetchLeaderboardData]);
 
-  // Real-time subscription for updates
+  // Real-time subscription
   useEffect(() => {
     let channel: RealtimeChannel;
 
@@ -265,7 +263,6 @@ const Leaderboard = () => {
           schema: 'public',
           table: 'pixels'
         }, () => {
-          // Refresh leaderboard when pixels are updated
           fetchLeaderboardData();
         })
         .subscribe();
@@ -280,7 +277,7 @@ const Leaderboard = () => {
     };
   }, [fetchLeaderboardData]);
 
-  // Filtered data based on search
+  // Filtered data
   const filteredPixelLeaders = useMemo(() => {
     if (!searchQuery) return topByPixels;
     return topByPixels.filter(user => 
@@ -359,7 +356,7 @@ const Leaderboard = () => {
     }
   };
 
-  // Export leaderboard data
+  // Export data
   const handleExportData = useCallback(() => {
     const dataToExport = activeTab === 'pixels' ? topByPixels : topBySpending;
     const csvContent = [
@@ -387,9 +384,9 @@ const Leaderboard = () => {
     return (
       <div className="min-h-screen flex flex-col bg-background">
         <Header />
-        <main className="flex-1 container mx-auto px-4 py-8 md:py-16">
+        <main className="flex-1 container mx-auto px-4 py-16">
           <Card className="max-w-md mx-auto border-destructive/20">
-            <CardContent className="p-6 md:p-8 text-center space-y-4">
+            <CardContent className="p-8 text-center space-y-4">
               <div className="w-16 h-16 mx-auto bg-destructive/10 rounded-full flex items-center justify-center">
                 <AlertCircle className="w-8 h-8 text-destructive" />
               </div>
@@ -409,49 +406,51 @@ const Leaderboard = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="min-h-screen flex flex-col bg-gradient-to-b from-background to-muted/20">
       <Header />
       
-      <main className="flex-1 container mx-auto px-4 py-8 md:py-16 lg:py-20">
+      <main className="flex-1 container mx-auto px-4 py-12 lg:py-16">
         {/* Header Section */}
-        <div className="text-center mb-8 md:mb-12">
-          <Badge variant="outline" className="text-sm md:text-base px-4 md:px-6 py-2 md:py-2.5 mb-4 md:mb-6 font-semibold border-primary/20 animate-pulse">
+        <div className="text-center mb-12">
+          <Badge variant="outline" className="px-6 py-2.5 mb-6 font-semibold border-primary/20 animate-pulse">
             <Zap className="w-4 h-4 mr-2 inline-block" />
             Live Updates
           </Badge>
-          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4 tracking-tight">
+          <h1 className="text-4xl md:text-5xl font-bold mb-4 tracking-tight">
             <span className="bg-gradient-to-r from-primary via-accent to-success bg-clip-text text-transparent">
               Leaderboard
             </span>
           </h1>
-          <p className="text-base md:text-lg text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             Compete, track progress, and celebrate top performers
           </p>
         </div>
 
-        {/* User's Personal Rank Card - Show if logged in */}
+        {/* User's Personal Rank Card */}
         {user && (userRank.pixelRank || userRank.spendingRank) && (
           <Card className="max-w-5xl mx-auto mb-8 bg-gradient-to-r from-primary/5 via-accent/5 to-success/5 border-primary/20">
-            <CardContent className="p-4 md:p-6">
+            <CardContent className="p-6">
               <div className="flex items-center justify-between gap-4 flex-wrap">
                 <div className="flex items-center gap-3">
-                  <Target className="w-8 h-8 text-primary" />
+                  <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
+                    <Target className="w-6 h-6 text-primary" />
+                  </div>
                   <div>
                     <h3 className="font-semibold text-lg">Your Ranking</h3>
                     <p className="text-sm text-muted-foreground">Keep climbing!</p>
                   </div>
                 </div>
-                <div className="flex gap-4">
+                <div className="flex gap-6">
                   {userRank.pixelRank && (
                     <div className="text-center">
-                      <div className="text-2xl font-bold text-primary">#{userRank.pixelRank}</div>
-                      <div className="text-xs text-muted-foreground">Pixels</div>
+                      <div className="text-3xl font-bold text-primary">#{userRank.pixelRank}</div>
+                      <div className="text-xs text-muted-foreground mt-1">Pixels</div>
                     </div>
                   )}
                   {userRank.spendingRank && (
                     <div className="text-center">
-                      <div className="text-2xl font-bold text-success">#{userRank.spendingRank}</div>
-                      <div className="text-xs text-muted-foreground">Spending</div>
+                      <div className="text-3xl font-bold text-success">#{userRank.spendingRank}</div>
+                      <div className="text-xs text-muted-foreground mt-1">Spending</div>
                     </div>
                   )}
                 </div>
@@ -461,7 +460,7 @@ const Leaderboard = () => {
         )}
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8 md:mb-12 max-w-6xl mx-auto">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12 max-w-6xl mx-auto">
           {loading ? (
             <>
               <StatCardSkeleton />
@@ -472,56 +471,56 @@ const Leaderboard = () => {
           ) : (
             <>
               <Card className="border-primary/10 hover:border-primary/30 transition-all duration-300 hover:shadow-lg">
-                <CardContent className="p-4 md:p-6 text-center">
+                <CardContent className="p-6 text-center">
                   <div className="flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 mx-auto mb-3">
                     <Users className="w-6 h-6 text-primary" />
                   </div>
-                  <div className="text-2xl md:text-3xl font-bold text-primary">
+                  <div className="text-3xl font-bold text-primary">
                     {stats.totalPixelsSold.toLocaleString()}
                   </div>
-                  <div className="text-xs md:text-sm text-muted-foreground mt-1">
+                  <div className="text-sm text-muted-foreground mt-1">
                     Pixels Sold
                   </div>
                 </CardContent>
               </Card>
               
               <Card className="border-success/10 hover:border-success/30 transition-all duration-300 hover:shadow-lg">
-                <CardContent className="p-4 md:p-6 text-center">
+                <CardContent className="p-6 text-center">
                   <div className="flex items-center justify-center w-12 h-12 rounded-full bg-success/10 mx-auto mb-3">
                     <DollarSign className="w-6 h-6 text-success" />
                   </div>
-                  <div className="text-2xl md:text-3xl font-bold text-success">
+                  <div className="text-3xl font-bold text-success">
                     ₹{Math.round(stats.totalRevenue).toLocaleString()}
                   </div>
-                  <div className="text-xs md:text-sm text-muted-foreground mt-1">
+                  <div className="text-sm text-muted-foreground mt-1">
                     Total Revenue
                   </div>
                 </CardContent>
               </Card>
 
               <Card className="border-accent/10 hover:border-accent/30 transition-all duration-300 hover:shadow-lg">
-                <CardContent className="p-4 md:p-6 text-center">
+                <CardContent className="p-6 text-center">
                   <div className="flex items-center justify-center w-12 h-12 rounded-full bg-accent/10 mx-auto mb-3">
                     <Trophy className="w-6 h-6 text-accent" />
                   </div>
-                  <div className="text-2xl md:text-3xl font-bold text-accent">
+                  <div className="text-3xl font-bold text-accent">
                     {stats.totalUsers.toLocaleString()}
                   </div>
-                  <div className="text-xs md:text-sm text-muted-foreground mt-1">
+                  <div className="text-sm text-muted-foreground mt-1">
                     Active Users
                   </div>
                 </CardContent>
               </Card>
 
               <Card className="border-orange-500/10 hover:border-orange-500/30 transition-all duration-300 hover:shadow-lg">
-                <CardContent className="p-4 md:p-6 text-center">
+                <CardContent className="p-6 text-center">
                   <div className="flex items-center justify-center w-12 h-12 rounded-full bg-orange-500/10 mx-auto mb-3">
                     <Star className="w-6 h-6 text-orange-500" />
                   </div>
-                  <div className="text-2xl md:text-3xl font-bold text-orange-500">
+                  <div className="text-3xl font-bold text-orange-500">
                     ₹{Math.round(stats.averagePrice)}
                   </div>
-                  <div className="text-xs md:text-sm text-muted-foreground mt-1">
+                  <div className="text-sm text-muted-foreground mt-1">
                     Avg. Price
                   </div>
                 </CardContent>
@@ -532,19 +531,19 @@ const Leaderboard = () => {
 
         {/* Filters and Search */}
         <div className="max-w-5xl mx-auto mb-6">
-          <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
-            <div className="relative flex-1 max-w-md">
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
                 placeholder="Search users..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
+                className="pl-10 h-11"
               />
             </div>
             <div className="flex gap-2">
               <Select value={timePeriod} onValueChange={(value: TimePeriod) => setTimePeriod(value)}>
-                <SelectTrigger className="w-[140px]">
+                <SelectTrigger className="w-[140px] h-11">
                   <Filter className="w-4 h-4 mr-2" />
                   <SelectValue />
                 </SelectTrigger>
@@ -555,7 +554,7 @@ const Leaderboard = () => {
                   <SelectItem value="today">Today</SelectItem>
                 </SelectContent>
               </Select>
-              <Button variant="outline" size="icon" onClick={handleExportData} title="Export data">
+              <Button variant="outline" size="icon" onClick={handleExportData} title="Export data" className="h-11 w-11">
                 <Download className="w-4 h-4" />
               </Button>
             </div>
@@ -566,20 +565,19 @@ const Leaderboard = () => {
         <div className="max-w-5xl mx-auto">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full grid-cols-3 h-auto p-1">
-              <TabsTrigger value="pixels" className="text-xs sm:text-sm md:text-base py-2.5 md:py-3">
-                <Trophy className="w-4 h-4 mr-1 md:mr-2" />
+              <TabsTrigger value="pixels" className="py-3">
+                <Trophy className="w-4 h-4 mr-2" />
                 <span className="hidden sm:inline">Most Pixels</span>
                 <span className="sm:hidden">Pixels</span>
               </TabsTrigger>
-              <TabsTrigger value="spending" className="text-xs sm:text-sm md:text-base py-2.5 md:py-3">
-                <DollarSign className="w-4 h-4 mr-1 md:mr-2" />
+              <TabsTrigger value="spending" className="py-3">
+                <DollarSign className="w-4 h-4 mr-2" />
                 <span className="hidden sm:inline">Top Spenders</span>
                 <span className="sm:hidden">Spenders</span>
               </TabsTrigger>
-              <TabsTrigger value="recent" className="text-xs sm:text-sm md:text-base py-2.5 md:py-3">
-                <Clock className="w-4 h-4 mr-1 md:mr-2" />
-                <span className="hidden sm:inline">Recent</span>
-                <span className="sm:hidden">Recent</span>
+              <TabsTrigger value="recent" className="py-3">
+                <Clock className="w-4 h-4 mr-2" />
+                <span>Recent</span>
               </TabsTrigger>
             </TabsList>
 
@@ -588,15 +586,15 @@ const Leaderboard = () => {
               <Card className="border-primary/10">
                 <CardHeader className="pb-4">
                   <div className="flex items-center justify-between">
-                    <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
-                      <Trophy className="w-5 h-5 md:w-6 md:h-6 text-primary" />
+                    <CardTitle className="flex items-center gap-2 text-xl">
+                      <Trophy className="w-6 h-6 text-primary" />
                       Top Pixel Owners
                     </CardTitle>
                     <Badge variant="outline">{filteredPixelLeaders.length} users</Badge>
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2">
+                  <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
                     {loading ? (
                       Array(10).fill(0).map((_, i) => <LeaderboardRowSkeleton key={i} />)
                     ) : filteredPixelLeaders.length > 0 ? (
@@ -604,7 +602,7 @@ const Leaderboard = () => {
                         <div 
                           key={user.user_id} 
                           className={cn(
-                            "flex items-center justify-between p-3 md:p-4 rounded-lg border transition-all duration-200 group",
+                            "flex items-center justify-between p-4 rounded-lg border transition-all duration-200 group",
                             index < 3 
                               ? 'bg-gradient-to-r from-primary/5 to-accent/5 border-primary/20 hover:border-primary/40 hover:shadow-md' 
                               : 'bg-card hover:bg-accent/5',
@@ -625,20 +623,20 @@ const Leaderboard = () => {
                                 </div>
                               )}
                             </div>
-                            <Avatar className="w-10 h-10 md:w-12 md:h-12 flex-shrink-0 border-2 border-border group-hover:scale-105 transition-transform">
+                            <Avatar className="w-12 h-12 flex-shrink-0 border-2 border-border group-hover:scale-105 transition-transform">
                               <AvatarImage src={user.avatar_url || undefined} alt={user.full_name || 'User'} />
                               <AvatarFallback className="text-sm font-semibold">{getInitials(user.full_name)}</AvatarFallback>
                             </Avatar>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2">
-                                <div className="font-semibold text-sm md:text-base truncate">
+                                <div className="font-semibold truncate">
                                   {user.full_name || 'Anonymous User'}
                                 </div>
                                 {user.user_id === user?.id && (
                                   <Badge variant="secondary" className="text-xs">You</Badge>
                                 )}
                               </div>
-                              <div className="text-xs md:text-sm text-muted-foreground flex items-center gap-1">
+                              <div className="text-sm text-muted-foreground flex items-center gap-1">
                                 {user.pixel_count.toLocaleString()} pixel{user.pixel_count !== 1 ? 's' : ''} owned
                                 {user.rankChange && getRankChangeIcon(user.rankChange)}
                               </div>
@@ -669,15 +667,15 @@ const Leaderboard = () => {
               <Card className="border-success/10">
                 <CardHeader className="pb-4">
                   <div className="flex items-center justify-between">
-                    <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
-                      <DollarSign className="w-5 h-5 md:w-6 md:h-6 text-success" />
+                    <CardTitle className="flex items-center gap-2 text-xl">
+                      <DollarSign className="w-6 h-6 text-success" />
                       Top Spenders
                     </CardTitle>
                     <Badge variant="outline">{filteredSpendingLeaders.length} users</Badge>
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2">
+                  <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
                     {loading ? (
                       Array(10).fill(0).map((_, i) => <LeaderboardRowSkeleton key={i} />)
                     ) : filteredSpendingLeaders.length > 0 ? (
@@ -685,7 +683,7 @@ const Leaderboard = () => {
                         <div 
                           key={user.user_id} 
                           className={cn(
-                            "flex items-center justify-between p-3 md:p-4 rounded-lg border transition-all duration-200 group",
+                            "flex items-center justify-between p-4 rounded-lg border transition-all duration-200 group",
                             index < 3 
                               ? 'bg-gradient-to-r from-success/5 to-primary/5 border-success/20 hover:border-success/40 hover:shadow-md' 
                               : 'bg-card hover:bg-accent/5',
@@ -706,20 +704,20 @@ const Leaderboard = () => {
                                 </div>
                               )}
                             </div>
-                            <Avatar className="w-10 h-10 md:w-12 md:h-12 flex-shrink-0 border-2 border-border group-hover:scale-105 transition-transform">
+                            <Avatar className="w-12 h-12 flex-shrink-0 border-2 border-border group-hover:scale-105 transition-transform">
                               <AvatarImage src={user.avatar_url || undefined} alt={user.full_name || 'User'} />
                               <AvatarFallback className="text-sm font-semibold">{getInitials(user.full_name)}</AvatarFallback>
                             </Avatar>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2">
-                                <div className="font-semibold text-sm md:text-base truncate">
+                                <div className="font-semibold truncate">
                                   {user.full_name || 'Anonymous User'}
                                 </div>
                                 {user.user_id === user?.id && (
                                   <Badge variant="secondary" className="text-xs">You</Badge>
                                 )}
                               </div>
-                              <div className="text-xs md:text-sm text-muted-foreground">
+                              <div className="text-sm text-muted-foreground">
                                 Total spent: ₹{user.total_spent.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
                               </div>
                             </div>
@@ -749,25 +747,25 @@ const Leaderboard = () => {
               <Card className="border-accent/10">
                 <CardHeader className="pb-4">
                   <div className="flex items-center justify-between">
-                    <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
-                      <Clock className="w-5 h-5 md:w-6 md:h-6 text-accent" />
+                    <CardTitle className="flex items-center gap-2 text-xl">
+                      <Clock className="w-6 h-6 text-accent" />
                       Recent Purchases
                     </CardTitle>
                     <Badge variant="outline">{filteredRecentPurchases.length} purchases</Badge>
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2">
+                  <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
                     {loading ? (
                       Array(10).fill(0).map((_, i) => <LeaderboardRowSkeleton key={i} />)
                     ) : filteredRecentPurchases.length > 0 ? (
                       filteredRecentPurchases.map((purchase) => (
                         <div 
                           key={purchase.id} 
-                          className="flex items-center justify-between p-3 md:p-4 rounded-lg border bg-card hover:bg-accent/5 transition-all duration-200 hover:shadow-sm group"
+                          className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent/5 transition-all duration-200 hover:shadow-sm group"
                         >
                           <div className="flex items-center gap-3 flex-1 min-w-0">
-                            <div className="w-10 h-10 md:w-12 md:h-12 rounded border-2 border-border bg-muted flex items-center justify-center overflow-hidden flex-shrink-0 group-hover:scale-105 transition-transform">
+                            <div className="w-12 h-12 rounded border-2 border-border bg-muted flex items-center justify-center overflow-hidden flex-shrink-0 group-hover:scale-105 transition-transform">
                               {purchase.image_url ? (
                                 <img 
                                   src={purchase.image_url} 
@@ -780,10 +778,10 @@ const Leaderboard = () => {
                               )}
                             </div>
                             <div className="flex-1 min-w-0">
-                              <div className="font-semibold text-sm md:text-base">
+                              <div className="font-semibold">
                                 Pixel ({purchase.x}, {purchase.y})
                               </div>
-                              <div className="text-xs md:text-sm text-muted-foreground truncate">
+                              <div className="text-sm text-muted-foreground truncate">
                                 by {purchase.full_name || 'Anonymous'} • {formatDate(purchase.purchased_at)}
                               </div>
                             </div>
@@ -812,6 +810,23 @@ const Leaderboard = () => {
       </main>
 
       <Footer />
+
+      {/* Custom Scrollbar Styles */}
+      <style>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: hsl(var(--muted-foreground) / 0.3);
+          border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: hsl(var(--muted-foreground) / 0.5);
+        }
+      `}</style>
     </div>
   );
 };

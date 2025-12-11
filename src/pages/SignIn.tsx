@@ -64,18 +64,15 @@ const SignIn = () => {
   const location = useLocation();
   const { isAuthenticated } = useAuth();
 
-  // Get redirect path from location state (typed)
   const from =
     (location.state as LocationState | null)?.from?.pathname || '/';
 
-  // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated) {
       navigate(from, { replace: true });
     }
   }, [isAuthenticated, navigate, from]);
 
-  // Load saved email if remember me was checked previously
   useEffect(() => {
     const savedEmail = localStorage.getItem('remembered_email');
     if (savedEmail) {
@@ -84,7 +81,6 @@ const SignIn = () => {
     }
   }, []);
 
-  // Check for OAuth/Auth errors in URL
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const error = params.get('error');
@@ -117,12 +113,10 @@ const SignIn = () => {
         variant: 'destructive',
       });
 
-      // Clean up URL
       window.history.replaceState({}, '', '/signin');
     }
   }, [location, toast]);
 
-  // Real-time email validation
   const validateEmail = useCallback((value: string) => {
     if (!value) return '';
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -131,7 +125,6 @@ const SignIn = () => {
       : 'Please enter a valid email address';
   }, []);
 
-  // Password strength calculation
   const calculatePasswordStrength = useCallback((pwd: string): number => {
     let strength = 0;
     if (pwd.length >= 6) strength++;
@@ -142,15 +135,13 @@ const SignIn = () => {
     return Math.min(strength, 4);
   }, []);
 
-  // Handle email change with validation
   const handleEmailChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const value = e.target.value;
       setEmail(value);
       setIsTyping(true);
-      setMagicLinkSent(false); // Reset magic link state
+      setMagicLinkSent(false);
 
-      // Debounced validation
       setTimeout(() => {
         const error = validateEmail(value);
         setFormErrors((prev) => ({ ...prev, email: error }));
@@ -160,7 +151,6 @@ const SignIn = () => {
     [validateEmail]
   );
 
-  // Handle password change with strength indicator
   const handlePasswordChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const value = e.target.value;
@@ -179,17 +169,14 @@ const SignIn = () => {
     [calculatePasswordStrength]
   );
 
-  // Sign in with email and password
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // If magic link mode, send magic link instead
     if (signInMethod === 'magic-link') {
       handleMagicLinkSignIn();
       return;
     }
 
-    // Validate form data
     const validation = signInSchema.safeParse({ email, password });
 
     if (!validation.success) {
@@ -245,7 +232,6 @@ const SignIn = () => {
           variant: 'destructive',
         });
       } else {
-        // Save email if remember me is checked
         if (rememberMe) {
           localStorage.setItem('remembered_email', email);
         } else {
@@ -270,9 +256,7 @@ const SignIn = () => {
     }
   };
 
-  // Magic link sign in - FIXED VERSION
   const handleMagicLinkSignIn = async () => {
-    // Validate email first
     const emailError = validateEmail(email);
     if (emailError) {
       setFormErrors((prev) => ({ ...prev, email: emailError }));
@@ -289,7 +273,6 @@ const SignIn = () => {
     try {
       console.log('🔗 Sending magic link to:', email);
 
-      // FIXED: Include redirect parameter like OAuth does
       const redirectUrl =
         from !== '/'
           ? `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(
@@ -301,7 +284,6 @@ const SignIn = () => {
         email: email.trim(),
         options: {
           emailRedirectTo: redirectUrl,
-          // FIXED: Set to false for sign-in (only allow existing users)
           shouldCreateUser: false,
         },
       });
@@ -345,7 +327,6 @@ const SignIn = () => {
         console.log('✅ Magic link sent successfully');
         setMagicLinkSent(true);
 
-        // Save email if remember me is checked
         if (rememberMe) {
           localStorage.setItem('remembered_email', email);
         }
@@ -370,14 +351,12 @@ const SignIn = () => {
     }
   };
 
-  // Google OAuth sign in
   const handleGoogleSignIn = async () => {
     try {
       setOauthLoading(true);
 
       console.log('🔐 Initiating Google OAuth...');
 
-      // Include redirect parameter in callback URL
       const redirectUrl =
         from !== '/'
           ? `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(
@@ -420,7 +399,6 @@ const SignIn = () => {
         setOauthLoading(false);
       }
 
-      // Fallback timeout in case redirect fails
       setTimeout(() => {
         setOauthLoading(false);
       }, 10000);
@@ -437,7 +415,6 @@ const SignIn = () => {
     }
   };
 
-  // Get password strength color and text
   const getPasswordStrengthInfo = () => {
     if (!password || passwordStrength === 0)
       return { color: 'bg-gray-200', text: '', width: '0%' };
@@ -453,9 +430,9 @@ const SignIn = () => {
   const strengthInfo = getPasswordStrengthInfo();
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row">
+    <div className="min-h-screen lg:h-screen grid grid-cols-1 lg:grid-cols-2">
       {/* Left Side - Hero/Branding */}
-      <div className="hidden lg:flex lg:flex-1 relative overflow-hidden">
+      <div className="hidden lg:flex relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-primary via-secondary to-accent opacity-90" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent" />
 
@@ -521,7 +498,6 @@ const SignIn = () => {
             </div>
           </div>
 
-          {/* Trust Indicators */}
           <div className="mt-12 pt-8 border-t border-white/20">
             <p className="text-sm text-white/70 mb-3">
               Trusted by creators and businesses
@@ -541,12 +517,12 @@ const SignIn = () => {
       </div>
 
       {/* Right Side - Sign In Form */}
-      <div className="flex-1 flex items-center justify-center p-4 sm:p-8 bg-background">
+      <div className="flex items-center justify-center bg-background px-4 sm:px-8 py-8 lg:py-0">
         <div className="w-full max-w-md">
-          <div className="mb-8">
+          <div className="mb-6">
             <Link
               to="/"
-              className="inline-flex items-center text-muted-foreground hover:text-foreground transition-colors mb-6 group"
+              className="inline-flex items-center text-muted-foreground hover:text-foreground transition-colors group mb-6"
               aria-label="Back to home page"
             >
               <ArrowLeft className="h-4 w-4 mr-2 group-hover:-translate-x-1 transition-transform" />
@@ -566,7 +542,7 @@ const SignIn = () => {
               <Button
                 type="button"
                 variant="outline"
-                className="w-full h-12 mb-6 hover:bg-accent/50 transition-colors"
+                className="w-full h-11 mb-4 hover:bg-accent/50 transition-colors"
                 onClick={handleGoogleSignIn}
                 disabled={oauthLoading || loading}
               >
@@ -584,7 +560,7 @@ const SignIn = () => {
               </Button>
 
               {/* Divider */}
-              <div className="relative my-6">
+              <div className="relative my-4">
                 <div className="absolute inset-0 flex items-center">
                   <div className="w-full border-t border-border"></div>
                 </div>
@@ -596,7 +572,7 @@ const SignIn = () => {
               </div>
 
               {/* Sign In Method Toggle */}
-              <div className="flex gap-2 mb-6 p-1 bg-muted rounded-lg">
+              <div className="flex gap-2 mb-4 p-1 bg-muted rounded-lg">
                 <button
                   type="button"
                   onClick={() => {
@@ -634,60 +610,50 @@ const SignIn = () => {
               {/* Email/Password Form */}
               <form
                 onSubmit={handleSignIn}
-                className="space-y-5"
+                className="space-y-3"
                 noValidate
               >
-                <div className="space-y-2">
+                {/* Email Field */}
+                <div className="space-y-1.5">
                   <Label htmlFor="email">
                     Email Address
-                    <span
-                      className="text-destructive ml-1"
-                      aria-label="required"
-                    >
-                      *
-                    </span>
+                    <span className="text-destructive ml-1">*</span>
                   </Label>
-                  <div className="relative">
-                    <Mail
-                      className="absolute left-3 top-3 h-4 w-4 text-muted-foreground"
-                      aria-hidden="true"
-                    />
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="you@example.com"
-                      value={email}
-                      onChange={handleEmailChange}
-                      required
-                      autoComplete="email"
-                      className={cn(
-                        'pl-10 h-12 transition-all',
-                        formErrors.email &&
-                          'border-destructive focus-visible:ring-destructive'
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-11 w-9 items-center justify-center rounded-md bg-muted text-muted-foreground">
+                      <Mail className="h-4 w-4" />
+                    </div>
+                    <div className="relative flex-1">
+                      <Input
+                        id="email"
+                        type="email"
+                        placeholder="you@example.com"
+                        value={email}
+                        onChange={handleEmailChange}
+                        required
+                        autoComplete="email"
+                        className={cn(
+                          'h-11 pr-8',
+                          formErrors.email &&
+                            'border-destructive focus-visible:ring-destructive'
+                        )}
+                        aria-invalid={!!formErrors.email}
+                        aria-describedby={
+                          formErrors.email ? 'email-error' : undefined
+                        }
+                      />
+                      {!isTyping && email && !formErrors.email && (
+                        <CheckCircle2 className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-green-500 pointer-events-none" />
                       )}
-                      aria-invalid={!!formErrors.email}
-                      aria-describedby={
-                        formErrors.email ? 'email-error' : undefined
-                      }
-                    />
-                    {!isTyping && email && !formErrors.email && (
-                      <CheckCircle2
-                        className="absolute right-3 top-3 h-4 w-4 text-green-500"
-                        aria-hidden="true"
-                      />
-                    )}
-                    {formErrors.email && (
-                      <AlertCircle
-                        className="absolute right-3 top-3 h-4 w-4 text-destructive"
-                        aria-hidden="true"
-                      />
-                    )}
+                      {formErrors.email && (
+                        <AlertCircle className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-destructive pointer-events-none" />
+                      )}
+                    </div>
                   </div>
                   {formErrors.email && (
                     <p
                       id="email-error"
-                      className="text-xs text-destructive flex items-center gap-1 mt-1"
-                      role="alert"
+                      className="text-xs text-destructive flex items-center gap-1"
                     >
                       <AlertCircle className="w-3 h-3" />
                       {formErrors.email}
@@ -696,55 +662,51 @@ const SignIn = () => {
                 </div>
 
                 {signInMethod === 'password' && (
-                  <div className="space-y-2">
+                  <div className="space-y-1.5">
                     <Label htmlFor="password">
                       Password
-                      <span
-                        className="text-destructive ml-1"
-                        aria-label="required"
-                      >
-                        *
-                      </span>
+                      <span className="text-destructive ml-1">*</span>
                     </Label>
-                    <div className="relative">
-                      <Lock
-                        className="absolute left-3 top-3 h-4 w-4 text-muted-foreground"
-                        aria-hidden="true"
-                      />
-                      <Input
-                        id="password"
-                        type={showPassword ? 'text' : 'password'}
-                        placeholder="Enter your password"
-                        value={password}
-                        onChange={handlePasswordChange}
-                        required
-                        autoComplete="current-password"
-                        className={cn(
-                          'pl-10 pr-10 h-12 transition-all',
-                          formErrors.password &&
-                            'border-destructive focus-visible:ring-destructive'
-                        )}
-                        aria-invalid={!!formErrors.password}
-                        aria-describedby={
-                          formErrors.password
-                            ? 'password-error'
-                            : 'password-strength'
-                        }
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-3 text-muted-foreground hover:text-foreground transition-colors"
-                        aria-label={
-                          showPassword ? 'Hide password' : 'Show password'
-                        }
-                      >
-                        {showPassword ? (
-                          <EyeOff className="h-4 w-4" />
-                        ) : (
-                          <Eye className="h-4 w-4" />
-                        )}
-                      </button>
+                    <div className="flex items-center gap-2">
+                      <div className="flex h-11 w-9 items-center justify-center rounded-md bg-muted text-muted-foreground">
+                        <Lock className="h-4 w-4" />
+                      </div>
+                      <div className="relative flex-1">
+                        <Input
+                          id="password"
+                          type={showPassword ? 'text' : 'password'}
+                          placeholder="Enter your password"
+                          value={password}
+                          onChange={handlePasswordChange}
+                          required
+                          autoComplete="current-password"
+                          className={cn(
+                            'h-11 pr-9',
+                            formErrors.password &&
+                              'border-destructive focus-visible:ring-destructive'
+                          )}
+                          aria-invalid={!!formErrors.password}
+                          aria-describedby={
+                            formErrors.password
+                              ? 'password-error'
+                              : 'password-strength'
+                          }
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                          aria-label={
+                            showPassword ? 'Hide password' : 'Show password'
+                          }
+                        >
+                          {showPassword ? (
+                            <EyeOff className="h-4 w-4" />
+                          ) : (
+                            <Eye className="h-4 w-4" />
+                          )}
+                        </button>
+                      </div>
                     </div>
 
                     {/* Password Strength Indicator */}
@@ -782,8 +744,7 @@ const SignIn = () => {
                     {formErrors.password && (
                       <p
                         id="password-error"
-                        className="text-xs text-destructive flex items-center gap-1 mt-1"
-                        role="alert"
+                        className="text-xs text-destructive flex items-center gap-1"
                       >
                         <AlertCircle className="w-3 h-3" />
                         {formErrors.password}
@@ -809,7 +770,7 @@ const SignIn = () => {
                   </div>
                 )}
 
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between pt-1">
                   <div className="flex items-center space-x-2">
                     <Checkbox
                       id="remember"
@@ -829,7 +790,7 @@ const SignIn = () => {
                   {signInMethod === 'password' && (
                     <Link
                       to="/forgot-password"
-                      className="text-sm text-primary hover:underline focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded"
+                      className="text-sm text-primary hover:underline"
                     >
                       Forgot password?
                     </Link>
@@ -838,7 +799,7 @@ const SignIn = () => {
 
                 <Button
                   type="submit"
-                  className="w-full h-12 btn-premium relative overflow-hidden group"
+                  className="w-full h-11 mt-1"
                   disabled={
                     loading ||
                     oauthLoading ||
@@ -858,12 +819,12 @@ const SignIn = () => {
                     <>
                       {signInMethod === 'magic-link' ? (
                         <>
-                          <Mail className="mr-2 h-4 w-4 group-hover:scale-110 transition-transform" />
+                          <Mail className="mr-2 h-4 w-4" />
                           Send Magic Link
                         </>
                       ) : (
                         <>
-                          <KeyRound className="mr-2 h-4 w-4 group-hover:rotate-12 transition-transform" />
+                          <KeyRound className="mr-2 h-4 w-4" />
                           Sign In
                         </>
                       )}
@@ -874,8 +835,8 @@ const SignIn = () => {
             </>
           ) : (
             // Magic Link Sent State
-            <div className="text-center py-8">
-              <div className="w-16 h-16 mx-auto mb-4 bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center animate-scale-in">
+            <div className="text-center py-6">
+              <div className="w-16 h-16 mx-auto mb-4 bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center">
                 <Mail className="w-8 h-8 text-green-600 dark:text-green-400" />
               </div>
               <h3 className="text-xl font-semibold mb-2">
@@ -940,33 +901,32 @@ const SignIn = () => {
           {!magicLinkSent && (
             <>
               {/* Sign Up Link */}
-              <div className="mt-8 text-center">
+              <div className="mt-4 text-center">
                 <p className="text-sm text-muted-foreground">
                   Don&apos;t have an account?{' '}
                   <Link
                     to="/signup"
-                    className="text-primary hover:underline font-medium focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded"
+                    className="text-primary hover:underline font-medium"
                   >
                     Create one now
                   </Link>
                 </p>
               </div>
 
-              {/* Support Link */}
-              <div className="mt-6 text-center">
+              {/* Support & Security */}
+              <div className="mt-4 text-center">
                 <p className="text-xs text-muted-foreground">
                   Need help?{' '}
                   <Link
                     to="/contact"
-                    className="text-secondary hover:underline focus:outline-none focus:ring-2 focus:ring-secondary focus:ring-offset-2 rounded"
+                    className="text-secondary hover:underline"
                   >
                     Contact Support
                   </Link>
                 </p>
               </div>
 
-              {/* Security Notice */}
-              <div className="mt-8 p-4 bg-muted/50 rounded-lg border border-border">
+              <div className="mt-6 p-4 bg-muted/50 rounded-lg border border-border">
                 <div className="flex items-start gap-3">
                   <Shield className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
                   <div className="text-xs text-muted-foreground">
@@ -985,23 +945,6 @@ const SignIn = () => {
           )}
         </div>
       </div>
-
-      {/* Add animation styles */}
-      <style>{`
-        @keyframes scale-in {
-          from {
-            transform: scale(0);
-            opacity: 0;
-          }
-          to {
-            transform: scale(1);
-            opacity: 1;
-          }
-        }
-        .animate-scale-in {
-          animation: scale-in 0.3s ease-out;
-        }
-      `}</style>
     </div>
   );
 };

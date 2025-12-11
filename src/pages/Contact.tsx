@@ -240,7 +240,7 @@ const Contact = () => {
         </div>
 
         {messageSent && (
-          <div className="max-w-2xl mx-auto mb-8">
+          <div className="max-w-4xl mx-auto mb-8">
             <Card className="bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800">
               <CardContent className="pt-6">
                 <div className="flex items-start gap-3">
@@ -275,61 +275,72 @@ const Contact = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <form onSubmit={handleSubmit} className="space-y-6">
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  {/* Name and Email Row */}
                   <div className="grid md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
+                    {/* Name Field */}
+                    <div className="space-y-1.5">
                       <Label htmlFor="name">
                         Full Name <span className="text-destructive">*</span>
                       </Label>
-                      <div className="relative">
-                        <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                        <Input
-                          id="name"
-                          name="name"
-                          type="text"
-                          placeholder="Your full name"
-                          value={formData.name}
-                          onChange={handleInputChange}
-                          required
-                          disabled={loading}
-                          className={`pl-10 h-11 ${
-                            errors.name ? 'border-destructive' : ''
-                          }`}
-                          maxLength={100}
-                        />
+                      <div className="flex items-center gap-2">
+                        <div className="flex h-11 w-9 items-center justify-center rounded-md bg-muted text-muted-foreground flex-shrink-0">
+                          <User className="h-4 w-4" />
+                        </div>
+                        <div className="relative flex-1">
+                          <Input
+                            id="name"
+                            name="name"
+                            type="text"
+                            placeholder="Your full name"
+                            value={formData.name}
+                            onChange={handleInputChange}
+                            required
+                            disabled={loading}
+                            className={`h-11 ${
+                              errors.name ? 'border-destructive' : ''
+                            }`}
+                            maxLength={100}
+                          />
+                        </div>
                       </div>
                       {errors.name && (
-                        <p className="text-xs text-destructive flex items-center gap-1">
+                        <p className="text-xs text-destructive flex items-center gap-1 ml-11">
                           <AlertCircle className="w-3 h-3" />
                           {errors.name}
                         </p>
                       )}
                     </div>
 
-                    <div className="space-y-2">
+                    {/* Email Field */}
+                    <div className="space-y-1.5">
                       <Label htmlFor="email">
                         Email Address{' '}
                         <span className="text-destructive">*</span>
                       </Label>
-                      <div className="relative">
-                        <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                        <Input
-                          id="email"
-                          name="email"
-                          type="email"
-                          placeholder="you@example.com"
-                          value={formData.email}
-                          onChange={handleInputChange}
-                          required
-                          disabled={loading}
-                          className={`pl-10 h-11 ${
-                            errors.email ? 'border-destructive' : ''
-                          }`}
-                          maxLength={100}
-                        />
+                      <div className="flex items-center gap-2">
+                        <div className="flex h-11 w-9 items-center justify-center rounded-md bg-muted text-muted-foreground flex-shrink-0">
+                          <Mail className="h-4 w-4" />
+                        </div>
+                        <div className="relative flex-1">
+                          <Input
+                            id="email"
+                            name="email"
+                            type="email"
+                            placeholder="you@example.com"
+                            value={formData.email}
+                            onChange={handleInputChange}
+                            required
+                            disabled={loading}
+                            className={`h-11 ${
+                              errors.email ? 'border-destructive' : ''
+                            }`}
+                            maxLength={100}
+                          />
+                        </div>
                       </div>
                       {errors.email && (
-                        <p className="text-xs text-destructive flex items-center gap-1">
+                        <p className="text-xs text-destructive flex items-center gap-1 ml-11">
                           <AlertCircle className="w-3 h-3" />
                           {errors.email}
                         </p>
@@ -337,33 +348,42 @@ const Contact = () => {
                     </div>
                   </div>
 
-                  <div className="space-y-2">
+                  {/* Subject Field */}
+                  <div className="space-y-1.5">
                     <Label htmlFor="subject">
                       Subject <span className="text-destructive">*</span>
                     </Label>
-                    <Input
-                      id="subject"
-                      name="subject"
-                      type="text"
-                      placeholder="What is this regarding?"
-                      value={formData.subject}
-                      onChange={handleInputChange}
-                      required
-                      disabled={loading}
-                      className={`h-11 ${
-                        errors.subject ? 'border-destructive' : ''
-                      }`}
-                      maxLength={150}
-                    />
+                    <div className="flex items-center gap-2">
+                      <div className="flex h-11 w-9 items-center justify-center rounded-md bg-muted text-muted-foreground flex-shrink-0">
+                        <MessageSquare className="h-4 w-4" />
+                      </div>
+                      <div className="relative flex-1">
+                        <Input
+                          id="subject"
+                          name="subject"
+                          type="text"
+                          placeholder="What is this regarding?"
+                          value={formData.subject}
+                          onChange={handleInputChange}
+                          required
+                          disabled={loading}
+                          className={`h-11 ${
+                            errors.subject ? 'border-destructive' : ''
+                          }`}
+                          maxLength={150}
+                        />
+                      </div>
+                    </div>
                     {errors.subject && (
-                      <p className="text-xs text-destructive flex items-center gap-1">
+                      <p className="text-xs text-destructive flex items-center gap-1 ml-11">
                         <AlertCircle className="w-3 h-3" />
                         {errors.subject}
                       </p>
                     )}
                   </div>
 
-                  <div className="space-y-2">
+                  {/* Message Field */}
+                  <div className="space-y-1.5">
                     <Label htmlFor="message">
                       Message <span className="text-destructive">*</span>
                     </Label>
@@ -394,7 +414,7 @@ const Contact = () => {
 
                   <Button
                     type="submit"
-                    className="w-full h-12 btn-premium"
+                    className="w-full h-11 btn-premium"
                     disabled={loading}
                   >
                     {loading ? (
@@ -414,7 +434,7 @@ const Contact = () => {
             </Card>
           </div>
 
-          {/* Contact Info */}
+          {/* Contact Info Sidebar */}
           <div className="space-y-6">
             <Card className="card-premium">
               <CardHeader>
@@ -429,14 +449,14 @@ const Contact = () => {
                     <Mail className="w-5 h-5 text-primary" />
                   </div>
                   <div>
-                    <h3 className="font-semibold">Email</h3>
+                    <h3 className="font-semibold mb-1">Email</h3>
                     <a
                       href="mailto:support@buyapixel.in"
-                      className="text-muted-foreground hover:text-primary transition-colors"
+                      className="text-sm text-muted-foreground hover:text-primary transition-colors"
                     >
                       support@buyapixel.in
                     </a>
-                    <p className="text-sm text-muted-foreground mt-1">
+                    <p className="text-xs text-muted-foreground mt-1">
                       We respond within 24 hours
                     </p>
                   </div>
@@ -447,9 +467,11 @@ const Contact = () => {
                     <Phone className="w-5 h-5 text-secondary" />
                   </div>
                   <div>
-                    <h3 className="font-semibold">Phone</h3>
-                    <p className="text-muted-foreground">+91 XXX XXX XXXX</p>
-                    <p className="text-sm text-muted-foreground mt-1">
+                    <h3 className="font-semibold mb-1">Phone</h3>
+                    <p className="text-sm text-muted-foreground">
+                      +91 XXX XXX XXXX
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
                       Mon-Fri, 9 AM - 6 PM IST
                     </p>
                   </div>
@@ -460,9 +482,11 @@ const Contact = () => {
                     <MapPin className="w-5 h-5 text-accent" />
                   </div>
                   <div>
-                    <h3 className="font-semibold">Location</h3>
-                    <p className="text-muted-foreground">Mumbai, India</p>
-                    <p className="text-sm text-muted-foreground mt-1">
+                    <h3 className="font-semibold mb-1">Location</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Mumbai, India
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
                       Serving India & beyond
                     </p>
                   </div>
@@ -473,9 +497,11 @@ const Contact = () => {
                     <Clock className="w-5 h-5 text-green-600" />
                   </div>
                   <div>
-                    <h3 className="font-semibold">Response Time</h3>
-                    <p className="text-muted-foreground">Within 24 hours</p>
-                    <p className="text-sm text-muted-foreground mt-1">
+                    <h3 className="font-semibold mb-1">Response Time</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Within 24 hours
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
                       Usually much faster!
                     </p>
                   </div>
@@ -508,7 +534,7 @@ const Contact = () => {
 
             <Card className="card-premium">
               <CardHeader>
-                <CardTitle className="text-xl">
+                <CardTitle className="text-lg">
                   Frequently Asked Questions
                 </CardTitle>
               </CardHeader>
@@ -517,7 +543,7 @@ const Contact = () => {
                   <h4 className="font-medium text-sm mb-1">
                     How do pixel purchases work?
                   </h4>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-xs text-muted-foreground">
                     Select pixels, upload your content, pay securely, and your
                     pixels go live instantly.
                   </p>
@@ -526,7 +552,7 @@ const Contact = () => {
                   <h4 className="font-medium text-sm mb-1">
                     Can I edit my pixels after purchase?
                   </h4>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-xs text-muted-foreground">
                     Yes! You can modify your pixel content anytime from your
                     profile.
                   </p>
@@ -535,7 +561,7 @@ const Contact = () => {
                   <h4 className="font-medium text-sm mb-1">
                     What payment methods do you accept?
                   </h4>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-xs text-muted-foreground">
                     We accept UPI, credit cards, debit cards, and net banking.
                   </p>
                 </div>
