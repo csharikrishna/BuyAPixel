@@ -15,6 +15,8 @@ import ResetPassword from "./pages/ResetPassword";
 import MarketplacePage from "./pages/MarketplacePage";
 import AuthCallback from "./pages/AuthCallback";
 import NotFound from "./pages/NotFound";
+import TermsOfService from "./pages/TermsOfService";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
 import LiveTicker from "./components/LiveTicker";
 
 const queryClient = new QueryClient();
@@ -39,6 +41,10 @@ const App = () => (
           <Route path="/leaderboard" element={<Leaderboard />} />
           <Route path="/marketplace" element={<MarketplacePage />} />
           <Route path="/contact" element={<Contact />} />
+          
+          {/* Legal Pages */}
+          <Route path="/terms" element={<TermsOfService />} />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
           
           {/* OAuth Callback Route - Must be above catch-all */}
           <Route path="/auth/callback" element={<AuthCallback />} />

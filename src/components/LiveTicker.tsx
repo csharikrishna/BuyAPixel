@@ -395,7 +395,7 @@ const LiveTicker: React.FC = () => {
   }, []);
 
   // ✅ NOW CHECK PATH AND RETURN NULL AT THE END (after all hooks)
-  const excludedPaths = ['/signin', '/signup', '/login', '/forgot-password', '/reset-password' , '/profile'];
+  const excludedPaths = ['/signin', '/signup', '/login', '/forgot-password', '/reset-password' , '/profile', '/terms', '/privacy'];
   const shouldHideTicker = excludedPaths.some(path => 
     location.pathname.toLowerCase().includes(path.toLowerCase())
   );
