@@ -1,73 +1,64 @@
-# Welcome to your Lovable project
+# Buy a Pixel
 
-## Project info
+A collaborative digital canvas where users can purchase pixels and leave their mark. Inspired by the "Million Dollar Homepage", Buy a Pixel allows users to own a piece of the internet, trade pixels in a marketplace, and compete on the leaderboard.
 
-**URL**: https://lovable.dev/projects/8948a152-4d6f-4c40-8ccf-aa6c7b812e39
+**Deployed Application:** [https://buyapixel.onrender.com/](https://buyapixel.onrender.com/)
 
-## How can I edit this code?
+## Features
 
-There are several ways of editing your application.
+- **Interactive Canvas:** Explore a virtualized pixel grid with zoom and pan capabilities.
+- **Pixel Purchasing:** Select and buy pixels to display your own colors and images.
+- **User Authentication:** Secure sign-up and login powered by Supabase.
+- **Marketplace:** Trade pixels and assets with other users.
+- **Leaderboard:** See who owns the most pixels and tops the charts.
+- **Responsive Design:** Optimized for both desktop and mobile devices.
 
-**Use Lovable**
+## Tech Stack
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/8948a152-4d6f-4c40-8ccf-aa6c7b812e39) and start prompting.
+- **Frontend:** React, TypeScript, Vite
+- **Styling:** Tailwind CSS, shadcn-ui
+- **State Management:** TanStack Query (React Query)
+- **Backend & Auth:** Supabase
+- **Routing:** React Router
 
-Changes made via Lovable will be committed automatically to this repo.
+## Getting Started
 
-**Use your preferred IDE**
+Follow these steps to set up the project locally:
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### Prerequisites
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+- Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
 
-Follow these steps:
+### Installation
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+1. **Clone the repository:**
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+   ```bash
+   git clone <YOUR_GIT_URL>
+   cd <YOUR_PROJECT_NAME>
+   ```
 
-# Step 3: Install the necessary dependencies.
-npm i
+2. **Install dependencies:**
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
+   ```bash
+   npm install
+   ```
 
-**Edit a file directly in GitHub**
+3. **Start the development server:**
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+   ```bash
+   npm run dev
+   ```
 
-**Use GitHub Codespaces**
+   The application will be available at `http://localhost:5173`.
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## Contributing
 
-## What technologies are used for this project?
+1. Fork the repository.
+2. Create a new branch for your feature or bug fix.
+3. Make your changes and commit them.
+4. Push to your fork and submit a pull request.
 
-This project is built with:
+## License
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/8948a152-4d6f-4c40-8ccf-aa6c7b812e39) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+This project is open source.
