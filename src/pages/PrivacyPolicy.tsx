@@ -1,6 +1,5 @@
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import "bootstrap/dist/css/bootstrap.min.css";
 
 const PrivacyPolicy: React.FC = () => {
   const navigate = useNavigate();
@@ -15,60 +14,42 @@ const PrivacyPolicy: React.FC = () => {
   };
 
   return (
-    <div className="min-vh-100" style={{ backgroundColor: "#f8f9fa" }}>
+    <div className="min-h-screen bg-gray-100">
       {/* Fixed Back Button */}
       <button
         type="button"
         onClick={handleBack}
-        className="btn btn-outline-secondary position-fixed"
-        style={{ top: "1rem", left: "1rem", zIndex: 1050 }}
+        className="fixed top-4 left-4 z-50 px-4 py-2 border border-gray-300 rounded bg-white text-gray-700 hover:bg-gray-50 transition-colors"
       >
         ← Back
       </button>
 
       {/* Header */}
-      <header className="py-4" style={{ backgroundColor: "#2c3e50" }}>
-        <div className="container">
-          <h1 className="text-center mb-0" style={{ color: "#ffffff" }}>
+      <header className="py-6 bg-slate-800">
+        <div className="container mx-auto px-4">
+          <h1 className="text-center text-white text-3xl font-bold">
             BuyAPixel – Privacy Policy
           </h1>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="container py-5">
-        <div className="row justify-content-center">
-          <div className="col-lg-10">
-            <div
-              className="card shadow-sm"
-              style={{ backgroundColor: "#ffffff", border: "none" }}
-            >
-              <div className="card-body p-4 p-md-5">
+      <main className="container mx-auto px-4 py-12">
+        <div className="flex justify-center">
+          <div className="w-full lg:w-5/6">
+            <div className="bg-white rounded-lg shadow-sm">
+              <div className="p-6 md:p-10">
                 {/* Last Updated */}
-                <div
-                  className="alert mb-4"
-                  style={{
-                    backgroundColor: "#e8f4f8",
-                    borderLeft: "4px solid #3498db",
-                    color: "#2c3e50",
-                  }}
-                >
+                <div className="mb-6 p-4 bg-blue-50 border-l-4 border-blue-500 text-slate-800">
                   <strong>Last Updated:</strong> December 10, 2025
                 </div>
 
                 {/* 1. Introduction */}
-                <section className="mb-5">
-                  <h2
-                    className="h4 mb-3"
-                    style={{
-                      color: "#2c3e50",
-                      borderBottom: "2px solid #3498db",
-                      paddingBottom: "10px",
-                    }}
-                  >
+                <section className="mb-8">
+                  <h2 className="text-xl font-semibold text-slate-800 pb-2 mb-4 border-b-2 border-blue-500">
                     1. Introduction
                   </h2>
-                  <p style={{ color: "#34495e", lineHeight: "1.7" }}>
+                  <p className="text-slate-700 leading-relaxed">
                     This Privacy Policy explains how BuyAPixel ("we", "us", or
                     "our") collects, uses, discloses, and protects your personal
                     information when you access or use our website and services.
@@ -78,23 +59,16 @@ const PrivacyPolicy: React.FC = () => {
                 </section>
 
                 {/* 2. Information We Collect */}
-                <section className="mb-5">
-                  <h2
-                    className="h4 mb-3"
-                    style={{
-                      color: "#2c3e50",
-                      borderBottom: "2px solid #3498db",
-                      paddingBottom: "10px",
-                    }}
-                  >
+                <section className="mb-8">
+                  <h2 className="text-xl font-semibold text-slate-800 pb-2 mb-4 border-b-2 border-blue-500">
                     2. Information We Collect
                   </h2>
-                  <p style={{ color: "#34495e", lineHeight: "1.7" }}>
+                  <p className="text-slate-700 leading-relaxed mb-3">
                     We collect information that you provide directly to us, as
                     well as data collected automatically when you use our
-                    website.[web:49][web:52]
+                    website.
                   </p>
-                  <ul style={{ color: "#34495e", lineHeight: "1.7" }}>
+                  <ul className="list-disc pl-6 text-slate-700 leading-relaxed space-y-2">
                     <li>
                       <strong>Account and Contact Data:</strong> Name, email
                       address, password, and profile details you submit when
@@ -120,22 +94,15 @@ const PrivacyPolicy: React.FC = () => {
                 </section>
 
                 {/* 3. How We Use Your Information */}
-                <section className="mb-5">
-                  <h2
-                    className="h4 mb-3"
-                    style={{
-                      color: "#2c3e50",
-                      borderBottom: "2px solid #3498db",
-                      paddingBottom: "10px",
-                    }}
-                  >
+                <section className="mb-8">
+                  <h2 className="text-xl font-semibold text-slate-800 pb-2 mb-4 border-b-2 border-blue-500">
                     3. How We Use Your Information
                   </h2>
-                  <p style={{ color: "#34495e", lineHeight: "1.7" }}>
+                  <p className="text-slate-700 leading-relaxed mb-3">
                     We use the information we collect for specific, clearly
-                    defined purposes.[web:49][web:52]
+                    defined purposes.
                   </p>
-                  <ul style={{ color: "#34495e", lineHeight: "1.7" }}>
+                  <ul className="list-disc pl-6 text-slate-700 leading-relaxed space-y-2">
                     <li>To create and manage your account and purchases.</li>
                     <li>To process payments and prevent fraud.</li>
                     <li>
@@ -160,23 +127,16 @@ const PrivacyPolicy: React.FC = () => {
                 </section>
 
                 {/* 4. Cookies and Tracking Technologies */}
-                <section className="mb-5">
-                  <h2
-                    className="h4 mb-3"
-                    style={{
-                      color: "#2c3e50",
-                      borderBottom: "2px solid #3498db",
-                      paddingBottom: "10px",
-                    }}
-                  >
+                <section className="mb-8">
+                  <h2 className="text-xl font-semibold text-slate-800 pb-2 mb-4 border-b-2 border-blue-500">
                     4. Cookies and Tracking Technologies
                   </h2>
-                  <p style={{ color: "#34495e", lineHeight: "1.7" }}>
+                  <p className="text-slate-700 leading-relaxed mb-3">
                     We use cookies and similar technologies to recognize your
                     browser, remember your preferences, and analyze how you
-                    interact with our website.[web:49][web:51][web:54]
+                    interact with our website.
                   </p>
-                  <ul style={{ color: "#34495e", lineHeight: "1.7" }}>
+                  <ul className="list-disc pl-6 text-slate-700 leading-relaxed space-y-2">
                     <li>
                       <strong>Essential cookies:</strong> Required for core
                       site functionality, such as security and session
@@ -192,31 +152,24 @@ const PrivacyPolicy: React.FC = () => {
                       content, subject to your consent where required by law.
                     </li>
                   </ul>
-                  <p style={{ color: "#34495e", lineHeight: "1.7" }}>
+                  <p className="text-slate-700 leading-relaxed mt-3">
                     Where required, we will obtain your consent before setting
                     non‑essential cookies and provide options to manage or
-                    withdraw consent at any time.[web:51][web:52]
+                    withdraw consent at any time.
                   </p>
                 </section>
 
                 {/* 5. Legal Bases (if applicable) */}
-                <section className="mb-5">
-                  <h2
-                    className="h4 mb-3"
-                    style={{
-                      color: "#2c3e50",
-                      borderBottom: "2px solid #3498db",
-                      paddingBottom: "10px",
-                    }}
-                  >
+                <section className="mb-8">
+                  <h2 className="text-xl font-semibold text-slate-800 pb-2 mb-4 border-b-2 border-blue-500">
                     5. Legal Bases for Processing
                   </h2>
-                  <p style={{ color: "#34495e", lineHeight: "1.7" }}>
+                  <p className="text-slate-700 leading-relaxed mb-3">
                     Where applicable data protection laws require it, we process
                     your personal data based on one or more of the following
-                    legal bases:[web:52][web:56]
+                    legal bases:
                   </p>
-                  <ul style={{ color: "#34495e", lineHeight: "1.7" }}>
+                  <ul className="list-disc pl-6 text-slate-700 leading-relaxed space-y-2">
                     <li>Your consent (for example, for certain cookies or marketing).</li>
                     <li>
                       Performance of a contract (to provide the services you
@@ -235,22 +188,15 @@ const PrivacyPolicy: React.FC = () => {
                 </section>
 
                 {/* 6. How We Share Your Information */}
-                <section className="mb-5">
-                  <h2
-                    className="h4 mb-3"
-                    style={{
-                      color: "#2c3e50",
-                      borderBottom: "2px solid #3498db",
-                      paddingBottom: "10px",
-                    }}
-                  >
+                <section className="mb-8">
+                  <h2 className="text-xl font-semibold text-slate-800 pb-2 mb-4 border-b-2 border-blue-500">
                     6. How We Share Your Information
                   </h2>
-                  <p style={{ color: "#34495e", lineHeight: "1.7" }}>
+                  <p className="text-slate-700 leading-relaxed mb-3">
                     We do not sell your personal information, but we may share
-                    it with trusted third parties in limited circumstances.[web:49][web:52][web:56]
+                    it with trusted third parties in limited circumstances.
                   </p>
-                  <ul style={{ color: "#34495e", lineHeight: "1.7" }}>
+                  <ul className="list-disc pl-6 text-slate-700 leading-relaxed space-y-2">
                     <li>
                       <strong>Service providers:</strong> Payment processors,
                       hosting providers, analytics services, and customer
@@ -275,24 +221,17 @@ const PrivacyPolicy: React.FC = () => {
                 </section>
 
                 {/* 7. International Transfers */}
-                <section className="mb-5">
-                  <h2
-                    className="h4 mb-3"
-                    style={{
-                      color: "#2c3e50",
-                      borderBottom: "2px solid #3498db",
-                      paddingBottom: "10px",
-                    }}
-                  >
+                <section className="mb-8">
+                  <h2 className="text-xl font-semibold text-slate-800 pb-2 mb-4 border-b-2 border-blue-500">
                     7. International Data Transfers
                   </h2>
-                  <p style={{ color: "#34495e", lineHeight: "1.7" }}>
+                  <p className="text-slate-700 leading-relaxed mb-3">
                     Depending on where you are located and where our service
                     providers operate, your information may be transferred to
                     and processed in countries that may have different data
-                    protection laws than your home jurisdiction.[web:52][web:53]
+                    protection laws than your home jurisdiction.
                   </p>
-                  <p style={{ color: "#34495e", lineHeight: "1.7" }}>
+                  <p className="text-slate-700 leading-relaxed">
                     Where required, we implement appropriate safeguards, such as
                     contractual protections, to help ensure your personal data
                     remains protected.
@@ -300,24 +239,17 @@ const PrivacyPolicy: React.FC = () => {
                 </section>
 
                 {/* 8. Data Retention */}
-                <section className="mb-5">
-                  <h2
-                    className="h4 mb-3"
-                    style={{
-                      color: "#2c3e50",
-                      borderBottom: "2px solid #3498db",
-                      paddingBottom: "10px",
-                    }}
-                  >
+                <section className="mb-8">
+                  <h2 className="text-xl font-semibold text-slate-800 pb-2 mb-4 border-b-2 border-blue-500">
                     8. Data Retention
                   </h2>
-                  <p style={{ color: "#34495e", lineHeight: "1.7" }}>
+                  <p className="text-slate-700 leading-relaxed mb-3">
                     We retain your personal information only for as long as
                     necessary to fulfill the purposes described in this Privacy
                     Policy, unless a longer retention period is required or
-                    permitted by law.[web:49][web:52]
+                    permitted by law.
                   </p>
-                  <p style={{ color: "#34495e", lineHeight: "1.7" }}>
+                  <p className="text-slate-700 leading-relaxed">
                     Criteria used include the duration of your account, legal
                     obligations, and the need to resolve disputes or enforce our
                     agreements.
@@ -325,22 +257,15 @@ const PrivacyPolicy: React.FC = () => {
                 </section>
 
                 {/* 9. Your Rights and Choices */}
-                <section className="mb-5">
-                  <h2
-                    className="h4 mb-3"
-                    style={{
-                      color: "#2c3e50",
-                      borderBottom: "2px solid #3498db",
-                      paddingBottom: "10px",
-                    }}
-                  >
+                <section className="mb-8">
+                  <h2 className="text-xl font-semibold text-slate-800 pb-2 mb-4 border-b-2 border-blue-500">
                     9. Your Rights and Choices
                   </h2>
-                  <p style={{ color: "#34495e", lineHeight: "1.7" }}>
+                  <p className="text-slate-700 leading-relaxed mb-3">
                     Depending on your location and applicable law, you may have
-                    certain rights regarding your personal information.[web:52][web:56]
+                    certain rights regarding your personal information.
                   </p>
-                  <ul style={{ color: "#34495e", lineHeight: "1.7" }}>
+                  <ul className="list-disc pl-6 text-slate-700 leading-relaxed space-y-2">
                     <li>Access to the personal data we hold about you.</li>
                     <li>Correction of inaccurate or incomplete data.</li>
                     <li>Deletion of your personal data, subject to legal limits.</li>
@@ -356,7 +281,7 @@ const PrivacyPolicy: React.FC = () => {
                       consent (for example, for certain cookies or marketing).
                     </li>
                   </ul>
-                  <p style={{ color: "#34495e", lineHeight: "1.7" }}>
+                  <p className="text-slate-700 leading-relaxed mt-3">
                     To exercise these rights, please contact us using the
                     details in the "Contact Us" section below. We may need to
                     verify your identity before responding to your request.
@@ -364,23 +289,16 @@ const PrivacyPolicy: React.FC = () => {
                 </section>
 
                 {/* 10. Security */}
-                <section className="mb-5">
-                  <h2
-                    className="h4 mb-3"
-                    style={{
-                      color: "#2c3e50",
-                      borderBottom: "2px solid #3498db",
-                      paddingBottom: "10px",
-                    }}
-                  >
+                <section className="mb-8">
+                  <h2 className="text-xl font-semibold text-slate-800 pb-2 mb-4 border-b-2 border-blue-500">
                     10. Data Security
                   </h2>
-                  <p style={{ color: "#34495e", lineHeight: "1.7" }}>
+                  <p className="text-slate-700 leading-relaxed mb-3">
                     We use appropriate technical and organizational measures to
                     protect your personal information from unauthorized access,
-                    loss, misuse, or alteration.[web:49][web:57]
+                    loss, misuse, or alteration.
                   </p>
-                  <p style={{ color: "#34495e", lineHeight: "1.7" }}>
+                  <p className="text-slate-700 leading-relaxed">
                     However, no method of transmission over the internet or
                     electronic storage is completely secure, and we cannot
                     guarantee absolute security.
@@ -388,23 +306,16 @@ const PrivacyPolicy: React.FC = () => {
                 </section>
 
                 {/* 11. Children's Privacy */}
-                <section className="mb-5">
-                  <h2
-                    className="h4 mb-3"
-                    style={{
-                      color: "#2c3e50",
-                      borderBottom: "2px solid #3498db",
-                      paddingBottom: "10px",
-                    }}
-                  >
+                <section className="mb-8">
+                  <h2 className="text-xl font-semibold text-slate-800 pb-2 mb-4 border-b-2 border-blue-500">
                     11. Children's Privacy
                   </h2>
-                  <p style={{ color: "#34495e", lineHeight: "1.7" }}>
+                  <p className="text-slate-700 leading-relaxed mb-3">
                     BuyAPixel is not directed to children under the age of 13
                     (or a higher age as required by applicable law), and we do
-                    not knowingly collect personal information from children.[web:49][web:53]
+                    not knowingly collect personal information from children.
                   </p>
-                  <p style={{ color: "#34495e", lineHeight: "1.7" }}>
+                  <p className="text-slate-700 leading-relaxed">
                     If you believe a child has provided us with personal
                     information, please contact us so we can take appropriate
                     steps to delete such data.
@@ -412,23 +323,16 @@ const PrivacyPolicy: React.FC = () => {
                 </section>
 
                 {/* 12. Changes to This Policy */}
-                <section className="mb-5">
-                  <h2
-                    className="h4 mb-3"
-                    style={{
-                      color: "#2c3e50",
-                      borderBottom: "2px solid #3498db",
-                      paddingBottom: "10px",
-                    }}
-                  >
+                <section className="mb-8">
+                  <h2 className="text-xl font-semibold text-slate-800 pb-2 mb-4 border-b-2 border-blue-500">
                     12. Changes to This Privacy Policy
                   </h2>
-                  <p style={{ color: "#34495e", lineHeight: "1.7" }}>
+                  <p className="text-slate-700 leading-relaxed mb-3">
                     We may update this Privacy Policy from time to time to
                     reflect changes in our practices, legal requirements, or
-                    other operational reasons.[web:49][web:52]
+                    other operational reasons.
                   </p>
-                  <p style={{ color: "#34495e", lineHeight: "1.7" }}>
+                  <p className="text-slate-700 leading-relaxed">
                     When we make changes, we will revise the "Last Updated" date
                     at the top of this page. Your continued use of BuyAPixel
                     after any changes takes effect means you accept the updated
@@ -437,49 +341,29 @@ const PrivacyPolicy: React.FC = () => {
                 </section>
 
                 {/* 13. Contact Us */}
-                <section className="mb-4">
-                  <h2
-                    className="h4 mb-3"
-                    style={{
-                      color: "#2c3e50",
-                      borderBottom: "2px solid #3498db",
-                      paddingBottom: "10px",
-                    }}
-                  >
+                <section className="mb-6">
+                  <h2 className="text-xl font-semibold text-slate-800 pb-2 mb-4 border-b-2 border-blue-500">
                     13. Contact Us
                   </h2>
-                  <p style={{ color: "#34495e", lineHeight: "1.7" }}>
+                  <p className="text-slate-700 leading-relaxed mb-3">
                     If you have questions about this Privacy Policy or our data
                     practices, please contact us:
                   </p>
-                  <div
-                    className="p-3 mt-3"
-                    style={{
-                      backgroundColor: "#ecf0f1",
-                      borderRadius: "5px",
-                    }}
-                  >
-                    <p className="mb-2" style={{ color: "#2c3e50" }}>
+                  <div className="p-4 bg-gray-100 rounded">
+                    <p className="mb-2 text-slate-800">
                       <strong>BuyAPixel</strong>
                     </p>
-                    <p className="mb-2" style={{ color: "#2c3e50" }}>
+                    <p className="mb-2 text-slate-800">
                       Email: privacy@buyapixel.com
                     </p>
-                    <p className="mb-0" style={{ color: "#2c3e50" }}>
+                    <p className="mb-0 text-slate-800">
                       Support: support@buyapixel.com
                     </p>
                   </div>
                 </section>
 
                 {/* Acceptance */}
-                <div
-                  className="alert mt-4"
-                  style={{
-                    backgroundColor: "#d4edda",
-                    borderLeft: "4px solid #28a745",
-                    color: "#155724",
-                  }}
-                >
+                <div className="p-4 bg-green-50 border-l-4 border-green-500 text-green-800">
                   <strong>
                     By using BuyAPixel, you acknowledge that you have read,
                     understood, and agree to this Privacy Policy.
@@ -492,9 +376,9 @@ const PrivacyPolicy: React.FC = () => {
       </main>
 
       {/* Footer */}
-      <footer className="py-4 mt-5" style={{ backgroundColor: "#34495e" }}>
-        <div className="container">
-          <p className="text-center mb-0" style={{ color: "#ecf0f1" }}>
+      <footer className="py-6 mt-12 bg-gray-700">
+        <div className="container mx-auto px-4">
+          <p className="text-center text-gray-200">
             © 2025 BuyAPixel. All rights reserved.
           </p>
         </div>

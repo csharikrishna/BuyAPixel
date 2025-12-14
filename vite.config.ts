@@ -18,6 +18,7 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      "~bootstrap": path.resolve(__dirname, "node_modules/bootstrap"),
     },
   },
 
@@ -25,9 +26,7 @@ export default defineConfig(({ mode }) => ({
     outDir: "dist",
     emptyOutDir: true,
     sourcemap: false,
-    // Use esbuild for minification (faster than terser)
     minify: 'esbuild',
-    // Optimize chunk splitting
     rollupOptions: {
       output: {
         manualChunks: {
@@ -45,7 +44,6 @@ export default defineConfig(({ mode }) => ({
     },
   },
 
-  // Optimize dependencies
   optimizeDeps: {
     include: [
       'react',
