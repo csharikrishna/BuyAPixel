@@ -1,3 +1,10 @@
+
+
+//if need a bottom nav bar for mobile devices i can use this code here 
+// import { MobileBottomNav } from "@/components/MobileBottomNav";
+// <MobileBottomNav />
+
+
 import { Home, Grid3x3, User, ShoppingCart, Trophy } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";

@@ -23,7 +23,7 @@ import {
   User, MapPin, Eye, TrendingUp, ExternalLink,
   Award, Clock, CheckCircle2, AlertCircle, Info,
   RefreshCw, Loader2, Download, Trash2, Shield,
-  AlertTriangle, Copy, Check
+  AlertTriangle, Copy, Check, Sparkles
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -78,13 +78,13 @@ interface ProfileCompletionData {
 
 // Loading skeleton component
 const ProfileSkeleton = () => (
-  <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 pb-20 lg:pb-8">
+  <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 pb-20 lg:pb-8">
     <div className="container mx-auto px-4 py-4 md:py-8">
       <div className="flex items-center space-x-4 mb-8">
         <Skeleton className="h-10 w-32" />
         <Skeleton className="h-8 w-48" />
       </div>
-      <Card className="w-full max-w-4xl mx-auto">
+      <Card className="w-full max-w-4xl mx-auto backdrop-blur-xl bg-white/60 dark:bg-gray-900/60 border-purple-500/20">
         <CardHeader className="text-center">
           <Skeleton className="w-32 h-32 rounded-full mx-auto mb-4" />
           <Skeleton className="h-8 w-48 mx-auto" />
@@ -336,7 +336,6 @@ const Profile = () => {
     try {
       console.log('🗑️ Starting account deletion process...');
 
-      // Delete user pixels first (if any)
       if (userPixels.length > 0) {
         const { error: pixelsError } = await supabase
           .from('pixels')
@@ -351,7 +350,6 @@ const Profile = () => {
         }
       }
 
-      // Delete profile
       const { error: profileError } = await supabase
         .from('profiles')
         .delete()
@@ -361,7 +359,6 @@ const Profile = () => {
         console.error('Error deleting profile:', profileError);
       }
 
-      // Sign out the user
       const { error: signOutError } = await supabase.auth.signOut();
       
       if (signOutError) {
@@ -372,7 +369,6 @@ const Profile = () => {
         duration: 5000
       });
 
-      // Redirect to home after a short delay
       setTimeout(() => {
         navigate('/', { replace: true });
       }, 2000);
@@ -546,18 +542,18 @@ const Profile = () => {
   // Error state
   if (error && !profile) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <Card className="w-full max-w-md border-destructive">
+      <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-purple-50 via-white to-blue-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950">
+        <Card className="w-full max-w-md border-red-500/20 backdrop-blur-xl bg-white/80 dark:bg-gray-900/80 shadow-2xl">
           <CardContent className="p-6 text-center space-y-4">
-            <div className="w-16 h-16 mx-auto bg-destructive/10 rounded-full flex items-center justify-center">
-              <AlertCircle className="w-8 h-8 text-destructive" />
+            <div className="w-16 h-16 mx-auto bg-gradient-to-br from-red-500/20 to-orange-500/20 rounded-full flex items-center justify-center backdrop-blur-sm border border-red-500/20">
+              <AlertCircle className="w-8 h-8 text-red-600 dark:text-red-400" />
             </div>
             <div>
-              <h2 className="text-xl font-semibold mb-2">Error Loading Profile</h2>
+              <h2 className="text-xl font-semibold mb-2 bg-gradient-to-r from-red-600 to-orange-600 bg-clip-text text-transparent">Error Loading Profile</h2>
               <p className="text-sm text-muted-foreground">{error}</p>
             </div>
             <div className="flex gap-2 justify-center">
-              <Button onClick={() => fetchProfile()} variant="outline">
+              <Button onClick={() => fetchProfile()} variant="outline" className="backdrop-blur-sm">
                 <RefreshCw className="w-4 h-4 mr-2" />
                 Retry
               </Button>
@@ -572,24 +568,27 @@ const Profile = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 pb-20 lg:pb-8">
-      <div className="container mx-auto px-4 py-4 md:py-8 max-w-6xl">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 pb-20 lg:pb-8 relative">
+      {/* Premium gradient overlay */}
+      <div className="fixed inset-0 bg-gradient-to-b from-purple-500/5 via-transparent to-blue-500/5 pointer-events-none" />
+      
+      <div className="container relative mx-auto px-4 py-4 md:py-8 max-w-6xl">
         {/* Header */}
         <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 md:mb-8">
           <div className="flex items-center space-x-3 md:space-x-4">
             <Link to="/" aria-label="Back to home">
-              <Button variant="ghost" size="sm" className="group">
+              <Button variant="ghost" size="sm" className="group backdrop-blur-sm hover:bg-white/60 dark:hover:bg-gray-800/60">
                 <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" aria-hidden="true" />
                 <span className="hidden sm:inline">Back to Home</span>
                 <span className="sm:hidden">Back</span>
               </Button>
             </Link>
             <div>
-              <h1 className="text-2xl md:text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+              <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-purple-600 via-pink-500 to-blue-600 bg-clip-text text-transparent">
                 Account Overview
               </h1>
               <p className="text-sm text-muted-foreground hidden sm:block">
-                Manage your account and pixels
+                Manage your account and pixels ✨
               </p>
             </div>
           </div>
@@ -600,13 +599,14 @@ const Profile = () => {
               size="sm"
               disabled={isRefreshing}
               aria-label="Refresh data"
+              className="backdrop-blur-sm bg-white/60 dark:bg-gray-800/60 border-purple-500/20 hover:bg-white/80 dark:hover:bg-gray-800/80 hover:border-purple-500/30 transition-all duration-300"
             >
-              <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} aria-hidden="true" />
+              <RefreshCw className={`w-4 h-4 text-purple-600 dark:text-purple-400 ${isRefreshing ? 'animate-spin' : ''}`} aria-hidden="true" />
               <span className="hidden sm:inline ml-2">Refresh</span>
             </Button>
             <Button 
               onClick={handleEditProfile} 
-              className="gap-2 transition-transform hover:scale-105" 
+              className="gap-2 bg-gradient-to-r from-purple-600 via-pink-500 to-blue-600 hover:shadow-lg hover:shadow-purple-500/30 transition-all duration-300 border-0 text-white" 
               size="sm"
               aria-label="Edit profile"
             >
@@ -619,8 +619,8 @@ const Profile = () => {
 
         {/* Profile Completion Alert */}
         {profileCompletionData.percentage < 100 && (
-          <Alert className="mb-6 bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
-            <Info className="h-4 w-4 text-blue-600" />
+          <Alert className="mb-6 bg-gradient-to-r from-blue-50/80 to-purple-50/80 dark:from-blue-950/30 dark:to-purple-950/30 backdrop-blur-xl border-blue-500/20 shadow-lg">
+            <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
             <AlertDescription className="text-blue-900 dark:text-blue-100">
               <span className="font-semibold">Complete your profile</span> to unlock all features and enhance your experience. 
               <span className="font-semibold ml-1">{profileCompletionData.missingFields.length} field{profileCompletionData.missingFields.length !== 1 ? 's' : ''} remaining.</span>
@@ -631,36 +631,37 @@ const Profile = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column - Profile Card */}
           <div className="lg:col-span-1">
-            <Card className="shadow-xl sticky top-4">
+            <Card className="shadow-2xl sticky top-4 backdrop-blur-xl bg-white/80 dark:bg-gray-900/80 border-purple-500/10">
               <CardHeader className="text-center pb-4">
                 <div className="flex justify-center mb-4">
-                  <div className="relative">
-                    <Avatar className="w-32 h-32 border-4 border-background shadow-lg ring-2 ring-primary/10">
+                  <div className="relative group">
+                    <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 via-pink-500 to-blue-600 rounded-full blur opacity-30 group-hover:opacity-50 transition duration-300"></div>
+                    <Avatar className="relative w-32 h-32 border-4 border-white dark:border-gray-900 shadow-xl ring-2 ring-purple-500/20">
                       <AvatarImage 
                         src={profile?.avatar_url || undefined} 
                         alt={`${profile?.full_name || 'User'}'s profile picture`}
                       />
-                      <AvatarFallback className="text-2xl font-bold bg-gradient-to-br from-primary to-secondary text-primary-foreground">
+                      <AvatarFallback className="text-2xl font-bold bg-gradient-to-br from-purple-600 via-pink-500 to-blue-600 text-white">
                         {getInitials(profile?.full_name)}
                       </AvatarFallback>
                     </Avatar>
                     {(!profile?.avatar_url || profile.avatar_url.includes('dicebear.com')) && (
-                      <div className="absolute -bottom-1 -right-1 w-8 h-8 bg-yellow-500 rounded-full flex items-center justify-center border-2 border-background">
+                      <div className="absolute -bottom-1 -right-1 w-8 h-8 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center border-2 border-white dark:border-gray-900 shadow-lg">
                         <AlertCircle className="w-4 h-4 text-white" />
                       </div>
                     )}
                   </div>
                 </div>
-                <CardTitle className="text-xl font-bold">
+                <CardTitle className="text-xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
                   {profile?.full_name || 'Anonymous User'}
                 </CardTitle>
                 <p className="text-sm text-muted-foreground break-all">{user.email}</p>
                 <div className="flex flex-wrap items-center justify-center gap-2 mt-3">
-                  <Badge variant="secondary" className="flex items-center gap-1" title={`Joined ${formatDate(profile?.created_at || '')}`}>
+                  <Badge variant="secondary" className="flex items-center gap-1 bg-purple-500/10 border-purple-500/20 text-purple-700 dark:text-purple-300 backdrop-blur-sm" title={`Joined ${formatDate(profile?.created_at || '')}`}>
                     <Clock className="w-3 h-3" aria-hidden="true" />
                     {formatRelativeDate(profile?.created_at || '')}
                   </Badge>
-                  <Badge variant="default" className="flex items-center gap-1 bg-green-500">
+                  <Badge variant="default" className="flex items-center gap-1 bg-gradient-to-r from-green-500 to-emerald-500 text-white border-0">
                     <CheckCircle2 className="w-3 h-3" aria-hidden="true" />
                     Verified
                   </Badge>
@@ -669,10 +670,13 @@ const Profile = () => {
 
               <CardContent className="space-y-4">
                 {/* Profile Completion Card */}
-                <div className="bg-gradient-to-br from-orange-50 to-blue-50 dark:from-orange-950/20 dark:to-blue-950/20 rounded-lg p-4 border-2 border-orange-200 dark:border-orange-800">
+                <div className="bg-gradient-to-br from-orange-50/80 to-pink-50/80 dark:from-orange-950/30 dark:to-pink-950/30 rounded-xl p-4 border-2 border-orange-500/20 backdrop-blur-sm shadow-lg">
                   <div className="flex items-center justify-between mb-3">
                     <div>
-                      <h3 className="font-semibold text-sm text-muted-foreground">Profile Completion</h3>
+                      <h3 className="font-semibold text-sm bg-gradient-to-r from-orange-600 to-pink-600 bg-clip-text text-transparent flex items-center gap-1">
+                        <Sparkles className="w-4 h-4 text-orange-600 dark:text-orange-400" />
+                        Profile Completion
+                      </h3>
                       <p className="text-xs text-muted-foreground mt-0.5">
                         {profileCompletionData.percentage === 100 
                           ? '🎉 Complete!' 
@@ -681,7 +685,7 @@ const Profile = () => {
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="text-3xl font-bold text-orange-600 dark:text-orange-400">
+                      <p className="text-3xl font-bold bg-gradient-to-r from-orange-600 to-pink-600 bg-clip-text text-transparent">
                         {profileCompletionData.percentage}%
                       </p>
                     </div>
@@ -700,14 +704,14 @@ const Profile = () => {
                     {profileCompletionData.allFields.map((field) => (
                       <div 
                         key={field.name}
-                        className={`flex items-center justify-between p-2 rounded-md transition-colors ${
+                        className={`flex items-center justify-between p-2 rounded-lg transition-all duration-300 backdrop-blur-sm ${
                           field.completed 
-                            ? 'bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800' 
-                            : 'bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-800'
+                            ? 'bg-green-50/80 dark:bg-green-950/30 border border-green-500/30 shadow-sm' 
+                            : 'bg-yellow-50/80 dark:bg-yellow-950/30 border border-yellow-500/30 shadow-sm'
                         }`}
                       >
                         <div className="flex items-center gap-2">
-                          <div className={field.completed ? 'text-green-600' : 'text-yellow-600'}>
+                          <div className={field.completed ? 'text-green-600 dark:text-green-400' : 'text-yellow-600 dark:text-yellow-400'}>
                             {field.icon}
                           </div>
                           <span className={`text-sm font-medium ${
@@ -717,9 +721,9 @@ const Profile = () => {
                           </span>
                         </div>
                         {field.completed ? (
-                          <CheckCircle2 className="w-4 h-4 text-green-600" />
+                          <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400" />
                         ) : (
-                          <AlertCircle className="w-4 h-4 text-yellow-600" />
+                          <AlertCircle className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />
                         )}
                       </div>
                     ))}
@@ -727,11 +731,11 @@ const Profile = () => {
 
                   {/* Missing Fields Alert */}
                   {profileCompletionData.missingFields.length > 0 && (
-                    <div className="mt-4 pt-4 border-t">
-                      <p className="text-xs font-medium text-yellow-800 dark:text-yellow-200 mb-2">
+                    <div className="mt-4 pt-4 border-t border-orange-500/20">
+                      <p className="text-xs font-medium text-orange-800 dark:text-orange-200 mb-2">
                         ⚠️ Missing Information:
                       </p>
-                      <ul className="text-xs text-yellow-700 dark:text-yellow-300 space-y-1 ml-4">
+                      <ul className="text-xs text-orange-700 dark:text-orange-300 space-y-1 ml-4">
                         {profileCompletionData.missingFields.map((field) => (
                           <li key={field.name} className="list-disc">
                             Add your {field.label.toLowerCase()}
@@ -741,7 +745,7 @@ const Profile = () => {
                       <Button 
                         onClick={handleEditProfile}
                         size="sm"
-                        className="w-full mt-3 bg-orange-600 hover:bg-orange-700"
+                        className="w-full mt-3 bg-gradient-to-r from-orange-600 to-pink-600 hover:from-orange-700 hover:to-pink-700 text-white shadow-lg hover:shadow-xl transition-all duration-300"
                       >
                         <Edit className="w-3 h-3 mr-2" />
                         Complete Profile Now
@@ -751,19 +755,19 @@ const Profile = () => {
                 </div>
 
                 {/* Account Status */}
-                <div className="bg-muted/30 rounded-lg p-4 border">
-                  <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
-                    <Award className="w-4 h-4 text-primary" />
+                <div className="bg-gradient-to-br from-purple-50/50 to-blue-50/50 dark:from-purple-950/20 dark:to-blue-950/20 rounded-xl p-4 border border-purple-500/20 backdrop-blur-sm shadow-lg">
+                  <h3 className="font-semibold text-sm mb-3 flex items-center gap-2 bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+                    <Award className="w-4 h-4 text-purple-600 dark:text-purple-400" />
                     Account Status
                   </h3>
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between items-center">
                       <span className="text-muted-foreground">Type</span>
-                      <Badge variant="default">Active Member</Badge>
+                      <Badge variant="default" className="bg-gradient-to-r from-purple-600 to-blue-600 text-white border-0">Active Member</Badge>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-muted-foreground">Pixels Owned</span>
-                      <span className="font-semibold">{pixelStats.totalPixels}</span>
+                      <span className="font-semibold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">{pixelStats.totalPixels}</span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-muted-foreground">Member Since</span>
@@ -773,25 +777,25 @@ const Profile = () => {
                 </div>
 
                 {/* User ID Card */}
-                <div className="bg-muted/30 rounded-lg p-4 border">
+                <div className="bg-gradient-to-br from-gray-50/50 to-slate-50/50 dark:from-gray-950/20 dark:to-slate-950/20 rounded-xl p-4 border border-gray-500/20 backdrop-blur-sm shadow-lg">
                   <h3 className="font-semibold text-sm mb-2 flex items-center gap-2">
-                    <Shield className="w-4 h-4 text-primary" />
+                    <Shield className="w-4 h-4 text-purple-600 dark:text-purple-400" />
                     User ID
                   </h3>
                   <div className="flex items-center gap-2">
-                    <code className="flex-1 text-xs bg-background p-2 rounded border font-mono truncate">
+                    <code className="flex-1 text-xs bg-white/60 dark:bg-gray-900/60 p-2 rounded-lg border border-purple-500/20 font-mono truncate backdrop-blur-sm">
                       {user.id}
                     </code>
                     <Button
                       size="sm"
                       variant="ghost"
                       onClick={handleCopyUserId}
-                      className="flex-shrink-0"
+                      className="flex-shrink-0 hover:bg-purple-500/10"
                     >
                       {copied ? (
                         <Check className="w-4 h-4 text-green-500" />
                       ) : (
-                        <Copy className="w-4 h-4" />
+                        <Copy className="w-4 h-4 text-purple-600 dark:text-purple-400" />
                       )}
                     </Button>
                   </div>
@@ -805,18 +809,18 @@ const Profile = () => {
                   <Button 
                     onClick={handleExportData}
                     variant="outline"
-                    className="w-full"
+                    className="w-full backdrop-blur-sm bg-white/60 dark:bg-gray-800/60 border-purple-500/20 hover:bg-white/80 dark:hover:bg-gray-800/80 hover:border-purple-500/30 transition-all duration-300"
                     size="sm"
                     disabled={exportLoading}
                   >
                     {exportLoading ? (
                       <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin text-purple-600 dark:text-purple-400" />
                         Exporting...
                       </>
                     ) : (
                       <>
-                        <Download className="w-4 h-4 mr-2" />
+                        <Download className="w-4 h-4 mr-2 text-purple-600 dark:text-purple-400" />
                         Export My Data
                       </>
                     )}
@@ -825,7 +829,7 @@ const Profile = () => {
                   <Button 
                     onClick={handleSignOut}
                     variant="outline"
-                    className="w-full"
+                    className="w-full backdrop-blur-sm bg-white/60 dark:bg-gray-800/60 border-purple-500/20 hover:bg-white/80 dark:hover:bg-gray-800/80 hover:border-purple-500/30 transition-all duration-300"
                     size="sm"
                   >
                     Sign Out
@@ -834,7 +838,7 @@ const Profile = () => {
                   <Button 
                     onClick={() => setDeleteDialogOpen(true)}
                     variant="destructive"
-                    className="w-full"
+                    className="w-full bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 shadow-lg hover:shadow-xl transition-all duration-300"
                     size="sm"
                   >
                     <Trash2 className="w-4 h-4 mr-2" />
@@ -848,10 +852,10 @@ const Profile = () => {
           {/* Right Column - Details & Pixels */}
           <div className="lg:col-span-2 space-y-6">
             {/* Personal Information Card */}
-            <Card className="shadow-lg">
+            <Card className="shadow-2xl backdrop-blur-xl bg-white/80 dark:bg-gray-900/80 border-purple-500/10">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <User className="w-5 h-5 text-primary" />
+                <CardTitle className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+                  <User className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                   Personal Information
                 </CardTitle>
               </CardHeader>
@@ -886,13 +890,13 @@ const Profile = () => {
             </Card>
 
             {/* Pixels Section */}
-            <Card className="shadow-lg">
+            <Card className="shadow-2xl backdrop-blur-xl bg-white/80 dark:bg-gray-900/80 border-purple-500/10">
               <CardHeader>
                 <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center gap-2">
-                    <MapPin className="w-5 h-5 text-primary" />
+                  <CardTitle className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+                    <MapPin className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                     My Pixels
-                    <Badge variant="outline" className="ml-2">{pixelStats.totalPixels}</Badge>
+                    <Badge variant="outline" className="ml-2 bg-purple-500/10 border-purple-500/20 text-purple-700 dark:text-purple-300">{pixelStats.totalPixels}</Badge>
                   </CardTitle>
                   {userPixels.length > 0 && (
                     <Button 
@@ -900,8 +904,9 @@ const Profile = () => {
                       variant="ghost"
                       size="sm"
                       disabled={pixelsLoading}
+                      className="hover:bg-purple-500/10"
                     >
-                      <RefreshCw className={`w-4 h-4 ${pixelsLoading ? 'animate-spin' : ''}`} />
+                      <RefreshCw className={`w-4 h-4 text-purple-600 dark:text-purple-400 ${pixelsLoading ? 'animate-spin' : ''}`} />
                     </Button>
                   )}
                 </div>
@@ -937,7 +942,7 @@ const Profile = () => {
                     </div>
                     
                     {/* Pixels List */}
-                    <div className="bg-muted/30 rounded-lg p-4 max-h-96 overflow-y-auto">
+                    <div className="bg-gradient-to-br from-purple-50/30 to-blue-50/30 dark:from-purple-950/10 dark:to-blue-950/10 rounded-xl p-4 max-h-96 overflow-y-auto backdrop-blur-sm border border-purple-500/10">
                       <div className="space-y-2">
                         {userPixels.map((pixel) => (
                           <PixelItem 
@@ -967,34 +972,34 @@ const Profile = () => {
 
         {/* Delete Account Dialog */}
         <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-          <AlertDialogContent>
+          <AlertDialogContent className="backdrop-blur-xl bg-white/95 dark:bg-gray-900/95 border-red-500/20">
             <AlertDialogHeader>
-              <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertDialogTitle className="flex items-center gap-2 text-red-600 dark:text-red-400">
                 <AlertTriangle className="w-5 h-5" />
                 Delete Account Permanently?
               </AlertDialogTitle>
               <AlertDialogDescription className="space-y-3">
                 <p>
-                  This action <strong className="text-destructive">cannot be undone</strong>. This will permanently delete your account and remove all your data from our servers.
+                  This action <strong className="text-red-600 dark:text-red-400">cannot be undone</strong>. This will permanently delete your account and remove all your data from our servers.
                 </p>
                 
-                <div className="bg-muted/50 rounded-lg p-3 space-y-2 text-sm">
+                <div className="bg-gradient-to-br from-red-50/50 to-orange-50/50 dark:from-red-950/20 dark:to-orange-950/20 rounded-lg p-3 space-y-2 text-sm backdrop-blur-sm border border-red-500/20">
                   <p className="font-semibold">What will be deleted:</p>
                   <ul className="space-y-1 ml-4">
                     <li className="flex items-start gap-2">
-                      <span className="text-destructive">•</span>
+                      <span className="text-red-600 dark:text-red-400">•</span>
                       <span>Your profile and personal information</span>
                     </li>
                     <li className="flex items-start gap-2">
-                      <span className="text-destructive">•</span>
+                      <span className="text-red-600 dark:text-red-400">•</span>
                       <span>All {pixelStats.totalPixels} pixel{pixelStats.totalPixels !== 1 ? 's' : ''} you own</span>
                     </li>
                     <li className="flex items-start gap-2">
-                      <span className="text-destructive">•</span>
+                      <span className="text-red-600 dark:text-red-400">•</span>
                       <span>Your purchase history and data</span>
                     </li>
                     <li className="flex items-start gap-2">
-                      <span className="text-destructive">•</span>
+                      <span className="text-red-600 dark:text-red-400">•</span>
                       <span>Your account access (you'll be signed out)</span>
                     </li>
                   </ul>
@@ -1005,8 +1010,8 @@ const Profile = () => {
                 </p>
 
                 <div className="space-y-2 pt-2">
-                  <label htmlFor="delete-confirm" className="text-sm font-medium text-destructive">
-                    Type <code className="text-destructive">"delete my account"</code> to confirm:
+                  <label htmlFor="delete-confirm" className="text-sm font-medium text-red-600 dark:text-red-400">
+                    Type <code className="text-red-600 dark:text-red-400">{"\"delete my account\""}</code> to confirm:
                   </label>
                   <Input
                     id="delete-confirm"
@@ -1014,17 +1019,17 @@ const Profile = () => {
                     placeholder="delete my account"
                     value={deleteConfirmText}
                     onChange={(e) => setDeleteConfirmText(e.target.value)}
-                    className="border-destructive focus-visible:ring-destructive"
+                    className="border-red-500/30 focus-visible:ring-red-500/30 backdrop-blur-sm"
                   />
                 </div>
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel disabled={deleteLoading}>Cancel</AlertDialogCancel>
+              <AlertDialogCancel disabled={deleteLoading} className="backdrop-blur-sm">Cancel</AlertDialogCancel>
               <AlertDialogAction
                 onClick={handleDeleteAccount}
                 disabled={deleteLoading || deleteConfirmText.toLowerCase() !== 'delete my account'}
-                className="bg-destructive hover:bg-destructive/90"
+                className="bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 text-white"
               >
                 {deleteLoading ? (
                   <>
@@ -1055,19 +1060,19 @@ interface InfoCardProps {
 }
 
 const InfoCard: React.FC<InfoCardProps> = ({ icon, label, value, completed = true }) => (
-  <div className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${
+  <div className={`flex items-center gap-3 p-3 rounded-xl transition-all duration-300 backdrop-blur-sm ${
     completed 
-      ? 'bg-muted/30 hover:bg-muted/50' 
-      : 'bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-800'
+      ? 'bg-gradient-to-br from-purple-50/30 to-blue-50/30 dark:from-purple-950/10 dark:to-blue-950/10 hover:from-purple-50/50 hover:to-blue-50/50 border border-purple-500/10' 
+      : 'bg-gradient-to-br from-yellow-50/50 to-orange-50/50 dark:from-yellow-950/20 dark:to-orange-950/20 border border-yellow-500/30'
   }`}>
-    <div className={completed ? 'text-muted-foreground' : 'text-yellow-600'} aria-hidden="true">
+    <div className={completed ? 'text-purple-600 dark:text-purple-400' : 'text-yellow-600 dark:text-yellow-400'} aria-hidden="true">
       {icon}
     </div>
     <div className="flex-1 min-w-0">
       <div className="flex items-center gap-2">
         <p className="text-sm text-muted-foreground">{label}</p>
         {!completed && (
-          <AlertCircle className="w-3 h-3 text-yellow-600" />
+          <AlertCircle className="w-3 h-3 text-yellow-600 dark:text-yellow-400" />
         )}
       </div>
       <p className={`font-medium truncate ${!completed && value === 'Not provided' ? 'text-yellow-700 dark:text-yellow-400' : ''}`} title={value}>
@@ -1075,7 +1080,7 @@ const InfoCard: React.FC<InfoCardProps> = ({ icon, label, value, completed = tru
       </p>
     </div>
     {completed && value !== 'Not provided' && (
-      <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0" />
+      <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400 flex-shrink-0" />
     )}
   </div>
 );
@@ -1089,18 +1094,18 @@ interface StatCardProps {
 
 const StatCard: React.FC<StatCardProps> = ({ icon, label, value, color }) => {
   const colorClasses = {
-    primary: 'text-primary',
-    success: 'text-green-600',
-    secondary: 'text-secondary'
+    primary: 'from-purple-600 to-blue-600',
+    success: 'from-green-600 to-emerald-600',
+    secondary: 'from-pink-600 to-orange-600'
   };
 
   return (
-    <div className="bg-muted/30 rounded-lg p-4 hover:shadow-md transition-shadow">
+    <div className="bg-gradient-to-br from-white/60 to-white/40 dark:from-gray-800/60 dark:to-gray-800/40 rounded-xl p-4 hover:shadow-lg transition-all duration-300 backdrop-blur-sm border border-purple-500/10">
       <div className="flex items-center gap-2 mb-2">
-        <div className={colorClasses[color]} aria-hidden="true">{icon}</div>
+        <div className={`bg-gradient-to-r ${colorClasses[color]} bg-clip-text text-transparent`} aria-hidden="true">{icon}</div>
         <span className="font-medium text-sm">{label}</span>
       </div>
-      <p className={`text-2xl font-bold ${colorClasses[color]}`}>{value}</p>
+      <p className={`text-2xl font-bold bg-gradient-to-r ${colorClasses[color]} bg-clip-text text-transparent`}>{value}</p>
     </div>
   );
 };
@@ -1111,13 +1116,13 @@ interface PixelItemProps {
 }
 
 const PixelItem: React.FC<PixelItemProps> = ({ pixel, onVisit }) => (
-  <div className="flex items-center justify-between py-3 px-4 bg-background rounded-lg border hover:border-primary/50 transition-all hover:shadow-sm">
+  <div className="flex items-center justify-between py-3 px-4 bg-white/60 dark:bg-gray-800/60 rounded-xl border border-purple-500/10 hover:border-purple-500/30 transition-all duration-300 hover:shadow-md backdrop-blur-sm">
     <div className="flex items-center gap-3 flex-1 min-w-0">
       {pixel.image_url && (
         <img 
           src={pixel.image_url} 
           alt={pixel.alt_text || `Pixel at (${pixel.x}, ${pixel.y})`}
-          className="w-10 h-10 rounded object-cover flex-shrink-0"
+          className="w-10 h-10 rounded-lg object-cover flex-shrink-0 border border-purple-500/10"
           loading="lazy"
         />
       )}
@@ -1126,7 +1131,7 @@ const PixelItem: React.FC<PixelItemProps> = ({ pixel, onVisit }) => (
           {pixel.alt_text || `Pixel (${pixel.x}, ${pixel.y})`}
         </p>
         <p className="text-sm text-muted-foreground">
-          Position: ({pixel.x}, {pixel.y}) • ₹{pixel.price_paid.toLocaleString()}
+          Position: ({pixel.x}, {pixel.y}) • <span className="bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent font-semibold">₹{pixel.price_paid.toLocaleString()}</span>
         </p>
       </div>
     </div>
@@ -1135,11 +1140,11 @@ const PixelItem: React.FC<PixelItemProps> = ({ pixel, onVisit }) => (
         size="sm"
         variant="outline"
         onClick={() => onVisit(pixel.link_url!)}
-        className="flex-shrink-0 gap-1"
+        className="flex-shrink-0 gap-1 backdrop-blur-sm bg-white/60 dark:bg-gray-800/60 border-purple-500/20 hover:bg-white/80 dark:hover:bg-gray-800/80 hover:border-purple-500/30"
         aria-label={`Visit link for pixel at (${pixel.x}, ${pixel.y})`}
       >
         <span className="hidden sm:inline">Visit</span>
-        <ExternalLink className="w-4 h-4" aria-hidden="true" />
+        <ExternalLink className="w-4 h-4 text-purple-600 dark:text-purple-400" aria-hidden="true" />
       </Button>
     )}
   </div>
@@ -1147,15 +1152,15 @@ const PixelItem: React.FC<PixelItemProps> = ({ pixel, onVisit }) => (
 
 const EmptyPixelsState = () => (
   <div className="text-center py-12 px-4">
-    <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-muted/50 mb-4">
-      <MapPin className="w-10 h-10 text-muted-foreground" aria-hidden="true" />
+    <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-purple-500/10 to-blue-500/10 backdrop-blur-sm border border-purple-500/20 mb-4">
+      <MapPin className="w-10 h-10 text-purple-600 dark:text-purple-400" aria-hidden="true" />
     </div>
-    <h3 className="text-lg font-semibold mb-2">No Pixels Yet</h3>
+    <h3 className="text-lg font-semibold mb-2 bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">No Pixels Yet</h3>
     <p className="text-muted-foreground mb-6 max-w-sm mx-auto">
       Start building your digital real estate by purchasing your first pixels.
     </p>
     <Link to="/buy-pixels">
-      <Button className="gap-2">
+      <Button className="gap-2 bg-gradient-to-r from-purple-600 via-pink-500 to-blue-600 hover:shadow-lg hover:shadow-purple-500/30 transition-all duration-300 text-white">
         <MapPin className="w-4 h-4" aria-hidden="true" />
         Buy Your First Pixels
       </Button>

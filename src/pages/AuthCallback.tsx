@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2, CheckCircle2, AlertCircle, Mail } from 'lucide-react';
+import { Loader2, CheckCircle2, AlertCircle, Mail, RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 
@@ -21,377 +21,183 @@ const AuthCallback = () => {
   const [authType, setAuthType] = useState<
     'signin' | 'signup' | 'recovery' | 'oauth' | 'email_confirmation'
   >('signin');
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
-    const handleCallback = async () => {
-      try {
-        console.log('🔐 Auth callback started');
-        console.log('URL params:', Object.fromEntries(searchParams));
+    handleCallback();
+  }, []);
 
-        // FIXED: Wait for auth state to settle and check session first
-        await new Promise(resolve => setTimeout(resolve, 300));
+  const handleCallback = async () => {
+    try {
+      console.log('🔐 Auth callback started');
+      
+      // Step 1: Check for existing valid session FIRST
+      const { data: { session: existingSession } } = await supabase.auth.getSession();
+      
+      if (existingSession) {
+        console.log('✅ Valid session already exists');
+        await completeAuthentication(existingSession, 'signin');
+        return;
+      }
 
-        // Get URL parameters
-        const errorCode = searchParams.get('error_code');
-        const errorDescription = searchParams.get('error_description');
-        const error = searchParams.get('error');
-        const type = searchParams.get('type');
-        const code = searchParams.get('code');
+      // Step 2: Get URL parameters
+      const errorCode = searchParams.get('error_code');
+      const errorDescription = searchParams.get('error_description');
+      const error = searchParams.get('error');
+      const type = searchParams.get('type');
+      const tokenHash = searchParams.get('token_hash');
 
-        // FIXED: Check for existing session FIRST (prevents false errors)
-        const { data: { session: existingSession } } = await supabase.auth.getSession();
+      // Step 3: Handle OTP expired error ONLY if no session exists
+      if ((errorCode === 'otp_expired' || error === 'access_denied') && !existingSession) {
+        console.warn('⚠️ Link expired and no valid session found');
+        handleExpiredLink();
+        return;
+      }
+
+      // Step 4: Handle other errors
+      if (error && error !== 'access_denied') {
+        console.error('❌ Auth error:', error);
+        handleAuthError(errorDescription || 'Authentication failed');
+        return;
+      }
+
+      // Step 5: Handle token_hash authentication (NEW METHOD - more reliable)
+      if (tokenHash) {
+        console.log('🔑 Token hash detected, verifying...');
+        await handleTokenHash(tokenHash, type || 'magiclink');
+        return;
+      }
+
+      // Step 6: No session and no token - redirect to sign in
+      console.warn('⚠️ No authentication data found');
+      setStatus('error');
+      setErrorMessage('No authentication data found. Please try signing in again.');
+      toast({
+        title: 'Session Not Found',
+        description: 'Please try signing in again.',
+        variant: 'destructive',
+      });
+      setTimeout(() => navigate('/signin', { replace: true }), 3000);
+      
+    } catch (error: any) {
+      console.error('❌ Unexpected error:', error);
+      handleAuthError('An unexpected error occurred');
+    }
+  };
+
+  const handleTokenHash = async (tokenHash: string, type: string) => {
+    try {
+      // Verify the token and create session
+      const { data, error } = await supabase.auth.verifyOtp({
+        token_hash: tokenHash,
+        type: type === 'recovery' ? 'recovery' : (type === 'signup' ? 'signup' : 'magiclink'),
+      });
+
+      if (error) {
+        console.error('❌ Token verification failed:', error);
         
-        if (existingSession && !error && !errorCode) {
-          console.log('✅ Valid session already exists, skipping error checks');
-          
-          // Determine auth type
-          const isOAuth = existingSession.user.app_metadata.provider === 'google';
-          const isRecovery = type === 'recovery';
-          const isEmailConfirmation = type === 'signup';
-
-          if (isRecovery) {
-            setAuthType('recovery');
-            console.log('🔓 Password recovery confirmed');
-            toast({
-              title: 'Link Verified',
-              description: 'Please enter your new password.',
-            });
-            navigate('/reset-password', { replace: true });
-            return;
-          } else if (isEmailConfirmation) {
-            setAuthType('email_confirmation');
-          } else if (isOAuth) {
-            setAuthType('oauth');
-          } else {
-            setAuthType('signin');
-          }
-
-          await handleProfileCreation(existingSession);
-          setStatus('success');
-
-          let title = 'Welcome Back! 👋';
-          let description = "You're now signed in.";
-
-          if (isEmailConfirmation) {
-            title = 'Email Verified! 🎉';
-            description = 'Your account is now active. Welcome to BuyAPixel!';
-          } else if (isOAuth) {
-            title = 'Success! 🎉';
-            description = 'Welcome back via Google!';
-          }
-
-          toast({ title, description });
-
-          const redirectTo = searchParams.get('redirect') || '/';
-          setTimeout(() => navigate(redirectTo, { replace: true }), 1000);
-          return;
+        if (error.message.includes('expired') || error.message.includes('invalid')) {
+          handleExpiredLink();
+        } else {
+          handleAuthError(error.message);
         }
+        return;
+      }
 
-        // Handle errors in URL
-        if (errorCode === 'otp_expired' || error === 'access_denied') {
-          console.warn('⚠️ OTP expired or access denied');
-          setStatus('expired');
-          setErrorMessage(
-            errorDescription
-              ? decodeURIComponent(errorDescription.replace(/\+/g, ' '))
-              : 'Your email link has expired. Please request a new one.'
-          );
-          toast({
-            title: 'Link Expired',
-            description:
-              'Your email link has expired. Please request a new link.',
-            variant: 'destructive',
-          });
-          return;
-        }
+      if (data?.session) {
+        console.log('✅ Session created via token verification');
+        const authType = type === 'recovery' ? 'recovery' : 
+                        type === 'signup' ? 'email_confirmation' : 'signin';
+        await completeAuthentication(data.session, authType);
+      }
+    } catch (err: any) {
+      console.error('❌ Token verification error:', err);
+      handleAuthError('Failed to verify authentication token');
+    }
+  };
 
-        if (error && error !== 'access_denied') {
-          console.error('❌ Auth error:', error, errorDescription);
-          setStatus('error');
-          setErrorMessage(
-            errorDescription
-              ? decodeURIComponent(errorDescription.replace(/\+/g, ' '))
-              : 'An authentication error occurred.'
-          );
-          toast({
-            title: 'Authentication Error',
-            description: errorMessage || 'Please try signing in again.',
-            variant: 'destructive',
-          });
-          setTimeout(() => navigate('/signin'), 3000);
-          return;
-        }
-
-        // ✅ Handle PKCE code exchange (ALL email links use this now)
-        if (code) {
-          console.log('🔑 PKCE code detected, exchanging for session...');
-
-          try {
-            const { data, error: exchangeError } =
-              await supabase.auth.exchangeCodeForSession(code);
-
-            if (exchangeError) {
-              console.error('❌ Code exchange error:', exchangeError);
-
-              // FIXED: Check if session exists despite error (race condition handling)
-              const { data: { session: fallbackSession } } = await supabase.auth.getSession();
-              
-              if (fallbackSession) {
-                console.log('✅ Session exists despite exchange error - continuing with success flow');
-                
-                const isOAuth = fallbackSession.user.app_metadata.provider === 'google';
-                const isRecovery = type === 'recovery';
-                const isEmailConfirmation = type === 'signup';
-
-                if (isRecovery) {
-                  setAuthType('recovery');
-                  console.log('🔓 Password recovery confirmed');
-                  toast({
-                    title: 'Link Verified',
-                    description: 'Please enter your new password.',
-                  });
-                  navigate('/reset-password', { replace: true });
-                  return;
-                } else if (isEmailConfirmation) {
-                  setAuthType('email_confirmation');
-                } else if (isOAuth) {
-                  setAuthType('oauth');
-                } else {
-                  setAuthType('signin');
-                }
-
-                await handleProfileCreation(fallbackSession);
-                setStatus('success');
-
-                let title = 'Welcome Back! 👋';
-                let description = "You're now signed in.";
-
-                if (isEmailConfirmation) {
-                  title = 'Email Verified! 🎉';
-                  description = 'Your account is now active. Welcome to BuyAPixel!';
-                } else if (isOAuth) {
-                  title = 'Success! 🎉';
-                  description = 'Welcome back via Google!';
-                }
-
-                toast({ title, description });
-
-                const redirectTo = searchParams.get('redirect') || '/';
-                setTimeout(() => navigate(redirectTo, { replace: true }), 1000);
-                return;
-              }
-
-              // If truly no session, handle the error
-              let errorMsg = exchangeError.message;
-              let errorTitle = 'Authentication Failed';
-
-              if (exchangeError.message.includes('code verifier')) {
-                errorMsg =
-                  'Invalid authentication link. This may be caused by an outdated email template. Please request a new link.';
-                errorTitle = 'Invalid Link';
-                console.error(
-                  '⚠️ PKCE code verifier missing - email template may be outdated'
-                );
-              } else if (exchangeError.message.includes('expired')) {
-                errorMsg =
-                  'Your authentication link has expired. Please request a new one.';
-                errorTitle = 'Link Expired';
-              } else if (
-                exchangeError.message.includes('already been used')
-              ) {
-                errorMsg =
-                  'This link has already been used. Please sign in or request a new link.';
-                errorTitle = 'Link Already Used';
-              }
-
-              setStatus('error');
-              setErrorMessage(errorMsg);
-              toast({
-                title: errorTitle,
-                description: errorMsg,
-                variant: 'destructive',
-              });
-              setTimeout(() => navigate('/signin'), 5000);
-              return;
-            }
-
-            if (data?.session) {
-              console.log('✅ Session created via PKCE code exchange');
-
-              const isOAuth =
-                data.session.user.app_metadata.provider === 'google';
-              const isRecovery = type === 'recovery';
-              const isEmailConfirmation = type === 'signup';
-
-              if (isRecovery) {
-                setAuthType('recovery');
-                console.log('🔓 Password recovery confirmed');
-
-                toast({
-                  title: 'Link Verified',
-                  description: 'Please enter your new password.',
-                });
-                navigate('/reset-password', { replace: true });
-                return;
-              } else if (isEmailConfirmation) {
-                setAuthType('email_confirmation');
-                console.log('📧 Email confirmed via PKCE');
-              } else if (isOAuth) {
-                setAuthType('oauth');
-                console.log('🔐 OAuth sign-in via PKCE');
-              } else {
-                setAuthType('signin');
-                console.log('🔑 Magic link sign-in via PKCE');
-              }
-
-              await handleProfileCreation(data.session);
-
-              setStatus('success');
-
-              let title = 'Welcome Back! 👋';
-              let description = "You're now signed in.";
-
-              if (isEmailConfirmation) {
-                title = 'Email Verified! 🎉';
-                description =
-                  'Your account is now active. Welcome to BuyAPixel!';
-              } else if (isOAuth) {
-                title = 'Success! 🎉';
-                description = 'Welcome back via Google!';
-              }
-
-              toast({
-                title,
-                description,
-              });
-
-              const redirectTo = searchParams.get('redirect') || '/';
-              setTimeout(
-                () => navigate(redirectTo, { replace: true }),
-                1000
-              );
-              return;
-            } else {
-              console.warn('⚠️ Code exchange succeeded but no session created');
-              setStatus('error');
-              setErrorMessage(
-                'Authentication completed but session was not created. Please sign in.'
-              );
-              setTimeout(() => navigate('/signin'), 3000);
-              return;
-            }
-          } catch (err: any) {
-            console.error(
-              '❌ Unexpected error during code exchange:',
-              err
-            );
-            
-            // FIXED: Check for session in catch block too
-            const { data: { session: catchFallbackSession } } = await supabase.auth.getSession();
-            
-            if (catchFallbackSession) {
-              console.log('✅ Session exists despite catch error - continuing');
-              await handleProfileCreation(catchFallbackSession);
-              setStatus('success');
-              toast({
-                title: 'Welcome! 👋',
-                description: "You're now signed in.",
-              });
-              const redirectTo = searchParams.get('redirect') || '/';
-              setTimeout(() => navigate(redirectTo, { replace: true }), 1000);
-              return;
-            }
-            
-            setStatus('error');
-            setErrorMessage(
-              'Failed to complete authentication. Please try again.'
-            );
-            setTimeout(() => navigate('/signin'), 3000);
-            return;
-          }
-        }
-
-        // Fallback: Check for existing session
-        console.log('📋 No code found, checking for existing session...');
-        const {
-          data: { session },
-          error: sessionError,
-        } = await supabase.auth.getSession();
-
-        if (sessionError) {
-          console.error('❌ Session error:', sessionError);
-          setStatus('error');
-          setErrorMessage(sessionError.message);
-          toast({
-            title: 'Authentication Failed',
-            description: sessionError.message,
-            variant: 'destructive',
-          });
-          setTimeout(() => navigate('/signin'), 3000);
-          return;
-        }
-
-        if (!session) {
-          console.warn('⚠️ No session or code found in callback');
-          setStatus('error');
-          setErrorMessage(
-            'No authentication data found. Please try signing in again.'
-          );
-          toast({
-            title: 'Session Not Found',
-            description: 'Please try signing in again.',
-            variant: 'destructive',
-          });
-          setTimeout(() => navigate('/signin'), 3000);
-          return;
-        }
-
-        // Session found
-        console.log('✅ Existing session found for user:', session.user.id);
-
-        await handleProfileCreation(session);
-
+  const completeAuthentication = async (session: any, type: string) => {
+    try {
+      // Handle password recovery redirect
+      if (type === 'recovery') {
+        setAuthType('recovery');
         setStatus('success');
         toast({
-          title: 'Welcome Back! 👋',
-          description: "You're already signed in.",
+          title: 'Link Verified',
+          description: 'Please enter your new password.',
         });
-
-        const redirectTo = searchParams.get('redirect') || '/';
-        setTimeout(() => navigate(redirectTo, { replace: true }), 1000);
-      } catch (error: any) {
-        console.error('❌ Unexpected error during auth callback:', error);
-        setStatus('error');
-        setErrorMessage('An unexpected error occurred. Please try again.');
-
-        toast({
-          title: 'Unexpected Error',
-          description: 'Something went wrong. Please try signing in again.',
-          variant: 'destructive',
-        });
-
-        setTimeout(() => navigate('/signin'), 3000);
+        setTimeout(() => navigate('/reset-password', { replace: true }), 500);
+        return;
       }
-    };
 
-    handleCallback();
-  }, [navigate, toast, searchParams]);
+      // Create/update profile
+      await handleProfileCreation(session);
 
-  // Helper function with race condition protection
+      // Set success status
+      setStatus('success');
+      
+      const messages = {
+        email_confirmation: {
+          title: 'Email Verified! 🎉',
+          description: 'Your account is now active. Welcome to BuyAPixel!'
+        },
+        oauth: {
+          title: 'Success! 🎉',
+          description: 'Welcome back via Google!'
+        },
+        signin: {
+          title: 'Welcome Back! 👋',
+          description: "You're now signed in."
+        }
+      };
+
+      const message = messages[type as keyof typeof messages] || messages.signin;
+      
+      toast({
+        title: message.title,
+        description: message.description,
+      });
+
+      // Redirect after delay
+      const redirectTo = searchParams.get('redirect') || '/';
+      setTimeout(() => navigate(redirectTo, { replace: true }), 1500);
+      
+    } catch (err) {
+      console.error('❌ Error completing authentication:', err);
+      handleAuthError('Failed to complete sign in');
+    }
+  };
+
+  const handleExpiredLink = () => {
+    setStatus('expired');
+    setErrorMessage('Your email link has expired or is invalid. Email links expire after 24 hours for security.');
+    toast({
+      title: 'Link Expired',
+      description: 'Please request a new link to continue.',
+      variant: 'destructive',
+    });
+  };
+
+  const handleAuthError = (message: string) => {
+    setStatus('error');
+    setErrorMessage(message);
+    toast({
+      title: 'Authentication Error',
+      description: message,
+      variant: 'destructive',
+    });
+    setTimeout(() => navigate('/signin', { replace: true }), 5000);
+  };
+
   const handleProfileCreation = async (session: any) => {
     try {
       console.log('🔍 Checking for existing profile...');
 
-      const { data: existingProfile, error: fetchError } = await supabase
+      const { data: existingProfile } = await supabase
         .from('profiles')
         .select('*')
         .eq('user_id', session.user.id)
         .maybeSingle();
-
-      if (fetchError) {
-        console.error('Error fetching profile:', fetchError);
-        return;
-      }
 
       if (existingProfile) {
         console.log('✅ Profile already exists');
@@ -409,47 +215,35 @@ const AuthCallback = () => {
       const avatarUrl =
         session.user.user_metadata?.avatar_url ||
         session.user.user_metadata?.picture ||
-        `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(
-          displayName
-        )}`;
+        `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(displayName)}`;
 
-      const { error: upsertError } = await supabase
-        .from('profiles')
-        .upsert(
-          {
-            user_id: session.user.id,
-            full_name: displayName,
-            avatar_url: avatarUrl,
-            email: session.user.email,
-            phone_number: session.user.user_metadata?.phone_number || null,
-            date_of_birth: session.user.user_metadata?.date_of_birth || null,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          },
-          {
-            onConflict: 'user_id',
-            ignoreDuplicates: false,
-          }
-        );
+      await supabase.from('profiles').upsert(
+        {
+          user_id: session.user.id,
+          full_name: displayName,
+          avatar_url: avatarUrl,
+          email: session.user.email,
+          phone_number: session.user.user_metadata?.phone_number || null,
+          date_of_birth: session.user.user_metadata?.date_of_birth || null,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        },
+        {
+          onConflict: 'user_id',
+          ignoreDuplicates: false,
+        }
+      );
 
-      if (upsertError) {
-        console.error('Profile creation error:', upsertError);
-        toast({
-          title: 'Profile Setup Warning',
-          description:
-            'Your account was created but profile setup encountered an issue. You can update it later.',
-          variant: 'destructive',
-        });
-      } else {
-        console.log('✅ Profile created/updated successfully');
-      }
+      console.log('✅ Profile created successfully');
     } catch (err) {
       console.error('Error handling profile:', err);
     }
   };
 
-  const handleReturnToSignIn = () => {
-    navigate('/signin');
+  const handleRetry = () => {
+    setRetryCount(prev => prev + 1);
+    setStatus('loading');
+    handleCallback();
   };
 
   const handleRequestNewLink = () => {
@@ -463,11 +257,9 @@ const AuthCallback = () => {
 
     navigate(authTypeMap[authType] || '/signin', {
       state: {
-        message:
-          authType === 'recovery'
-            ? 'Please request a new password reset link'
-            : 'Please request a new verification link',
+        message: 'Please request a new verification link',
       },
+      replace: true,
     });
   };
 
@@ -480,16 +272,10 @@ const AuthCallback = () => {
               <Loader2 className="w-16 h-16 animate-spin mx-auto text-primary" />
             </div>
             <h2 className="text-2xl font-semibold mb-2">
-              {authType === 'recovery'
-                ? 'Verifying password reset link...'
-                : authType === 'email_confirmation'
-                ? 'Confirming your email...'
-                : 'Completing sign in...'}
+              Completing sign in...
             </h2>
             <p className="text-muted-foreground">
-              {authType === 'email_confirmation'
-                ? 'Verifying your email address...'
-                : 'Please wait while we set up your account'}
+              Please wait while we verify your link
             </p>
 
             <div className="flex justify-center gap-2 mt-6">
@@ -508,49 +294,16 @@ const AuthCallback = () => {
               </div>
             </div>
             <h2 className="text-2xl font-semibold mb-2 text-green-600 dark:text-green-400">
-              {authType === 'email_confirmation'
-                ? 'Email Verified! 🎉'
-                : 'Success! ✨'}
+              Success! ✨
             </h2>
             <p className="text-muted-foreground">
-              {authType === 'email_confirmation'
-                ? 'Your account is now active!'
-                : 'Redirecting you to the app...'}
+              Redirecting you to the app...
             </p>
 
             <div className="flex justify-center gap-2 mt-6">
               <div className="w-2 h-2 bg-green-500 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
               <div className="w-2 h-2 bg-green-500 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
               <div className="w-2 h-2 bg-green-500 rounded-full animate-bounce"></div>
-            </div>
-          </>
-        )}
-
-        {status === 'email_confirmed' && (
-          <>
-            <div className="mb-6">
-              <div className="w-16 h-16 mx-auto bg-blue-100 dark:bg-blue-900/20 rounded-full flex items-center justify-center animate-scale-in">
-                <CheckCircle2 className="w-10 h-10 text-blue-600 dark:text-blue-400" />
-              </div>
-            </div>
-            <h2 className="text-2xl font-semibold mb-2 text-blue-600 dark:text-blue-400">
-              Email Confirmed! ✅
-            </h2>
-            <p className="text-muted-foreground mb-6">
-              {errorMessage ||
-                'Your email has been verified. You can now sign in with your credentials.'}
-            </p>
-            <div className="space-y-3">
-              <p className="text-sm text-muted-foreground">
-                Redirecting to sign in page in 3 seconds...
-              </p>
-              <Button
-                onClick={handleReturnToSignIn}
-                className="w-full"
-                size="lg"
-              >
-                Sign In Now
-              </Button>
             </div>
           </>
         )}
@@ -566,19 +319,28 @@ const AuthCallback = () => {
               Link Expired
             </h2>
             <p className="text-muted-foreground mb-6">
-              {errorMessage || 'Your email link has expired or is invalid.'}
+              {errorMessage}
             </p>
             <div className="space-y-3">
-              <p className="text-sm text-muted-foreground">
-                Email links expire after 60 minutes for security.
-              </p>
               <Button
                 onClick={handleRequestNewLink}
                 className="w-full"
                 size="lg"
               >
+                <Mail className="w-4 h-4 mr-2" />
                 Request New Link
               </Button>
+              {retryCount < 2 && (
+                <Button
+                  onClick={handleRetry}
+                  variant="outline"
+                  className="w-full"
+                  size="sm"
+                >
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Try Again
+                </Button>
+              )}
             </div>
           </>
         )}
@@ -593,20 +355,28 @@ const AuthCallback = () => {
             <h2 className="text-2xl font-semibold mb-2 text-red-600 dark:text-red-400">
               Authentication Failed
             </h2>
-            <p className="text-muted-foreground mb-4">
-              {errorMessage || 'An error occurred during authentication.'}
+            <p className="text-muted-foreground mb-6 text-sm">
+              {errorMessage}
             </p>
             <div className="space-y-3">
-              <p className="text-sm text-muted-foreground">
-                Redirecting to sign in page in 5 seconds...
-              </p>
               <Button
-                onClick={handleReturnToSignIn}
-                variant="outline"
+                onClick={() => navigate('/signin', { replace: true })}
                 className="w-full"
+                size="lg"
               >
-                Return to Sign In Now
+                Return to Sign In
               </Button>
+              {retryCount < 2 && (
+                <Button
+                  onClick={handleRetry}
+                  variant="outline"
+                  className="w-full"
+                  size="sm"
+                >
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Try Again
+                </Button>
+              )}
             </div>
           </>
         )}
