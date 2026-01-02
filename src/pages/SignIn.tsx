@@ -24,7 +24,7 @@ import {
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { z } from 'zod';
-import { cn } from '@/lib/utils';
+import { cn, getErrorMessage } from '@/lib/utils';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 // Constants
@@ -92,7 +92,7 @@ const SignIn = () => {
       try {
         const attempts: LoginAttempt = JSON.parse(stored);
         const now = Date.now();
-        
+
         // Reset if lockout period has passed
         if (attempts.lockedUntil && attempts.lockedUntil < now) {
           const resetAttempts = { count: 0, lastAttempt: 0, lockedUntil: null };
@@ -114,7 +114,7 @@ const SignIn = () => {
     const interval = setInterval(() => {
       const now = Date.now();
       const remaining = loginAttempts.lockedUntil! - now;
-      
+
       if (remaining <= 0) {
         const resetAttempts = { count: 0, lastAttempt: 0, lockedUntil: null };
         setLoginAttempts(resetAttempts);
@@ -245,7 +245,7 @@ const SignIn = () => {
 
   const checkRateLimit = (): boolean => {
     const now = Date.now();
-    
+
     // Check if locked out
     if (loginAttempts.lockedUntil && loginAttempts.lockedUntil > now) {
       const remainingMinutes = Math.ceil((loginAttempts.lockedUntil - now) / 60000);
@@ -274,7 +274,7 @@ const SignIn = () => {
   const recordFailedAttempt = () => {
     const now = Date.now();
     const newCount = loginAttempts.count + 1;
-    
+
     let newAttempts: LoginAttempt = {
       count: newCount,
       lastAttempt: now,
@@ -349,10 +349,10 @@ const SignIn = () => {
 
       if (error) {
         console.error('Sign in error:', error);
-        
+
         // Record failed attempt
         recordFailedAttempt();
-        
+
         // Handle specific error messages
         const errorMessages: Record<string, string> = {
           'Invalid login credentials': 'Invalid email or password. Please check your credentials and try again.',
@@ -380,7 +380,7 @@ const SignIn = () => {
       } else {
         // Success - reset attempts
         resetLoginAttempts();
-        
+
         if (rememberMe) {
           localStorage.setItem('remembered_email', email);
         } else {
@@ -391,10 +391,10 @@ const SignIn = () => {
           title: 'Welcome back! 👋',
           description: "You've been successfully signed in.",
         });
-        
+
         navigate(from, { replace: true });
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Unexpected sign in error:', error);
       toast({
         title: 'Error',
@@ -477,11 +477,11 @@ const SignIn = () => {
           duration: 6000,
         });
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Unexpected magic link error:', error);
       toast({
         title: 'Error',
-        description: error?.message || 'Failed to send magic link. Please try again.',
+        description: getErrorMessage(error) || 'Failed to send magic link. Please try again.',
         variant: 'destructive',
       });
     } finally {
@@ -511,7 +511,7 @@ const SignIn = () => {
 
       if (error) {
         console.error('Google OAuth error:', error);
-        
+
         const errorMessages: Record<string, string> = {
           redirect: 'OAuth configuration error. Please contact support.',
           'not enabled': 'Google authentication is not enabled. Please use email/password.',
@@ -535,11 +535,11 @@ const SignIn = () => {
       }
 
       setTimeout(() => setOauthLoading(false), 10000);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Unexpected Google OAuth error:', error);
       toast({
         title: 'Error',
-        description: error?.message || 'Failed to initiate Google sign-in.',
+        description: getErrorMessage(error) || 'Failed to initiate Google sign-in.',
         variant: 'destructive',
       });
       setOauthLoading(false);
@@ -894,7 +894,7 @@ const SignIn = () => {
                   <div className="text-xs text-muted-foreground">
                     <p className="font-medium text-foreground mb-1">Your security matters</p>
                     <p>
-                      Account protection: {MAX_LOGIN_ATTEMPTS} login attempts allowed. 
+                      Account protection: {MAX_LOGIN_ATTEMPTS} login attempts allowed.
                       Lockout duration: 15 minutes.
                     </p>
                   </div>

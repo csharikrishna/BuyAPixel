@@ -56,14 +56,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { 
-  Shield, 
-  Users, 
-  Image, 
-  FileText, 
-  Activity, 
-  Ban, 
-  Trash2, 
+import {
+  Shield,
+  Users,
+  Image,
+  FileText,
+  Activity,
+  Ban,
+  Trash2,
   Unlock,
   AlertTriangle,
   Loader2,
@@ -85,6 +85,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { getErrorMessage } from '@/lib/utils';
 
 // --- Interfaces ---
 
@@ -154,7 +155,7 @@ const AdminDashboard = () => {
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [marketplaceListings, setMarketplaceListings] = useState<MarketplaceListing[]>([]);
   const [marketplaceAnalytics, setMarketplaceAnalytics] = useState<MarketplaceAnalytics | null>(null);
-  
+
   const [stats, setStats] = useState({
     totalUsers: 0,
     totalPixelsSold: 0,
@@ -170,12 +171,12 @@ const AdminDashboard = () => {
   const [userFilter, setUserFilter] = useState<UserFilter>('all');
   const [sortField, setSortField] = useState<SortField>('created_at');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
-  
+
   // Dialog States
   const [blockDialog, setBlockDialog] = useState<{ open: boolean; userId: string; email: string } | null>(null);
   const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; userId: string; email: string } | null>(null);
   const [cancelListingDialog, setCancelListingDialog] = useState<{ open: boolean; listingId: string } | null>(null);
-  
+
   // Form States
   const [blockReason, setBlockReason] = useState('');
   const [blockNotes, setBlockNotes] = useState('');
@@ -195,10 +196,10 @@ const AdminDashboard = () => {
 
       // 1. Load all users with stats
       const { data: usersData, error: usersError } = await supabase
-        .rpc('get_all_users_admin');
+        .rpc('get_all_users_admin' as any);
 
       if (usersError) throw usersError;
-      setUsers(usersData || []);
+      setUsers((usersData as unknown as User[]) || []);
 
       // Calculate comprehensive stats
       const totalUsers = usersData?.length || 0;
@@ -212,10 +213,10 @@ const AdminDashboard = () => {
 
       // 2. Load marketplace analytics
       const { data: analyticsData, error: analyticsError } = await supabase
-        .rpc('admin_get_marketplace_analytics', { p_days: 30 });
+        .rpc('admin_get_marketplace_analytics' as any, { p_days: 30 });
 
       if (!analyticsError) {
-        setMarketplaceAnalytics(analyticsData);
+        setMarketplaceAnalytics(analyticsData as unknown as MarketplaceAnalytics);
       }
 
       // 3. Load marketplace listings
@@ -242,13 +243,13 @@ const AdminDashboard = () => {
 
       // 4. Load audit logs
       const { data: logsData, error: logsError } = await supabase
-        .from('admin_audit_log')
+        .from('admin_audit_log' as any)
         .select('*')
         .order('created_at', { ascending: false })
         .limit(100);
 
       if (logsError) throw logsError;
-      setAuditLogs(logsData || []);
+      setAuditLogs((logsData as unknown as AuditLog[]) || []);
 
       if (silent) {
         toast.success('Dashboard refreshed', {
@@ -274,7 +275,7 @@ const AdminDashboard = () => {
 
     setProcessing(true);
     try {
-      const { error } = await supabase.rpc('block_user', {
+      const { error } = await supabase.rpc('block_user' as any, {
         target_user_id: blockDialog.userId,
         reason: blockReason,
         admin_notes: blockNotes || null,
@@ -285,15 +286,15 @@ const AdminDashboard = () => {
       toast.success('User blocked successfully', {
         description: `${blockDialog.email} can no longer access the platform`
       });
-      
+
       setBlockDialog(null);
       setBlockReason('');
       setBlockNotes('');
       loadDashboardData(true);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error blocking user:', error);
       toast.error('Failed to block user', {
-        description: error.message
+        description: getErrorMessage(error)
       });
     } finally {
       setProcessing(false);
@@ -303,7 +304,7 @@ const AdminDashboard = () => {
   const handleUnblockUser = useCallback(async (userId: string, email: string) => {
     setProcessing(true);
     try {
-      const { error } = await supabase.rpc('unblock_user', {
+      const { error } = await supabase.rpc('unblock_user' as any, {
         target_user_id: userId,
       });
 
@@ -312,12 +313,12 @@ const AdminDashboard = () => {
       toast.success('User unblocked', {
         description: `${email} can now access the platform`
       });
-      
+
       loadDashboardData(true);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error unblocking user:', error);
       toast.error('Failed to unblock user', {
-        description: error.message
+        description: getErrorMessage(error)
       });
     } finally {
       setProcessing(false);
@@ -329,7 +330,7 @@ const AdminDashboard = () => {
 
     setProcessing(true);
     try {
-      const { error: cleanupError } = await supabase.rpc('delete_user_completely', {
+      const { error: cleanupError } = await supabase.rpc('delete_user_completely' as any, {
         target_user_id: deleteDialog.userId,
       });
 
@@ -339,13 +340,13 @@ const AdminDashboard = () => {
         description: 'All associated data has been permanently removed',
         duration: 8000,
       });
-      
+
       setDeleteDialog(null);
       loadDashboardData(true);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error deleting user:', error);
       toast.error('Failed to delete user', {
-        description: error.message
+        description: getErrorMessage(error)
       });
     } finally {
       setProcessing(false);
@@ -357,7 +358,7 @@ const AdminDashboard = () => {
   const handleToggleFeatured = useCallback(async (listingId: string, currentFeatured: boolean) => {
     setProcessing(true);
     try {
-      const { error } = await supabase.rpc('admin_toggle_featured_listing', {
+      const { error } = await supabase.rpc('admin_toggle_featured_listing' as any, {
         p_listing_id: listingId,
         p_featured: !currentFeatured,
       });
@@ -367,11 +368,11 @@ const AdminDashboard = () => {
       toast.success(currentFeatured ? 'Listing unfeatured' : 'Listing featured', {
         description: currentFeatured ? 'Removed from featured listings' : 'Added to featured listings'
       });
-      
+
       loadDashboardData(true);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error toggling featured:', error);
-      toast.error('Failed to update listing');
+      toast.error(getErrorMessage(error) || 'Failed to update listing');
     } finally {
       setProcessing(false);
     }
@@ -385,7 +386,7 @@ const AdminDashboard = () => {
 
     setProcessing(true);
     try {
-      const { error } = await supabase.rpc('admin_cancel_marketplace_listing', {
+      const { error } = await supabase.rpc('admin_cancel_marketplace_listing' as any, {
         p_listing_id: cancelListingDialog.listingId,
         p_reason: cancelReason,
       });
@@ -395,13 +396,13 @@ const AdminDashboard = () => {
       toast.success('Listing cancelled', {
         description: 'Listing has been removed from marketplace'
       });
-      
+
       setCancelListingDialog(null);
       setCancelReason('');
       loadDashboardData(true);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error cancelling listing:', error);
-      toast.error('Failed to cancel listing');
+      toast.error(getErrorMessage(error) || 'Failed to cancel listing');
     } finally {
       setProcessing(false);
     }
@@ -431,7 +432,7 @@ const AdminDashboard = () => {
       a.click();
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
-      
+
       toast.success('Export successful', {
         description: `${filteredAndSortedUsers.length} users exported to CSV`
       });
@@ -443,7 +444,7 @@ const AdminDashboard = () => {
 
   // Filtered and sorted users
   const filteredAndSortedUsers = useMemo(() => {
-    let filtered = users.filter(u => 
+    let filtered = users.filter(u =>
       u.email.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
@@ -464,7 +465,7 @@ const AdminDashboard = () => {
     filtered.sort((a, b) => {
       const aVal = a[sortField];
       const bVal = b[sortField];
-      
+
       if (sortOrder === 'asc') {
         return aVal > bVal ? 1 : -1;
       } else {
@@ -540,7 +541,7 @@ const AdminDashboard = () => {
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      
+
       <div className="container mx-auto px-4 py-8 max-w-7xl">
         {/* Header Section */}
         <div className="mb-8">
@@ -746,10 +747,10 @@ const AdminDashboard = () => {
                       Showing {filteredAndSortedUsers.length} of {users.length} users
                     </CardDescription>
                   </div>
-                  <Button 
-                    onClick={exportUsers} 
-                    variant="outline" 
-                    size="sm" 
+                  <Button
+                    onClick={exportUsers}
+                    variant="outline"
+                    size="sm"
                     className="gap-2 w-full lg:w-auto"
                   >
                     <Download className="w-4 h-4" />
@@ -824,8 +825,8 @@ const AdminDashboard = () => {
                                 <Users className="w-12 h-12 text-muted-foreground/30 mb-3" />
                                 <p className="text-sm font-medium text-muted-foreground">No users found</p>
                                 <p className="text-xs text-muted-foreground mt-1">
-                                  {searchTerm || userFilter !== 'all' 
-                                    ? 'Try adjusting your filters' 
+                                  {searchTerm || userFilter !== 'all'
+                                    ? 'Try adjusting your filters'
                                     : 'No users registered yet'}
                                 </p>
                               </div>
@@ -915,7 +916,7 @@ const AdminDashboard = () => {
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end">
                                       {userData.is_blocked ? (
-                                        <DropdownMenuItem 
+                                        <DropdownMenuItem
                                           onClick={() => handleUnblockUser(userData.user_id, userData.email)}
                                           disabled={processing}
                                         >
@@ -923,7 +924,7 @@ const AdminDashboard = () => {
                                           Unblock User
                                         </DropdownMenuItem>
                                       ) : (
-                                        <DropdownMenuItem 
+                                        <DropdownMenuItem
                                           onClick={() => setBlockDialog({ open: true, userId: userData.user_id, email: userData.email })}
                                           disabled={processing}
                                         >
@@ -931,7 +932,7 @@ const AdminDashboard = () => {
                                           Block User
                                         </DropdownMenuItem>
                                       )}
-                                      <DropdownMenuItem 
+                                      <DropdownMenuItem
                                         onClick={() => setDeleteDialog({ open: true, userId: userData.user_id, email: userData.email })}
                                         disabled={processing}
                                         className="text-destructive focus:text-destructive"
@@ -973,7 +974,7 @@ const AdminDashboard = () => {
                   ) : (
                     <div className="space-y-3">
                       {marketplaceListings.map((listing) => (
-                        <div 
+                        <div
                           key={listing.id}
                           className="flex items-center justify-between p-4 rounded-lg border hover:bg-accent/50 transition-colors"
                         >
@@ -993,7 +994,7 @@ const AdminDashboard = () => {
                               )}
                             </div>
                             <div className="text-sm text-muted-foreground mt-1">
-                              Seller: {listing.profiles?.email || 'Unknown'} · 
+                              Seller: {listing.profiles?.email || 'Unknown'} ·
                               Price: ₹{listing.asking_price.toLocaleString()} ·
                               Listed: {format(new Date(listing.created_at), 'MMM dd, yyyy')}
                             </div>
@@ -1182,16 +1183,16 @@ const AdminDashboard = () => {
             </div>
           </div>
           <DialogFooter className="gap-2 sm:gap-0">
-            <Button 
-              variant="outline" 
-              onClick={() => setBlockDialog(null)} 
+            <Button
+              variant="outline"
+              onClick={() => setBlockDialog(null)}
               disabled={processing}
               className="w-full sm:w-auto"
             >
               Cancel
             </Button>
-            <Button 
-              variant="destructive" 
+            <Button
+              variant="destructive"
               onClick={handleBlockUser}
               disabled={processing || !blockReason.trim()}
               className="gap-2 w-full sm:w-auto"
@@ -1274,15 +1275,15 @@ const AdminDashboard = () => {
             </div>
           </div>
           <DialogFooter>
-            <Button 
-              variant="outline" 
-              onClick={() => setCancelListingDialog(null)} 
+            <Button
+              variant="outline"
+              onClick={() => setCancelListingDialog(null)}
               disabled={processing}
             >
               Cancel
             </Button>
-            <Button 
-              variant="destructive" 
+            <Button
+              variant="destructive"
               onClick={handleCancelListing}
               disabled={processing || !cancelReason.trim()}
             >

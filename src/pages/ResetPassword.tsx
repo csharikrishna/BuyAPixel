@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { z } from 'zod';
-import { cn } from '@/lib/utils';
+import { cn, getErrorMessage } from '@/lib/utils';
 
 const resetPasswordSchema = z
   .object({
@@ -304,12 +304,12 @@ const ResetPassword = () => {
           });
         }, 2000);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('❌ Unexpected password reset error:', error);
       toast({
         title: 'Error',
         description:
-          error?.message ||
+          getErrorMessage(error) ||
           'An unexpected error occurred. Please try again.',
         variant: 'destructive',
       });
@@ -463,8 +463,8 @@ const ResetPassword = () => {
                         passwordStrength.score >= 4
                           ? 'text-green-600'
                           : passwordStrength.score >= 3
-                          ? 'text-yellow-600'
-                          : 'text-red-600'
+                            ? 'text-yellow-600'
+                            : 'text-red-600'
                       )}
                     >
                       {passwordStrength.label}
@@ -590,8 +590,8 @@ const ResetPassword = () => {
                   className={cn(
                     'pl-10 pr-10 h-12',
                     confirmPassword &&
-                      password !== confirmPassword &&
-                      'border-destructive'
+                    password !== confirmPassword &&
+                    'border-destructive'
                   )}
                 />
                 <button

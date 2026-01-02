@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { z } from 'zod';
-import { cn } from '@/lib/utils';
+import { cn, getErrorMessage } from '@/lib/utils';
 
 const forgotPasswordSchema = z.object({
   email: z
@@ -188,15 +188,14 @@ const ForgotPassword = () => {
           duration: 8000,
         });
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('❌ Unexpected error during password reset:', error);
       console.error('Error type:', typeof error);
-      console.error('Error details:', JSON.stringify(error, null, 2));
 
       toast({
         title: 'Unexpected Error',
         description:
-          error?.message ||
+          getErrorMessage(error) ||
           'An unexpected error occurred. Please try again or contact support.',
         variant: 'destructive',
         duration: 8000,
@@ -280,7 +279,7 @@ const ForgotPassword = () => {
                       className={cn(
                         'pl-10 h-12',
                         emailError &&
-                          'border-destructive focus-visible:ring-destructive'
+                        'border-destructive focus-visible:ring-destructive'
                       )}
                       aria-invalid={!!emailError}
                       aria-describedby={

@@ -18,8 +18,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { 
-  Edit, ArrowLeft, Mail, Phone, Calendar, 
+import {
+  Edit, ArrowLeft, Mail, Phone, Calendar,
   User, MapPin, Eye, TrendingUp, ExternalLink,
   Award, Clock, CheckCircle2, AlertCircle, Info,
   RefreshCw, Loader2, Download, Trash2, Shield,
@@ -30,6 +30,7 @@ import { toast } from 'sonner';
 import ProfileEditModal from '@/components/ProfileEditModal';
 import { RealtimeChannel } from '@supabase/supabase-js';
 import { Input } from '@/components/ui/input';
+import { EditPixelDialog } from '@/components/EditPixelDialog';
 
 // Type definitions
 interface Profile {
@@ -113,6 +114,7 @@ const Profile = () => {
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [exportLoading, setExportLoading] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [editingPixel, setEditingPixel] = useState<UserPixel | null>(null);
 
   // Calculate profile completion with detailed breakdown
   const profileCompletionData = useMemo<ProfileCompletionData>(() => {
@@ -173,17 +175,17 @@ const Profile = () => {
     const totalPixels = userPixels.length;
     const totalInvestment = userPixels.reduce((sum, p) => sum + (p.price_paid || 0), 0);
     const averagePrice = totalPixels > 0 ? totalInvestment / totalPixels : 0;
-    
+
     return { totalPixels, totalInvestment, averagePrice };
   }, [userPixels]);
 
   // Fetch profile data
   const fetchProfile = useCallback(async (showToast = false) => {
     if (!user?.id) return;
-    
+
     setProfileLoading(true);
     setError(null);
-    
+
     try {
       const { data, error: fetchError } = await supabase
         .from('profiles')
@@ -192,10 +194,10 @@ const Profile = () => {
         .maybeSingle();
 
       if (fetchError) throw fetchError;
-      
+
       if (!data) {
         console.warn('Profile not found, attempting to create one');
-        
+
         const { data: newProfile, error: createError } = await supabase
           .from('profiles')
           .insert({
@@ -208,12 +210,12 @@ const Profile = () => {
           })
           .select()
           .single();
-        
+
         if (createError) {
           console.error('Error creating profile:', createError);
           throw new Error('Failed to create profile. Please try again or contact support.');
         }
-        
+
         setProfile({
           ...newProfile,
           email: user.email ?? null
@@ -243,9 +245,9 @@ const Profile = () => {
   // Fetch user pixels
   const fetchUserPixels = useCallback(async (showToast = false) => {
     if (!user?.id) return;
-    
+
     setPixelsLoading(true);
-    
+
     try {
       const { data, error: fetchError } = await supabase
         .from('pixels')
@@ -254,7 +256,7 @@ const Profile = () => {
         .order('purchased_at', { ascending: false });
 
       if (fetchError) throw fetchError;
-      
+
       const pixels: UserPixel[] = (data || []).map((row) => ({
         id: row.id as string,
         x: row.x as number,
@@ -265,7 +267,7 @@ const Profile = () => {
         price_paid: row.price_paid || 0,
         purchased_at: row.purchased_at || new Date().toISOString()
       }));
-      
+
       setUserPixels(pixels);
       if (showToast && pixels.length > 0) {
         toast.success(`Loaded ${pixels.length} pixel${pixels.length !== 1 ? 's' : ''}`);
@@ -281,7 +283,7 @@ const Profile = () => {
   // Export user data as JSON
   const handleExportData = useCallback(async () => {
     setExportLoading(true);
-    
+
     try {
       const exportData = {
         profile: profile,
@@ -314,7 +316,7 @@ const Profile = () => {
   // Copy user ID to clipboard
   const handleCopyUserId = useCallback(() => {
     if (!user?.id) return;
-    
+
     navigator.clipboard.writeText(user.id).then(() => {
       setCopied(true);
       toast.success("User ID copied to clipboard");
@@ -360,7 +362,7 @@ const Profile = () => {
       }
 
       const { error: signOutError } = await supabase.auth.signOut();
-      
+
       if (signOutError) {
         console.error('Error signing out:', signOutError);
       }
@@ -418,9 +420,9 @@ const Profile = () => {
     const setupSubscription = async () => {
       channel = supabase
         .channel(`user-profile-${user.id}`)
-        .on('postgres_changes', { 
-          event: '*', 
-          schema: 'public', 
+        .on('postgres_changes', {
+          event: '*',
+          schema: 'public',
           table: 'pixels',
           filter: `owner_id=eq.${user.id}`
         }, (payload) => {
@@ -454,7 +456,7 @@ const Profile = () => {
     try {
       const date = new Date(dateString);
       if (isNaN(date.getTime())) return 'Invalid date';
-      
+
       return date.toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'long',
@@ -471,7 +473,7 @@ const Profile = () => {
       const now = new Date();
       const diffInMs = now.getTime() - date.getTime();
       const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
-      
+
       if (diffInDays === 0) return 'Today';
       if (diffInDays === 1) return 'Yesterday';
       if (diffInDays < 7) return `${diffInDays} days ago`;
@@ -506,8 +508,8 @@ const Profile = () => {
   const handlePixelVisit = useCallback((url: string) => {
     if (!url) return;
     try {
-      const validUrl = url.startsWith('http://') || url.startsWith('https://') 
-        ? url 
+      const validUrl = url.startsWith('http://') || url.startsWith('https://')
+        ? url
         : `https://${url}`;
       window.open(validUrl, '_blank', 'noopener,noreferrer');
     } catch (err) {
@@ -520,7 +522,7 @@ const Profile = () => {
     try {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
-      
+
       toast.success("Signed out successfully");
       navigate('/');
     } catch (err) {
@@ -571,7 +573,7 @@ const Profile = () => {
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 pb-20 lg:pb-8 relative">
       {/* Premium gradient overlay */}
       <div className="fixed inset-0 bg-gradient-to-b from-purple-500/5 via-transparent to-blue-500/5 pointer-events-none" />
-      
+
       <div className="container relative mx-auto px-4 py-4 md:py-8 max-w-6xl">
         {/* Header */}
         <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 md:mb-8">
@@ -593,8 +595,8 @@ const Profile = () => {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Button 
-              onClick={handleRefresh} 
+            <Button
+              onClick={handleRefresh}
               variant="outline"
               size="sm"
               disabled={isRefreshing}
@@ -604,9 +606,9 @@ const Profile = () => {
               <RefreshCw className={`w-4 h-4 text-purple-600 dark:text-purple-400 ${isRefreshing ? 'animate-spin' : ''}`} aria-hidden="true" />
               <span className="hidden sm:inline ml-2">Refresh</span>
             </Button>
-            <Button 
-              onClick={handleEditProfile} 
-              className="gap-2 bg-gradient-to-r from-purple-600 via-pink-500 to-blue-600 hover:shadow-lg hover:shadow-purple-500/30 transition-all duration-300 border-0 text-white" 
+            <Button
+              onClick={handleEditProfile}
+              className="gap-2 bg-gradient-to-r from-purple-600 via-pink-500 to-blue-600 hover:shadow-lg hover:shadow-purple-500/30 transition-all duration-300 border-0 text-white"
               size="sm"
               aria-label="Edit profile"
             >
@@ -622,7 +624,7 @@ const Profile = () => {
           <Alert className="mb-6 bg-gradient-to-r from-blue-50/80 to-purple-50/80 dark:from-blue-950/30 dark:to-purple-950/30 backdrop-blur-xl border-blue-500/20 shadow-lg">
             <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
             <AlertDescription className="text-blue-900 dark:text-blue-100">
-              <span className="font-semibold">Complete your profile</span> to unlock all features and enhance your experience. 
+              <span className="font-semibold">Complete your profile</span> to unlock all features and enhance your experience.
               <span className="font-semibold ml-1">{profileCompletionData.missingFields.length} field{profileCompletionData.missingFields.length !== 1 ? 's' : ''} remaining.</span>
             </AlertDescription>
           </Alert>
@@ -637,8 +639,8 @@ const Profile = () => {
                   <div className="relative group">
                     <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 via-pink-500 to-blue-600 rounded-full blur opacity-30 group-hover:opacity-50 transition duration-300"></div>
                     <Avatar className="relative w-32 h-32 border-4 border-white dark:border-gray-900 shadow-xl ring-2 ring-purple-500/20">
-                      <AvatarImage 
-                        src={profile?.avatar_url || undefined} 
+                      <AvatarImage
+                        src={profile?.avatar_url || undefined}
                         alt={`${profile?.full_name || 'User'}'s profile picture`}
                       />
                       <AvatarFallback className="text-2xl font-bold bg-gradient-to-br from-purple-600 via-pink-500 to-blue-600 text-white">
@@ -678,8 +680,8 @@ const Profile = () => {
                         Profile Completion
                       </h3>
                       <p className="text-xs text-muted-foreground mt-0.5">
-                        {profileCompletionData.percentage === 100 
-                          ? '🎉 Complete!' 
+                        {profileCompletionData.percentage === 100
+                          ? '🎉 Complete!'
                           : 'Complete to unlock all features'
                         }
                       </p>
@@ -690,9 +692,9 @@ const Profile = () => {
                       </p>
                     </div>
                   </div>
-                  
-                  <Progress 
-                    value={profileCompletionData.percentage} 
+
+                  <Progress
+                    value={profileCompletionData.percentage}
                     className="h-3 mb-4"
                   />
 
@@ -702,21 +704,19 @@ const Profile = () => {
                       Field Status
                     </p>
                     {profileCompletionData.allFields.map((field) => (
-                      <div 
+                      <div
                         key={field.name}
-                        className={`flex items-center justify-between p-2 rounded-lg transition-all duration-300 backdrop-blur-sm ${
-                          field.completed 
-                            ? 'bg-green-50/80 dark:bg-green-950/30 border border-green-500/30 shadow-sm' 
-                            : 'bg-yellow-50/80 dark:bg-yellow-950/30 border border-yellow-500/30 shadow-sm'
-                        }`}
+                        className={`flex items-center justify-between p-2 rounded-lg transition-all duration-300 backdrop-blur-sm ${field.completed
+                          ? 'bg-green-50/80 dark:bg-green-950/30 border border-green-500/30 shadow-sm'
+                          : 'bg-yellow-50/80 dark:bg-yellow-950/30 border border-yellow-500/30 shadow-sm'
+                          }`}
                       >
                         <div className="flex items-center gap-2">
                           <div className={field.completed ? 'text-green-600 dark:text-green-400' : 'text-yellow-600 dark:text-yellow-400'}>
                             {field.icon}
                           </div>
-                          <span className={`text-sm font-medium ${
-                            field.completed ? 'text-green-900 dark:text-green-100' : 'text-yellow-900 dark:text-yellow-100'
-                          }`}>
+                          <span className={`text-sm font-medium ${field.completed ? 'text-green-900 dark:text-green-100' : 'text-yellow-900 dark:text-yellow-100'
+                            }`}>
                             {field.label}
                           </span>
                         </div>
@@ -742,7 +742,7 @@ const Profile = () => {
                           </li>
                         ))}
                       </ul>
-                      <Button 
+                      <Button
                         onClick={handleEditProfile}
                         size="sm"
                         className="w-full mt-3 bg-gradient-to-r from-orange-600 to-pink-600 hover:from-orange-700 hover:to-pink-700 text-white shadow-lg hover:shadow-xl transition-all duration-300"
@@ -806,7 +806,7 @@ const Profile = () => {
 
                 {/* Action Buttons */}
                 <div className="space-y-2">
-                  <Button 
+                  <Button
                     onClick={handleExportData}
                     variant="outline"
                     className="w-full backdrop-blur-sm bg-white/60 dark:bg-gray-800/60 border-purple-500/20 hover:bg-white/80 dark:hover:bg-gray-800/80 hover:border-purple-500/30 transition-all duration-300"
@@ -826,7 +826,7 @@ const Profile = () => {
                     )}
                   </Button>
 
-                  <Button 
+                  <Button
                     onClick={handleSignOut}
                     variant="outline"
                     className="w-full backdrop-blur-sm bg-white/60 dark:bg-gray-800/60 border-purple-500/20 hover:bg-white/80 dark:hover:bg-gray-800/80 hover:border-purple-500/30 transition-all duration-300"
@@ -835,7 +835,7 @@ const Profile = () => {
                     Sign Out
                   </Button>
 
-                  <Button 
+                  <Button
                     onClick={() => setDeleteDialogOpen(true)}
                     variant="destructive"
                     className="w-full bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 shadow-lg hover:shadow-xl transition-all duration-300"
@@ -861,25 +861,25 @@ const Profile = () => {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <InfoCard 
+                  <InfoCard
                     icon={<Mail className="w-4 h-4" />}
                     label="Email"
                     value={user.email || 'Not provided'}
                     completed={true}
                   />
-                  <InfoCard 
+                  <InfoCard
                     icon={<User className="w-4 h-4" />}
                     label="Full Name"
                     value={profile?.full_name || 'Not provided'}
                     completed={Boolean(profile?.full_name && profile.full_name.trim().length >= 2)}
                   />
-                  <InfoCard 
+                  <InfoCard
                     icon={<Phone className="w-4 h-4" />}
                     label="Phone Number"
                     value={profile?.phone_number || 'Not provided'}
                     completed={Boolean(profile?.phone_number)}
                   />
-                  <InfoCard 
+                  <InfoCard
                     icon={<Calendar className="w-4 h-4" />}
                     label="Date of Birth"
                     value={formatDate(profile?.date_of_birth)}
@@ -899,7 +899,7 @@ const Profile = () => {
                     <Badge variant="outline" className="ml-2 bg-purple-500/10 border-purple-500/20 text-purple-700 dark:text-purple-300">{pixelStats.totalPixels}</Badge>
                   </CardTitle>
                   {userPixels.length > 0 && (
-                    <Button 
+                    <Button
                       onClick={() => fetchUserPixels(true)}
                       variant="ghost"
                       size="sm"
@@ -921,34 +921,35 @@ const Profile = () => {
                   <div className="space-y-4">
                     {/* Stats Grid */}
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                      <StatCard 
+                      <StatCard
                         icon={<Eye className="w-5 h-5" />}
                         label="Total Pixels"
                         value={pixelStats.totalPixels.toString()}
                         color="primary"
                       />
-                      <StatCard 
+                      <StatCard
                         icon={<TrendingUp className="w-5 h-5" />}
                         label="Total Investment"
                         value={`₹${pixelStats.totalInvestment.toLocaleString()}`}
                         color="success"
                       />
-                      <StatCard 
+                      <StatCard
                         icon={<Award className="w-5 h-5" />}
                         label="Avg. Price"
                         value={`₹${Math.round(pixelStats.averagePrice).toLocaleString()}`}
                         color="secondary"
                       />
                     </div>
-                    
+
                     {/* Pixels List */}
                     <div className="bg-gradient-to-br from-purple-50/30 to-blue-50/30 dark:from-purple-950/10 dark:to-blue-950/10 rounded-xl p-4 max-h-96 overflow-y-auto backdrop-blur-sm border border-purple-500/10">
                       <div className="space-y-2">
                         {userPixels.map((pixel) => (
-                          <PixelItem 
+                          <PixelItem
                             key={pixel.id}
                             pixel={pixel}
                             onVisit={handlePixelVisit}
+                            onEdit={() => setEditingPixel(pixel)}
                           />
                         ))}
                       </div>
@@ -970,6 +971,13 @@ const Profile = () => {
           onProfileUpdate={() => fetchProfile(true)}
         />
 
+        <EditPixelDialog
+          pixel={editingPixel}
+          isOpen={!!editingPixel}
+          onClose={() => setEditingPixel(null)}
+          onUpdate={() => fetchUserPixels(true)}
+        />
+
         {/* Delete Account Dialog */}
         <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
           <AlertDialogContent className="backdrop-blur-xl bg-white/95 dark:bg-gray-900/95 border-red-500/20">
@@ -982,7 +990,7 @@ const Profile = () => {
                 <p>
                   This action <strong className="text-red-600 dark:text-red-400">cannot be undone</strong>. This will permanently delete your account and remove all your data from our servers.
                 </p>
-                
+
                 <div className="bg-gradient-to-br from-red-50/50 to-orange-50/50 dark:from-red-950/20 dark:to-orange-950/20 rounded-lg p-3 space-y-2 text-sm backdrop-blur-sm border border-red-500/20">
                   <p className="font-semibold">What will be deleted:</p>
                   <ul className="space-y-1 ml-4">
@@ -1060,11 +1068,10 @@ interface InfoCardProps {
 }
 
 const InfoCard: React.FC<InfoCardProps> = ({ icon, label, value, completed = true }) => (
-  <div className={`flex items-center gap-3 p-3 rounded-xl transition-all duration-300 backdrop-blur-sm ${
-    completed 
-      ? 'bg-gradient-to-br from-purple-50/30 to-blue-50/30 dark:from-purple-950/10 dark:to-blue-950/10 hover:from-purple-50/50 hover:to-blue-50/50 border border-purple-500/10' 
-      : 'bg-gradient-to-br from-yellow-50/50 to-orange-50/50 dark:from-yellow-950/20 dark:to-orange-950/20 border border-yellow-500/30'
-  }`}>
+  <div className={`flex items-center gap-3 p-3 rounded-xl transition-all duration-300 backdrop-blur-sm ${completed
+    ? 'bg-gradient-to-br from-purple-50/30 to-blue-50/30 dark:from-purple-950/10 dark:to-blue-950/10 hover:from-purple-50/50 hover:to-blue-50/50 border border-purple-500/10'
+    : 'bg-gradient-to-br from-yellow-50/50 to-orange-50/50 dark:from-yellow-950/20 dark:to-orange-950/20 border border-yellow-500/30'
+    }`}>
     <div className={completed ? 'text-purple-600 dark:text-purple-400' : 'text-yellow-600 dark:text-yellow-400'} aria-hidden="true">
       {icon}
     </div>
@@ -1113,14 +1120,16 @@ const StatCard: React.FC<StatCardProps> = ({ icon, label, value, color }) => {
 interface PixelItemProps {
   pixel: UserPixel;
   onVisit: (url: string) => void;
+  onEdit: () => void;
 }
 
-const PixelItem: React.FC<PixelItemProps> = ({ pixel, onVisit }) => (
+// Update PixelItem component:
+const PixelItem: React.FC<PixelItemProps> = ({ pixel, onVisit, onEdit }) => (
   <div className="flex items-center justify-between py-3 px-4 bg-white/60 dark:bg-gray-800/60 rounded-xl border border-purple-500/10 hover:border-purple-500/30 transition-all duration-300 hover:shadow-md backdrop-blur-sm">
     <div className="flex items-center gap-3 flex-1 min-w-0">
       {pixel.image_url && (
-        <img 
-          src={pixel.image_url} 
+        <img
+          src={pixel.image_url}
           alt={pixel.alt_text || `Pixel at (${pixel.x}, ${pixel.y})`}
           className="w-10 h-10 rounded-lg object-cover flex-shrink-0 border border-purple-500/10"
           loading="lazy"
@@ -1135,18 +1144,29 @@ const PixelItem: React.FC<PixelItemProps> = ({ pixel, onVisit }) => (
         </p>
       </div>
     </div>
-    {pixel.link_url && (
+    <div className="flex items-center gap-2">
       <Button
         size="sm"
-        variant="outline"
-        onClick={() => onVisit(pixel.link_url!)}
-        className="flex-shrink-0 gap-1 backdrop-blur-sm bg-white/60 dark:bg-gray-800/60 border-purple-500/20 hover:bg-white/80 dark:hover:bg-gray-800/80 hover:border-purple-500/30"
-        aria-label={`Visit link for pixel at (${pixel.x}, ${pixel.y})`}
+        variant="ghost"
+        onClick={onEdit}
+        className="flex-shrink-0 gap-1 backdrop-blur-sm hover:bg-purple-500/10"
+        aria-label={`Edit pixel at (${pixel.x}, ${pixel.y})`}
       >
-        <span className="hidden sm:inline">Visit</span>
-        <ExternalLink className="w-4 h-4 text-purple-600 dark:text-purple-400" aria-hidden="true" />
+        <Edit className="w-4 h-4 text-purple-600 dark:text-purple-400" aria-hidden="true" />
       </Button>
-    )}
+      {pixel.link_url && (
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => onVisit(pixel.link_url!)}
+          className="flex-shrink-0 gap-1 backdrop-blur-sm bg-white/60 dark:bg-gray-800/60 border-purple-500/20 hover:bg-white/80 dark:hover:bg-gray-800/80 hover:border-purple-500/30"
+          aria-label={`Visit link for pixel at (${pixel.x}, ${pixel.y})`}
+        >
+          <span className="hidden sm:inline">Visit</span>
+          <ExternalLink className="w-4 h-4 text-purple-600 dark:text-purple-400" aria-hidden="true" />
+        </Button>
+      )}
+    </div>
   </div>
 );
 
@@ -1159,7 +1179,7 @@ const EmptyPixelsState = () => (
     <p className="text-muted-foreground mb-6 max-w-sm mx-auto">
       Start building your digital real estate by purchasing your first pixels.
     </p>
-    <Link to="/buy-pixels">
+    <Link to="/">
       <Button className="gap-2 bg-gradient-to-r from-purple-600 via-pink-500 to-blue-600 hover:shadow-lg hover:shadow-purple-500/30 transition-all duration-300 text-white">
         <MapPin className="w-4 h-4" aria-hidden="true" />
         Buy Your First Pixels

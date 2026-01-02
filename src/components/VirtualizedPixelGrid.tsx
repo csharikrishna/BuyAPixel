@@ -28,7 +28,7 @@ const GRID_CONFIG = {
   GOLD_ZONE_SIZE: 60,
   ZOOM_FACTOR: 1.05,
   PAN_CLAMP_BUFFER: 100,
-  
+
   // Performance
   CULLING_BUFFER: 2, // Pixels outside viewport to render
   HOVER_DEBOUNCE_MS: 5,
@@ -77,27 +77,27 @@ interface VirtualizedPixelGridProps {
 
 class SpatialIndex {
   private map: Map<string, PurchasedPixel>;
-  
+
   constructor() {
     this.map = new Map();
   }
-  
+
   add(pixel: PurchasedPixel) {
     this.map.set(`${pixel.x}-${pixel.y}`, pixel);
   }
-  
+
   get(x: number, y: number): PurchasedPixel | undefined {
     return this.map.get(`${x}-${y}`);
   }
-  
+
   has(x: number, y: number): boolean {
     return this.map.has(`${x}-${y}`);
   }
-  
+
   clear() {
     this.map.clear();
   }
-  
+
   getAll(): PurchasedPixel[] {
     return Array.from(this.map.values());
   }
@@ -133,7 +133,7 @@ export const VirtualizedPixelGrid = ({
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null);
   const [dragDistance, setDragDistance] = useState(0);
-  const [touchStart, setTouchStart] = useState<{ x: number; y: number; dist: number } | null>(null);
+  const [touchStart, setTouchStart] = useState<{ x: number; y: number; dist: number; centerX: number; centerY: number } | null>(null);
   const [initialZoom, setInitialZoom] = useState(zoom);
 
   // -- State: Data & Selection --
@@ -202,14 +202,18 @@ export const VirtualizedPixelGrid = ({
     (x: number, y: number) => {
       const centerX = gridWidth / 2.0;
       const centerY = gridHeight / 2.0;
-      const distanceFromCenter = Math.sqrt(
-        Math.pow(x - centerX, 2) + Math.pow(y - centerY, 2)
-      );
-      const maxDistance = Math.sqrt(Math.pow(centerX, 2) + Math.pow(centerY, 2));
-      const normalizedDistance = distanceFromCenter / maxDistance;
 
-      if (normalizedDistance < 0.212) return 299;
-      if (normalizedDistance < 0.424) return 199;
+      // Box-based pricing (Square zones)
+      const dx = Math.abs(x - centerX);
+      const dy = Math.abs(y - centerY);
+      const maxDist = Math.max(dx, dy);
+
+      // Gold Zone (60x60) -> Radius 30
+      if (maxDist < 30) return 299;
+
+      // Premium Zone (120x120) -> Radius 60
+      if (maxDist < 60) return 199;
+
       return 99;
     },
     [gridWidth, gridHeight]
@@ -221,7 +225,7 @@ export const VirtualizedPixelGrid = ({
       const xPos = px * scaledPixelSize + viewportOffset.x;
       const yPos = py * scaledPixelSize + viewportOffset.y;
       const buffer = scaledPixelSize * GRID_CONFIG.CULLING_BUFFER;
-      
+
       return (
         xPos > -buffer &&
         xPos < containerSize.width + buffer &&
@@ -337,15 +341,15 @@ export const VirtualizedPixelGrid = ({
   const handleMouseDown = useCallback(
     (event: React.MouseEvent) => {
       if (event.button !== 0 && event.button !== 1) return;
-      
+
       setIsDragging(true);
       setDragDistance(0);
       setHoveredPixel(null);
-      
+
       if (hoverTimeoutRef.current) {
         clearTimeout(hoverTimeoutRef.current);
       }
-      
+
       setDragStart({
         x: event.clientX - viewportOffset.x,
         y: event.clientY - viewportOffset.y,
@@ -382,7 +386,7 @@ export const VirtualizedPixelGrid = ({
         animationFrameRef.current = requestAnimationFrame(() => {
           const newX = event.clientX - dragStart.x;
           const newY = event.clientY - dragStart.y;
-          
+
           const dist = Math.sqrt(
             Math.pow(newX - viewportOffset.x, 2) + Math.pow(newY - viewportOffset.y, 2)
           );
@@ -390,7 +394,7 @@ export const VirtualizedPixelGrid = ({
 
           const clamped = clampOffset(newX, newY, zoom);
           setViewportOffset(clamped);
-          
+
           animationFrameRef.current = undefined;
         });
       }
@@ -451,10 +455,10 @@ export const VirtualizedPixelGrid = ({
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
     checkMobile();
-    
+
     const debouncedResize = debounce(checkMobile, 150);
     window.addEventListener("resize", debouncedResize);
-    
+
     return () => {
       window.removeEventListener("resize", debouncedResize);
       debouncedResize.cancel();
@@ -464,7 +468,7 @@ export const VirtualizedPixelGrid = ({
   // Container size observer
   useEffect(() => {
     if (!containerRef.current) return;
-    
+
     const updateSize = () => {
       if (!containerRef.current) return;
       setContainerSize({
@@ -472,18 +476,18 @@ export const VirtualizedPixelGrid = ({
         height: containerRef.current.clientHeight,
       });
     };
-    
+
     updateSize();
     const resizeObserver = new ResizeObserver(updateSize);
     resizeObserver.observe(containerRef.current);
-    
+
     return () => resizeObserver.disconnect();
   }, []);
 
   // Initial zoom and centering (useLayoutEffect to prevent flicker)
   useLayoutEffect(() => {
     if (!containerRef.current || hasInitialized) return;
-    
+
     const { clientWidth, clientHeight } = containerRef.current;
     if (clientWidth === 0 || clientHeight === 0) return;
 
@@ -500,7 +504,7 @@ export const VirtualizedPixelGrid = ({
     );
 
     onZoomChange(initialScale);
-    
+
     const initialX = (clientWidth - fullGridW * initialScale) / 2;
     const initialY = (clientHeight - fullGridH * initialScale) / 2;
     setViewportOffset({ x: initialX, y: initialY });
@@ -510,12 +514,12 @@ export const VirtualizedPixelGrid = ({
   // Load purchased pixels from Supabase
   useEffect(() => {
     let isMounted = true;
-    
+
     const loadPurchased = async () => {
       try {
         setIsLoading(true);
         setError(null);
-        
+
         const { data, error: fetchError } = await supabase
           .from("pixels")
           .select("id, x, y, owner_id, image_url, link_url, alt_text")
@@ -585,11 +589,11 @@ export const VirtualizedPixelGrid = ({
   // Billboard rotation
   useEffect(() => {
     if (featuredPixelsList.length === 0) return;
-    
+
     const interval = setInterval(() => {
       setCurrentFeaturedIndex((prev) => (prev + 1) % featuredPixelsList.length);
     }, GRID_CONFIG.BILLBOARD_ROTATION_MS);
-    
+
     return () => clearInterval(interval);
   }, [featuredPixelsList.length]);
 
@@ -614,7 +618,7 @@ export const VirtualizedPixelGrid = ({
         const dx = e.touches[0].clientX - e.touches[1].clientX;
         const dy = e.touches[0].clientY - e.touches[1].clientY;
         const dist = Math.sqrt(dx * dx + dy * dy);
-        setTouchStart({ x: 0, y: 0, dist });
+        setTouchStart({ x: 0, y: 0, dist, centerX: 0, centerY: 0 }); // Added dummy centers to satisfy type
         setInitialZoom(zoom);
       } else if (e.touches.length === 1) {
         setIsDragging(true);
@@ -630,7 +634,7 @@ export const VirtualizedPixelGrid = ({
         const dx = e.touches[0].clientX - e.touches[1].clientX;
         const dy = e.touches[0].clientY - e.touches[1].clientY;
         const dist = Math.sqrt(dx * dx + dy * dy);
-        
+
         if (dist > 0 && touchStart.dist > 0) {
           const scale = dist / touchStart.dist;
           const newZoom = Math.min(
@@ -970,6 +974,7 @@ export const VirtualizedPixelGrid = ({
           containerWidth={containerSize.width}
           containerHeight={containerSize.height}
           onViewportChange={setViewportOffset}
+          pixelSize={pixelSize}
         />
       )}
     </div>

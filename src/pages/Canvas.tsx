@@ -7,14 +7,14 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { 
-  Eye, 
-  TrendingUp, 
-  Users, 
-  Zap, 
-  ZoomIn, 
-  ZoomOut, 
-  RotateCcw, 
+import {
+  Eye,
+  TrendingUp,
+  Users,
+  Zap,
+  ZoomIn,
+  ZoomOut,
+  RotateCcw,
   Grid3x3,
   AlertCircle,
   RefreshCw
@@ -71,20 +71,25 @@ const Canvas = () => {
     const centerX = CANVAS_WIDTH / 2.0;
     const centerY = CANVAS_HEIGHT / 2.0;
     const maxDistance = Math.sqrt(centerX * centerX + centerY * centerY);
-    
+
     return { centerX, centerY, maxDistance };
   }, []);
 
   // Optimized price calculation function
   const calculatePixelPrice = useCallback((x: number, y: number): number => {
-    const { centerX, centerY, maxDistance } = pricingHelper;
-    const distanceFromCenter = Math.sqrt(
-      Math.pow(x - centerX, 2) + Math.pow(y - centerY, 2)
-    );
-    const normalizedDistance = distanceFromCenter / maxDistance;
-    
-    if (normalizedDistance < PREMIUM_THRESHOLD) return PREMIUM_PRICE;
-    if (normalizedDistance < STANDARD_THRESHOLD) return STANDARD_PRICE;
+    const { centerX, centerY } = pricingHelper;
+
+    // Box-based pricing (Square zones)
+    const dx = Math.abs(x - centerX);
+    const dy = Math.abs(y - centerY);
+    const maxDist = Math.max(dx, dy);
+
+    // Gold Zone (60x60) -> Radius 30
+    if (maxDist < 30) return PREMIUM_PRICE;
+
+    // Standard Zone (120x120) -> Radius 60
+    if (maxDist < 60) return STANDARD_PRICE;
+
     return ECONOMY_PRICE;
   }, [pricingHelper]);
 
@@ -102,7 +107,7 @@ const Canvas = () => {
     const totalValue = purchasedPixels.reduce((sum, p) => {
       return sum + calculatePixelPrice(p.x, p.y);
     }, 0);
-    
+
     const uniqueOwners = new Set(purchasedPixels.map(p => p.owner_id)).size;
     const percentageFilled = (purchasedPixels.length / TOTAL_PIXELS) * 100;
 
@@ -119,7 +124,7 @@ const Canvas = () => {
     const premium = 1597;
     const standard = 4752;
     const economy = 16151;
-    
+
     return { premium, standard, economy };
   }, []);
 
@@ -131,7 +136,7 @@ const Canvas = () => {
       } else {
         setIsLoading(true);
       }
-      
+
       setError(null);
 
       const { data, error: fetchError } = await supabase
@@ -224,7 +229,7 @@ const Canvas = () => {
     return (
       <div className="min-h-screen bg-background">
         <Header />
-        
+
         <div className="relative overflow-hidden border-b bg-gradient-to-br from-primary/10 via-background to-accent/10">
           <div className="container mx-auto px-4 py-12 md:py-16">
             <div className="text-center space-y-4">
@@ -251,7 +256,7 @@ const Canvas = () => {
               </Card>
             ))}
           </div>
-          
+
           <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 md:gap-6">
             <div className="xl:col-span-9">
               <Card>
@@ -271,7 +276,7 @@ const Canvas = () => {
     return (
       <div className="min-h-screen bg-background">
         <Header />
-        
+
         <div className="container mx-auto px-4 py-12">
           <Alert variant="destructive" className="max-w-2xl mx-auto">
             <AlertCircle className="h-4 w-4" />
@@ -279,10 +284,10 @@ const Canvas = () => {
             <AlertDescription className="mt-2">
               {error}
             </AlertDescription>
-            <Button 
-              onClick={handleRetry} 
-              variant="outline" 
-              size="sm" 
+            <Button
+              onClick={handleRetry}
+              variant="outline"
+              size="sm"
               className="mt-4"
             >
               <RefreshCw className="w-4 h-4 mr-2" />
@@ -297,7 +302,7 @@ const Canvas = () => {
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      
+
       {/* Hero Section */}
       <div className="relative overflow-hidden border-b bg-gradient-to-br from-primary/10 via-background to-accent/10">
         <div className="container mx-auto px-4 py-12 md:py-16">
@@ -315,7 +320,7 @@ const Canvas = () => {
               </span>
             </h1>
             <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">
-              Explore {TOTAL_PIXELS.toLocaleString()} pixels of creativity. 
+              Explore {TOTAL_PIXELS.toLocaleString()} pixels of creativity.
               Click any pixel to visit its link.
             </p>
           </div>
@@ -399,7 +404,7 @@ const Canvas = () => {
                 zoom={zoom}
                 onZoomChange={setZoom}
                 isSelecting={false}
-                onToggleSelecting={() => {}}
+                onToggleSelecting={() => { }}
                 showGrid={showGrid}
                 onToggleGrid={handleToggleGrid}
                 showMyPixels={showMyPixels}
@@ -407,7 +412,7 @@ const Canvas = () => {
                 onResetView={handleResetView}
                 selectedCount={0}
               />
-              
+
               <Card className="border-primary/20">
                 <CardContent className="p-4">
                   <Button
@@ -453,7 +458,7 @@ const Canvas = () => {
                       <ZoomIn className="w-4 h-4" />
                     </Button>
                   </div>
-                  
+
                   <div className="flex items-center gap-2">
                     <Button
                       variant={showGrid ? "default" : "outline"}
@@ -482,7 +487,7 @@ const Canvas = () => {
             <Card className="border-primary/20 overflow-hidden">
               <VirtualizedPixelGrid
                 selectedPixels={[]}
-                onSelectionChange={() => {}}
+                onSelectionChange={() => { }}
                 isSelecting={false}
                 gridWidth={CANVAS_WIDTH}
                 gridHeight={CANVAS_HEIGHT}

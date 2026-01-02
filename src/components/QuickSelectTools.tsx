@@ -3,13 +3,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  Heart, 
-  Smile, 
-  Rocket, 
-  Brain, 
-  Sparkles, 
-  Square, 
+import {
+  Heart,
+  Smile,
+  Rocket,
+  Brain,
+  Sparkles,
+  Square,
   CircleDot,
   Zap,
   Package,
@@ -33,132 +33,170 @@ interface QuickSelectToolsProps {
   gridWidth: number;
   gridHeight: number;
   calculatePixelPrice: (x: number, y: number) => number;
+  anchorPixel?: { x: number; y: number } | null;
 }
 
 // Emoji/Shape patterns (relative coordinates)
 const PATTERNS = {
+  // Classic pixel art heart (symmetrical)
   heart: [
-    [-2, -1], [-1, -2], [0, -2], [1, -2], [2, -1],
-    [-3, 0], [-2, 0], [-1, -1], [0, -1], [1, -1], [2, 0], [3, 0],
-    [-2, 1], [-1, 0], [0, 0], [1, 0], [2, 1],
-    [-1, 2], [0, 1], [1, 2],
+    // Top curves
+    [-2, -2], [-1, -2], [1, -2], [2, -2],
+    [-3, -1], [-2, -1], [-1, -1], [1, -1], [2, -1], [3, -1],
+    // Middle section
+    [-3, 0], [-2, 0], [-1, 0], [0, 0], [1, 0], [2, 0], [3, 0],
+    // Lower middle
+    [-2, 1], [-1, 1], [0, 1], [1, 1], [2, 1],
+    // Bottom point
+    [-1, 2], [0, 2], [1, 2],
     [0, 3]
   ],
+  
+  // Classic smiley face (circular with eyes and smile)
   smile: [
-    [-2, -2], [-1, -2], [0, -2], [1, -2], [2, -2],
-    [-3, -1], [-2, -1], [2, -1], [3, -1],
-    [-3, 0], [-1, 0], [1, 0], [3, 0],
-    [-3, 1], [-2, 1], [2, 1], [3, 1],
-    [-2, 2], [-1, 2], [0, 2], [1, 2], [2, 2]
-  ],
-  rocket: [
-    [0, -3], 
-    [-1, -2], [0, -2], [1, -2],
-    [-1, -1], [0, -1], [1, -1],
-    [-2, 0], [-1, 0], [0, 0], [1, 0], [2, 0],
-    [-1, 1], [0, 1], [1, 1],
+    // Top arc
+    [-1, -3], [0, -3], [1, -3],
+    [-2, -2], [2, -2],
+    // Eyes row
+    [-3, -1], [-1, -1], [1, -1], [3, -1],
+    // Middle
+    [-3, 0], [3, 0],
+    // Smile curve
+    [-3, 1], [-1, 1], [0, 1], [1, 1], [3, 1],
     [-2, 2], [2, 2],
-    [-3, 3], [3, 3]
+    // Bottom arc
+    [-1, 3], [0, 3], [1, 3]
   ],
-  brain: [
-    [-2, -2], [-1, -2], [0, -2], [1, -2],
-    [-3, -1], [-2, -1], [0, -1], [1, -1], [2, -1],
-    [-3, 0], [-1, 0], [0, 0], [2, 0],
-    [-2, 1], [-1, 1], [0, 1], [1, 1],
-    [-1, 2], [0, 2]
-  ],
-  sparkle: [
-    [0, -2],
+  
+  // Rocket ship
+  rocket: [
+    // Nose cone
+    [0, -4],
+    [-1, -3], [0, -3], [1, -3],
+    // Window/cockpit
+    [-1, -2], [0, -2], [1, -2],
+    // Body
     [-1, -1], [0, -1], [1, -1],
-    [-2, 0], [-1, 0], [0, 0], [1, 0], [2, 0],
+    [-1, 0], [0, 0], [1, 0],
     [-1, 1], [0, 1], [1, 1],
-    [0, 2]
+    // Fins
+    [-2, 2], [-1, 2], [0, 2], [1, 2], [2, 2],
+    // Thrusters
+    [-2, 3], [0, 3], [2, 3],
+    [-1, 4], [1, 4]
   ],
+  
+  // Brain (symmetrical lobes)
+  brain: [
+    // Top lobes
+    [-2, -2], [-1, -2], [0, -2], [1, -2], [2, -2],
+    [-3, -1], [-2, -1], [-1, -1], [1, -1], [2, -1], [3, -1],
+    // Middle section with folds
+    [-3, 0], [-2, 0], [0, 0], [2, 0], [3, 0],
+    [-2, 1], [-1, 1], [0, 1], [1, 1], [2, 1],
+    // Bottom
+    [-1, 2], [0, 2], [1, 2]
+  ],
+  
+  // Sparkle/star
+  sparkle: [
+    // Top point
+    [0, -3],
+    [0, -2],
+    // Horizontal beam
+    [-3, 0], [-2, 0], [-1, 0], [0, 0], [1, 0], [2, 0], [3, 0],
+    // Vertical beam
+    [0, -1], [0, 1], [0, 2], [0, 3],
+    // Diagonal accents
+    [-1, -1], [1, -1],
+    [-1, 1], [1, 1]
+  ],
+  
   square3x3: Array.from({ length: 9 }, (_, i) => [i % 3 - 1, Math.floor(i / 3) - 1]),
   square5x5: Array.from({ length: 25 }, (_, i) => [i % 5 - 2, Math.floor(i / 5) - 2]),
   square10x10: Array.from({ length: 100 }, (_, i) => [i % 10 - 4.5, Math.floor(i / 10) - 4.5])
 };
 
 const PRESET_PACKS = [
-  { 
-    id: 'heart', 
-    name: 'Heart', 
-    icon: Heart, 
-    pattern: PATTERNS.heart, 
+  {
+    id: 'heart',
+    name: 'Heart',
+    icon: Heart,
+    pattern: PATTERNS.heart,
     color: 'text-red-500',
-    description: 'Perfect for love messages' 
+    description: 'Perfect for love messages'
   },
-  { 
-    id: 'smile', 
-    name: 'Smile', 
-    icon: Smile, 
-    pattern: PATTERNS.smile, 
+  {
+    id: 'smile',
+    name: 'Smile',
+    icon: Smile,
+    pattern: PATTERNS.smile,
     color: 'text-yellow-500',
-    description: 'Spread positivity' 
+    description: 'Spread positivity'
   },
-  { 
-    id: 'rocket', 
-    name: 'Rocket', 
-    icon: Rocket, 
-    pattern: PATTERNS.rocket, 
+  {
+    id: 'rocket',
+    name: 'Rocket',
+    icon: Rocket,
+    pattern: PATTERNS.rocket,
     color: 'text-blue-500',
-    description: 'Launch your brand' 
+    description: 'Launch your brand'
   },
-  { 
-    id: 'brain', 
-    name: 'Brain', 
-    icon: Brain, 
-    pattern: PATTERNS.brain, 
+  {
+    id: 'brain',
+    name: 'Brain',
+    icon: Brain,
+    pattern: PATTERNS.brain,
     color: 'text-purple-500',
-    description: 'Smart advertising' 
+    description: 'Smart advertising'
   },
-  { 
-    id: 'sparkle', 
-    name: 'Sparkle', 
-    icon: Sparkles, 
-    pattern: PATTERNS.sparkle, 
+  {
+    id: 'sparkle',
+    name: 'Sparkle',
+    icon: Sparkles,
+    pattern: PATTERNS.sparkle,
     color: 'text-amber-500',
-    description: 'Catch attention' 
+    description: 'Catch attention'
   }
 ];
 
 const SIZE_PACKS = [
-  { 
-    id: 'small', 
-    name: 'Small Logo', 
-    size: '3×3', 
-    pattern: PATTERNS.square3x3, 
+  {
+    id: 'small',
+    name: 'Small Logo',
+    size: '3×3',
+    pattern: PATTERNS.square3x3,
     icon: CircleDot,
-    description: '9 pixels - Perfect for small logos' 
+    description: '9 pixels - Perfect for small logos'
   },
-  { 
-    id: 'medium', 
-    name: 'Medium Ad', 
-    size: '5×5', 
-    pattern: PATTERNS.square5x5, 
+  {
+    id: 'medium',
+    name: 'Medium Ad',
+    size: '5×5',
+    pattern: PATTERNS.square5x5,
     icon: Square,
-    description: '25 pixels - Great for ads' 
+    description: '25 pixels - Great for ads'
   },
-  { 
-    id: 'large', 
-    name: 'Large Banner', 
-    size: '10×10', 
-    pattern: PATTERNS.square10x10, 
+  {
+    id: 'large',
+    name: 'Large Banner',
+    size: '10×10',
+    pattern: PATTERNS.square10x10,
     icon: Package,
-    description: '100 pixels - Maximum impact' 
+    description: '100 pixels - Maximum impact'
   }
 ];
 
-export const QuickSelectTools = ({ 
-  onPixelsSelected, 
-  gridWidth, 
-  gridHeight, 
-  calculatePixelPrice 
+export const QuickSelectTools = ({
+  onPixelsSelected,
+  gridWidth,
+  gridHeight,
+  calculatePixelPrice,
+  anchorPixel
 }: QuickSelectToolsProps) => {
   const [isVisible, setIsVisible] = useState(true);
   const [rotation, setRotation] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
-  const [isDrawMode, setIsDrawMode] = useState(false);
 
   const transformPattern = (pattern: number[][]) => {
     let transformed = [...pattern];
@@ -168,7 +206,7 @@ export const QuickSelectTools = ({
       const rad = (rotation * Math.PI) / 180;
       const cos = Math.cos(rad);
       const sin = Math.sin(rad);
-      
+
       transformed = transformed.map(([x, y]) => [
         Math.round(x * cos - y * sin),
         Math.round(x * sin + y * cos)
@@ -183,17 +221,24 @@ export const QuickSelectTools = ({
     return transformed;
   };
 
-  const applyPattern = (pattern: number[][], centerX?: number, centerY?: number) => {
-    const cx = centerX ?? Math.floor(gridWidth / 2);
-    const cy = centerY ?? Math.floor(gridHeight / 2);
+  const applyPattern = (pattern: number[][]) => {
+    if (!anchorPixel) {
+      toast.info("Please select a target pixel first", {
+        description: "Click anywhere on the grid to set the center for your shape."
+      });
+      return;
+    }
+
+    const cx = anchorPixel.x;
+    const cy = anchorPixel.y;
 
     const transformedPattern = transformPattern(pattern);
     const pixels: SelectedPixel[] = [];
-    
+
     transformedPattern.forEach(([dx, dy]) => {
       const x = cx + dx;
       const y = cy + dy;
-      
+
       if (x >= 0 && x < gridWidth && y >= 0 && y < gridHeight) {
         pixels.push({
           x,
@@ -216,7 +261,7 @@ export const QuickSelectTools = ({
   const calculatePatternCost = (pattern: number[][]) => {
     const centerX = Math.floor(gridWidth / 2);
     const centerY = Math.floor(gridHeight / 2);
-    
+
     return pattern.reduce((sum, [dx, dy]) => {
       const x = centerX + dx;
       const y = centerY + dy;
@@ -230,12 +275,12 @@ export const QuickSelectTools = ({
   const randomSelect = (count: number) => {
     const pixels: SelectedPixel[] = [];
     const usedPositions = new Set<string>();
-    
+
     while (pixels.length < count && usedPositions.size < gridWidth * gridHeight) {
       const x = Math.floor(Math.random() * gridWidth);
       const y = Math.floor(Math.random() * gridHeight);
       const key = `${x}-${y}`;
-      
+
       if (!usedPositions.has(key)) {
         usedPositions.add(key);
         pixels.push({
@@ -246,7 +291,7 @@ export const QuickSelectTools = ({
         });
       }
     }
-    
+
     onPixelsSelected(pixels);
     const totalCost = pixels.reduce((sum, p) => sum + p.price, 0);
     toast.success(`Randomly selected ${pixels.length} pixels (₹${totalCost})`);
@@ -279,7 +324,7 @@ export const QuickSelectTools = ({
           </Button>
         </div>
       </CardHeader>
-      
+
       {isVisible && (
         <CardContent>
           <Tabs defaultValue="emoji" className="w-full">
@@ -294,7 +339,7 @@ export const QuickSelectTools = ({
                 {PRESET_PACKS.map((pack) => {
                   const Icon = pack.icon;
                   const estimatedCost = calculatePatternCost(pack.pattern);
-                  
+
                   return (
                     <Button
                       key={pack.id}
@@ -362,7 +407,7 @@ export const QuickSelectTools = ({
               {SIZE_PACKS.map((pack) => {
                 const Icon = pack.icon;
                 const estimatedCost = calculatePatternCost(pack.pattern);
-                
+
                 return (
                   <Button
                     key={pack.id}
@@ -408,22 +453,6 @@ export const QuickSelectTools = ({
                     <Badge variant="secondary">{cost}</Badge>
                   </Button>
                 ))}
-              </div>
-
-              <div className="border-t pt-3 space-y-2">
-                <Button
-                  variant={isDrawMode ? "default" : "outline"}
-                  className="w-full"
-                  onClick={() => setIsDrawMode(!isDrawMode)}
-                >
-                  <Brush className="w-4 h-4 mr-2" />
-                  {isDrawMode ? 'Exit Draw Mode' : 'Enter Draw Mode'}
-                </Button>
-                {isDrawMode && (
-                  <p className="text-xs text-muted-foreground text-center">
-                    Click and drag on the canvas to draw your selection
-                  </p>
-                )}
               </div>
             </TabsContent>
           </Tabs>

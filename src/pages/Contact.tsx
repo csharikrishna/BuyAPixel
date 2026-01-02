@@ -29,6 +29,7 @@ import { z } from 'zod';
 import { supabase } from '@/integrations/supabase/client';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import { getErrorMessage } from '@/lib/utils';
 
 // Validation schema
 const contactFormSchema = z.object({
@@ -192,18 +193,15 @@ const Contact = () => {
         message: '',
       });
       setErrors({});
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('❌ Contact form error:', error);
 
-      let errorMessage = 'Failed to send message. Please try again.';
+      let errorMessage = getErrorMessage(error) || 'Failed to send message. Please try again.';
 
-      if (error?.message?.includes('Failed to fetch')) {
-        errorMessage =
-          'Network error. Please check your connection and try again.';
-      } else if (error?.message?.includes('rate limit')) {
+      if (errorMessage.includes('Failed to fetch')) {
+        errorMessage = 'Network error. Please check your connection and try again.';
+      } else if (errorMessage.includes('rate limit')) {
         errorMessage = 'Too many requests. Please wait a moment and try again.';
-      } else if (error?.message) {
-        errorMessage = error.message;
       }
 
       toast({
@@ -297,9 +295,8 @@ const Contact = () => {
                             onChange={handleInputChange}
                             required
                             disabled={loading}
-                            className={`h-11 ${
-                              errors.name ? 'border-destructive' : ''
-                            }`}
+                            className={`h-11 ${errors.name ? 'border-destructive' : ''
+                              }`}
                             maxLength={100}
                           />
                         </div>
@@ -332,9 +329,8 @@ const Contact = () => {
                             onChange={handleInputChange}
                             required
                             disabled={loading}
-                            className={`h-11 ${
-                              errors.email ? 'border-destructive' : ''
-                            }`}
+                            className={`h-11 ${errors.email ? 'border-destructive' : ''
+                              }`}
                             maxLength={100}
                           />
                         </div>
@@ -367,9 +363,8 @@ const Contact = () => {
                           onChange={handleInputChange}
                           required
                           disabled={loading}
-                          className={`h-11 ${
-                            errors.subject ? 'border-destructive' : ''
-                          }`}
+                          className={`h-11 ${errors.subject ? 'border-destructive' : ''
+                            }`}
                           maxLength={150}
                         />
                       </div>
@@ -396,9 +391,8 @@ const Contact = () => {
                       required
                       disabled={loading}
                       rows={6}
-                      className={`resize-none ${
-                        errors.message ? 'border-destructive' : ''
-                      }`}
+                      className={`resize-none ${errors.message ? 'border-destructive' : ''
+                        }`}
                       maxLength={1000}
                     />
                     {errors.message && (

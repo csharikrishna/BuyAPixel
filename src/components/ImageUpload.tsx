@@ -5,29 +5,31 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { 
-  Upload, 
-  X, 
-  Image as ImageIcon, 
+import {
+  Upload,
+  X,
+  Image as ImageIcon,
   Loader2,
   Copy,
   Eye,
   Trash2
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, getErrorMessage } from '@/lib/utils';
 
 interface ImageUploadProps {
   onImageUploaded: (url: string) => void;
   currentImage?: string;
   folder?: string;
   accept?: string;
+  bucket?: string;
 }
 
-export const ImageUpload = ({ 
-  onImageUploaded, 
+export const ImageUpload = ({
+  onImageUploaded,
   currentImage,
   folder = 'posts',
-  accept = 'image/jpeg,image/png,image/webp,image/gif'
+  accept = 'image/jpeg,image/png,image/webp,image/gif',
+  bucket = 'blog-images'
 }: ImageUploadProps) => {
   const [uploading, setUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
@@ -56,7 +58,7 @@ export const ImageUpload = ({
 
       // Upload to Supabase Storage
       const { data, error } = await supabase.storage
-        .from('blog-images')
+        .from(bucket)
         .upload(fileName, file, {
           cacheControl: '3600',
           upsert: false
@@ -66,15 +68,15 @@ export const ImageUpload = ({
 
       // Get public URL
       const { data: { publicUrl } } = supabase.storage
-        .from('blog-images')
+        .from(bucket)
         .getPublicUrl(data.path);
 
       setPreview(publicUrl);
       onImageUploaded(publicUrl);
       toast.success('Image uploaded successfully!');
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Upload error:', error);
-      toast.error(error.message || 'Failed to upload image');
+      toast.error(getErrorMessage(error) || 'Failed to upload image');
     } finally {
       setUploading(false);
     }

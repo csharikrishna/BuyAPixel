@@ -16,17 +16,18 @@ import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { 
-  Loader2, 
-  Shield, 
-  FileText, 
-  Eye, 
-  Save, 
-  X, 
+import {
+  Loader2,
+  Shield,
+  FileText,
+  Eye,
+  Save,
+  X,
   Sparkles,
   Image as ImageIcon,
   Code
 } from 'lucide-react';
+import { getErrorMessage } from '@/lib/utils';
 
 const BlogAdmin = () => {
   const { user } = useAuth();
@@ -74,7 +75,7 @@ const BlogAdmin = () => {
 
     // Copy to clipboard
     navigator.clipboard.writeText(imageHtml);
-    
+
     // Also insert at cursor position if possible
     const textarea = document.getElementById('content') as HTMLTextAreaElement;
     if (textarea) {
@@ -88,7 +89,7 @@ const BlogAdmin = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.title.trim()) {
       toast.error('Please enter a title');
       return;
@@ -113,7 +114,7 @@ const BlogAdmin = () => {
         .map((tag) => tag.trim())
         .filter((tag) => tag);
 
-      const { error } = await supabase.from('blog_posts').insert({
+      const { error } = await supabase.from('blog_posts' as any).insert({
         title: formData.title,
         slug,
         excerpt: formData.excerpt || null,
@@ -136,13 +137,14 @@ const BlogAdmin = () => {
           : '💾 Blog post saved as draft!'
       );
       navigate('/blog');
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error creating blog post:', error);
-      
-      if (error.code === '23505') {
+
+      const errorMessage = getErrorMessage(error);
+      if ((error as any)?.code === '23505') {
         toast.error('A post with this slug already exists. Please use a different slug.');
       } else {
-        toast.error(error.message || 'Failed to create blog post');
+        toast.error(errorMessage || 'Failed to create blog post');
       }
     } finally {
       setIsLoading(false);
@@ -180,7 +182,7 @@ const BlogAdmin = () => {
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      
+
       <div className="container mx-auto px-4 py-8 max-w-7xl">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">

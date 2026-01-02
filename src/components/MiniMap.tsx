@@ -11,6 +11,7 @@ interface MiniMapProps {
   containerWidth: number;
   containerHeight: number;
   onViewportChange: (offset: { x: number; y: number }) => void;
+  pixelSize: number;
 }
 
 export const MiniMap = ({
@@ -21,6 +22,7 @@ export const MiniMap = ({
   containerWidth,
   containerHeight,
   onViewportChange,
+  pixelSize = 10,
 }: MiniMapProps) => {
   const isMobile = useIsMobile();
   const mapRef = useRef<HTMLDivElement>(null);
@@ -31,40 +33,46 @@ export const MiniMap = ({
 
   // Memoize scale calculations
   const { scale, scaledWidth, scaledHeight } = useMemo(() => {
-    const scaleX = miniMapSize / gridWidth;
-    const scaleY = miniMapSize / gridHeight;
+    // World dimensions in pixels
+    const worldWidth = gridWidth * pixelSize;
+    const worldHeight = gridHeight * pixelSize;
+
+    const scaleX = miniMapSize / worldWidth;
+    const scaleY = miniMapSize / worldHeight;
     const scale = Math.min(scaleX, scaleY);
 
     return {
       scale,
-      scaledWidth: Math.floor(gridWidth * scale),
-      scaledHeight: Math.floor(gridHeight * scale),
+      scaledWidth: Math.floor(worldWidth * scale),
+      scaledHeight: Math.floor(worldHeight * scale),
     };
-  }, [miniMapSize, gridWidth, gridHeight]);
+  }, [miniMapSize, gridWidth, gridHeight, pixelSize]);
 
   // Calculate Zones & Billboard
   const mapOverlayData = useMemo(() => {
-    const centerX = Math.floor(gridWidth / 2);
-    const centerY = Math.floor(gridHeight / 2);
-    
-    // Radii matching the main grid logic
-    const premiumRadius = Math.floor(gridWidth * 0.15);
-    const standardRadius = Math.floor(gridWidth * 0.30);
-    
-    // Billboard Dimensions (60x34 from config)
-    const billboardW = 60;
-    const billboardH = 34;
+    const centerX = Math.floor(gridWidth / 2) * pixelSize;
+    const centerY = Math.floor(gridHeight / 2) * pixelSize;
+
+    // Zone Sizes (Square) in World Pixels
+    const goldSize = 60 * pixelSize;
+    const premiumSize = 120 * pixelSize;
+
+    // Billboard Dimensions
+    const billboardW = 60 * pixelSize;
+    const billboardH = 34 * pixelSize;
 
     return {
-      premium: {
-        left: Math.floor((centerX - premiumRadius) * scale),
-        top: Math.floor((centerY - premiumRadius) * scale),
-        size: Math.floor(premiumRadius * 2 * scale),
+      premium: { // Outer Blue Box
+        left: Math.floor((centerX - premiumSize / 2) * scale),
+        top: Math.floor((centerY - premiumSize / 2) * scale),
+        width: Math.floor(premiumSize * scale),
+        height: Math.floor(premiumSize * scale),
       },
-      standard: {
-        left: Math.floor((centerX - standardRadius) * scale),
-        top: Math.floor((centerY - standardRadius) * scale),
-        size: Math.floor(standardRadius * 2 * scale),
+      gold: { // Inner Gold Box
+        left: Math.floor((centerX - goldSize / 2) * scale),
+        top: Math.floor((centerY - goldSize / 2) * scale),
+        width: Math.floor(goldSize * scale),
+        height: Math.floor(goldSize * scale),
       },
       billboard: {
         left: Math.floor((centerX - billboardW / 2) * scale),
@@ -73,7 +81,7 @@ export const MiniMap = ({
         height: Math.floor(billboardH * scale),
       }
     };
-  }, [gridWidth, gridHeight, scale]);
+  }, [gridWidth, gridHeight, scale, pixelSize]);
 
   // Memoize viewport indicator
   const viewportIndicator = useMemo(() => {
@@ -145,7 +153,7 @@ export const MiniMap = ({
     <div
       className={cn(
         "absolute bg-background/95 border border-border/80 rounded-xl shadow-2xl z-40 transition-all duration-300 hover:shadow-primary/10 hover:border-primary/40",
-        isMobile ? "bottom-20 right-2 p-1.5" : "bottom-6 right-6 p-3"
+        isMobile ? "bottom-20 right-2 p-1.5" : "bottom-24 right-6 p-3"
       )}
       style={{
         ...(isMobile ? {} : { backdropFilter: "blur(12px)" }),
@@ -170,8 +178,8 @@ export const MiniMap = ({
       <div
         ref={mapRef}
         className={cn(
-            "relative border border-border/60 rounded bg-muted overflow-hidden cursor-crosshair",
-            isDragging ? "cursor-grabbing" : "cursor-crosshair"
+          "relative border border-border/60 rounded bg-muted overflow-hidden cursor-crosshair",
+          isDragging ? "cursor-grabbing" : "cursor-crosshair"
         )}
         style={{
           width: scaledWidth,
@@ -196,41 +204,41 @@ export const MiniMap = ({
 
         {/* --- ZONES --- */}
 
-        {/* Standard Zone (Blue Ring) */}
+        {/* Standard/Premium Zone (Blue Box) */}
         <div
-          className="absolute rounded-full border border-blue-500/30 pointer-events-none"
+          className="absolute rounded-sm border border-blue-500/30 pointer-events-none"
           style={{
-            left: mapOverlayData.standard.left,
-            top: mapOverlayData.standard.top,
-            width: mapOverlayData.standard.size,
-            height: mapOverlayData.standard.size,
+            left: mapOverlayData.premium.left,
+            top: mapOverlayData.premium.top,
+            width: mapOverlayData.premium.width,
+            height: mapOverlayData.premium.height,
             backgroundColor: "hsl(var(--primary) / 0.05)",
           }}
         />
 
-        {/* Premium Zone (Gold Ring) */}
+        {/* Gold Zone (Gold Box) */}
         <div
-          className="absolute rounded-full border border-yellow-500/40 pointer-events-none"
+          className="absolute rounded-sm border border-yellow-500/40 pointer-events-none"
           style={{
-            left: mapOverlayData.premium.left,
-            top: mapOverlayData.premium.top,
-            width: mapOverlayData.premium.size,
-            height: mapOverlayData.premium.size,
+            left: mapOverlayData.gold.left,
+            top: mapOverlayData.gold.top,
+            width: mapOverlayData.gold.width,
+            height: mapOverlayData.gold.height,
             backgroundColor: "hsl(48 96% 53% / 0.1)",
           }}
         />
 
         {/* Billboard (Center Rect) */}
-        <div 
-            className="absolute bg-black border border-yellow-500/60 pointer-events-none flex items-center justify-center"
-            style={{
-                left: mapOverlayData.billboard.left,
-                top: mapOverlayData.billboard.top,
-                width: mapOverlayData.billboard.width,
-                height: mapOverlayData.billboard.height,
-            }}
+        <div
+          className="absolute bg-black border border-yellow-500/60 pointer-events-none flex items-center justify-center"
+          style={{
+            left: mapOverlayData.billboard.left,
+            top: mapOverlayData.billboard.top,
+            width: mapOverlayData.billboard.width,
+            height: mapOverlayData.billboard.height,
+          }}
         >
-            {!isMobile && <div className="w-1 h-1 bg-yellow-500 rounded-full" />}
+          {!isMobile && <div className="w-1 h-1 bg-yellow-500 rounded-full" />}
         </div>
 
 
@@ -248,12 +256,12 @@ export const MiniMap = ({
             boxShadow: "0 0 0 9999px rgba(0, 0, 0, 0.4)", // Dim everything outside viewport
           }}
         >
-            {/* Center Crosshair */}
-            {!isMobile && viewportIndicator.width > 15 && (
-                 <div className="absolute inset-0 flex items-center justify-center opacity-50">
-                    <Crosshair className="w-3 h-3 text-primary" />
-                 </div>
-            )}
+          {/* Center Crosshair */}
+          {!isMobile && viewportIndicator.width > 15 && (
+            <div className="absolute inset-0 flex items-center justify-center opacity-50">
+              <Crosshair className="w-3 h-3 text-primary" />
+            </div>
+          )}
         </div>
       </div>
 
@@ -265,7 +273,7 @@ export const MiniMap = ({
         )}
       >
         <div className="flex items-center gap-1 text-muted-foreground">
-            {!isMobile && <span>ZOOM</span>}
+          {!isMobile && <span>ZOOM</span>}
         </div>
         <span className="text-foreground font-bold tabular-nums">
           {Math.round(zoom * 100)}%

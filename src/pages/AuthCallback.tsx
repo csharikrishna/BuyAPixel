@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Loader2, CheckCircle2, AlertCircle, Mail, RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
+import { getErrorMessage } from '@/lib/utils';
 
 type AuthStatus =
   | 'loading'
@@ -30,10 +31,10 @@ const AuthCallback = () => {
   const handleCallback = async () => {
     try {
       console.log('🔐 Auth callback started');
-      
+
       // Step 1: Check for existing valid session FIRST
       const { data: { session: existingSession } } = await supabase.auth.getSession();
-      
+
       if (existingSession) {
         console.log('✅ Valid session already exists');
         await completeAuthentication(existingSession, 'signin');
@@ -78,10 +79,10 @@ const AuthCallback = () => {
         variant: 'destructive',
       });
       setTimeout(() => navigate('/signin', { replace: true }), 3000);
-      
-    } catch (error: any) {
+
+    } catch (error: unknown) {
       console.error('❌ Unexpected error:', error);
-      handleAuthError('An unexpected error occurred');
+      handleAuthError(getErrorMessage(error) || 'An unexpected error occurred');
     }
   };
 
@@ -95,7 +96,7 @@ const AuthCallback = () => {
 
       if (error) {
         console.error('❌ Token verification failed:', error);
-        
+
         if (error.message.includes('expired') || error.message.includes('invalid')) {
           handleExpiredLink();
         } else {
@@ -106,13 +107,13 @@ const AuthCallback = () => {
 
       if (data?.session) {
         console.log('✅ Session created via token verification');
-        const authType = type === 'recovery' ? 'recovery' : 
-                        type === 'signup' ? 'email_confirmation' : 'signin';
+        const authType = type === 'recovery' ? 'recovery' :
+          type === 'signup' ? 'email_confirmation' : 'signin';
         await completeAuthentication(data.session, authType);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('❌ Token verification error:', err);
-      handleAuthError('Failed to verify authentication token');
+      handleAuthError(getErrorMessage(err) || 'Failed to verify authentication token');
     }
   };
 
@@ -135,7 +136,7 @@ const AuthCallback = () => {
 
       // Set success status
       setStatus('success');
-      
+
       const messages = {
         email_confirmation: {
           title: 'Email Verified! 🎉',
@@ -152,7 +153,7 @@ const AuthCallback = () => {
       };
 
       const message = messages[type as keyof typeof messages] || messages.signin;
-      
+
       toast({
         title: message.title,
         description: message.description,
@@ -161,7 +162,7 @@ const AuthCallback = () => {
       // Redirect after delay
       const redirectTo = searchParams.get('redirect') || '/';
       setTimeout(() => navigate(redirectTo, { replace: true }), 1500);
-      
+
     } catch (err) {
       console.error('❌ Error completing authentication:', err);
       handleAuthError('Failed to complete sign in');

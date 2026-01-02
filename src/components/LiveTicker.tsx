@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo, CSSProperties } from 'react';
 import { Pause, Play, Eye, ChevronUp, Maximize2, GripVertical } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
+import { useLayout } from '@/contexts/LayoutContext';
+
 
 // Constants
 const ANIMATION_DURATION = 50; // seconds
@@ -12,6 +14,7 @@ const VIEWER_UPDATE_MAX = 7000;
 const RESIZE_DEBOUNCE_MS = 150;
 const MOBILE_BREAKPOINT = 768;
 
+
 interface TickerMessage {
   id: number;
   message: string;
@@ -19,32 +22,46 @@ interface TickerMessage {
   type: 'buy' | 'resale' | 'premium';
 }
 
+
 interface Position {
   x: number;
   y: number;
 }
 
-const LiveTicker: React.FC = () => {
+
+interface LiveTickerProps {
+  isPurchaseOpen?: boolean;
+}
+
+const safeJsonParse = <T,>(value: string | null, fallback: T): T => {
+  if (!value) return fallback;
+  try {
+    return JSON.parse(value);
+  } catch (e) {
+    console.warn("Failed to parse localStorage value:", e);
+    return fallback;
+  }
+};
+
+
+const LiveTicker: React.FC<LiveTickerProps> = ({ isPurchaseOpen = false }) => {
   const location = useLocation();
-  
+  const { isTickerVisible } = useLayout();
+
   // Load minimized state and position from localStorage
   const [isMinimized, setIsMinimized] = useState(() => {
     const saved = localStorage.getItem('ticker-minimized');
     return saved === 'true';
   });
 
+
   const [position, setPosition] = useState<Position>(() => {
-    const saved = localStorage.getItem('ticker-position');
-    if (saved) {
-      return JSON.parse(saved);
-    }
-    // Default to bottom-left area
-    return { 
-      x: 20, 
-      y: window.innerHeight - 80 
-    };
+    return safeJsonParse(localStorage.getItem('ticker-position'), {
+      x: 20,
+      y: window.innerHeight - 80
+    });
   });
-  
+
   const [messages, setMessages] = useState<TickerMessage[]>([
     { id: 1, message: "TechCorp purchased 25 pixels for ₹2,475", emoji: "🔥", type: 'buy' },
     { id: 2, message: "StartupHub listed 10 pixels on marketplace", emoji: "🚀", type: 'resale' },
@@ -53,17 +70,19 @@ const LiveTicker: React.FC = () => {
     { id: 5, message: "MarketingPro bought premium pixels for ₹1,980", emoji: "🎯", type: 'premium' }
   ]);
 
+
   const [isPaused, setIsPaused] = useState(false);
   const [viewerCount, setViewerCount] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
   const [isHovering, setIsHovering] = useState(false);
   const [announcement, setAnnouncement] = useState('');
   const [isDragging, setIsDragging] = useState(false);
-  
+
   const scrollRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<HTMLDivElement>(null);
   const dragStartPos = useRef<Position>({ x: 0, y: 0 });
   const elementStartPos = useRef<Position>({ x: 0, y: 0 });
+
 
   const newMessagesPool = useMemo(() => [
     { message: "Anonymous bought 8 pixels for ₹792", emoji: "🔥", type: 'buy' as const },
@@ -76,45 +95,48 @@ const LiveTicker: React.FC = () => {
     { message: "DigitalAgency claimed 30 pixels", emoji: "🚀", type: 'buy' as const },
   ], []);
 
+
   // --- DRAG HANDLERS ---
+
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     if (!isMinimized || !dragRef.current) return;
-    
-    // preventDefault is okay here for mouse events
-    e.preventDefault(); 
+
+    e.preventDefault();
     setIsDragging(true);
-    
+
     dragStartPos.current = {
       x: e.clientX,
       y: e.clientY
     };
-    
+
     elementStartPos.current = {
       x: position.x,
       y: position.y
     };
   }, [isMinimized, position]);
 
+
   const handleMouseMove = useCallback((e: MouseEvent) => {
     if (!isDragging || !dragRef.current) return;
-    
+
     e.preventDefault();
-    
+
     const deltaX = e.clientX - dragStartPos.current.x;
     const deltaY = e.clientY - dragStartPos.current.y;
-    
+
     let newX = elementStartPos.current.x + deltaX;
     let newY = elementStartPos.current.y + deltaY;
-    
+
     const maxX = window.innerWidth - dragRef.current.offsetWidth;
     const maxY = window.innerHeight - dragRef.current.offsetHeight;
-    
+
     newX = Math.max(0, Math.min(newX, maxX));
     newY = Math.max(0, Math.min(newY, maxY));
-    
+
     setPosition({ x: newX, y: newY });
   }, [isDragging]);
+
 
   const handleMouseUp = useCallback(() => {
     if (isDragging) {
@@ -123,54 +145,52 @@ const LiveTicker: React.FC = () => {
     }
   }, [isDragging, position]);
 
-  // --- TOUCH HANDLERS (FIXED) ---
+
+  // --- TOUCH HANDLERS ---
+
 
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     if (!isMinimized || !dragRef.current) return;
-    
-    // FIX: Removed e.preventDefault() here. 
-    // The CSS 'touch-action: none' handles the scroll blocking.
-    // Calling preventDefault on a passive React listener causes the crash.
-    
+
     const touch = e.touches[0];
     setIsDragging(true);
-    
+
     dragStartPos.current = {
       x: touch.clientX,
       y: touch.clientY
     };
-    
+
     elementStartPos.current = {
       x: position.x,
       y: position.y
     };
   }, [isMinimized, position]);
 
+
   const handleTouchMove = useCallback((e: TouchEvent) => {
     if (!isDragging || !dragRef.current) return;
-    
-    // FIX: We can preventDefault here because this listener 
-    // is attached via addEventListener with { passive: false } below
+
     if (e.cancelable) {
       e.preventDefault();
     }
-    
+
     const touch = e.touches[0];
-    
+
     const deltaX = touch.clientX - dragStartPos.current.x;
     const deltaY = touch.clientY - dragStartPos.current.y;
-    
+
     let newX = elementStartPos.current.x + deltaX;
     let newY = elementStartPos.current.y + deltaY;
-    
+
     const maxX = window.innerWidth - dragRef.current.offsetWidth;
     const maxY = window.innerHeight - dragRef.current.offsetHeight;
-    
+
     newX = Math.max(0, Math.min(newX, maxX));
     newY = Math.max(0, Math.min(newY, maxY));
-    
+
     setPosition({ x: newX, y: newY });
   }, [isDragging]);
+
 
   const handleTouchEnd = useCallback(() => {
     if (isDragging) {
@@ -179,19 +199,18 @@ const LiveTicker: React.FC = () => {
     }
   }, [isDragging, position]);
 
+
   // Attach global listeners for drag operations
   useEffect(() => {
     if (isDragging) {
       document.addEventListener('mousemove', handleMouseMove);
       document.addEventListener('mouseup', handleMouseUp);
-      // Important: { passive: false } allows us to prevent scrolling during the drag
       document.addEventListener('touchmove', handleTouchMove, { passive: false });
       document.addEventListener('touchend', handleTouchEnd);
-      
-      // Prevent text selection during drag
+
       document.body.style.userSelect = 'none';
       document.body.style.webkitUserSelect = 'none';
-      
+
       return () => {
         document.removeEventListener('mousemove', handleMouseMove);
         document.removeEventListener('mouseup', handleMouseUp);
@@ -203,15 +222,16 @@ const LiveTicker: React.FC = () => {
     }
   }, [isDragging, handleMouseMove, handleMouseUp, handleTouchMove, handleTouchEnd]);
 
+
   // Update position on window resize to keep within bounds
   useEffect(() => {
     const handleResize = () => {
       if (!dragRef.current || !isMinimized) return;
-      
+
       setPosition(prev => {
         const maxX = window.innerWidth - dragRef.current!.offsetWidth;
         const maxY = window.innerHeight - dragRef.current!.offsetHeight;
-        
+
         return {
           x: Math.max(0, Math.min(prev.x, maxX)),
           y: Math.max(0, Math.min(prev.y, maxY))
@@ -219,28 +239,31 @@ const LiveTicker: React.FC = () => {
       });
     };
 
+
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, [isMinimized]);
 
+
   // --- VIEWER COUNT LOGIC ---
+
 
   const getViewerRangeByHour = useCallback((): [number, number] => {
     const now = new Date();
     const hour = now.getHours();
     const day = now.getDay();
     const minute = now.getMinutes();
-    
+
     const weekNumber = Math.floor(Date.now() / (7 * 24 * 60 * 60 * 1000));
     const viralDay = weekNumber % 7;
     const isViralDay = day === viralDay;
-    
+
     const isWeekend = day === 0 || day === 6;
     const weekendMultiplier = isWeekend ? 1.3 : 1;
-    
+
     let baseMin = 100;
     let baseMax = 300;
-    
+
     if (hour >= 0 && hour < 6) {
       baseMin = 50;
       baseMax = 200;
@@ -265,34 +288,36 @@ const LiveTicker: React.FC = () => {
       baseMin = 150;
       baseMax = 400 - Math.floor((hour - 22) * 50);
     }
-    
+
     baseMin = Math.floor(baseMin * weekendMultiplier);
     baseMax = Math.floor(baseMax * weekendMultiplier);
-    
+
     const minuteVariance = Math.floor((minute / 60) * 50);
     baseMin += minuteVariance;
-    
+
     return [baseMin, baseMax];
   }, []);
+
 
   // Debounced resize handler for mobile check
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth <= MOBILE_BREAKPOINT);
-    
+
     let timeout: NodeJS.Timeout;
     const debouncedResize = () => {
       clearTimeout(timeout);
       timeout = setTimeout(checkMobile, RESIZE_DEBOUNCE_MS);
     };
-    
+
     checkMobile();
     window.addEventListener('resize', debouncedResize);
-    
+
     return () => {
       clearTimeout(timeout);
       window.removeEventListener('resize', debouncedResize);
     };
   }, []);
+
 
   // Sync minimized state across tabs
   useEffect(() => {
@@ -301,13 +326,14 @@ const LiveTicker: React.FC = () => {
         setIsMinimized(e.newValue === 'true');
       }
       if (e.key === 'ticker-position' && e.newValue !== null) {
-        setPosition(JSON.parse(e.newValue));
+        setPosition(safeJsonParse(e.newValue, { x: 20, y: window.innerHeight - 80 }));
       }
     };
-    
+
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
+
 
   // Initialize viewer count
   useEffect(() => {
@@ -316,15 +342,16 @@ const LiveTicker: React.FC = () => {
     setViewerCount(initialCount);
   }, [getViewerRangeByHour]);
 
+
   // Update viewer count periodically
   useEffect(() => {
     const updateViewers = () => {
       setViewerCount(prev => {
         const [min, max] = getViewerRangeByHour();
-        
+
         const rand = Math.random();
         let change;
-        
+
         if (rand < 0.7) {
           change = Math.floor(Math.random() * 26) - 10;
         } else if (rand < 0.9) {
@@ -332,35 +359,38 @@ const LiveTicker: React.FC = () => {
         } else {
           change = Math.floor(Math.random() * 81) - 30;
         }
-        
+
         let newCount = prev + change;
-        
+
         const softMin = min - 20;
         const softMax = max + 30;
-        
+
         newCount = Math.max(softMin, Math.min(softMax, newCount));
-        
+
         if (newCount < min) {
           newCount += Math.floor((min - newCount) * 0.3);
         } else if (newCount > max) {
           newCount -= Math.floor((newCount - max) * 0.3);
         }
-        
+
         newCount = Math.max(50, newCount);
-        
+
         return Math.floor(newCount);
       });
     };
 
+
     const randomInterval = Math.floor(Math.random() * (VIEWER_UPDATE_MAX - VIEWER_UPDATE_MIN)) + VIEWER_UPDATE_MIN;
     const timer = setTimeout(updateViewers, randomInterval);
-    
+
     return () => clearTimeout(timer);
   }, [viewerCount, getViewerRangeByHour]);
+
 
   // Add new messages periodically
   useEffect(() => {
     if (isPaused) return;
+
 
     const addMessage = () => {
       const randomMsg = newMessagesPool[Math.floor(Math.random() * newMessagesPool.length)];
@@ -370,11 +400,13 @@ const LiveTicker: React.FC = () => {
       });
     };
 
+
     const interval = Math.floor(Math.random() * (MESSAGE_INTERVAL_MAX - MESSAGE_INTERVAL_MIN)) + MESSAGE_INTERVAL_MIN;
     const timer = setInterval(addMessage, interval);
-    
+
     return () => clearInterval(timer);
   }, [isPaused, newMessagesPool]);
+
 
   // Update announcement for screen readers
   useEffect(() => {
@@ -384,9 +416,11 @@ const LiveTicker: React.FC = () => {
     }
   }, [messages, isPaused]);
 
+
   const togglePause = useCallback(() => {
     setIsPaused(prev => !prev);
   }, []);
+
 
   const toggleMinimized = useCallback(() => {
     setIsMinimized(prev => {
@@ -396,12 +430,14 @@ const LiveTicker: React.FC = () => {
     });
   }, []);
 
+
   const tripledMessages = useMemo(() => {
     return [...messages, ...messages, ...messages];
   }, [messages]);
 
+
   const getStrongColor = useCallback((type: string) => {
-    switch(type) {
+    switch (type) {
       case 'premium': return '#8b5cf6';
       case 'buy': return '#10b981';
       case 'resale': return '#f59e0b';
@@ -409,7 +445,8 @@ const LiveTicker: React.FC = () => {
     }
   }, []);
 
-  const styles: { [key: string]: CSSProperties } = {
+
+  const styles: { [key: string]: CSSProperties } = useMemo(() => ({
     wrapper: {
       position: 'fixed',
       top: isMinimized ? `${position.y}px` : 'auto',
@@ -430,7 +467,7 @@ const LiveTicker: React.FC = () => {
       borderStyle: 'solid',
       borderColor: isDragging ? 'rgba(99, 102, 241, 0.4)' : 'rgba(0, 0, 0, 0.08)',
       borderRadius: isMinimized ? '24px' : (isMobile ? '0' : '99px'),
-      boxShadow: isMinimized 
+      boxShadow: isMinimized
         ? (isDragging ? '0 20px 60px rgba(99, 102, 241, 0.3), 0 0 0 1px rgba(99, 102, 241, 0.2)' : '0 8px 32px rgba(0,0,0,0.12)')
         : '0 -2px 20px rgba(0,0,0,0.08)',
       display: 'flex',
@@ -444,9 +481,7 @@ const LiveTicker: React.FC = () => {
       cursor: isMinimized ? (isDragging ? 'grabbing' : 'grab') : 'default',
       userSelect: 'none',
       WebkitUserSelect: 'none',
-      // FIX: This CSS property is crucial. It tells the browser 
-      // "don't scroll the page when touching this element".
-      touchAction: isMinimized ? 'none' : 'auto', 
+      touchAction: isMinimized ? 'none' : 'auto',
     },
     minimizedBadge: {
       display: 'flex',
@@ -615,13 +650,14 @@ const LiveTicker: React.FC = () => {
       height: '1px',
       overflow: 'hidden',
     },
-  };
+  }), [isMinimized, position, isMobile, isDragging, isHovering, isPaused]);
+
 
   // Inject animations
   useEffect(() => {
     const styleId = 'live-ticker-animations';
     if (document.getElementById(styleId)) return;
-    
+
     const style = document.createElement('style');
     style.id = styleId;
     style.textContent = `
@@ -635,34 +671,39 @@ const LiveTicker: React.FC = () => {
           opacity: 0.8;
         }
       }
-      
+
       @keyframes scrollTicker {
         0% { transform: translateX(0); }
         100% { transform: translateX(-33.33%); }
       }
     `;
     document.head.appendChild(style);
-    
+
     return () => {
       const elem = document.getElementById(styleId);
       if (elem) document.head.removeChild(elem);
     };
   }, []);
 
-  const excludedPaths = ['/signin', '/signup', '/login', '/forgot-password', '/reset-password', '/profile', '/terms', '/privacy' , '/admin'];
-  const shouldHideTicker = excludedPaths.some(path => 
+
+  // Check if ticker should be hidden
+  const excludedPaths = ['/signin', '/signup', '/login', '/forgot-password', '/reset-password', '/profile', '/terms', '/privacy', '/admin'];
+  const shouldHideTicker = excludedPaths.some(path =>
     location.pathname.toLowerCase().includes(path.toLowerCase())
   );
 
-  if (shouldHideTicker) {
+
+  // Hide ticker if on excluded path OR if purchase preview is open OR if globally hidden
+  if (shouldHideTicker || isPurchaseOpen || !isTickerVisible) {
     return null;
   }
+
 
   // Minimized view with drag
   if (isMinimized) {
     return (
       <div style={styles.wrapper}>
-        <div 
+        <div
           ref={dragRef}
           style={styles.glassPanel}
           onMouseDown={handleMouseDown}
@@ -685,19 +726,21 @@ const LiveTicker: React.FC = () => {
               <GripVertical size={16} />
             </span>
 
+
             <div style={styles.liveSection}>
               <span style={styles.liveDot} aria-hidden="true"></span>
               <span>LIVE</span>
             </div>
-            
+
             <span style={styles.divider}></span>
-            
+
             <div style={styles.viewerSection}>
               <Eye size={14} aria-hidden="true" />
               <span style={styles.viewerNumber}>{viewerCount.toLocaleString()}</span>
             </div>
 
-            <span 
+
+            <span
               style={styles.expandIcon}
               onClick={(e) => {
                 e.stopPropagation();
@@ -716,23 +759,24 @@ const LiveTicker: React.FC = () => {
     );
   }
 
+
   // Full view
   return (
     <div style={styles.wrapper}>
       <div style={styles.glassPanel}>
-        
+
         {/* Screen reader announcement region */}
-        <div 
-          role="status" 
-          aria-live="polite" 
+        <div
+          role="status"
+          aria-live="polite"
           aria-atomic="true"
           style={styles.srOnly}
         >
           {announcement}
         </div>
-        
+
         <div style={styles.sidebar}>
-          <div 
+          <div
             style={styles.liveBadgeWithCount}
             title={`${viewerCount} people viewing now`}
           >
@@ -740,18 +784,18 @@ const LiveTicker: React.FC = () => {
               <span style={styles.liveDot} aria-hidden="true"></span>
               <span style={{ fontWeight: 800, letterSpacing: '0.05em' }}>LIVE</span>
             </div>
-            
+
             <span style={styles.divider}></span>
-            
+
             <div style={styles.viewerSection}>
               <Eye size={isMobile ? 12 : 14} aria-hidden="true" />
               <span style={styles.viewerNumber}>{viewerCount.toLocaleString()}</span>
             </div>
           </div>
-          
+
           <div style={styles.controls}>
             {!isMobile && (
-              <button 
+              <button
                 style={styles.iconBtn}
                 onClick={togglePause}
                 aria-label={isPaused ? "Resume ticker" : "Pause ticker"}
@@ -768,8 +812,8 @@ const LiveTicker: React.FC = () => {
                 {isPaused ? <Play size={14} /> : <Pause size={14} />}
               </button>
             )}
-            
-            <button 
+
+            <button
               style={styles.minimizeBtn}
               onClick={toggleMinimized}
               aria-label="Minimize ticker"
@@ -789,8 +833,9 @@ const LiveTicker: React.FC = () => {
           </div>
         </div>
 
+
         <div style={styles.trackContainer} role="region" aria-label="Live activity feed">
-          <div 
+          <div
             style={{
               ...styles.track,
               animation: isPaused ? 'none' : `scrollTicker ${ANIMATION_DURATION}s linear infinite`,
@@ -798,15 +843,15 @@ const LiveTicker: React.FC = () => {
             ref={scrollRef}
           >
             {tripledMessages.map((msg, index) => (
-              <div 
-                key={`${msg.id}-${index}`} 
+              <div
+                key={`${msg.id}-${index}`}
                 style={styles.card}
               >
                 <span style={styles.emoji} aria-hidden="true">{msg.emoji}</span>
                 <span style={styles.cardText}>
-                  {msg.message.split(' ').map((word, i) => 
-                    word.includes('₹') || word.match(/\d+/) 
-                      ? <strong key={i} style={{ fontWeight: 700, color: getStrongColor(msg.type) }}>{word} </strong> 
+                  {msg.message.split(' ').map((word, i) =>
+                    word.includes('₹') || word.match(/\d+/)
+                      ? <strong key={i} style={{ fontWeight: 700, color: getStrongColor(msg.type) }}>{word} </strong>
                       : word + ' '
                   )}
                 </span>
@@ -815,9 +860,11 @@ const LiveTicker: React.FC = () => {
           </div>
         </div>
 
+
       </div>
     </div>
   );
 };
+
 
 export default React.memo(LiveTicker);

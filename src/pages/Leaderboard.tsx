@@ -14,14 +14,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { 
-  Trophy, Users, DollarSign, Clock, AlertCircle, TrendingUp, 
+import {
+  Trophy, Users, DollarSign, Clock, AlertCircle, TrendingUp,
   Award, Medal, Search, Filter, Download, ChevronUp, ChevronDown,
   Minus, Star, Crown, Sparkles, Target, Zap
 } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import { cn } from "@/lib/utils";
+import { cn, getErrorMessage } from "@/lib/utils";
 import { RealtimeChannel } from "@supabase/supabase-js";
 
 interface LeaderboardUser {
@@ -101,7 +101,7 @@ const Leaderboard = () => {
     averagePrice: 0,
     recentGrowth: 0
   });
-  
+
   const [searchQuery, setSearchQuery] = useState("");
   const [timePeriod, setTimePeriod] = useState<TimePeriod>('all');
   const [activeTab, setActiveTab] = useState("pixels");
@@ -168,6 +168,7 @@ const Leaderboard = () => {
               user_id: userId,
               full_name: profile?.full_name || null,
               avatar_url: profile?.avatar_url || null,
+              id: userId,
               pixel_count: 0,
               total_spent: 0
             };
@@ -180,6 +181,7 @@ const Leaderboard = () => {
               user_id: userId,
               full_name: profile?.full_name || null,
               avatar_url: profile?.avatar_url || null,
+              id: userId,
               pixel_count: 0,
               total_spent: 0
             };
@@ -190,7 +192,7 @@ const Leaderboard = () => {
         const sortedByPixels = Object.values(pixelCounts)
           .sort((a, b) => b.pixel_count - a.pixel_count)
           .slice(0, 100);
-        
+
         const sortedBySpending = Object.values(spendingTotals)
           .sort((a, b) => b.total_spent - a.total_spent)
           .slice(0, 100);
@@ -202,7 +204,7 @@ const Leaderboard = () => {
         if (user) {
           const pixelRankIndex = sortedByPixels.findIndex(u => u.user_id === user.id);
           const spendingRankIndex = sortedBySpending.findIndex(u => u.user_id === user.id);
-          
+
           setUserRank({
             pixelRank: pixelRankIndex >= 0 ? pixelRankIndex + 1 : null,
             spendingRank: spendingRankIndex >= 0 ? spendingRankIndex + 1 : null
@@ -239,9 +241,9 @@ const Leaderboard = () => {
         });
       }
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error fetching leaderboard data:', error);
-      setError(error.message || 'Failed to load leaderboard data');
+      setError(getErrorMessage(error) || 'Failed to load leaderboard data');
     } finally {
       setLoading(false);
     }
@@ -280,21 +282,21 @@ const Leaderboard = () => {
   // Filtered data
   const filteredPixelLeaders = useMemo(() => {
     if (!searchQuery) return topByPixels;
-    return topByPixels.filter(user => 
+    return topByPixels.filter(user =>
       user.full_name?.toLowerCase().includes(searchQuery.toLowerCase())
     );
   }, [topByPixels, searchQuery]);
 
   const filteredSpendingLeaders = useMemo(() => {
     if (!searchQuery) return topBySpending;
-    return topBySpending.filter(user => 
+    return topBySpending.filter(user =>
       user.full_name?.toLowerCase().includes(searchQuery.toLowerCase())
     );
   }, [topBySpending, searchQuery]);
 
   const filteredRecentPurchases = useMemo(() => {
     if (!searchQuery) return recentPurchases;
-    return recentPurchases.filter(purchase => 
+    return recentPurchases.filter(purchase =>
       purchase.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       purchase.alt_text?.toLowerCase().includes(searchQuery.toLowerCase())
     );
@@ -361,7 +363,7 @@ const Leaderboard = () => {
     const dataToExport = activeTab === 'pixels' ? topByPixels : topBySpending;
     const csvContent = [
       ['Rank', 'Name', activeTab === 'pixels' ? 'Pixels' : 'Total Spent'].join(','),
-      ...dataToExport.map((user, index) => 
+      ...dataToExport.map((user, index) =>
         [
           index + 1,
           user.full_name || 'Anonymous',
@@ -408,7 +410,7 @@ const Leaderboard = () => {
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-background to-muted/20">
       <Header />
-      
+
       <main className="flex-1 container mx-auto px-4 py-12 lg:py-16">
         {/* Header Section */}
         <div className="text-center mb-12">
@@ -483,7 +485,7 @@ const Leaderboard = () => {
                   </div>
                 </CardContent>
               </Card>
-              
+
               <Card className="border-success/10 hover:border-success/30 transition-all duration-300 hover:shadow-lg">
                 <CardContent className="p-6 text-center">
                   <div className="flex items-center justify-center w-12 h-12 rounded-full bg-success/10 mx-auto mb-3">
@@ -599,20 +601,20 @@ const Leaderboard = () => {
                       Array(10).fill(0).map((_, i) => <LeaderboardRowSkeleton key={i} />)
                     ) : filteredPixelLeaders.length > 0 ? (
                       filteredPixelLeaders.map((user, index) => (
-                        <div 
-                          key={user.user_id} 
+                        <div
+                          key={user.user_id}
                           className={cn(
                             "flex items-center justify-between p-4 rounded-lg border transition-all duration-200 group",
-                            index < 3 
-                              ? 'bg-gradient-to-r from-primary/5 to-accent/5 border-primary/20 hover:border-primary/40 hover:shadow-md' 
+                            index < 3
+                              ? 'bg-gradient-to-r from-primary/5 to-accent/5 border-primary/20 hover:border-primary/40 hover:shadow-md'
                               : 'bg-card hover:bg-accent/5',
                             user.user_id === user?.id && 'ring-2 ring-primary'
                           )}
                         >
                           <div className="flex items-center gap-3 flex-1 min-w-0">
                             <div className="relative flex-shrink-0">
-                              <Badge 
-                                variant={getRankBadgeVariant(index)} 
+                              <Badge
+                                variant={getRankBadgeVariant(index)}
                                 className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm"
                               >
                                 {index + 1}
@@ -680,20 +682,20 @@ const Leaderboard = () => {
                       Array(10).fill(0).map((_, i) => <LeaderboardRowSkeleton key={i} />)
                     ) : filteredSpendingLeaders.length > 0 ? (
                       filteredSpendingLeaders.map((user, index) => (
-                        <div 
-                          key={user.user_id} 
+                        <div
+                          key={user.user_id}
                           className={cn(
                             "flex items-center justify-between p-4 rounded-lg border transition-all duration-200 group",
-                            index < 3 
-                              ? 'bg-gradient-to-r from-success/5 to-primary/5 border-success/20 hover:border-success/40 hover:shadow-md' 
+                            index < 3
+                              ? 'bg-gradient-to-r from-success/5 to-primary/5 border-success/20 hover:border-success/40 hover:shadow-md'
                               : 'bg-card hover:bg-accent/5',
                             user.user_id === user?.id && 'ring-2 ring-success'
                           )}
                         >
                           <div className="flex items-center gap-3 flex-1 min-w-0">
                             <div className="relative flex-shrink-0">
-                              <Badge 
-                                variant={getRankBadgeVariant(index)} 
+                              <Badge
+                                variant={getRankBadgeVariant(index)}
                                 className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm"
                               >
                                 {index + 1}
@@ -760,15 +762,15 @@ const Leaderboard = () => {
                       Array(10).fill(0).map((_, i) => <LeaderboardRowSkeleton key={i} />)
                     ) : filteredRecentPurchases.length > 0 ? (
                       filteredRecentPurchases.map((purchase) => (
-                        <div 
-                          key={purchase.id} 
+                        <div
+                          key={purchase.id}
                           className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent/5 transition-all duration-200 hover:shadow-sm group"
                         >
                           <div className="flex items-center gap-3 flex-1 min-w-0">
                             <div className="w-12 h-12 rounded border-2 border-border bg-muted flex items-center justify-center overflow-hidden flex-shrink-0 group-hover:scale-105 transition-transform">
                               {purchase.image_url ? (
-                                <img 
-                                  src={purchase.image_url} 
+                                <img
+                                  src={purchase.image_url}
                                   alt={purchase.alt_text || `Pixel (${purchase.x}, ${purchase.y})`}
                                   className="w-full h-full object-cover"
                                   loading="lazy"

@@ -12,6 +12,7 @@ import Profile from "./pages/Profile";
 import BuyPixels from "./pages/BuyPixels";
 import Leaderboard from "./pages/Leaderboard";
 import Contact from "./pages/Contact";
+import Help from "./pages/Help";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import MarketplacePage from "./pages/MarketplacePage";
@@ -24,6 +25,7 @@ import BlogPost from "./pages/BlogPost";
 import BlogAdmin from "./pages/BlogAdmin";
 import Canvas from "./pages/Canvas";
 import LiveTicker from "./components/LiveTicker";
+import { LayoutProvider } from "./contexts/LayoutContext";
 
 const queryClient = new QueryClient();
 
@@ -31,47 +33,50 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <HelmetProvider>
       <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          {/* Global LiveTicker - Shows on all pages */}
-          <LiveTicker />
-          
-          <Routes>
-            {/* Admin Page */}
-           <Route path="/admin" element={<AdminDashboard />} />
- 
-            {/* Main Pages */}
-            <Route path="/" element={<BuyPixels />} />
-            <Route path="/about" element={<Index />} />
-            <Route path="/canvas" element={<Canvas />} />
-            
-            {/* Authentication */}
-            <Route path="/signin" element={<SignIn />} />
-            <Route path="/signup" element={<SignUp />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/auth/callback" element={<AuthCallback />} />
-            
-            {/* User Pages */}
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/leaderboard" element={<Leaderboard />} />
-            <Route path="/marketplace" element={<MarketplacePage />} />
-            <Route path="/contact" element={<Contact />} />
-            
-            {/* Blog Routes */}
-            <Route path="/blog" element={<Blog />} />
-            <Route path="/blog/admin" element={<BlogAdmin />} />
-            <Route path="/blog/:slug" element={<BlogPost />} />
-            
-            {/* Legal Pages */}
-            <Route path="/terms" element={<TermsOfService />} />
-            <Route path="/privacy" element={<PrivacyPolicy />} />
-            
-            {/* Catch-all 404 - MUST BE LAST */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
+        <LayoutProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            {/* Global LiveTicker - Shows on all pages */}
+            <LiveTicker />
+
+            <Routes>
+              {/* Admin Page */}
+              <Route path="/admin" element={<AdminDashboard />} />
+
+              {/* Main Pages */}
+              <Route path="/" element={<BuyPixels />} />
+              <Route path="/about" element={<Index />} />
+              <Route path="/canvas" element={<Canvas />} />
+
+              {/* Authentication */}
+              <Route path="/signin" element={<SignIn />} />
+              <Route path="/signup" element={<SignUp />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/auth/callback" element={<AuthCallback />} />
+
+              {/* User Pages */}
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/leaderboard" element={<Leaderboard />} />
+              <Route path="/marketplace" element={<MarketplacePage />} />
+              <Route path="/contact" element={<Contact />} />
+              <Route path="/help" element={<Help />} />
+
+              {/* Blog Routes */}
+              <Route path="/blog" element={<Blog />} />
+              <Route path="/blog/admin" element={<BlogAdmin />} />
+              <Route path="/blog/:slug" element={<BlogPost />} />
+
+              {/* Legal Pages */}
+              <Route path="/terms" element={<TermsOfService />} />
+              <Route path="/privacy" element={<PrivacyPolicy />} />
+
+              {/* Catch-all 404 - MUST BE LAST */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </LayoutProvider>
       </TooltipProvider>
     </HelmetProvider>
   </QueryClientProvider>

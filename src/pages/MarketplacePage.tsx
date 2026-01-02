@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { getErrorMessage } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog,
@@ -26,11 +27,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { 
-  Store, 
-  ShoppingCart, 
-  Tag, 
-  TrendingUp, 
+import {
+  Store,
+  ShoppingCart,
+  Tag,
+  TrendingUp,
   AlertCircle,
   CheckCircle2,
   Search,
@@ -135,7 +136,7 @@ const MarketplacePage = () => {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      
+
       const listingsWithProfiles = await Promise.all(
         (data || []).map(async (listing: any) => {
           const { data: profileData } = await supabase
@@ -143,14 +144,14 @@ const MarketplacePage = () => {
             .select("full_name")
             .eq("user_id", listing.seller_id)
             .maybeSingle();
-          
+
           return {
             ...listing,
             seller_profile: profileData,
           };
         })
       );
-      
+
       return listingsWithProfiles as MarketplaceListing[];
     },
   });
@@ -205,7 +206,7 @@ const MarketplacePage = () => {
         .eq("is_active", true);
 
       if (error) throw error;
-      
+
       return data.filter(pixel => !listedPixelIds.includes(pixel.id));
     },
     enabled: !!session?.user?.id,
@@ -264,10 +265,10 @@ const MarketplacePage = () => {
           variant: "destructive",
         });
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Error",
-        description: error.message || "An unexpected error occurred",
+        description: getErrorMessage(error) || "An unexpected error occurred",
         variant: "destructive",
       });
     }
@@ -307,16 +308,16 @@ const MarketplacePage = () => {
         title: "Listing Created Successfully ✅",
         description: `Your pixel is now available for ₹${price.toLocaleString()}`,
       });
-      
+
       setSelectedPixelId(null);
       setListingPrice("");
       setIsDialogOpen(false);
       refetchListings();
       refetchUserPixels();
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Error",
-        description: error.message || "Unable to create listing",
+        description: getErrorMessage(error) || "Unable to create listing",
         variant: "destructive",
       });
     }
@@ -341,10 +342,10 @@ const MarketplacePage = () => {
 
       refetchListings();
       refetchUserPixels();
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Error",
-        description: error.message || "Unable to remove listing",
+        description: getErrorMessage(error) || "Unable to remove listing",
         variant: "destructive",
       });
     }
@@ -365,7 +366,7 @@ const MarketplacePage = () => {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Header />
-      
+
       <main className="flex-1">
         <section className="py-8 md:py-16 lg:py-20">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl">
@@ -489,7 +490,6 @@ const MarketplacePage = () => {
                                   {userPixels.map((pixel) => (
                                     <option key={pixel.id} value={pixel.id}>
                                       Pixel at ({pixel.x}, {pixel.y})
-                                      {pixel.times_resold > 0 && ` • Resold ${pixel.times_resold}x`}
                                     </option>
                                   ))}
                                 </select>
@@ -512,8 +512,8 @@ const MarketplacePage = () => {
                                   Average market price: ₹{stats.average_price.toLocaleString()}
                                 </p>
                               </div>
-                              <Button 
-                                onClick={handleListPixel} 
+                              <Button
+                                onClick={handleListPixel}
                                 className="w-full h-11 text-base font-semibold"
                               >
                                 <CheckCircle2 className="w-4 h-4 mr-2" />
@@ -571,15 +571,14 @@ const MarketplacePage = () => {
                     filteredAndSortedListings.map((listing) => {
                       const userOwnsListing = isUserListing(listing);
                       const timesResold = listing.pixels?.times_resold || 0;
-                      
+
                       return (
-                        <Card 
-                          key={listing.id} 
-                          className={`group transition-all duration-300 overflow-hidden relative ${
-                            userOwnsListing 
-                              ? 'border-primary/50 bg-primary/5 hover:shadow-xl hover:border-primary' 
-                              : 'hover:shadow-lg hover:border-border'
-                          }`}
+                        <Card
+                          key={listing.id}
+                          className={`group transition-all duration-300 overflow-hidden relative ${userOwnsListing
+                            ? 'border-primary/50 bg-primary/5 hover:shadow-xl hover:border-primary'
+                            : 'hover:shadow-lg hover:border-border'
+                            }`}
                         >
                           {listing.featured && (
                             <div className="absolute top-2 right-2 z-10">
@@ -613,7 +612,7 @@ const MarketplacePage = () => {
                               </Badge>
                             )}
                           </CardHeader>
-                          
+
                           <CardContent className="space-y-4">
                             {/* Pixel Preview */}
                             <div className="relative">
@@ -650,8 +649,8 @@ const MarketplacePage = () => {
 
                               {/* Action Button */}
                               {userOwnsListing ? (
-                                <Button 
-                                  className="w-full h-11 font-semibold" 
+                                <Button
+                                  className="w-full h-11 font-semibold"
                                   variant="destructive"
                                   onClick={() => handleRemoveListing(listing.id)}
                                 >
@@ -659,8 +658,8 @@ const MarketplacePage = () => {
                                   Remove Listing
                                 </Button>
                               ) : (
-                                <Button 
-                                  className="w-full h-11 font-semibold" 
+                                <Button
+                                  className="w-full h-11 font-semibold"
                                   variant="default"
                                   onClick={() => handleBuyFromMarketplace(listing.id, listing.asking_price)}
                                   disabled={!session}
@@ -693,13 +692,13 @@ const MarketplacePage = () => {
                           {searchQuery ? "No Results Found" : "No Active Listings"}
                         </h3>
                         <p className="text-muted-foreground text-sm md:text-base">
-                          {searchQuery 
-                            ? "Try adjusting your search criteria" 
+                          {searchQuery
+                            ? "Try adjusting your search criteria"
                             : "Be the first to list a pixel for sale"}
                         </p>
                         {session && !searchQuery && (
-                          <Button 
-                            variant="outline" 
+                          <Button
+                            variant="outline"
                             onClick={() => setIsDialogOpen(true)}
                             className="mt-4"
                           >
@@ -728,9 +727,9 @@ const MarketplacePage = () => {
                         {userTransactions.map((transaction) => {
                           const isBuyer = transaction.buyer_id === session?.user?.id;
                           const isSeller = transaction.seller_id === session?.user?.id;
-                          
+
                           return (
-                            <div 
+                            <div
                               key={transaction.id}
                               className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors"
                             >
@@ -761,7 +760,7 @@ const MarketplacePage = () => {
                                 <div className={`font-bold text-lg ${isBuyer ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
                                   {isBuyer ? '-' : '+'}₹{transaction.sale_price.toLocaleString()}
                                 </div>
-                                <Badge 
+                                <Badge
                                   variant={transaction.status === 'completed' ? 'default' : 'secondary'}
                                   className="text-xs"
                                 >

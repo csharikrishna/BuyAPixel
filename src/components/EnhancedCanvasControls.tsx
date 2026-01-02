@@ -1,24 +1,35 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { 
-  ZoomIn, 
-  ZoomOut, 
-  RotateCcw, 
-  Maximize2,
+import {
+  ZoomIn,
+  ZoomOut,
+  RotateCcw,
   MousePointer,
   Hand,
-  Search,
   Grid3X3,
   Eye,
   EyeOff,
-  ChevronLeft,
-  ChevronRight,
-  Settings,
-  Keyboard
+  MoreVertical,
+  Minus,
+  Plus
 } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface EnhancedCanvasControlsProps {
   zoom: number;
@@ -43,334 +54,138 @@ export const EnhancedCanvasControls = ({
   showMyPixels,
   onToggleMyPixels,
   onResetView,
-  selectedCount
+  selectedCount,
 }: EnhancedCanvasControlsProps) => {
-  const [isExpanded, setIsExpanded] = useState(true);
-  const [showShortcuts, setShowShortcuts] = useState(false);
-
   const zoomPercentage = Math.round(zoom * 100);
 
-  const handleZoomIn = () => {
-    onZoomChange(Math.min(8, zoom * 1.2));
-  };
+  const handleZoomIn = () => onZoomChange(Math.min(8, zoom * 1.2));
+  const handleZoomOut = () => onZoomChange(Math.max(0.5, zoom / 1.2));
 
-  const handleZoomOut = () => {
-    onZoomChange(Math.max(0.5, zoom / 1.2));
-  };
+  return (
+    <TooltipProvider delayDuration={300}>
+      <Card className="flex flex-col p-1.5 gap-1.5 shadow-xl border-border/50 backdrop-blur-sm bg-background/95 w-[46px] items-center z-30 h-fit">
 
-  // Collapsed icon-only sidebar
-  if (!isExpanded) {
-    return (
-      <div className="fixed left-4 top-1/2 -translate-y-1/2 z-50">
-        <Card className="card-premium shadow-lg">
-          <CardContent className="p-2 space-y-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setIsExpanded(true)}
-              title="Expand controls"
-              className="w-10 h-10"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </Button>
-            
-            <Separator />
-            
+        {/* Selection Mode */}
+        <Tooltip>
+          <TooltipTrigger asChild>
             <Button
               variant={isSelecting ? "default" : "ghost"}
               size="icon"
               onClick={onToggleSelecting}
-              title={isSelecting ? "Switch to panning" : "Switch to selecting"}
-              className="w-10 h-10"
+              className={`h-8 w-8 transition-all ${isSelecting ? "bg-primary text-primary-foreground shadow-sm" : "hover:bg-muted"}`}
             >
-              {isSelecting ? (
-                <MousePointer className="w-4 h-4" />
-              ) : (
-                <Hand className="w-4 h-4" />
-              )}
+              {isSelecting ? <MousePointer className="h-4 w-4" /> : <Hand className="h-4 w-4" />}
             </Button>
+          </TooltipTrigger>
+          <TooltipContent side="right" className="flex items-center gap-2">
+            <p className="font-medium">{isSelecting ? "Selection Mode" : "Pan Mode"}</p>
+            {selectedCount > 0 && <Badge variant="secondary" className="px-1 py-0 h-5 md:hidden">{selectedCount}</Badge>}
+          </TooltipContent>
+        </Tooltip>
 
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleZoomIn}
-              disabled={zoom >= 8}
-              title="Zoom in"
-              className="w-10 h-10"
-            >
-              <ZoomIn className="w-4 h-4" />
-            </Button>
+        <Separator className="w-6 opacity-50" />
 
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleZoomOut}
-              disabled={zoom <= 0.5}
-              title="Zoom out"
-              className="w-10 h-10"
-            >
-              <ZoomOut className="w-4 h-4" />
-            </Button>
-
-            <Button
-              variant={showGrid ? "default" : "ghost"}
-              size="icon"
-              onClick={onToggleGrid}
-              title={showGrid ? "Hide grid" : "Show grid"}
-              className="w-10 h-10"
-            >
-              <Grid3X3 className="w-4 h-4" />
-            </Button>
-
-            <Button
-              variant={showMyPixels ? "default" : "ghost"}
-              size="icon"
-              onClick={onToggleMyPixels}
-              title={showMyPixels ? "Hide my pixels" : "Show my pixels"}
-              className="w-10 h-10"
-            >
-              {showMyPixels ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-            </Button>
-
-            <Separator />
-
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onResetView}
-              title="Reset view"
-              className="w-10 h-10"
-            >
-              <RotateCcw className="w-4 h-4" />
-            </Button>
-
-            {selectedCount > 0 && (
-              <Badge 
-                variant="default" 
-                className="w-10 h-6 flex items-center justify-center animate-pulse"
-              >
-                {selectedCount}
-              </Badge>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  // Expanded full sidebar
-  return (
-    <div className="space-y-4">
-      {/* Main Controls */}
-      <Card className="card-premium">
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Settings className="w-4 h-4 text-primary" />
-              Canvas Controls
-            </CardTitle>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setIsExpanded(false)}
-              className="h-8"
-              title="Collapse to icons"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </Button>
-          </div>
-        </CardHeader>
-
-        <CardContent className="p-4 pt-0">
-          {/* Selection Mode Toggle */}
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium">Selection Mode</span>
-              {selectedCount > 0 && (
-                <Badge variant="default" className="animate-pulse">
-                  {selectedCount}
-                </Badge>
-              )}
-            </div>
-            <Button
-              variant={isSelecting ? "default" : "outline"}
-              size="sm"
-              onClick={onToggleSelecting}
-              className="transition-all duration-200"
-            >
-              {isSelecting ? (
-                <>
-                  <MousePointer className="w-4 h-4 mr-1" />
-                  Selecting
-                </>
-              ) : (
-                <>
-                  <Hand className="w-4 h-4 mr-1" />
-                  Panning
-                </>
-              )}
-            </Button>
-          </div>
-
-          <Separator className="my-4" />
-
-          {/* Zoom Controls */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">Zoom Level</span>
-              <Badge variant="outline" className="font-mono">
-                {zoomPercentage}%
-              </Badge>
-            </div>
-            
-            <div className="flex items-center gap-2">
+        {/* Zoom Controls */}
+        <div className="flex flex-col items-center gap-1">
+          <Tooltip>
+            <TooltipTrigger asChild>
               <Button
-                variant="outline"
-                size="sm"
-                onClick={handleZoomOut}
-                disabled={zoom <= 0.5}
-                className="flex-1"
-                title="Zoom out"
-              >
-                <ZoomOut className="w-4 h-4" />
-              </Button>
-              
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onZoomChange(1)}
-                className="px-3"
-                title="Reset zoom to 100%"
-              >
-                100%
-              </Button>
-              
-              <Button
-                variant="outline"
-                size="sm"
+                variant="ghost"
+                size="icon"
                 onClick={handleZoomIn}
                 disabled={zoom >= 8}
-                className="flex-1"
-                title="Zoom in"
+                className="h-8 w-8 hover:bg-muted"
               >
-                <ZoomIn className="w-4 h-4" />
+                <Plus className="h-4 w-4" />
               </Button>
-            </div>
+            </TooltipTrigger>
+            <TooltipContent side="right">Zoom In</TooltipContent>
+          </Tooltip>
 
-            <div className="flex items-center gap-2">
+          <span className="text-[10px] font-mono font-medium text-muted-foreground select-none">
+            {zoomPercentage}%
+          </span>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
               <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onZoomChange(0.5)}
-                className="flex-1 text-xs"
+                variant="ghost"
+                size="icon"
+                onClick={handleZoomOut}
+                disabled={zoom <= 0.5}
+                className="h-8 w-8 hover:bg-muted"
               >
-                <Search className="w-3 h-3 mr-1" />
-                Overview
+                <Minus className="h-4 w-4" />
               </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onZoomChange(4)}
-                className="flex-1 text-xs"
-              >
-                <Maximize2 className="w-3 h-3 mr-1" />
-                Detail
-              </Button>
-            </div>
-          </div>
+            </TooltipTrigger>
+            <TooltipContent side="right">Zoom Out</TooltipContent>
+          </Tooltip>
+        </div>
 
-          <Separator className="my-4" />
+        <Separator className="w-6 opacity-50" />
 
-          {/* View Options */}
-          <div className="space-y-3">
-            <span className="text-sm font-medium">View Options</span>
-            
-            <div className="grid gap-2">
-              <Button
-                variant={showGrid ? "default" : "outline"}
-                size="sm"
-                onClick={onToggleGrid}
-                className="w-full justify-start"
-              >
-                <Grid3X3 className="w-4 h-4 mr-2" />
-                {showGrid ? 'Hide Grid' : 'Show Grid'}
-              </Button>
-              
-              <Button
-                variant={showMyPixels ? "default" : "outline"}
-                size="sm"
-                onClick={onToggleMyPixels}
-                className="w-full justify-start"
-              >
-                {showMyPixels ? (
-                  <Eye className="w-4 h-4 mr-2" />
-                ) : (
-                  <EyeOff className="w-4 h-4 mr-2" />
-                )}
-                {showMyPixels ? 'Hide My Pixels' : 'Show My Pixels'}
-              </Button>
-            </div>
-          </div>
-
-          <Separator className="my-4" />
-
-          {/* Reset and Shortcuts */}
-          <div className="space-y-2">
+        {/* Quick Toggles */}
+        <Tooltip>
+          <TooltipTrigger asChild>
             <Button
-              variant="outline"
-              size="sm"
-              onClick={onResetView}
-              className="w-full"
+              variant={showGrid ? "secondary" : "ghost"}
+              size="icon"
+              onClick={onToggleGrid}
+              className="h-8 w-8 hover:bg-muted"
             >
-              <RotateCcw className="w-4 h-4 mr-2" />
+              <Grid3X3 className={`h-4 w-4 ${showGrid ? "text-primary" : "text-muted-foreground"}`} />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="right">
+            {showGrid ? "Hide Grid" : "Show Grid"}
+          </TooltipContent>
+        </Tooltip>
+
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant={showMyPixels ? "secondary" : "ghost"}
+              size="icon"
+              onClick={onToggleMyPixels}
+              className="h-8 w-8 hover:bg-muted"
+            >
+              {showMyPixels ? (
+                <Eye className="h-4 w-4 text-primary" />
+              ) : (
+                <EyeOff className="h-4 w-4 text-muted-foreground" />
+              )}
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="right">
+            {showMyPixels ? "Hide My Pixels" : "Show My Pixels"}
+          </TooltipContent>
+        </Tooltip>
+
+        <Separator className="w-6 opacity-50" />
+
+        {/* More / Reset */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-muted">
+              <MoreVertical className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent side="right" align="start" className="w-48 ml-2">
+            <DropdownMenuLabel>Canvas Options</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={onResetView}>
+              <RotateCcw className="mr-2 h-4 w-4" />
               Reset View
-            </Button>
+            </DropdownMenuItem>
+            <DropdownMenuItem disabled>
+              <span className="text-xs text-muted-foreground">
+                Shortcuts: Drag to pan, Click to select
+              </span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
 
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowShortcuts(!showShortcuts)}
-              className="w-full"
-            >
-              <Keyboard className="w-4 h-4 mr-2" />
-              {showShortcuts ? 'Hide' : 'Show'} Shortcuts
-            </Button>
-          </div>
-
-          {/* Keyboard Shortcuts (Collapsible) */}
-          {showShortcuts && (
-            <>
-              <Separator className="my-4" />
-              <div className="space-y-2 text-xs">
-                <div className="flex justify-between items-center">
-                  <span className="text-muted-foreground">Zoom In/Out</span>
-                  <code className="bg-muted px-2 py-0.5 rounded text-xs">
-                    Ctrl +/-
-                  </code>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-muted-foreground">Reset View</span>
-                  <code className="bg-muted px-2 py-0.5 rounded text-xs">
-                    Ctrl 0
-                  </code>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-muted-foreground">Range Select</span>
-                  <code className="bg-muted px-2 py-0.5 rounded text-xs">
-                    Shift
-                  </code>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-muted-foreground">Pan Canvas</span>
-                  <code className="bg-muted px-2 py-0.5 rounded text-xs">
-                    Drag
-                  </code>
-                </div>
-              </div>
-            </>
-          )}
-        </CardContent>
       </Card>
-    </div>
+    </TooltipProvider>
   );
 };
