@@ -84,8 +84,8 @@ const ProfileEditModal: React.FC<ProfileEditModalProps> = ({
 
     try {
       const fileExt = file.name.split('.').pop();
-      const fileName = `${profile.user_id}-${Date.now()}.${fileExt}`;
-      const filePath = `avatars/${fileName}`;
+      const fileName = `${Date.now()}.${fileExt}`;
+      const filePath = `${profile.user_id}/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
         .from('avatars')
@@ -175,18 +175,18 @@ const ProfileEditModal: React.FC<ProfileEditModalProps> = ({
           {/* Avatar Upload */}
           <div className="flex flex-col items-center gap-4">
             <Avatar className="w-24 h-24 border-4 border-background shadow-lg">
-              <AvatarImage 
-                src={formData.avatar_url || undefined} 
+              <AvatarImage
+                src={formData.avatar_url || undefined}
                 alt={formData.full_name || 'User'}
               />
               <AvatarFallback className="text-2xl font-bold bg-gradient-to-br from-primary to-secondary text-primary-foreground">
                 {getInitials(formData.full_name)}
               </AvatarFallback>
             </Avatar>
-            
+
             <div className="flex flex-col items-center gap-2">
-              <Label 
-                htmlFor="avatar-upload" 
+              <Label
+                htmlFor="avatar-upload"
                 className="cursor-pointer"
               >
                 <Button
