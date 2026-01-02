@@ -101,9 +101,20 @@ const MarketplacePage = () => {
   const { data: marketplaceStats } = useQuery({
     queryKey: ["marketplace-stats"],
     queryFn: async () => {
-      const { data, error } = await supabase.functions.invoke("get_marketplace_stats");
-      if (error) throw error;
-      return data as MarketplaceStats;
+      try {
+        const { data, error } = await supabase.functions.invoke("get_marketplace_stats");
+        if (error) throw error;
+        return data as MarketplaceStats;
+      } catch (err) {
+        console.warn("Failed to fetch marketplace stats (using defaults):", err);
+        return {
+          active_listings: 0,
+          total_sold: 0,
+          average_price: 0,
+          highest_price: 0,
+          lowest_price: 0,
+        } as MarketplaceStats;
+      }
     },
   });
 
