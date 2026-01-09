@@ -4,91 +4,45 @@ import { Badge } from "@/components/ui/badge";
 import { Link, useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { memo, useCallback } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import {
   TrendingUp,
   DollarSign,
   Package,
   ArrowUpRight,
-  CheckCircle2
+  CheckCircle2,
+  Store
 } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 
-// Type definitions for better type safety
+// --- Types ---
 interface MarketplaceListing {
-  id: number;
-  title: string;
-  pixels: number;
-  originalPrice: number;
-  resalePrice: number;
-  seller: string;
-  location: string;
-  image: string;
-  trending: boolean;
+  id: string;
+  pixel_id: string;
+  selling_price: number;
+  featured: boolean;
+  created_at: string;
+  pixels: {
+    x: number;
+    y: number;
+    image_url: string | null;
+  } | null;
+  profiles: {
+    full_name: string | null;
+  } | null;
 }
 
-interface MarketStat {
-  label: string;
-  value: string;
-  highlight?: boolean;
+interface MarketplaceStats {
+  active_listings: number;
+  total_sold: number;
+  average_price: number;
+  highest_price: number;
 }
 
 interface SellerBenefit {
   text: string;
 }
-
-// Constants extracted for maintainability
-const MARKETPLACE_LISTINGS: readonly MarketplaceListing[] = [
-  {
-    id: 1,
-    title: "Premium Corner Spot",
-    pixels: 100,
-    originalPrice: 10000,
-    resalePrice: 15000,
-    seller: "TechStartup",
-    location: "Top-left corner",
-    image: "🚀",
-    trending: true
-  },
-  {
-    id: 2,
-    title: "Meme Collection",
-    pixels: 25,
-    originalPrice: 2500,
-    resalePrice: 4000,
-    seller: "MemeLord",
-    location: "Center area",
-    image: "😂",
-    trending: false
-  },
-  {
-    id: 3,
-    title: "Brand Logo Space",
-    pixels: 64,
-    originalPrice: 6400,
-    resalePrice: 8500,
-    seller: "BrandHub",
-    location: "Right side",
-    image: "🎯",
-    trending: true
-  },
-  {
-    id: 4,
-    title: "Crypto Banner",
-    pixels: 200,
-    originalPrice: 20000,
-    resalePrice: 35000,
-    seller: "CryptoKing",
-    location: "Center bottom",
-    image: "₿",
-    trending: false
-  }
-] as const;
-
-const MARKET_STATS: readonly MarketStat[] = [
-  { label: "Pixels Resold", value: "12,847" },
-  { label: "Average Profit", value: "+143%", highlight: true },
-  { label: "Highest Sale", value: "₹2.5L", highlight: true },
-  { label: "Active Listings", value: "1,234" }
-] as const;
 
 const SELLER_BENEFITS: readonly SellerBenefit[] = [
   { text: "Set your own price" },
@@ -97,33 +51,56 @@ const SELLER_BENEFITS: readonly SellerBenefit[] = [
   { text: "Instant notifications" }
 ] as const;
 
-// Utility function to calculate profit percentage
-const calculateProfitPercentage = (resalePrice: number, originalPrice: number): number => {
-  return Math.round(((resalePrice - originalPrice) / originalPrice) * 100);
-};
+// --- Sub-components ---
 
-// Memoized listing card component
+const ListingCardSkeleton = () => (
+  <Card className="overflow-hidden border-2">
+    <CardHeader className="pb-4 space-y-2">
+      <Skeleton className="h-6 w-3/4" />
+      <Skeleton className="h-4 w-1/2" />
+    </CardHeader>
+    <CardContent className="space-y-5">
+      <Skeleton className="w-24 h-24 rounded-xl mx-auto" />
+      <div className="space-y-3 bg-muted/30 rounded-lg p-4">
+        <div className="flex justify-between">
+          <Skeleton className="h-4 w-20" />
+          <Skeleton className="h-4 w-16" />
+        </div>
+        <div className="flex justify-between">
+          <Skeleton className="h-5 w-24" />
+          <Skeleton className="h-6 w-20" />
+        </div>
+      </div>
+      <Skeleton className="h-10 w-full" />
+    </CardContent>
+  </Card>
+);
+
 const ListingCard = memo(({
   listing,
   onBuy
 }: {
   listing: MarketplaceListing;
-  onBuy: (title: string) => void;
+  onBuy: (id: string, price: number) => void;
 }) => {
-  const profitPercentage = calculateProfitPercentage(listing.resalePrice, listing.originalPrice);
+  // Safe defaults if data is missing
+  const x = listing.pixels?.x ?? 0;
+  const y = listing.pixels?.y ?? 0;
+  const price = listing.selling_price ?? 0;
+  const sellerName = listing.profiles?.full_name ?? "Anonymous";
+  const imageUrl = listing.pixels?.image_url;
 
   return (
     <Card
       className="group hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden border-2 hover:border-primary/50"
       role="article"
-      aria-label={`${listing.title} listing by ${listing.seller}`}
     >
       <CardHeader className="pb-4">
         <div className="flex items-start justify-between gap-2">
           <CardTitle className="text-lg font-bold leading-tight">
-            {listing.title}
+            Pixel ({x}, {y})
           </CardTitle>
-          {listing.trending && (
+          {listing.featured && (
             <Badge
               variant="destructive"
               className="ml-2 shrink-0 animate-pulse shadow-md"
@@ -135,7 +112,7 @@ const ListingCard = memo(({
         </div>
         <div className="text-muted-foreground text-sm font-medium flex items-center gap-1">
           <Package className="w-3.5 h-3.5" aria-hidden="true" />
-          {listing.location}
+          Secondary Market
         </div>
       </CardHeader>
 
@@ -143,44 +120,31 @@ const ListingCard = memo(({
         {/* Preview Box */}
         <div className="text-center">
           <div
-            className="w-24 h-24 bg-gradient-to-br from-pixel-available to-primary/10 border-2 border-primary/20 rounded-xl flex items-center justify-center text-5xl mb-3 mx-auto group-hover:scale-110 group-hover:rotate-3 transition-all duration-300 shadow-md"
-            role="img"
-            aria-label={`Preview showing ${listing.image}`}
+            className="w-24 h-24 bg-gradient-to-br from-muted to-primary/10 border-2 border-primary/20 rounded-xl flex items-center justify-center mb-3 mx-auto group-hover:scale-110 group-hover:rotate-3 transition-all duration-300 shadow-md overflow-hidden"
           >
-            {listing.image}
+            {imageUrl ? (
+              <img
+                src={imageUrl}
+                alt={`Pixel at ${x},${y}`}
+                className="w-full h-full object-cover"
+                loading="lazy"
+              />
+            ) : (
+              <span className="text-4xl">📍</span>
+            )}
           </div>
           <div className="text-sm text-muted-foreground font-semibold">
-            {listing.pixels} pixels
+            By {sellerName}
           </div>
         </div>
 
         {/* Pricing Details */}
         <div className="space-y-3 bg-muted/30 rounded-lg p-4">
-          <div className="flex justify-between items-center text-sm">
-            <span className="text-muted-foreground">Original Price:</span>
-            <span className="line-through text-muted-foreground font-medium">
-              ₹{listing.originalPrice.toLocaleString('en-IN')}
-            </span>
-          </div>
           <div className="flex justify-between items-center">
-            <span className="font-semibold text-base">Resale Price:</span>
+            <span className="font-semibold text-base py-1">Price:</span>
             <span className="font-bold text-xl text-primary">
-              ₹{listing.resalePrice.toLocaleString('en-IN')}
+              ₹{price.toLocaleString('en-IN')}
             </span>
-          </div>
-          <div className="flex justify-between items-center text-sm pt-2 border-t border-border">
-            <span className="text-muted-foreground">Potential Profit:</span>
-            <span className="text-success font-bold flex items-center gap-1">
-              <ArrowUpRight className="w-4 h-4" aria-hidden="true" />
-              +{profitPercentage}%
-            </span>
-          </div>
-        </div>
-
-        {/* Seller Info */}
-        <div className="flex items-center justify-between pt-1">
-          <div className="text-sm text-muted-foreground">
-            Listed by <span className="font-semibold text-foreground">{listing.seller}</span>
           </div>
         </div>
 
@@ -189,8 +153,7 @@ const ListingCard = memo(({
           className="w-full font-semibold group/btn hover:scale-105 active:scale-95 transition-all"
           variant="default"
           size="lg"
-          onClick={() => onBuy(listing.title)}
-          aria-label={`Buy ${listing.title} for ${listing.resalePrice} rupees`}
+          onClick={() => onBuy(listing.id, price)}
         >
           <DollarSign className="w-4 h-4 mr-2 group-hover/btn:scale-110 transition-transform" aria-hidden="true" />
           Buy Now
@@ -202,22 +165,83 @@ const ListingCard = memo(({
 
 ListingCard.displayName = "ListingCard";
 
-// Main Marketplace Component
+// --- Main Component ---
+
 const Marketplace = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  // Handle marketplace purchase with toast notification
-  const handleMarketplaceBuy = useCallback((listingTitle: string) => {
+  // Fetch Marketplace Stats
+  const { data: stats, isLoading: statsLoading } = useQuery({
+    queryKey: ['marketplace_stats_landing'],
+    queryFn: async () => {
+      // Try fetching from edge function first
+      try {
+        const { data, error } = await supabase.functions.invoke('get_marketplace_stats');
+        if (!error && data) return data as MarketplaceStats;
+      } catch (e) {
+        console.warn('Edge function failed, falling back to basic calculation', e);
+      }
+
+      // Fallback: simple query (less accurate for complex stats but works)
+      const { count: activeCount } = await supabase
+        .from('marketplace_listings')
+        .select('id', { count: 'exact', head: true })
+        .eq('status', 'active');
+
+      return {
+        active_listings: activeCount || 0,
+        total_sold: 0, // Hard to calc without specialized query
+        average_price: 0,
+        highest_price: 0
+      } as MarketplaceStats;
+    }
+  });
+
+  // Fetch Featured/Recent Listings
+  const { data: listings, isLoading: listingsLoading } = useQuery({
+    queryKey: ['marketplace_listings_landing'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('marketplace_listings')
+        .select(`
+          id,
+          pixel_id,
+          asking_price,
+          featured,
+          created_at,
+          pixels (x, y, image_url),
+          profiles:seller_id (full_name)
+        `)
+        .eq('status', 'active')
+        .order('featured', { ascending: false })
+        .order('created_at', { ascending: false })
+        .limit(4);
+
+      if (error) throw error;
+
+      // Map to cleaner interface
+      return data.map((item: any) => ({
+        id: item.id,
+        pixel_id: item.pixel_id,
+        selling_price: Number(item.asking_price),
+        featured: item.featured,
+        created_at: item.created_at,
+        pixels: item.pixels,
+        profiles: item.profiles
+      })) as MarketplaceListing[];
+    }
+  });
+
+  const handleMarketplaceBuy = useCallback((id: string, price: number) => {
     navigate('/marketplace');
     toast({
-      title: "Welcome to the Marketplace",
-      description: "Browse live listings and purchase pixels from other users.",
-      duration: 3000,
+      title: "View Listing",
+      description: "Redirecting you to the full marketplace view...",
+      duration: 2000,
     });
   }, [navigate, toast]);
 
-  // Handle listing pixels - redirects to /marketplace
   const handleListPixels = useCallback(() => {
     navigate('/marketplace');
     toast({
@@ -226,6 +250,14 @@ const Marketplace = () => {
       duration: 3000,
     });
   }, [navigate, toast]);
+
+  // Prepared stats for display
+  const displayStats = [
+    { label: "Active Listings", value: stats?.active_listings?.toLocaleString() ?? "...", highlight: false },
+    { label: "Total Sold", value: stats?.total_sold?.toLocaleString() ?? "...", highlight: false },
+    { label: "Avg Price", value: stats?.average_price ? `₹${Math.round(stats.average_price).toLocaleString()}` : "...", highlight: true },
+    { label: "Highest Price", value: stats?.highest_price ? `₹${stats.highest_price.toLocaleString()}` : "...", highlight: true },
+  ];
 
   return (
     <section
@@ -262,13 +294,29 @@ const Marketplace = () => {
           role="region"
           aria-label="Available marketplace listings"
         >
-          {MARKETPLACE_LISTINGS.map((listing) => (
-            <ListingCard
-              key={listing.id}
-              listing={listing}
-              onBuy={handleMarketplaceBuy}
-            />
-          ))}
+          {listingsLoading ? (
+            // Skeletons
+            Array(4).fill(0).map((_, i) => <ListingCardSkeleton key={i} />)
+          ) : listings && listings.length > 0 ? (
+            // Real Data
+            listings.map((listing) => (
+              <ListingCard
+                key={listing.id}
+                listing={listing}
+                onBuy={handleMarketplaceBuy}
+              />
+            ))
+          ) : (
+            // Empty State
+            <div className="col-span-full text-center py-12 border-2 border-dashed rounded-xl bg-muted/10">
+              <Store className="w-12 h-12 mx-auto text-muted-foreground mb-4 opacity-50" />
+              <h3 className="text-xl font-semibold mb-2">No active listings yet</h3>
+              <p className="text-muted-foreground mb-6">Be the first to list a pixel for sale!</p>
+              <Button onClick={handleListPixels} variant="outline">
+                List a Pixel
+              </Button>
+            </div>
+          )}
         </div>
 
         {/* Market Stats and Seller Info Grid */}
@@ -276,41 +324,39 @@ const Marketplace = () => {
           {/* Market Statistics Card */}
           <Card
             className="bg-gradient-to-br from-success/10 via-accent/5 to-green-500/10 border-2 hover:shadow-xl transition-all duration-300"
-            role="region"
-            aria-labelledby="market-stats-heading"
           >
             <CardHeader>
-              <CardTitle
-                id="market-stats-heading"
-                className="flex items-center gap-3 text-2xl"
-              >
+              <CardTitle className="flex items-center gap-3 text-2xl">
                 <span className="text-3xl" role="img" aria-label="Chart increasing">📈</span>
                 <span>Market Statistics</span>
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-5" role="list">
-                {MARKET_STATS.map((stat, index) => (
-                  <div
-                    key={index}
-                    className="flex justify-between items-center p-3 rounded-lg hover:bg-background/50 transition-colors group"
-                    role="listitem"
-                  >
-                    <span className="text-muted-foreground font-medium">
-                      {stat.label}:
-                    </span>
-                    <span
-                      className={`font-bold text-lg group-hover:scale-110 transition-transform ${stat.highlight
-                        ? stat.value.includes('%')
-                          ? 'text-success'
-                          : 'text-primary'
-                        : 'text-foreground'
-                        }`}
-                    >
-                      {stat.value}
-                    </span>
+              <div className="space-y-5">
+                {statsLoading ? (
+                  <div className="space-y-4">
+                    <Skeleton className="h-8 w-full" />
+                    <Skeleton className="h-8 w-full" />
+                    <Skeleton className="h-8 w-full" />
                   </div>
-                ))}
+                ) : (
+                  displayStats.map((stat, index) => (
+                    <div
+                      key={index}
+                      className="flex justify-between items-center p-3 rounded-lg hover:bg-background/50 transition-colors group"
+                    >
+                      <span className="text-muted-foreground font-medium">
+                        {stat.label}:
+                      </span>
+                      <span
+                        className={`font-bold text-lg group-hover:scale-110 transition-transform ${stat.highlight ? 'text-primary' : 'text-foreground'
+                          }`}
+                      >
+                        {stat.value}
+                      </span>
+                    </div>
+                  ))
+                )}
               </div>
             </CardContent>
           </Card>
@@ -318,14 +364,9 @@ const Marketplace = () => {
           {/* Seller Information Card */}
           <Card
             className="bg-gradient-to-br from-primary/10 via-secondary/5 to-purple-500/10 border-2 hover:shadow-xl transition-all duration-300"
-            role="region"
-            aria-labelledby="seller-info-heading"
           >
             <CardHeader>
-              <CardTitle
-                id="seller-info-heading"
-                className="flex items-center gap-3 text-2xl"
-              >
+              <CardTitle className="flex items-center gap-3 text-2xl">
                 <span className="text-3xl" role="img" aria-label="Money with wings">💸</span>
                 <span>Want to Sell?</span>
               </CardTitle>
@@ -336,7 +377,7 @@ const Marketplace = () => {
               </p>
 
               {/* Benefits List */}
-              <ul className="space-y-3" role="list">
+              <ul className="space-y-3">
                 {SELLER_BENEFITS.map((benefit, index) => (
                   <li
                     key={index}
@@ -344,7 +385,6 @@ const Marketplace = () => {
                   >
                     <CheckCircle2
                       className="w-5 h-5 text-green-500 flex-shrink-0 group-hover:scale-110 transition-transform"
-                      aria-hidden="true"
                     />
                     <span className="text-foreground font-medium">{benefit.text}</span>
                   </li>
@@ -356,11 +396,10 @@ const Marketplace = () => {
                 className="w-full font-bold text-base h-12 group/btn hover:scale-105 active:scale-95 transition-all shadow-lg bg-gradient-to-r from-primary to-secondary"
                 size="lg"
                 onClick={handleListPixels}
-                aria-label="Navigate to list your pixels for sale"
               >
-                <Package className="w-5 h-5 mr-2 group-hover/btn:rotate-12 transition-transform" aria-hidden="true" />
+                <Package className="w-5 h-5 mr-2 group-hover/btn:rotate-12 transition-transform" />
                 List My Pixels
-                <ArrowUpRight className="w-5 h-5 ml-2 group-hover/btn:translate-x-1 group-hover/btn:-translate-y-1 transition-transform" aria-hidden="true" />
+                <ArrowUpRight className="w-5 h-5 ml-2 group-hover/btn:translate-x-1 group-hover/btn:-translate-y-1 transition-transform" />
               </Button>
             </CardContent>
           </Card>

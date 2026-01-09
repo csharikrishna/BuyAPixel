@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -81,8 +82,22 @@ import {
   CheckCircle2,
   Store,
   Star,
-  XCircle
+  XCircle,
+  LayoutGrid,
+  List as ListIcon,
+  Megaphone
 } from 'lucide-react';
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  LineChart,
+  Line
+} from 'recharts';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { getErrorMessage } from '@/lib/utils';
@@ -175,6 +190,7 @@ const AdminDashboard = () => {
   // Dialog States
   const [blockDialog, setBlockDialog] = useState<{ open: boolean; userId: string; email: string } | null>(null);
   const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; userId: string; email: string } | null>(null);
+  const [resetUserPixelsDialog, setResetUserPixelsDialog] = useState<{ open: boolean; userId: string; email: string } | null>(null);
   const [cancelListingDialog, setCancelListingDialog] = useState<{ open: boolean; listingId: string } | null>(null);
 
   // Form States
@@ -182,6 +198,19 @@ const AdminDashboard = () => {
   const [blockNotes, setBlockNotes] = useState('');
   const [cancelReason, setCancelReason] = useState('');
   const [processing, setProcessing] = useState(false);
+
+  // Pixel Management States
+  const [pixels, setPixels] = useState<any[]>([]);
+  const [pixelSearchTerm, setPixelSearchTerm] = useState('');
+  const [loadingPixels, setLoadingPixels] = useState(false);
+  const [pixelViewMode, setPixelViewMode] = useState<'list' | 'grid'>('grid');
+  const [resetPixelDialog, setResetPixelDialog] = useState<{ open: boolean; pixelId: string } | null>(null);
+  const [clearContentDialog, setClearContentDialog] = useState<{ open: boolean; pixelId: string } | null>(null);
+
+  // Broadcast State
+  const [broadcastMessage, setBroadcastMessage] = useState('');
+  const [isBroadcastActive, setIsBroadcastActive] = useState(false);
+  const [broadcastId, setBroadcastId] = useState<string | null>(null);
 
   useEffect(() => {
     if (isAdmin) {
@@ -241,15 +270,49 @@ const AdminDashboard = () => {
         setMarketplaceListings(listingsData as unknown as MarketplaceListing[] || []);
       }
 
-      // 4. Load audit logs
+      // 4. Load (and default to) recent pixels for moderation
+      const { data: pixelsData, error: pixelsError } = await supabase
+        .from('pixels')
+        .select(`
+          id, x, y, price, owner_id, image_url, link_url, alt_text, created_at,
+          profiles:owner_id (email, full_name)
+        `)
+        .not('owner_id', 'is', null) // Only show owned pixels
+        .order('created_at', { ascending: false }) // Newest first
+        .limit(20);
+
+      if (!pixelsError) {
+        setPixels(pixelsData || []);
+      }
+
+      // 5. Load audit logs
       const { data: logsData, error: logsError } = await supabase
         .from('admin_audit_log' as any)
         .select('*')
         .order('created_at', { ascending: false })
-        .limit(100);
+        .limit(50);
 
-      if (logsError) throw logsError;
-      setAuditLogs((logsData as unknown as AuditLog[]) || []);
+      if (!logsError) {
+        setAuditLogs((logsData as unknown as AuditLog[]) || []);
+      }
+
+      // 6. Load Active Announcement
+      const { data: announcementData, error: announcementError } = await supabase
+        .from('announcements' as any)
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (!announcementError && announcementData) {
+        setBroadcastMessage((announcementData as any).message);
+        setIsBroadcastActive((announcementData as any).is_active);
+        setBroadcastId((announcementData as any).id);
+      } else {
+        // No active announcement or table not ready yet
+      }
+
+      setRefreshing(false);
 
       if (silent) {
         toast.success('Dashboard refreshed', {
@@ -264,6 +327,89 @@ const AdminDashboard = () => {
       setRefreshing(false);
     }
   };
+
+  // Filtered and sorted users
+  const filteredAndSortedUsers = useMemo(() => {
+    let filtered = users.filter(u =>
+      u.email.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    // Apply filter
+    switch (userFilter) {
+      case 'active':
+        filtered = filtered.filter(u => !u.is_blocked);
+        break;
+      case 'blocked':
+        filtered = filtered.filter(u => u.is_blocked);
+        break;
+      case 'paid':
+        filtered = filtered.filter(u => u.total_spent > 0);
+        break;
+    }
+
+    // Apply sorting
+    filtered.sort((a, b) => {
+      // Type safe access
+      const aVal = a[sortField];
+      const bVal = b[sortField];
+
+      // Handle potentially undefined values safely if needed, though types say required
+      if (aVal === bVal) return 0;
+
+      if (sortOrder === 'asc') {
+        return aVal > bVal ? 1 : -1;
+      } else {
+        return aVal < bVal ? 1 : -1;
+      }
+    });
+
+    return filtered;
+  }, [users, searchTerm, userFilter, sortField, sortOrder]);
+
+  // --- Visual Analytics Data Preparation ---
+  // Aggregate user joins by date (last 14 days)
+  const userGrowthData = useMemo(() => {
+    const last14Days = Array.from({ length: 14 }, (_, i) => {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      return format(d, 'MMM dd');
+    }).reverse();
+
+    const dataMap = new Map();
+    last14Days.forEach(day => dataMap.set(day, 0));
+
+    users.forEach(user => {
+      const date = format(new Date(user.created_at), 'MMM dd');
+      if (dataMap.has(date)) {
+        dataMap.set(date, dataMap.get(date) + 1);
+      }
+    });
+
+    return Array.from(dataMap.entries()).map(([date, count]) => ({ date, users: count }));
+  }, [users]);
+
+  // Aggregate pixel uploads by date (approximate from pixels array if available, or just mock structure for now)
+  // Since we only load recent pixels, this might be sparse, so we'll just show what we have
+  const pixelActivityData = useMemo(() => {
+    if (pixels.length === 0) return [];
+
+    const dataMap = new Map();
+
+    pixels.forEach(p => {
+      const date = format(new Date(p.created_at), 'MMM dd');
+      if (!dataMap.has(date)) {
+        dataMap.set(date, 0);
+      }
+      dataMap.set(date, dataMap.get(date) + 1);
+    });
+
+    // Fill user growth dates for consistency if pixel data is empty for those days
+    const dates = userGrowthData.map(d => d.date);
+    return dates.map(date => ({
+      date,
+      pixels: dataMap.get(date) || 0
+    }));
+  }, [pixels, userGrowthData]);
 
   // --- User Management Actions ---
 
@@ -353,6 +499,102 @@ const AdminDashboard = () => {
     }
   }, [deleteDialog]);
 
+  const handleResetUserPixels = useCallback(async () => {
+    if (!resetUserPixelsDialog) return;
+
+    setProcessing(true);
+    try {
+      // Logic: Update all pixels owned by this user to have no owner and no content
+      const { error } = await supabase
+        .from('pixels')
+        .update({
+          owner_id: null,
+          image_url: null,
+          link_url: null,
+          alt_text: null,
+          purchased_at: null,
+          price_paid: null
+        })
+        .eq('owner_id', resetUserPixelsDialog.userId);
+
+      if (error) throw error;
+
+      toast.success('All user pixels reset', {
+        description: `Pixels owned by ${resetUserPixelsDialog.email} are now available for purchase.`
+      });
+
+      setResetUserPixelsDialog(null);
+      loadDashboardData(true);
+    } catch (error: unknown) {
+      console.error('Error resetting user pixels:', error);
+      toast.error('Failed to reset user pixels', {
+        description: getErrorMessage(error)
+      });
+    } finally {
+      setProcessing(false);
+    }
+  }, [resetUserPixelsDialog]);
+
+  // --- Broadcast Management ---
+
+  const handleSaveBroadcast = async () => {
+    setProcessing(true);
+    try {
+      const userAuth = await supabase.auth.getUser();
+      const adminId = userAuth.data.user?.id;
+
+      if (!adminId) {
+        throw new Error("Admin user not authenticated.");
+      }
+
+      if (broadcastId) {
+        // Update existing broadcast
+        const { error } = await supabase
+          .from('announcements' as any)
+          .update({
+            message: broadcastMessage,
+            is_active: isBroadcastActive,
+            updated_at: new Date().toISOString(),
+            updated_by: adminId
+          })
+          .eq('id', broadcastId);
+
+        if (error) throw error;
+
+        toast.success('Broadcast updated', {
+          description: isBroadcastActive ? 'Announcement is now live on homepage' : 'Announcement saved as inactive'
+        });
+      } else {
+        // Insert new broadcast
+        const { data, error } = await supabase
+          .from('announcements' as any)
+          .insert({
+            message: broadcastMessage,
+            is_active: isBroadcastActive,
+            created_by: adminId
+          })
+          .select('id')
+          .single();
+
+        if (error) throw error;
+
+        setBroadcastId((data as any).id); // Set the new ID
+        toast.success('Broadcast published', {
+          description: isBroadcastActive ? 'Announcement is now live on homepage' : 'Announcement saved as inactive'
+        });
+      }
+
+      loadDashboardData(true); // Refresh to get new ID or updated status
+    } catch (error: unknown) {
+      console.error('Error saving broadcast:', error);
+      toast.error('Failed to save broadcast', {
+        description: getErrorMessage(error)
+      });
+    } finally {
+      setProcessing(false);
+    }
+  };
+
   // --- Marketplace Management Actions ---
 
   const handleToggleFeatured = useCallback(async (listingId: string, currentFeatured: boolean) => {
@@ -440,41 +682,110 @@ const AdminDashboard = () => {
       console.error('Export error:', error);
       toast.error('Failed to export users');
     }
-  }, []);
+  }, [filteredAndSortedUsers]);
 
-  // Filtered and sorted users
-  const filteredAndSortedUsers = useMemo(() => {
-    let filtered = users.filter(u =>
-      u.email.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+  // --- Pixel Management Actions ---
 
-    // Apply filter
-    switch (userFilter) {
-      case 'active':
-        filtered = filtered.filter(u => !u.is_blocked);
-        break;
-      case 'blocked':
-        filtered = filtered.filter(u => u.is_blocked);
-        break;
-      case 'paid':
-        filtered = filtered.filter(u => u.total_spent > 0);
-        break;
+  const searchPixels = useCallback(async () => {
+    if (!pixelSearchTerm.trim()) {
+      toast.error("Please enter a search term (Pixel ID, Owner ID, or coordinates like '10,20')");
+      return;
     }
 
-    // Apply sorting
-    filtered.sort((a, b) => {
-      const aVal = a[sortField];
-      const bVal = b[sortField];
+    setLoadingPixels(true);
+    try {
+      let query = supabase.from('pixels').select(`
+        id, x, y, price, owner_id, image_url, link_url, alt_text, created_at,
+        profiles:owner_id (email, full_name)
+      `);
 
-      if (sortOrder === 'asc') {
-        return aVal > bVal ? 1 : -1;
+      // Simple heuristic for search
+      if (pixelSearchTerm.includes(',')) {
+        const [x, y] = pixelSearchTerm.split(',').map(s => parseInt(s.trim()));
+        if (!isNaN(x) && !isNaN(y)) {
+          query = query.eq('x', x).eq('y', y);
+        }
+      } else if (pixelSearchTerm.length > 20) {
+        // Assume UUID
+        query = query.or(`id.eq.${pixelSearchTerm},owner_id.eq.${pixelSearchTerm}`);
       } else {
-        return aVal < bVal ? 1 : -1;
+        // Maybe coordinates or partial ID? defaulting to finding nothing for now unless strict format
+        toast.info("Search by UUID (User/Pixel) or Coordinates (x,y)");
+        setLoadingPixels(false);
+        return;
       }
-    });
 
-    return filtered;
-  }, [users, searchTerm, userFilter, sortField, sortOrder]);
+      const { data, error } = await query;
+      if (error) throw error;
+      setPixels(data || []);
+      if (data?.length === 0) toast.info("No pixels found");
+    } catch (error) {
+      console.error('Error searching pixels:', error);
+      toast.error('Failed to search pixels');
+    } finally {
+      setLoadingPixels(false);
+    }
+  }, [pixelSearchTerm]);
+
+  const handleResetPixelOwnership = useCallback(async () => {
+    if (!resetPixelDialog) return;
+
+    setProcessing(true);
+    try {
+      const { error } = await supabase
+        .from('pixels')
+        .update({
+          owner_id: null,
+          image_url: null,
+          link_url: null,
+          alt_text: null,
+          purchased_at: null,
+          price_paid: null // Assuming this field exists or similar tracking
+        })
+        .eq('id', resetPixelDialog.pixelId);
+
+      if (error) throw error;
+
+      toast.success('Pixel ownership reset to system');
+      setResetPixelDialog(null);
+      searchPixels(); // Refresh list
+    } catch (error: any) {
+      console.error('Error resetting pixel:', error);
+      toast.error('Failed to reset pixel: ' + error.message);
+    } finally {
+      setProcessing(false);
+    }
+  }, [resetPixelDialog, searchPixels]);
+
+  const handleClearPixelContent = useCallback(async () => {
+    if (!clearContentDialog) return;
+
+    setProcessing(true);
+    try {
+      const { error } = await supabase
+        .from('pixels')
+        .update({
+          image_url: null,
+          link_url: null,
+          alt_text: null
+        })
+        .eq('id', clearContentDialog.pixelId);
+
+      if (error) throw error;
+
+      toast.success('Pixel content cleared (Moderated)');
+      setClearContentDialog(null);
+      searchPixels(); // Refresh list
+    } catch (error: any) {
+      console.error('Error clearing pixel content:', error);
+      toast.error('Failed to clear content: ' + error.message);
+    } finally {
+      setProcessing(false);
+    }
+  }, [clearContentDialog, searchPixels]);
+
+
+
 
   // Loading skeleton
   if (checkingAdmin || loading) {
@@ -681,6 +992,82 @@ const AdminDashboard = () => {
           </Card>
         </div>
 
+        {/* Visual Analytics Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm font-medium">New User Growth (14 Days)</CardTitle>
+            </CardHeader>
+            <CardContent className="h-[250px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={userGrowthData}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
+                  <XAxis
+                    dataKey="date"
+                    tick={{ fontSize: 12, fill: '#6B7280' }}
+                    tickLine={false}
+                    axisLine={false}
+                    dy={10}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 12, fill: '#6B7280' }}
+                    tickLine={false}
+                    axisLine={false}
+                    allowDecimals={false}
+                  />
+                  <Tooltip
+                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="users"
+                    stroke="hsl(var(--primary))"
+                    strokeWidth={3}
+                    dot={{ r: 4, fill: "hsl(var(--primary))" }}
+                    activeDot={{ r: 6 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm font-medium">Recent Pixel Activity</CardTitle>
+            </CardHeader>
+            <CardContent className="h-[250px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={pixelActivityData}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
+                  <XAxis
+                    dataKey="date"
+                    tick={{ fontSize: 12, fill: '#6B7280' }}
+                    tickLine={false}
+                    axisLine={false}
+                    dy={10}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 12, fill: '#6B7280' }}
+                    tickLine={false}
+                    axisLine={false}
+                    allowDecimals={false}
+                  />
+                  <Tooltip
+                    cursor={{ fill: 'rgba(0,0,0,0.05)' }}
+                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                  />
+                  <Bar
+                    dataKey="pixels"
+                    fill="#F59E0B"
+                    radius={[4, 4, 0, 0]}
+                    barSize={30}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </div>
+
         {/* Marketplace Stats Card */}
         {marketplaceAnalytics && (
           <Card className="mb-8 border-amber-500/20">
@@ -730,11 +1117,262 @@ const AdminDashboard = () => {
               <Activity className="w-4 h-4" />
               <span className="hidden sm:inline">Audit</span>
             </TabsTrigger>
+            <TabsTrigger value="pixels" className="gap-2">
+              <Image className="w-4 h-4" />
+              <span className="hidden sm:inline">Pixels</span>
+            </TabsTrigger>
+            <TabsTrigger value="broadcast" className="gap-2">
+              <Megaphone className="w-4 h-4" />
+              <span className="hidden sm:inline">Broadcast</span>
+            </TabsTrigger>
             <TabsTrigger value="blog" className="gap-2">
               <FileText className="w-4 h-4" />
               <span className="hidden sm:inline">Blog</span>
             </TabsTrigger>
           </TabsList>
+
+          {/* Pixels Tab Content */}
+          <TabsContent value="pixels" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Pixel Management</CardTitle>
+                <CardDescription>Search and manage individual pixels</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Search by Pixel ID, Owner ID, or 'x,y'..."
+                    value={pixelSearchTerm}
+                    onChange={(e) => setPixelSearchTerm(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && searchPixels()}
+                  />
+                  <Button onClick={searchPixels} disabled={loadingPixels}>
+                    {loadingPixels ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+                  </Button>
+                  <div className="flex bg-muted rounded-md p-1 border">
+                    <Button
+                      variant={pixelViewMode === 'list' ? 'secondary' : 'ghost'}
+                      size="sm"
+                      className="h-8 w-8 p-0"
+                      onClick={() => setPixelViewMode('list')}
+                    >
+                      <ListIcon className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant={pixelViewMode === 'grid' ? 'secondary' : 'ghost'}
+                      size="sm"
+                      className="h-8 w-8 p-0"
+                      onClick={() => setPixelViewMode('grid')}
+                    >
+                      <LayoutGrid className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+
+                {pixelViewMode === 'list' ? (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Location</TableHead>
+                        <TableHead>Owner</TableHead>
+                        <TableHead>Content</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {pixels.map((pixel) => (
+                        <TableRow key={pixel.id}>
+                          <TableCell className="font-mono">({pixel.x}, {pixel.y})</TableCell>
+                          <TableCell>
+                            {pixel.owner_id ? (
+                              <div className="flex flex-col">
+                                <span className="font-medium">{pixel.profiles?.full_name || 'Unknown'}</span>
+                                <span className="text-xs text-muted-foreground">{pixel.profiles?.email}</span>
+                                <span className="text-[10px] text-muted-foreground font-mono">{pixel.owner_id}</span>
+                              </div>
+                            ) : (
+                              <Badge variant="outline">System / Available</Badge>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <div className="space-y-1">
+                              {pixel.image_url ? (
+                                <div className="flex items-center gap-2 text-xs text-green-600">
+                                  <Image className="w-3 h-3" /> Image Set
+                                </div>
+                              ) : <div className="text-xs text-muted-foreground">No Image</div>}
+                              {pixel.link_url && (
+                                <div className="flex items-center gap-2 text-xs text-blue-600 truncate max-w-[150px]">
+                                  <TrendingUp className="w-3 h-3" /> {pixel.link_url}
+                                </div>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" className="h-8 w-8 p-0">
+                                  <span className="sr-only">Open menu</span>
+                                  <MoreVertical className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem
+                                  onClick={() => window.open(`/?x=${pixel.x}&y=${pixel.y}`, '_blank')}
+                                >
+                                  <Eye className="mr-2 h-4 w-4" />
+                                  View on Canvas
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  className="text-amber-600"
+                                  onClick={() => setClearContentDialog({ open: true, pixelId: pixel.id })}
+                                  disabled={!pixel.image_url && !pixel.link_url}
+                                >
+                                  <Ban className="mr-2 h-4 w-4" />
+                                  Clear Content
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  className="text-destructive"
+                                  onClick={() => setResetPixelDialog({ open: true, pixelId: pixel.id })}
+                                  disabled={!pixel.owner_id}
+                                >
+                                  <Trash2 className="mr-2 h-4 w-4" />
+                                  Reset Ownership
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      {!loadingPixels && pixels.length === 0 && (
+                        <TableRow>
+                          <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
+                            No pixels found. Try searching.
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                ) : (
+                  // Grid View
+                  <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                    {pixels.length === 0 && !loadingPixels && (
+                      <div className="col-span-full text-center py-12 text-muted-foreground">
+                        No pixels found.
+                      </div>
+                    )}
+                    {pixels.map((pixel) => (
+                      <Card key={pixel.id} className="overflow-hidden group relative hover:ring-2 hover:ring-primary/50 transition-all">
+                        <div className="aspect-square bg-muted/20 relative">
+                          {pixel.image_url ? (
+                            <img
+                              src={pixel.image_url}
+                              alt={pixel.alt_text}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-muted-foreground/30">
+                              <Image className="w-8 h-8" />
+                            </div>
+                          )}
+
+                          {/* Hover Overlay */}
+                          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 p-2">
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              className="w-full h-8 text-xs"
+                              onClick={() => window.open(`/?x=${pixel.x}&y=${pixel.y}`, '_blank')}
+                            >
+                              <Eye className="w-3 h-3 mr-1" /> View
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              className="w-full h-8 text-xs"
+                              onClick={() => setClearContentDialog({ open: true, pixelId: pixel.id })}
+                              disabled={!pixel.image_url}
+                            >
+                              <Ban className="w-3 h-3 mr-1" /> Clear
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="w-full h-8 text-xs bg-transparent text-white border-white/50 hover:bg-white/20"
+                              onClick={() => setResetPixelDialog({ open: true, pixelId: pixel.id })}
+                            >
+                              <RefreshCw className="w-3 h-3 mr-1" /> Reset
+                            </Button>
+                          </div>
+                        </div>
+                        <div className="p-2 border-t">
+                          <div className="flex justify-between items-center text-xs">
+                            <span className="font-mono text-muted-foreground">({pixel.x}, {pixel.y})</span>
+                            {pixel.owner_id ? (
+                              <Badge variant="outline" className="h-4 px-1 text-[10px] border-green-500/30 text-green-600">Owned</Badge>
+                            ) : (
+                              <Badge variant="outline" className="h-4 px-1 text-[10px]">Free</Badge>
+                            )}
+                          </div>
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Broadcast Tab Content */}
+          <TabsContent value="broadcast">
+            <Card>
+              <CardHeader>
+                <CardTitle>Global Announcements</CardTitle>
+                <CardDescription>Publish a message to all users on the home page.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="bg-muted/30 p-4 rounded-lg border">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="space-y-0.5">
+                      <Label className="text-base">Active Status</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Enable this to show the banner on the homepage
+                      </p>
+                    </div>
+                    <Switch
+                      checked={isBroadcastActive}
+                      onCheckedChange={setIsBroadcastActive}
+                      disabled={processing}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Banner Message</Label>
+                    <Textarea
+                      placeholder="e.g., '🎉 50% Off All Pixels This Weekend!'"
+                      value={broadcastMessage}
+                      onChange={(e) => setBroadcastMessage(e.target.value)}
+                      rows={3}
+                      className="resize-none font-medium"
+                      disabled={processing}
+                    />
+                    <p className="text-xs text-muted-foreground text-right">
+                      {broadcastMessage.length} characters
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-3">
+                  <Button variant="outline" onClick={() => loadDashboardData(true)} disabled={processing}>
+                    Reset
+                  </Button>
+                  <Button onClick={handleSaveBroadcast} disabled={processing || !broadcastMessage.trim()}>
+                    {processing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Megaphone className="w-4 h-4 mr-2" />}
+                    {broadcastId ? 'Update Broadcast' : 'Publish Broadcast'}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
           {/* Users Tab Content */}
           <TabsContent value="users" className="space-y-4">
@@ -883,16 +1521,28 @@ const AdminDashboard = () => {
                                       <span className="hidden lg:inline">Unblock</span>
                                     </Button>
                                   ) : (
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      onClick={() => setBlockDialog({ open: true, userId: userData.user_id, email: userData.email })}
-                                      disabled={processing}
-                                      className="h-8 gap-1.5"
-                                    >
-                                      <Ban className="w-3.5 h-3.5" />
-                                      <span className="hidden lg:inline">Block</span>
-                                    </Button>
+                                    <>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => setResetUserPixelsDialog({ open: true, userId: userData.user_id, email: userData.email })}
+                                        disabled={processing || userData.pixels_owned === 0}
+                                        className="h-8 w-8 p-0"
+                                        title="Reset all pixels"
+                                      >
+                                        <RefreshCw className="w-3.5 h-3.5" />
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => setBlockDialog({ open: true, userId: userData.user_id, email: userData.email })}
+                                        disabled={processing}
+                                        className="h-8 gap-1.5"
+                                      >
+                                        <Ban className="w-3.5 h-3.5" />
+                                        <span className="hidden lg:inline">Block</span>
+                                      </Button>
+                                    </>
                                   )}
                                   <Button
                                     size="sm"
@@ -932,6 +1582,13 @@ const AdminDashboard = () => {
                                           Block User
                                         </DropdownMenuItem>
                                       )}
+                                      <DropdownMenuItem
+                                        onClick={() => setResetUserPixelsDialog({ open: true, userId: userData.user_id, email: userData.email })}
+                                        disabled={processing || userData.pixels_owned === 0}
+                                      >
+                                        <RefreshCw className="w-4 h-4 mr-2" />
+                                        Reset All Pixels
+                                      </DropdownMenuItem>
                                       <DropdownMenuItem
                                         onClick={() => setDeleteDialog({ open: true, userId: userData.user_id, email: userData.email })}
                                         disabled={processing}
@@ -1248,51 +1905,119 @@ const AdminDashboard = () => {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Cancel Listing Dialog */}
-      <Dialog open={cancelListingDialog?.open || false} onOpenChange={(open) => !open && setCancelListingDialog(null)}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <XCircle className="w-5 h-5 text-destructive" />
-              Cancel Marketplace Listing
-            </DialogTitle>
-            <DialogDescription>
-              This will remove the listing from the marketplace
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="cancel-reason">
-                Reason for cancellation <span className="text-destructive">*</span>
-              </Label>
-              <Textarea
-                id="cancel-reason"
-                value={cancelReason}
-                onChange={(e) => setCancelReason(e.target.value)}
-                placeholder="e.g., Inappropriate content, policy violation..."
-                rows={3}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setCancelListingDialog(null)}
+      {/* Reset User Pixels Dialog */}
+      <AlertDialog open={!!resetUserPixelsDialog?.open} onOpenChange={(open) => !open && setResetUserPixelsDialog(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reset All User Pixels?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will remove ownership of ALL pixels owned by <strong>{resetUserPixelsDialog?.email}</strong>.
+              The pixels will become available for purchase again. The user account will remain active.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={processing}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive hover:bg-destructive/90"
+              onClick={(e) => {
+                e.preventDefault();
+                handleResetUserPixels();
+              }}
               disabled={processing}
             >
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={handleCancelListing}
-              disabled={processing || !cancelReason.trim()}
+              {processing ? "Resetting..." : "Reset All Pixels"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Cancel Listing Dialog */}
+      <AlertDialog open={!!cancelListingDialog} onOpenChange={(open) => !open && setCancelListingDialog(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancel Listing</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to cancel this marketplace listing? The pixel will be returned to the owner.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="py-4">
+            <Label htmlFor="cancel-reason" className="mb-2 block">Reason for cancellation</Label>
+            <Textarea
+              id="cancel-reason"
+              placeholder="Violation of terms..."
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={processing}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={(e) => {
+                e.preventDefault();
+                handleCancelListing();
+              }}
+              disabled={processing}
             >
               {processing && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               Cancel Listing
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Reset Pixel Dialog */}
+      <AlertDialog open={!!resetPixelDialog?.open} onOpenChange={(open) => !open && setResetPixelDialog(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reset Pixel Ownership?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will remove the current owner and make the pixel available for purchase again.
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={processing}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={(e) => {
+                e.preventDefault();
+                handleResetPixelOwnership();
+              }}
+              disabled={processing}
+            >
+              {processing ? "Resetting..." : "Reset Ownership"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Clear Content Dialog */}
+      <AlertDialog open={!!clearContentDialog?.open} onOpenChange={(open) => !open && setClearContentDialog(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Clear Pixel Content?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will remove the image, link, and alt text from the pixel, but the user will retain ownership.
+              Useful for moderation.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={processing}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-amber-600 text-white hover:bg-amber-700"
+              onClick={(e) => {
+                e.preventDefault();
+                handleClearPixelContent();
+              }}
+              disabled={processing}
+            >
+              {processing ? "Clearing..." : "Clear Content"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
     </div>
   );
 };

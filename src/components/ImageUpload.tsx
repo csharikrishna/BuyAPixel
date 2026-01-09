@@ -35,8 +35,9 @@ export const ImageUpload = ({
   bucket = 'blog-images',
   cropAspectRatio,
   className,
-  placeholder = "Click to upload or drag and drop"
-}: ImageUploadProps) => {
+  placeholder = "Click to upload or drag and drop",
+  maxSizeMB = 5
+}: ImageUploadProps & { maxSizeMB?: number }) => {
   const [uploading, setUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const [preview, setPreview] = useState<string | null>(currentImage || null);
@@ -52,9 +53,9 @@ export const ImageUpload = ({
   }, [currentImage]);
 
   const processFile = (file: File) => {
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('Image size should be less than 5MB');
+    // Validate file size
+    if (file.size > maxSizeMB * 1024 * 1024) {
+      toast.error(`Image size should be less than ${maxSizeMB}MB`);
       return;
     }
 
@@ -195,37 +196,47 @@ export const ImageUpload = ({
             onDrop={handleDrop}
             onClick={() => fileInputRef.current?.click()}
             className={cn(
-              'border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-all',
+              'border-2 border-dashed rounded-xl p-12 text-center cursor-pointer transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-primary/20',
               dragActive
-                ? 'border-primary bg-primary/5'
-                : 'border-muted-foreground/25 hover:border-primary/50 hover:bg-accent/50',
+                ? 'border-primary bg-primary/5 scale-[1.02]'
+                : 'border-border/50 hover:border-primary/50 hover:bg-muted/50 hover:scale-[1.01]',
               uploading && 'pointer-events-none opacity-50'
             )}
           >
             {uploading ? (
-              <div className="flex flex-col items-center gap-3">
-                <Loader2 className="w-12 h-12 animate-spin text-primary" />
-                <p className="text-sm text-muted-foreground">Uploading image...</p>
+              <div className="flex flex-col items-center gap-4">
+                <div className="relative">
+                  <div className="absolute inset-0 bg-primary/20 rounded-full animate-ping" />
+                  <div className="relative bg-background p-4 rounded-full border shadow-sm">
+                    <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <p className="font-semibold text-foreground">Uploading image...</p>
+                  <p className="text-sm text-muted-foreground">Please wait a moment</p>
+                </div>
               </div>
             ) : (
-              <div className="flex flex-col items-center gap-3">
-                <Upload className="w-12 h-12 text-muted-foreground" />
-                <div>
-                  <p className="font-medium">{placeholder}</p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    PNG, JPG, GIF or WebP (max. 5MB)
+              <div className="flex flex-col items-center gap-4">
+                <div className="bg-primary/10 p-4 rounded-full ring-8 ring-primary/5 transition-transform group-hover:scale-110 duration-300">
+                  <Upload className="w-8 h-8 text-primary" />
+                </div>
+                <div className="space-y-2">
+                  <p className="font-semibold text-lg">{placeholder}</p>
+                  <p className="text-sm text-muted-foreground max-w-xs mx-auto">
+                    Supports PNG, JPG, GIF or WebP (max. {maxSizeMB}MB)
                   </p>
                 </div>
               </div>
             )}
           </div>
         ) : (
-          <Card className="overflow-hidden">
-            <div className="relative aspect-video w-full bg-muted">
+          <Card className="overflow-hidden bg-background border-2 border-muted">
+            <div className="relative w-full bg-muted/20 flex justify-center items-center p-4 min-h-[200px]">
               <img
                 src={preview}
                 alt="Preview"
-                className="w-full h-full object-contain"
+                className="w-full h-auto max-h-[400px] object-contain rounded-md shadow-sm"
               />
             </div>
             <div className="grid grid-cols-2 sm:flex sm:items-center sm:justify-end gap-2 p-2 bg-muted/30 border-t">

@@ -65,47 +65,73 @@ export function EditPixelDialog({ pixel, isOpen, onClose, onUpdate }: EditPixelD
 
    return (
       <Dialog open={isOpen} onOpenChange={onClose}>
-         <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-               <DialogTitle>Edit Pixel ({pixel?.x}, {pixel?.y})</DialogTitle>
-               <DialogDescription>
-                  Update the image and link for your pixel.
+         <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
+            <DialogHeader className="pb-4 border-b">
+               <DialogTitle className="text-2xl font-bold flex items-center gap-2">
+                  Edit Pixel ({pixel?.x}, {pixel?.y})
+               </DialogTitle>
+               <DialogDescription className="text-base">
+                  Customize your pixel's appearance. Upload an image to make it stand out on the canvas.
                </DialogDescription>
             </DialogHeader>
-            <form onSubmit={handleUpdate} className="space-y-4">
-               <div className="space-y-2">
-                  <Label>Pixel Image</Label>
-                  <ImageUpload
-                     onImageUploaded={setImageUrl}
-                     currentImage={imageUrl}
-                     bucket="blog-images"
-                     folder="user-pixels"
-                     cropAspectRatio={1}
-                  />
+            <form onSubmit={handleUpdate} className="space-y-6 pt-6">
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  {/* Left Column: Image */}
+                  <div className="space-y-4">
+                     <div className="space-y-2">
+                        <Label className="text-base font-semibold">Pixel Image</Label>
+                        <p className="text-xs text-muted-foreground">
+                           Recommended: Square image, under 3MB.
+                        </p>
+                     </div>
+                     <ImageUpload
+                        onImageUploaded={setImageUrl}
+                        currentImage={imageUrl}
+                        bucket="blog-images"
+                        folder="user-pixels"
+                        cropAspectRatio={1}
+                        maxSizeMB={3}
+                        placeholder="Upload New Image"
+                        className="w-full"
+                     />
+                  </div>
+
+                  {/* Right Column: Details */}
+                  <div className="space-y-6">
+                     <div className="space-y-3">
+                        <Label htmlFor="link" className="text-base font-semibold">Destination URL</Label>
+                        <Input
+                           id="link"
+                           value={linkUrl}
+                           onChange={(e) => setLinkUrl(e.target.value)}
+                           placeholder="https://yourwebsite.com"
+                           className="h-11"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                           Where visitors will go when they click your pixel.
+                        </p>
+                     </div>
+
+                     <div className="space-y-3">
+                        <Label htmlFor="alt" className="text-base font-semibold">Alt Text & Tooltip</Label>
+                        <Input
+                           id="alt"
+                           value={altText}
+                           onChange={(e) => setAltText(e.target.value)}
+                           placeholder="My Awesome Pixel"
+                           className="h-11"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                           Text shown when hovering over your pixel.
+                        </p>
+                     </div>
+                  </div>
                </div>
-               <div className="space-y-2">
-                  <Label htmlFor="link">Link URL</Label>
-                  <Input
-                     id="link"
-                     value={linkUrl}
-                     onChange={(e) => setLinkUrl(e.target.value)}
-                     placeholder="https://yourwebsite.com"
-                  />
-               </div>
-               <div className="space-y-2">
-                  <Label htmlFor="alt">Alt Text</Label>
-                  <Input
-                     id="alt"
-                     value={altText}
-                     onChange={(e) => setAltText(e.target.value)}
-                     placeholder="Description of your pixel"
-                  />
-               </div>
-               <DialogFooter>
-                  <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
+               <DialogFooter className="pt-4 border-t gap-2 sm:gap-0">
+                  <Button type="button" variant="outline" onClick={onClose} disabled={loading} className="h-11 px-6">
                      Cancel
                   </Button>
-                  <Button type="submit" disabled={loading}>
+                  <Button type="submit" disabled={loading} className="h-11 px-6 bg-primary hover:bg-primary/90">
                      {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                      Save Changes
                   </Button>

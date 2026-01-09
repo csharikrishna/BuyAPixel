@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription } from "@/components/ui/drawer";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
@@ -269,8 +269,8 @@ export const PurchasePreview = ({
                 // We need to update handleConfirmPurchase to skip upload if we already have a URL.
               }}
               currentImage={imagePreview || ''}
-              folder="pixel-images"
-              bucket="pixel-images"
+              folder="user-pixels"
+              bucket="blog-images"
               cropAspectRatio={1}
               placeholder="Upload Pixel Image"
               className="w-full"
@@ -363,6 +363,9 @@ export const PurchasePreview = ({
             <ShoppingCart className="w-5 h-5 text-primary" />
             Purchase Preview
           </DialogTitle>
+          <DialogDescription>
+            Review your pixel selection and complete your purchase.
+          </DialogDescription>
         </DialogHeader>
         <ScrollArea className="max-h-[70vh] pr-4">
           {purchaseContent}
