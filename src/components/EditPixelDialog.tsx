@@ -80,6 +80,7 @@ export function EditPixelDialog({ pixel, isOpen, onClose, onUpdate }: EditPixelD
                      currentImage={imageUrl}
                      bucket="blog-images"
                      folder="user-pixels"
+                     cropAspectRatio={1}
                   />
                </div>
                <div className="space-y-2">

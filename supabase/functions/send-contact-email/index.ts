@@ -1,5 +1,5 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import * as supabaseJs2 from 'https://esm.sh/@supabase/supabase-js@2'
 
 // Environment variables
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
@@ -85,8 +85,8 @@ function isValidEmail(email: string): boolean {
 
 // Get CORS headers
 function getCorsHeaders(origin: string | null): HeadersInit {
-  const allowedOrigin = origin && ALLOWED_ORIGINS.includes(origin) 
-    ? origin 
+  const allowedOrigin = origin && ALLOWED_ORIGINS.includes(origin)
+    ? origin
     : ALLOWED_ORIGINS[0]
 
   return {
@@ -98,10 +98,10 @@ function getCorsHeaders(origin: string | null): HeadersInit {
 }
 
 // Log contact submission to database
-async function logContactSubmission(data: ContactFormData, metadata: any) {
+async function logContactSubmission(data: ContactFormData, metadata: { ip: string; userAgent: string }) {
   try {
-    const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!)
-    
+    const supabase = supabaseJs2.createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!)
+
     await supabase.from('contact_submissions').insert({
       name: data.name,
       email: data.email,
@@ -117,7 +117,7 @@ async function logContactSubmission(data: ContactFormData, metadata: any) {
   }
 }
 
-serve(async (req) => {
+serve(async (req: Request) => {
   const origin = req.headers.get('origin')
   const corsHeaders = getCorsHeaders(origin)
 
@@ -130,9 +130,9 @@ serve(async (req) => {
   if (req.method !== 'POST') {
     return new Response(
       JSON.stringify({ error: 'Method not allowed' }),
-      { 
-        status: 405, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      {
+        status: 405,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
     )
   }
@@ -147,19 +147,19 @@ serve(async (req) => {
     if (!allowed) {
       console.warn(`⚠️  Rate limit exceeded for IP: ${ip}`)
       return new Response(
-        JSON.stringify({ 
+        JSON.stringify({
           error: 'Too many requests. Please try again later.',
           retryAfter: Math.ceil(RATE_LIMIT_WINDOW / 1000 / 60) + ' minutes'
         }),
-        { 
-          status: 429, 
-          headers: { 
-            ...corsHeaders, 
+        {
+          status: 429,
+          headers: {
+            ...corsHeaders,
             'Content-Type': 'application/json',
             'X-RateLimit-Limit': RATE_LIMIT.toString(),
             'X-RateLimit-Remaining': '0',
             'Retry-After': Math.ceil(RATE_LIMIT_WINDOW / 1000).toString(),
-          } 
+          }
         }
       )
     }
@@ -171,9 +171,9 @@ serve(async (req) => {
     } catch {
       return new Response(
         JSON.stringify({ error: 'Invalid JSON body' }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
       )
     }
@@ -193,7 +193,7 @@ serve(async (req) => {
     // Validate required fields
     if (!name || !email || !subject || !message) {
       return new Response(
-        JSON.stringify({ 
+        JSON.stringify({
           error: 'All fields are required',
           fields: {
             name: !name ? 'Name is required' : undefined,
@@ -202,9 +202,9 @@ serve(async (req) => {
             message: !message ? 'Message is required' : undefined,
           }
         }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
       )
     }
@@ -243,8 +243,8 @@ serve(async (req) => {
     const spamKeywords = ['viagra', 'casino', 'crypto', 'bitcoin', 'lottery', 'prize']
     const messageLower = message.toLowerCase()
     const subjectLower = subject.toLowerCase()
-    
-    if (spamKeywords.some(keyword => 
+
+    if (spamKeywords.some(keyword =>
       messageLower.includes(keyword) || subjectLower.includes(keyword)
     )) {
       console.warn('🚫 Potential spam detected via keywords')
@@ -426,11 +426,11 @@ serve(async (req) => {
                     <strong>📊 Request Metadata:</strong><br>
                     IP Address: ${ip}<br>
                     User Agent: ${userAgent}<br>
-                    Submitted: ${new Date().toLocaleString('en-IN', { 
-                      timeZone: 'Asia/Kolkata',
-                      dateStyle: 'long',
-                      timeStyle: 'medium'
-                    })} IST
+                    Submitted: ${new Date().toLocaleString('en-IN', {
+          timeZone: 'Asia/Kolkata',
+          dateStyle: 'long',
+          timeStyle: 'medium'
+        })} IST
                   </div>
 
                   <div style="text-align: center;">
@@ -459,13 +459,13 @@ serve(async (req) => {
       if (res.status === 403 && data.message?.includes('testing')) {
         console.log('⚠️  Resend Test Mode: Email sent to verified address only')
         console.log('✅ Email delivered to:', CONTACT_EMAIL)
-        
+
         // Log to database
         await logContactSubmission(formData, { ip, userAgent })
-        
+
         return new Response(
-          JSON.stringify({ 
-            success: true, 
+          JSON.stringify({
+            success: true,
             message: 'Email sent successfully',
             note: 'Test mode - emails sent to verified address only'
           }),
@@ -490,10 +490,10 @@ serve(async (req) => {
     await logContactSubmission(formData, { ip, userAgent })
 
     return new Response(
-      JSON.stringify({ 
-        success: true, 
+      JSON.stringify({
+        success: true,
         message: 'Email sent successfully',
-        emailId: data.id 
+        emailId: data.id
       }),
       {
         headers: {
@@ -504,13 +504,13 @@ serve(async (req) => {
         },
       }
     )
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('❌ Error in contact form handler:', error)
-    
+
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         error: 'Failed to send email. Please try again later.',
-        message: error.message || 'Internal server error'
+        message: error instanceof Error ? error.message : 'Internal server error'
       }),
       {
         status: 500,

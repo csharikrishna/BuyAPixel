@@ -87,6 +87,17 @@ const LeaderboardRowSkeleton = () => (
   </div>
 );
 
+interface PixelData {
+  owner_id: string | null;
+  price_paid: number;
+  purchased_at: string | null;
+  x: number;
+  y: number;
+  id: string;
+  image_url: string | null;
+  alt_text: string | null;
+}
+
 const Leaderboard = () => {
   const { user } = useAuth();
   const [topByPixels, setTopByPixels] = useState<LeaderboardUser[]>([]);
@@ -117,129 +128,113 @@ const Leaderboard = () => {
       setError(null);
 
       // Date filter based on time period
-      let dateFilter = null;
+      let startDate = null;
       const now = new Date();
       if (timePeriod === 'today') {
-        dateFilter = new Date(now.setHours(0, 0, 0, 0)).toISOString();
+        startDate = new Date(now.setHours(0, 0, 0, 0)).toISOString();
       } else if (timePeriod === 'week') {
-        dateFilter = new Date(now.setDate(now.getDate() - 7)).toISOString();
+        startDate = new Date(now.setDate(now.getDate() - 7)).toISOString();
       } else if (timePeriod === 'month') {
-        dateFilter = new Date(now.setMonth(now.getMonth() - 1)).toISOString();
+        startDate = new Date(now.setMonth(now.getMonth() - 1)).toISOString();
       }
 
-      // Fetch pixels with optional date filter
-      let pixelsQuery = supabase
-        .from('pixels')
-        .select('owner_id, price_paid, purchased_at, x, y, id, image_url, alt_text')
-        .not('owner_id', 'is', null);
+      // 1. Fetch Top Pixels & Spenders via RPC
+      // Cast to any because types are not yet generated for these specific RPCs
+      const [pixelsData, spendingData, statsData] = await Promise.all([
+        (supabase as any).rpc("get_leaderboard_stats", {
+          sort_by: "pixels",
+          limit_count: 100,
+          start_date: startDate
+        }),
+        (supabase as any).rpc("get_leaderboard_stats", {
+          sort_by: "spending",
+          limit_count: 100,
+          start_date: startDate
+        }),
+        (supabase as any).rpc("get_general_stats")
+      ]);
 
-      if (dateFilter) {
-        pixelsQuery = pixelsQuery.gte('purchased_at', dateFilter);
-      }
+      if (pixelsData.error) throw pixelsData.error;
+      if (spendingData.error) throw spendingData.error;
+      if (statsData.error) throw statsData.error;
 
-      const { data: allPixels, error: pixelsError } = await pixelsQuery;
-      if (pixelsError) throw pixelsError;
-
-      // Fetch profiles
-      const { data: allProfiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('user_id, full_name, avatar_url');
-      if (profilesError) throw profilesError;
-
-      const profileMap = new Map();
-      allProfiles?.forEach(profile => {
-        profileMap.set(profile.user_id, profile);
+      // Transform RPC data to LeaderboardUser
+      const transformUser = (data: any): LeaderboardUser => ({
+        id: data.user_id,
+        user_id: data.user_id,
+        full_name: data.full_name,
+        avatar_url: data.avatar_url,
+        pixel_count: Number(data.pixel_count),
+        total_spent: Number(data.total_spent)
       });
 
-      if (allPixels) {
-        const pixelCounts: Record<string, LeaderboardUser> = {};
-        const spendingTotals: Record<string, LeaderboardUser> = {};
+      const sortedByPixels = ((pixelsData.data as any[]) || []).map(transformUser);
+      const sortedBySpending = ((spendingData.data as any[]) || []).map(transformUser);
 
-        allPixels.forEach((pixel: any) => {
-          const userId = pixel.owner_id;
-          if (!userId) return;
+      setTopByPixels(sortedByPixels);
+      setTopBySpending(sortedBySpending);
 
-          const profile = profileMap.get(userId);
-          const pricePaid = parseFloat(pixel.price_paid || 0);
+      // Find current user's rank
+      if (user) {
+        const pixelRankIndex = sortedByPixels.findIndex(u => u.user_id === user.id);
+        const spendingRankIndex = sortedBySpending.findIndex(u => u.user_id === user.id);
 
-          // Pixel counts
-          if (!pixelCounts[userId]) {
-            pixelCounts[userId] = {
-              user_id: userId,
-              full_name: profile?.full_name || null,
-              avatar_url: profile?.avatar_url || null,
-              id: userId,
-              pixel_count: 0,
-              total_spent: 0
-            };
-          }
-          pixelCounts[userId].pixel_count++;
-
-          // Spending totals
-          if (!spendingTotals[userId]) {
-            spendingTotals[userId] = {
-              user_id: userId,
-              full_name: profile?.full_name || null,
-              avatar_url: profile?.avatar_url || null,
-              id: userId,
-              pixel_count: 0,
-              total_spent: 0
-            };
-          }
-          spendingTotals[userId].total_spent += pricePaid;
-        });
-
-        const sortedByPixels = Object.values(pixelCounts)
-          .sort((a, b) => b.pixel_count - a.pixel_count)
-          .slice(0, 100);
-
-        const sortedBySpending = Object.values(spendingTotals)
-          .sort((a, b) => b.total_spent - a.total_spent)
-          .slice(0, 100);
-
-        setTopByPixels(sortedByPixels);
-        setTopBySpending(sortedBySpending);
-
-        // Find current user's rank
-        if (user) {
-          const pixelRankIndex = sortedByPixels.findIndex(u => u.user_id === user.id);
-          const spendingRankIndex = sortedBySpending.findIndex(u => u.user_id === user.id);
-
-          setUserRank({
-            pixelRank: pixelRankIndex >= 0 ? pixelRankIndex + 1 : null,
-            spendingRank: spendingRankIndex >= 0 ? spendingRankIndex + 1 : null
-          });
-        }
-
-        // Recent purchases
-        const recentWithProfiles = allPixels
-          .filter(p => p.purchased_at)
-          .sort((a, b) => new Date(b.purchased_at).getTime() - new Date(a.purchased_at).getTime())
-          .slice(0, 50)
-          .map(purchase => {
-            const profile = profileMap.get(purchase.owner_id);
-            return {
-              ...purchase,
-              full_name: profile?.full_name || null,
-              avatar_url: profile?.avatar_url || null,
-              user_id: purchase.owner_id
-            };
-          });
-
-        setRecentPurchases(recentWithProfiles);
-
-        // Enhanced stats
-        const totalRevenue = allPixels.reduce((sum, pixel) => sum + parseFloat(String(pixel.price_paid || 0)), 0);
-        const averagePrice = allPixels.length > 0 ? totalRevenue / allPixels.length : 0;
-
-        setStats({
-          totalPixelsSold: allPixels.length,
-          totalRevenue,
-          totalUsers: allProfiles?.length || 0,
-          averagePrice,
-          recentGrowth: 12.5
+        setUserRank({
+          pixelRank: pixelRankIndex >= 0 ? pixelRankIndex + 1 : null,
+          spendingRank: spendingRankIndex >= 0 ? spendingRankIndex + 1 : null
         });
       }
+
+      // 2. Fetch Helper Stats
+      const statsArray = (statsData.data as any[]) || [];
+      if (statsArray.length > 0) {
+        setStats({
+          totalPixelsSold: Number(statsArray[0].total_pixels_sold),
+          totalRevenue: Number(statsArray[0].total_revenue),
+          totalUsers: Number(statsArray[0].total_users),
+          averagePrice: Number(statsArray[0].average_price),
+          recentGrowth: 12.5 // Placeholder or calculate separately if needed
+        });
+      }
+
+      // 3. Fetch Recent Purchases (Lightweight, last 50 only)
+      // We still do a manual fetch here but limited to 50 rows
+      const { data: recentPixels, error: recentError } = await supabase
+        .from('pixels')
+        .select('owner_id, price_paid, purchased_at, x, y, id, image_url, alt_text')
+        .not('owner_id', 'is', null)
+        .order('purchased_at', { ascending: false })
+        .limit(50);
+
+      if (recentError) throw recentError;
+
+      // Fetch profiles just for these 50 recent purchases
+      // Optimization: Extract unique user IDs from the 50 pixels
+      const recentUserIds = Array.from(new Set(recentPixels?.map(p => p.owner_id) || []));
+
+      let profileMap = new Map();
+      if (recentUserIds.length > 0) {
+        const { data: recentProfiles } = await supabase
+          .from('profiles')
+          .select('user_id, full_name, avatar_url')
+          .in('user_id', recentUserIds);
+
+        recentProfiles?.forEach(profile => {
+          profileMap.set(profile.user_id, profile);
+        });
+      }
+
+      const recentWithProfiles = (recentPixels || []).map((purchase: PixelData) => {
+        const profile = profileMap.get(purchase.owner_id);
+        return {
+          ...purchase,
+          full_name: profile?.full_name || null,
+          avatar_url: profile?.avatar_url || null,
+          user_id: purchase.owner_id!
+        };
+      });
+
+      setRecentPurchases(recentWithProfiles);
 
     } catch (error: unknown) {
       console.error('Error fetching leaderboard data:', error);
@@ -247,7 +242,7 @@ const Leaderboard = () => {
     } finally {
       setLoading(false);
     }
-  }, [timePeriod, user]);
+  }, [user, timePeriod]);
 
   useEffect(() => {
     fetchLeaderboardData();

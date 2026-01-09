@@ -7,11 +7,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { 
-  ShoppingCart, 
-  CreditCard, 
-  MapPin, 
-  TrendingUp, 
+import {
+  ShoppingCart,
+  CreditCard,
+  MapPin,
+  TrendingUp,
   Clock,
   CheckCircle,
   AlertCircle,
@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { ImageUpload } from "@/components/ImageUpload";
 
 interface SelectedPixel {
   x: number;
@@ -45,27 +46,9 @@ export const PurchasePreview = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const [linkUrl, setLinkUrl] = useState("");
   const [pixelName, setPixelName] = useState("");
-  const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
-  const onFileSelected = (file: File) => {
-    setImageFile(file);
-    try { 
-      setImagePreview(URL.createObjectURL(file)); 
-    } catch { 
-      /* noop */ 
-    }
-  };
-
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    const file = e.dataTransfer.files?.[0];
-    if (file) onFileSelected(file);
-  };
-
-  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-  };
+  // File handlers removed as ImageUpload handles them internally
 
   const totalCost = selectedPixels.reduce((sum, pixel) => sum + pixel.price, 0);
   const pixelCounts = selectedPixels.reduce((acc, pixel) => {
@@ -75,15 +58,15 @@ export const PurchasePreview = ({
 
   const getSelectionInfo = () => {
     if (selectedPixels.length === 0) return null;
-    
+
     const xCoords = selectedPixels.map(p => p.x);
     const yCoords = selectedPixels.map(p => p.y);
-    
+
     const minX = Math.min(...xCoords);
     const maxX = Math.max(...xCoords);
     const minY = Math.min(...yCoords);
     const maxY = Math.max(...yCoords);
-    
+
     return {
       range: { x: { min: minX, max: maxX }, y: { min: minY, max: maxY } },
       dimensions: { width: maxX - minX + 1, height: maxY - minY + 1 },
@@ -101,42 +84,19 @@ export const PurchasePreview = ({
 
     setIsProcessing(true);
     try {
-      let imageUrl = null;
-      if (imageFile) {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          const fileExt = imageFile.name.split('.').pop();
-          const fileName = `${user.id}/${Date.now()}.${fileExt}`;
-          
-          const { data, error } = await supabase.storage
-            .from('pixel-images')
-            .upload(fileName, imageFile);
-
-          if (error) {
-            console.error('Image upload error:', error);
-            toast.error("Failed to upload image");
-            return;
-          }
-
-          const { data: { publicUrl } } = supabase.storage
-            .from('pixel-images')
-            .getPublicUrl(fileName);
-          
-          imageUrl = publicUrl;
-        }
-      }
+      // Image is already uploaded by ImageUpload component if imagePreview exists
+      const imageUrl = imagePreview;
 
       await new Promise(resolve => setTimeout(resolve, 1500));
-      
+
       await onConfirmPurchase(pixelName, linkUrl, imageUrl);
       toast.success("🎉 Purchase successful! Your pixels are now yours and visible on the canvas!", {
         duration: 5000
       });
       onClose();
-      
+
       setPixelName("");
       setLinkUrl("");
-      setImageFile(null);
       setImagePreview(null);
     } catch (error) {
       console.error('Purchase error:', error);
@@ -161,6 +121,18 @@ export const PurchasePreview = ({
 
   const purchaseContent = (
     <div className="space-y-6 md:space-y-6">
+      {/* Connectivity Warning */}
+      <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3 md:p-4 flex gap-3 text-yellow-700 dark:text-yellow-400">
+        <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+        <div className="text-xs md:text-sm leading-relaxed">
+          <strong>Stable Connection Required:</strong> Before proceeding, please verify that you have a stable and reliable
+          internet connection to ensure optimal performance of this web application. This webpage may consume higher bandwidth
+          due to dynamic content and advertisements, which can lead to slow loading, interruptions, or incomplete rendering
+          on unstable networks. If you are experiencing latency, buffering, or connectivity drops, it is strongly recommended
+          to switch to a high-speed, stable Wi-Fi connection for a seamless and uninterrupted experience.
+        </div>
+      </div>
+
       {/* Selection Overview */}
       <Card className="card-premium">
         <CardHeader>
@@ -220,7 +192,7 @@ export const PurchasePreview = ({
             .map(([price, count]) => {
               const tierInfo = getPriceTierInfo(Number(price));
               const subtotal = Number(price) * count;
-              
+
               return (
                 <div key={price} className="flex items-center justify-between p-2 md:p-3 rounded-lg border bg-card">
                   <div className="flex items-center gap-2 md:gap-3">
@@ -238,9 +210,9 @@ export const PurchasePreview = ({
                 </div>
               );
             })}
-          
+
           <Separator />
-          
+
           <div className="flex items-center justify-between p-2 md:p-3 rounded-lg bg-primary/10 border border-primary/20">
             <div className="font-semibold text-base md:text-lg">Total</div>
             <div className="text-xl md:text-2xl font-bold text-primary">₹{totalCost}</div>
@@ -285,41 +257,23 @@ export const PurchasePreview = ({
 
           <div>
             <label className="block text-sm font-medium mb-2">Image Upload</label>
-            <div
-              className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary/50 transition-colors cursor-pointer min-h-[140px] flex items-center justify-center active:bg-muted/20"
-              onDrop={handleDrop}
-              onDragOver={handleDragOver}
-              onClick={() => document.getElementById('file-input')?.click()}
-            >
-              {imagePreview ? (
-                <div className="space-y-2">
-                  <img
-                    src={imagePreview}
-                    alt="Preview"
-                    className="max-w-full max-h-32 mx-auto rounded"
-                  />
-                  <p className="text-xs md:text-sm text-muted-foreground">
-                    {imageFile?.name} - Tap to change
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  <div className="w-12 h-12 mx-auto bg-muted rounded-lg flex items-center justify-center">
-                    <svg className="w-6 h-6 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                    </svg>
-                  </div>
-                  <p className="text-sm font-medium">Tap to upload or drop image</p>
-                  <p className="text-xs text-muted-foreground">PNG, JPG, GIF up to 2MB</p>
-                </div>
-              )}
-            </div>
-            <input
-              id="file-input"
-              type="file"
-              accept="image/*"
-              onChange={(e) => e.target.files?.[0] && onFileSelected(e.target.files[0])}
-              className="hidden"
+            <ImageUpload
+              onImageUploaded={(url) => {
+                // We need to fetch the file blob if we want to upload it during purchase, 
+                // OR we can trust that ImageUpload already uploaded it to 'pixel-images' bucket.
+                // The current PurchasePreview logic expects us to upload later. 
+                // However, ImageUpload uploads immediately.
+                // We should adapt PurchasePreview to use the returned URL directly.
+                setImagePreview(url);
+                // We don't have the File object anymore, but we have the URL.
+                // We need to update handleConfirmPurchase to skip upload if we already have a URL.
+              }}
+              currentImage={imagePreview || ''}
+              folder="pixel-images"
+              bucket="pixel-images"
+              cropAspectRatio={1}
+              placeholder="Upload Pixel Image"
+              className="w-full"
             />
           </div>
         </CardContent>
@@ -355,10 +309,10 @@ export const PurchasePreview = ({
               Review your selection and complete your purchase
             </DrawerDescription>
           </DrawerHeader>
-          
-          <div 
+
+          <div
             className="flex-1 overflow-y-auto px-4 py-6"
-            style={{ 
+            style={{
               WebkitOverflowScrolling: 'touch',
               overscrollBehavior: 'contain'
             }}
@@ -412,7 +366,7 @@ export const PurchasePreview = ({
         </DialogHeader>
         <ScrollArea className="max-h-[70vh] pr-4">
           {purchaseContent}
-          
+
           {/* Action Buttons for Desktop */}
           <div className="flex gap-4 pt-6 border-t mt-6">
             <Button

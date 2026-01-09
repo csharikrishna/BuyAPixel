@@ -1,26 +1,5 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-
-const ALLOWED_ORIGINS = [
-   'https://buyapixel.onrender.com', // Add your production domains here
-   'https://buyapixel.in',
-   'http://localhost:5173',
-   'http://localhost:8080'
-]
-
-function getCorsHeaders(origin: string | null): HeadersInit {
-   const allowedOrigin = origin && ALLOWED_ORIGINS.includes(origin)
-      ? origin
-      : 'https://buyapixel.in' // specific default or wildcard if safe
-
-   return {
-      // Or just use '*' if you don't need credentials
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-      'Access-Control-Allow-Methods': 'POST, OPTIONS',
-      'Access-Control-Max-Age': '86400',
-   }
-}
+import * as supabaseJs2 from 'https://esm.sh/@supabase/supabase-js@2'
 
 const simpleCorsHeaders = {
    'Access-Control-Allow-Origin': '*',
@@ -35,10 +14,14 @@ serve(async (req) => {
    }
 
    try {
-      const supabaseClient = createClient(
-         Deno.env.get('SUPABASE_URL') ?? '',
-         Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-      )
+      const supabaseUrl = Deno.env.get('SUPABASE_URL')
+      const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+
+      if (!supabaseUrl || !supabaseKey) {
+         throw new Error('Missing Supabase environment variables')
+      }
+
+      const supabaseClient = supabaseJs2.createClient(supabaseUrl, supabaseKey)
 
       // 1. Get active listings stats
       const { data: activeListings, error: listingsError } = await supabaseClient
@@ -62,8 +45,10 @@ serve(async (req) => {
       const active_listings = activeListings?.length || 0
 
       if (active_listings > 0) {
-         const prices = activeListings.map((l) => l.asking_price)
-         const total_asking = prices.reduce((a, b) => a + b, 0)
+         // deno-lint-ignore no-explicit-any
+         const listings = activeListings as any[]
+         const prices = listings.map((l: { asking_price: number }) => l.asking_price)
+         const total_asking = prices.reduce((a: number, b: number) => a + b, 0)
 
          average_price = Math.round(total_asking / active_listings)
          highest_price = Math.max(...prices)
@@ -75,15 +60,16 @@ serve(async (req) => {
          total_sold: totalSold || 0,
          average_price,
          highest_price,
-         lowest_price
+         lowest_price,
       }
 
       return new Response(JSON.stringify(stats), {
          headers: { ...simpleCorsHeaders, 'Content-Type': 'application/json' },
          status: 200,
       })
-   } catch (error: any) {
-      return new Response(JSON.stringify({ error: error.message }), {
+   } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Unknown error'
+      return new Response(JSON.stringify({ error: message }), {
          headers: { ...simpleCorsHeaders, 'Content-Type': 'application/json' },
          status: 400,
       })

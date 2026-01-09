@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Loader2, Upload, User } from "lucide-react";
 import { toast } from "sonner";
+import { ImageUpload } from '@/components/ImageUpload';
 
 interface Profile {
   id: string;
@@ -64,48 +65,7 @@ const ProfileEditModal: React.FC<ProfileEditModalProps> = ({
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !profile) return;
-
-    // Validate file size (max 2MB)
-    if (file.size > 2 * 1024 * 1024) {
-      toast.error('Image must be less than 2MB');
-      return;
-    }
-
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      toast.error('Please upload an image file');
-      return;
-    }
-
-    setUploading(true);
-
-    try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Date.now()}.${fileExt}`;
-      const filePath = `${profile.user_id}/${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(filePath, file, { upsert: true });
-
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(filePath);
-
-      setFormData(prev => ({ ...prev, avatar_url: publicUrl }));
-      toast.success('Avatar uploaded successfully');
-    } catch (error) {
-      console.error('Error uploading avatar:', error);
-      toast.error('Failed to upload avatar');
-    } finally {
-      setUploading(false);
-    }
-  };
+  // Removed manual upload logic in favor of ImageUpload component
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -174,54 +134,17 @@ const ProfileEditModal: React.FC<ProfileEditModalProps> = ({
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Avatar Upload */}
           <div className="flex flex-col items-center gap-4">
-            <Avatar className="w-24 h-24 border-4 border-background shadow-lg">
-              <AvatarImage
-                src={formData.avatar_url || undefined}
-                alt={formData.full_name || 'User'}
+            <div className="w-full max-w-xs mx-auto">
+              <Label className="mb-2 block text-center">Profile Picture</Label>
+              <ImageUpload
+                onImageUploaded={(url) => setFormData(prev => ({ ...prev, avatar_url: url }))}
+                currentImage={formData.avatar_url || ''}
+                folder="avatars"
+                bucket="avatars"
+                cropAspectRatio={1}
+                placeholder="Upload Avatar"
+                className="w-full"
               />
-              <AvatarFallback className="text-2xl font-bold bg-gradient-to-br from-primary to-secondary text-primary-foreground">
-                {getInitials(formData.full_name)}
-              </AvatarFallback>
-            </Avatar>
-
-            <div className="flex flex-col items-center gap-2">
-              <Label
-                htmlFor="avatar-upload"
-                className="cursor-pointer"
-              >
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  disabled={uploading}
-                  asChild
-                >
-                  <span>
-                    {uploading ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Uploading...
-                      </>
-                    ) : (
-                      <>
-                        <Upload className="w-4 h-4 mr-2" />
-                        Change Avatar
-                      </>
-                    )}
-                  </span>
-                </Button>
-              </Label>
-              <input
-                id="avatar-upload"
-                type="file"
-                accept="image/*"
-                onChange={handleAvatarUpload}
-                className="hidden"
-                disabled={uploading}
-              />
-              <p className="text-xs text-muted-foreground">
-                Max 2MB • JPG, PNG, or GIF
-              </p>
             </div>
           </div>
 

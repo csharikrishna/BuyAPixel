@@ -2,80 +2,23 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Progress } from '@/components/ui/progress';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import {
-  Edit, ArrowLeft, Mail, Phone, Calendar,
-  User, MapPin, Eye, TrendingUp, ExternalLink,
-  Award, Clock, CheckCircle2, AlertCircle, Info,
-  RefreshCw, Loader2, Download, Trash2, Shield,
-  AlertTriangle, Copy, Check, Sparkles
+  ArrowLeft, RefreshCw, Edit, AlertCircle,
+  User, Sparkles, CheckCircle2, Phone, Calendar
 } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import ProfileEditModal from '@/components/ProfileEditModal';
+import { SharePixelDialog } from '@/components/SharePixelDialog';
 import { RealtimeChannel } from '@supabase/supabase-js';
-import { Input } from '@/components/ui/input';
 import { EditPixelDialog } from '@/components/EditPixelDialog';
 
-// Type definitions
-interface Profile {
-  id: string;
-  user_id: string;
-  full_name: string | null;
-  phone_number: string | null;
-  date_of_birth: string | null;
-  avatar_url: string | null;
-  email: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-interface UserPixel {
-  x: number;
-  y: number;
-  id: string;
-  image_url?: string;
-  link_url?: string;
-  alt_text?: string;
-  price_paid: number;
-  purchased_at: string;
-}
-
-interface PixelStats {
-  totalPixels: number;
-  totalInvestment: number;
-  averagePrice: number;
-}
-
-interface ProfileField {
-  name: string;
-  label: string;
-  completed: boolean;
-  value: string | null;
-  icon: React.ReactNode;
-}
-
-interface ProfileCompletionData {
-  percentage: number;
-  completedFields: ProfileField[];
-  missingFields: ProfileField[];
-  allFields: ProfileField[];
-}
+import { ProfileDetails } from '@/components/profile/ProfileDetails';
+import { MyPixels } from '@/components/profile/MyPixels';
+import { TrophyCase } from '@/components/TrophyCase';
+import { Profile as UserProfile, UserPixel, PixelStats, ProfileField, ProfileCompletionData } from '@/types/profile';
 
 // Loading skeleton component
 const ProfileSkeleton = () => (
@@ -102,19 +45,27 @@ const ProfileSkeleton = () => (
 const Profile = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const [profile, setProfile] = useState<Profile | null>(null);
+  const [searchParams] = useSearchParams();
+  const [profile, setProfile] = useState<UserProfile | null>(null);
   const [profileLoading, setProfileLoading] = useState(true);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [userPixels, setUserPixels] = useState<UserPixel[]>([]);
   const [pixelsLoading, setPixelsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+
+  // States for delete account
   const [deleteLoading, setDeleteLoading] = useState(false);
-  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+
+  // States for other dialogs
   const [exportLoading, setExportLoading] = useState(false);
-  const [copied, setCopied] = useState(false);
   const [editingPixel, setEditingPixel] = useState<UserPixel | null>(null);
+  const [sharePixel, setSharePixel] = useState<UserPixel | null>(null);
+
+  // Determine viewing mode
+  const publicUserId = searchParams.get('id');
+  const targetUserId = publicUserId || user?.id;
+  const isOwnProfile = !publicUserId || (user && user.id === publicUserId);
 
   // Calculate profile completion with detailed breakdown
   const profileCompletionData = useMemo<ProfileCompletionData>(() => {
@@ -181,7 +132,7 @@ const Profile = () => {
 
   // Fetch profile data
   const fetchProfile = useCallback(async (showToast = false) => {
-    if (!user?.id) return;
+    if (!targetUserId) return;
 
     setProfileLoading(true);
     setError(null);
@@ -190,43 +141,44 @@ const Profile = () => {
       const { data, error: fetchError } = await supabase
         .from('profiles')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', targetUserId)
         .maybeSingle();
 
       if (fetchError) throw fetchError;
 
       if (!data) {
-        console.warn('Profile not found, attempting to create one');
+        if (isOwnProfile && user) {
+          console.warn('Profile not found, attempting to create one');
+          const { data: newProfile, error: createError } = await supabase
+            .from('profiles')
+            .insert({
+              user_id: user.id,
+              full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
+              email: user.email || null,
+              avatar_url: user.user_metadata?.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(user.email || 'User')}`,
+              phone_number: null,
+              date_of_birth: null,
+            })
+            .select()
+            .single();
 
-        const { data: newProfile, error: createError } = await supabase
-          .from('profiles')
-          .insert({
-            user_id: user.id,
-            full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
-            email: user.email || null,
-            avatar_url: user.user_metadata?.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(user.email || 'User')}`,
-            phone_number: null,
-            date_of_birth: null,
-          })
-          .select()
-          .single();
-
-        if (createError) {
-          console.error('Error creating profile:', createError);
-          throw new Error('Failed to create profile. Please try again or contact support.');
-        }
-
-        setProfile({
-          ...newProfile,
-          email: user.email ?? null
-        });
-        if (showToast) {
-          toast.success("Profile created successfully");
+          if (createError) {
+            console.error('Error creating profile:', createError);
+            throw new Error('Failed to create profile. Please contact support.');
+          }
+          setProfile({
+            ...newProfile,
+            email: user.email ?? null // Ensure email matches auth for own profile
+          });
+        } else {
+          // For public view, if profile not found
+          throw new Error("Profile not found");
         }
       } else {
         setProfile({
           ...data,
-          email: user.email ?? null
+          // Only show email if it's your own profile to protect privacy
+          email: isOwnProfile ? (user?.email ?? null) : null
         });
         if (showToast) {
           toast.success("Profile refreshed successfully");
@@ -240,11 +192,11 @@ const Profile = () => {
     } finally {
       setProfileLoading(false);
     }
-  }, [user?.id, user?.email, user?.user_metadata]);
+  }, [targetUserId, isOwnProfile, user]);
 
   // Fetch user pixels
   const fetchUserPixels = useCallback(async (showToast = false) => {
-    if (!user?.id) return;
+    if (!targetUserId) return;
 
     setPixelsLoading(true);
 
@@ -252,7 +204,7 @@ const Profile = () => {
       const { data, error: fetchError } = await supabase
         .from('pixels')
         .select('*')
-        .eq('owner_id', user.id)
+        .eq('owner_id', targetUserId)
         .order('purchased_at', { ascending: false });
 
       if (fetchError) throw fetchError;
@@ -274,11 +226,11 @@ const Profile = () => {
       }
     } catch (err) {
       console.error('Error fetching user pixels:', err);
-      toast.error("Failed to load your pixels");
+      toast.error("Failed to load pixels");
     } finally {
       setPixelsLoading(false);
     }
-  }, [user?.id]);
+  }, [targetUserId]);
 
   // Export user data as JSON
   const handleExportData = useCallback(async () => {
@@ -313,25 +265,11 @@ const Profile = () => {
     }
   }, [profile, userPixels, pixelStats, user?.email]);
 
-  // Copy user ID to clipboard
-  const handleCopyUserId = useCallback(() => {
-    if (!user?.id) return;
-
-    navigator.clipboard.writeText(user.id).then(() => {
-      setCopied(true);
-      toast.success("User ID copied to clipboard");
-      setTimeout(() => setCopied(false), 2000);
-    }).catch(() => {
-      toast.error("Failed to copy User ID");
-    });
-  }, [user?.id]);
-
   // Delete account
   const handleDeleteAccount = useCallback(async () => {
-    if (deleteConfirmText.toLowerCase() !== 'delete my account') {
-      toast.error('Please type "delete my account" to confirm');
-      return;
-    }
+    // Note: Confirmation is handled by ProfileDetails component.
+    // This function runs only after user confirms.
+    if (!isOwnProfile || !user) return;
 
     setDeleteLoading(true);
 
@@ -342,7 +280,7 @@ const Profile = () => {
         const { error: pixelsError } = await supabase
           .from('pixels')
           .delete()
-          .eq('owner_id', user!.id);
+          .eq('owner_id', user.id);
 
         if (pixelsError) {
           console.error('Error deleting pixels:', pixelsError);
@@ -355,7 +293,7 @@ const Profile = () => {
       const { error: profileError } = await supabase
         .from('profiles')
         .delete()
-        .eq('user_id', user!.id);
+        .eq('user_id', user.id);
 
       if (profileError) {
         console.error('Error deleting profile:', profileError);
@@ -378,12 +316,9 @@ const Profile = () => {
     } catch (err) {
       console.error('Error deleting account:', err);
       toast.error('Failed to delete account. Please try again or contact support.');
-    } finally {
-      setDeleteLoading(false);
-      setDeleteDialogOpen(false);
-      setDeleteConfirmText('');
+      setDeleteLoading(false); // Only set to false on error, otherwise we are navigating away
     }
-  }, [deleteConfirmText, userPixels, user, navigate]);
+  }, [userPixels, user, navigate, isOwnProfile]);
 
   // Refresh all data
   const handleRefresh = useCallback(async () => {
@@ -397,23 +332,23 @@ const Profile = () => {
 
   // Initial data fetch
   useEffect(() => {
-    if (user?.id) {
+    if (targetUserId) {
       fetchProfile();
       fetchUserPixels();
     }
-  }, [user?.id, fetchProfile, fetchUserPixels]);
+  }, [targetUserId, fetchProfile, fetchUserPixels]);
 
-  // Redirect to signin if not authenticated after loading
+  // Redirect to signin if not authenticated and not viewing a public profile
   useEffect(() => {
-    if (!authLoading && !user) {
+    if (!authLoading && !user && !publicUserId) {
       toast.error("Please sign in to view your profile");
       navigate('/signin', { state: { from: '/profile' } });
     }
-  }, [authLoading, user, navigate]);
+  }, [authLoading, user, navigate, publicUserId]);
 
-  // Real-time subscription
+  // Real-time subscription (only for own profile)
   useEffect(() => {
-    if (!user?.id) return;
+    if (!user?.id || !isOwnProfile) return;
 
     let channel: RealtimeChannel;
 
@@ -448,58 +383,11 @@ const Profile = () => {
         supabase.removeChannel(channel);
       }
     };
-  }, [user?.id, fetchUserPixels, fetchProfile]);
-
-  // Utility functions
-  const formatDate = useCallback((dateString: string | null): string => {
-    if (!dateString) return 'Not provided';
-    try {
-      const date = new Date(dateString);
-      if (isNaN(date.getTime())) return 'Invalid date';
-
-      return date.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      });
-    } catch {
-      return 'Invalid date';
-    }
-  }, []);
-
-  const formatRelativeDate = useCallback((dateString: string): string => {
-    try {
-      const date = new Date(dateString);
-      const now = new Date();
-      const diffInMs = now.getTime() - date.getTime();
-      const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
-
-      if (diffInDays === 0) return 'Today';
-      if (diffInDays === 1) return 'Yesterday';
-      if (diffInDays < 7) return `${diffInDays} days ago`;
-      if (diffInDays < 30) return `${Math.floor(diffInDays / 7)} weeks ago`;
-      if (diffInDays < 365) return `${Math.floor(diffInDays / 30)} months ago`;
-      return `${Math.floor(diffInDays / 365)} years ago`;
-    } catch {
-      return formatDate(dateString);
-    }
-  }, [formatDate]);
-
-  const getInitials = useCallback((name: string | null): string => {
-    if (!name || name.trim().length === 0) return 'U';
-    return name
-      .trim()
-      .split(' ')
-      .filter(n => n.length > 0)
-      .map(n => n[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2);
-  }, []);
+  }, [user?.id, fetchUserPixels, fetchProfile, isOwnProfile]);
 
   const handleEditProfile = useCallback(() => {
-    setEditModalOpen(true);
-  }, []);
+    if (isOwnProfile) setEditModalOpen(true);
+  }, [isOwnProfile]);
 
   const handleCloseModal = useCallback(() => {
     setEditModalOpen(false);
@@ -536,8 +424,8 @@ const Profile = () => {
     return <ProfileSkeleton />;
   }
 
-  // Unauthenticated state
-  if (!user) {
+  // If no public user ID and no authenticated user
+  if (!user && !publicUserId) {
     return null;
   }
 
@@ -551,7 +439,9 @@ const Profile = () => {
               <AlertCircle className="w-8 h-8 text-red-600 dark:text-red-400" />
             </div>
             <div>
-              <h2 className="text-xl font-semibold mb-2 bg-gradient-to-r from-red-600 to-orange-600 bg-clip-text text-transparent">Error Loading Profile</h2>
+              <h2 className="text-xl font-semibold mb-2 bg-gradient-to-r from-red-600 to-orange-600 bg-clip-text text-transparent">
+                {publicUserId ? 'Profile Not Found' : 'Error Loading Profile'}
+              </h2>
               <p className="text-sm text-muted-foreground">{error}</p>
             </div>
             <div className="flex gap-2 justify-center">
@@ -570,7 +460,7 @@ const Profile = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 pb-20 lg:pb-8 relative">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-950 pb-20 lg:pb-8 relative">
       {/* Premium gradient overlay */}
       <div className="fixed inset-0 bg-gradient-to-b from-purple-500/5 via-transparent to-blue-500/5 pointer-events-none" />
 
@@ -587,10 +477,10 @@ const Profile = () => {
             </Link>
             <div>
               <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-purple-600 via-pink-500 to-blue-600 bg-clip-text text-transparent">
-                Account Overview
+                {isOwnProfile ? 'Account Overview' : 'Public Profile'}
               </h1>
               <p className="text-sm text-muted-foreground hidden sm:block">
-                Manage your account and pixels ✨
+                {isOwnProfile ? 'Manage your account and pixels ✨' : `Viewing profile for ${profile?.full_name || 'User'}`}
               </p>
             </div>
           </div>
@@ -606,586 +496,121 @@ const Profile = () => {
               <RefreshCw className={`w-4 h-4 text-purple-600 dark:text-purple-400 ${isRefreshing ? 'animate-spin' : ''}`} aria-hidden="true" />
               <span className="hidden sm:inline ml-2">Refresh</span>
             </Button>
-            <Button
-              onClick={handleEditProfile}
-              className="gap-2 bg-gradient-to-r from-purple-600 via-pink-500 to-blue-600 hover:shadow-lg hover:shadow-purple-500/30 transition-all duration-300 border-0 text-white"
-              size="sm"
-              aria-label="Edit profile"
-            >
-              <Edit className="w-4 h-4" aria-hidden="true" />
-              <span className="hidden sm:inline">Edit Profile</span>
-              <span className="sm:hidden">Edit</span>
-            </Button>
+
+            {isOwnProfile && (
+              <Button
+                onClick={handleEditProfile}
+                className="gap-2 bg-gradient-to-r from-purple-600 via-pink-500 to-blue-600 hover:shadow-lg hover:shadow-purple-500/30 transition-all duration-300 border-0 text-white"
+                size="sm"
+                aria-label="Edit profile"
+              >
+                <Edit className="w-4 h-4" aria-hidden="true" />
+                <span className="hidden sm:inline">Edit Profile</span>
+                <span className="sm:hidden">Edit</span>
+              </Button>
+            )}
           </div>
         </header>
 
-        {/* Profile Completion Alert */}
-        {profileCompletionData.percentage < 100 && (
-          <Alert className="mb-6 bg-gradient-to-r from-blue-50/80 to-purple-50/80 dark:from-blue-950/30 dark:to-purple-950/30 backdrop-blur-xl border-blue-500/20 shadow-lg">
-            <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-            <AlertDescription className="text-blue-900 dark:text-blue-100">
-              <span className="font-semibold">Complete your profile</span> to unlock all features and enhance your experience.
-              <span className="font-semibold ml-1">{profileCompletionData.missingFields.length} field{profileCompletionData.missingFields.length !== 1 ? 's' : ''} remaining.</span>
-            </AlertDescription>
-          </Alert>
+        {/* Profile Completion Alert - Only for Owner */}
+        {isOwnProfile && profileCompletionData.percentage < 100 && (
+          <div className="mb-6 rounded-xl p-4 border border-orange-500/20 bg-gradient-to-r from-orange-50/80 to-pink-50/80 dark:from-orange-950/30 dark:to-pink-950/30 backdrop-blur-xl shadow-lg flex items-center gap-4">
+            <div className="p-2 bg-orange-100 dark:bg-orange-900/50 rounded-full shrink-0">
+              <Sparkles className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-sm font-semibold text-orange-900 dark:text-orange-100 flex items-center gap-2">
+                Complete your profile
+                {profileCompletionData.percentage > 0 && (
+                  <span className="text-xs font-normal px-2 py-0.5 rounded-full bg-orange-200/50 dark:bg-orange-800/50 text-orange-800 dark:text-orange-200">
+                    {profileCompletionData.percentage}% Done
+                  </span>
+                )}
+              </h3>
+              <p className="text-sm text-orange-800/80 dark:text-orange-200/80 mt-0.5">
+                Unlock all features by filling in
+                <span className="font-semibold mx-1">{profileCompletionData.missingFields.length}</span>
+                remaining field{profileCompletionData.missingFields.length !== 1 ? 's' : ''}.
+              </p>
+            </div>
+            <Button
+              size="sm"
+              variant="default"
+              onClick={handleEditProfile}
+              className="bg-gradient-to-r from-orange-600 to-pink-600 hover:from-orange-700 hover:to-pink-700 text-white border-0 shadow-md shrink-0"
+            >
+              Complete Now
+            </Button>
+          </div>
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column - Profile Card */}
           <div className="lg:col-span-1">
-            <Card className="shadow-2xl sticky top-4 backdrop-blur-xl bg-white/80 dark:bg-gray-900/80 border-purple-500/10">
-              <CardHeader className="text-center pb-4">
-                <div className="flex justify-center mb-4">
-                  <div className="relative group">
-                    <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 via-pink-500 to-blue-600 rounded-full blur opacity-30 group-hover:opacity-50 transition duration-300"></div>
-                    <Avatar className="relative w-32 h-32 border-4 border-white dark:border-gray-900 shadow-xl ring-2 ring-purple-500/20">
-                      <AvatarImage
-                        src={profile?.avatar_url || undefined}
-                        alt={`${profile?.full_name || 'User'}'s profile picture`}
-                      />
-                      <AvatarFallback className="text-2xl font-bold bg-gradient-to-br from-purple-600 via-pink-500 to-blue-600 text-white">
-                        {getInitials(profile?.full_name)}
-                      </AvatarFallback>
-                    </Avatar>
-                    {(!profile?.avatar_url || profile.avatar_url.includes('dicebear.com')) && (
-                      <div className="absolute -bottom-1 -right-1 w-8 h-8 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center border-2 border-white dark:border-gray-900 shadow-lg">
-                        <AlertCircle className="w-4 h-4 text-white" />
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <CardTitle className="text-xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-                  {profile?.full_name || 'Anonymous User'}
-                </CardTitle>
-                <p className="text-sm text-muted-foreground break-all">{user.email}</p>
-                <div className="flex flex-wrap items-center justify-center gap-2 mt-3">
-                  <Badge variant="secondary" className="flex items-center gap-1 bg-purple-500/10 border-purple-500/20 text-purple-700 dark:text-purple-300 backdrop-blur-sm" title={`Joined ${formatDate(profile?.created_at || '')}`}>
-                    <Clock className="w-3 h-3" aria-hidden="true" />
-                    {formatRelativeDate(profile?.created_at || '')}
-                  </Badge>
-                  <Badge variant="default" className="flex items-center gap-1 bg-gradient-to-r from-green-500 to-emerald-500 text-white border-0">
-                    <CheckCircle2 className="w-3 h-3" aria-hidden="true" />
-                    Verified
-                  </Badge>
-                </div>
-              </CardHeader>
-
-              <CardContent className="space-y-4">
-                {/* Profile Completion Card */}
-                <div className="bg-gradient-to-br from-orange-50/80 to-pink-50/80 dark:from-orange-950/30 dark:to-pink-950/30 rounded-xl p-4 border-2 border-orange-500/20 backdrop-blur-sm shadow-lg">
-                  <div className="flex items-center justify-between mb-3">
-                    <div>
-                      <h3 className="font-semibold text-sm bg-gradient-to-r from-orange-600 to-pink-600 bg-clip-text text-transparent flex items-center gap-1">
-                        <Sparkles className="w-4 h-4 text-orange-600 dark:text-orange-400" />
-                        Profile Completion
-                      </h3>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        {profileCompletionData.percentage === 100
-                          ? '🎉 Complete!'
-                          : 'Complete to unlock all features'
-                        }
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-3xl font-bold bg-gradient-to-r from-orange-600 to-pink-600 bg-clip-text text-transparent">
-                        {profileCompletionData.percentage}%
-                      </p>
-                    </div>
-                  </div>
-
-                  <Progress
-                    value={profileCompletionData.percentage}
-                    className="h-3 mb-4"
-                  />
-
-                  {/* Field Breakdown */}
-                  <div className="space-y-2">
-                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
-                      Field Status
-                    </p>
-                    {profileCompletionData.allFields.map((field) => (
-                      <div
-                        key={field.name}
-                        className={`flex items-center justify-between p-2 rounded-lg transition-all duration-300 backdrop-blur-sm ${field.completed
-                          ? 'bg-green-50/80 dark:bg-green-950/30 border border-green-500/30 shadow-sm'
-                          : 'bg-yellow-50/80 dark:bg-yellow-950/30 border border-yellow-500/30 shadow-sm'
-                          }`}
-                      >
-                        <div className="flex items-center gap-2">
-                          <div className={field.completed ? 'text-green-600 dark:text-green-400' : 'text-yellow-600 dark:text-yellow-400'}>
-                            {field.icon}
-                          </div>
-                          <span className={`text-sm font-medium ${field.completed ? 'text-green-900 dark:text-green-100' : 'text-yellow-900 dark:text-yellow-100'
-                            }`}>
-                            {field.label}
-                          </span>
-                        </div>
-                        {field.completed ? (
-                          <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400" />
-                        ) : (
-                          <AlertCircle className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />
-                        )}
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Missing Fields Alert */}
-                  {profileCompletionData.missingFields.length > 0 && (
-                    <div className="mt-4 pt-4 border-t border-orange-500/20">
-                      <p className="text-xs font-medium text-orange-800 dark:text-orange-200 mb-2">
-                        ⚠️ Missing Information:
-                      </p>
-                      <ul className="text-xs text-orange-700 dark:text-orange-300 space-y-1 ml-4">
-                        {profileCompletionData.missingFields.map((field) => (
-                          <li key={field.name} className="list-disc">
-                            Add your {field.label.toLowerCase()}
-                          </li>
-                        ))}
-                      </ul>
-                      <Button
-                        onClick={handleEditProfile}
-                        size="sm"
-                        className="w-full mt-3 bg-gradient-to-r from-orange-600 to-pink-600 hover:from-orange-700 hover:to-pink-700 text-white shadow-lg hover:shadow-xl transition-all duration-300"
-                      >
-                        <Edit className="w-3 h-3 mr-2" />
-                        Complete Profile Now
-                      </Button>
-                    </div>
-                  )}
-                </div>
-
-                {/* Account Status */}
-                <div className="bg-gradient-to-br from-purple-50/50 to-blue-50/50 dark:from-purple-950/20 dark:to-blue-950/20 rounded-xl p-4 border border-purple-500/20 backdrop-blur-sm shadow-lg">
-                  <h3 className="font-semibold text-sm mb-3 flex items-center gap-2 bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-                    <Award className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-                    Account Status
-                  </h3>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between items-center">
-                      <span className="text-muted-foreground">Type</span>
-                      <Badge variant="default" className="bg-gradient-to-r from-purple-600 to-blue-600 text-white border-0">Active Member</Badge>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-muted-foreground">Pixels Owned</span>
-                      <span className="font-semibold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">{pixelStats.totalPixels}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-muted-foreground">Member Since</span>
-                      <span className="font-semibold text-xs">{formatRelativeDate(profile?.created_at || '')}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* User ID Card */}
-                <div className="bg-gradient-to-br from-gray-50/50 to-slate-50/50 dark:from-gray-950/20 dark:to-slate-950/20 rounded-xl p-4 border border-gray-500/20 backdrop-blur-sm shadow-lg">
-                  <h3 className="font-semibold text-sm mb-2 flex items-center gap-2">
-                    <Shield className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-                    User ID
-                  </h3>
-                  <div className="flex items-center gap-2">
-                    <code className="flex-1 text-xs bg-white/60 dark:bg-gray-900/60 p-2 rounded-lg border border-purple-500/20 font-mono truncate backdrop-blur-sm">
-                      {user.id}
-                    </code>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={handleCopyUserId}
-                      className="flex-shrink-0 hover:bg-purple-500/10"
-                    >
-                      {copied ? (
-                        <Check className="w-4 h-4 text-green-500" />
-                      ) : (
-                        <Copy className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-                      )}
-                    </Button>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Use this ID for support inquiries
-                  </p>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="space-y-2">
-                  <Button
-                    onClick={handleExportData}
-                    variant="outline"
-                    className="w-full backdrop-blur-sm bg-white/60 dark:bg-gray-800/60 border-purple-500/20 hover:bg-white/80 dark:hover:bg-gray-800/80 hover:border-purple-500/30 transition-all duration-300"
-                    size="sm"
-                    disabled={exportLoading}
-                  >
-                    {exportLoading ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin text-purple-600 dark:text-purple-400" />
-                        Exporting...
-                      </>
-                    ) : (
-                      <>
-                        <Download className="w-4 h-4 mr-2 text-purple-600 dark:text-purple-400" />
-                        Export My Data
-                      </>
-                    )}
-                  </Button>
-
-                  <Button
-                    onClick={handleSignOut}
-                    variant="outline"
-                    className="w-full backdrop-blur-sm bg-white/60 dark:bg-gray-800/60 border-purple-500/20 hover:bg-white/80 dark:hover:bg-gray-800/80 hover:border-purple-500/30 transition-all duration-300"
-                    size="sm"
-                  >
-                    Sign Out
-                  </Button>
-
-                  <Button
-                    onClick={() => setDeleteDialogOpen(true)}
-                    variant="destructive"
-                    className="w-full bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 shadow-lg hover:shadow-xl transition-all duration-300"
-                    size="sm"
-                  >
-                    <Trash2 className="w-4 h-4 mr-2" />
-                    Delete Account
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+            <ProfileDetails
+              profile={profile}
+              email={user?.email} // Passed user.email instead of profile.email to rely on Auth
+              isOwnProfile={isOwnProfile}
+              profileCompletionData={profileCompletionData}
+              pixelStats={pixelStats}
+              onEditProfile={handleEditProfile}
+              onSignOut={handleSignOut}
+              onDeleteAccount={handleDeleteAccount}
+              deleteLoading={deleteLoading}
+            />
           </div>
 
-          {/* Right Column - Details & Pixels */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Personal Information Card */}
-            <Card className="shadow-2xl backdrop-blur-xl bg-white/80 dark:bg-gray-900/80 border-purple-500/10">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-                  <User className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-                  Personal Information
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <InfoCard
-                    icon={<Mail className="w-4 h-4" />}
-                    label="Email"
-                    value={user.email || 'Not provided'}
-                    completed={true}
-                  />
-                  <InfoCard
-                    icon={<User className="w-4 h-4" />}
-                    label="Full Name"
-                    value={profile?.full_name || 'Not provided'}
-                    completed={Boolean(profile?.full_name && profile.full_name.trim().length >= 2)}
-                  />
-                  <InfoCard
-                    icon={<Phone className="w-4 h-4" />}
-                    label="Phone Number"
-                    value={profile?.phone_number || 'Not provided'}
-                    completed={Boolean(profile?.phone_number)}
-                  />
-                  <InfoCard
-                    icon={<Calendar className="w-4 h-4" />}
-                    label="Date of Birth"
-                    value={formatDate(profile?.date_of_birth)}
-                    completed={Boolean(profile?.date_of_birth)}
-                  />
-                </div>
-              </CardContent>
-            </Card>
+          <div className="lg:col-span-2">
+            <TrophyCase userId={targetUserId || ""} />
+          </div>
 
-            {/* Pixels Section */}
-            <Card className="shadow-2xl backdrop-blur-xl bg-white/80 dark:bg-gray-900/80 border-purple-500/10">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-                    <MapPin className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-                    My Pixels
-                    <Badge variant="outline" className="ml-2 bg-purple-500/10 border-purple-500/20 text-purple-700 dark:text-purple-300">{pixelStats.totalPixels}</Badge>
-                  </CardTitle>
-                  {userPixels.length > 0 && (
-                    <Button
-                      onClick={() => fetchUserPixels(true)}
-                      variant="ghost"
-                      size="sm"
-                      disabled={pixelsLoading}
-                      className="hover:bg-purple-500/10"
-                    >
-                      <RefreshCw className={`w-4 h-4 text-purple-600 dark:text-purple-400 ${pixelsLoading ? 'animate-spin' : ''}`} />
-                    </Button>
-                  )}
-                </div>
-              </CardHeader>
-              <CardContent>
-                {pixelsLoading ? (
-                  <div className="space-y-3">
-                    <Skeleton className="h-24 w-full" />
-                    <Skeleton className="h-40 w-full" />
-                  </div>
-                ) : userPixels.length > 0 ? (
-                  <div className="space-y-4">
-                    {/* Stats Grid */}
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                      <StatCard
-                        icon={<Eye className="w-5 h-5" />}
-                        label="Total Pixels"
-                        value={pixelStats.totalPixels.toString()}
-                        color="primary"
-                      />
-                      <StatCard
-                        icon={<TrendingUp className="w-5 h-5" />}
-                        label="Total Investment"
-                        value={`₹${pixelStats.totalInvestment.toLocaleString()}`}
-                        color="success"
-                      />
-                      <StatCard
-                        icon={<Award className="w-5 h-5" />}
-                        label="Avg. Price"
-                        value={`₹${Math.round(pixelStats.averagePrice).toLocaleString()}`}
-                        color="secondary"
-                      />
-                    </div>
-
-                    {/* Pixels List */}
-                    <div className="bg-gradient-to-br from-purple-50/30 to-blue-50/30 dark:from-purple-950/10 dark:to-blue-950/10 rounded-xl p-4 max-h-96 overflow-y-auto backdrop-blur-sm border border-purple-500/10">
-                      <div className="space-y-2">
-                        {userPixels.map((pixel) => (
-                          <PixelItem
-                            key={pixel.id}
-                            pixel={pixel}
-                            onVisit={handlePixelVisit}
-                            onEdit={() => setEditingPixel(pixel)}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <EmptyPixelsState />
-                )}
-              </CardContent>
-            </Card>
+          <div className="lg:col-span-3">
+            <MyPixels
+              userPixels={userPixels}
+              pixelStats={pixelStats}
+              loading={pixelsLoading}
+              isOwnProfile={isOwnProfile}
+              exportLoading={exportLoading}
+              onExportData={handleExportData}
+              onVisitPixel={handlePixelVisit}
+              onSharePixel={setSharePixel}
+              onEditPixel={setEditingPixel}
+            />
           </div>
         </div>
+      </div>
 
-        {/* Edit Modal */}
-        <ProfileEditModal
-          isOpen={editModalOpen}
-          onClose={handleCloseModal}
-          profile={profile}
-          onProfileUpdate={() => fetchProfile(true)}
-        />
+      {/* Edit Profile Modal */}
+      <ProfileEditModal
+        isOpen={editModalOpen}
+        onClose={handleCloseModal}
+        profile={profile}
+        onProfileUpdate={() => {
+          fetchProfile(true);
+          handleCloseModal();
+        }}
+      />
 
+      {/* Share Pixel Dialog */}
+      <SharePixelDialog
+        isOpen={!!sharePixel}
+        onClose={() => setSharePixel(null)}
+        pixel={sharePixel ? { x: sharePixel.x, y: sharePixel.y } : null}
+      />
+
+      {/* Edit Pixel Dialog */}
+      {editingPixel && (
         <EditPixelDialog
-          pixel={editingPixel}
           isOpen={!!editingPixel}
           onClose={() => setEditingPixel(null)}
-          onUpdate={() => fetchUserPixels(true)}
+          pixel={editingPixel}
+          onUpdate={() => {
+            fetchUserPixels(true);
+            setEditingPixel(null);
+          }}
         />
-
-        {/* Delete Account Dialog */}
-        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-          <AlertDialogContent className="backdrop-blur-xl bg-white/95 dark:bg-gray-900/95 border-red-500/20">
-            <AlertDialogHeader>
-              <AlertDialogTitle className="flex items-center gap-2 text-red-600 dark:text-red-400">
-                <AlertTriangle className="w-5 h-5" />
-                Delete Account Permanently?
-              </AlertDialogTitle>
-              <AlertDialogDescription className="space-y-3">
-                <p>
-                  This action <strong className="text-red-600 dark:text-red-400">cannot be undone</strong>. This will permanently delete your account and remove all your data from our servers.
-                </p>
-
-                <div className="bg-gradient-to-br from-red-50/50 to-orange-50/50 dark:from-red-950/20 dark:to-orange-950/20 rounded-lg p-3 space-y-2 text-sm backdrop-blur-sm border border-red-500/20">
-                  <p className="font-semibold">What will be deleted:</p>
-                  <ul className="space-y-1 ml-4">
-                    <li className="flex items-start gap-2">
-                      <span className="text-red-600 dark:text-red-400">•</span>
-                      <span>Your profile and personal information</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-red-600 dark:text-red-400">•</span>
-                      <span>All {pixelStats.totalPixels} pixel{pixelStats.totalPixels !== 1 ? 's' : ''} you own</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-red-600 dark:text-red-400">•</span>
-                      <span>Your purchase history and data</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-red-600 dark:text-red-400">•</span>
-                      <span>Your account access (you'll be signed out)</span>
-                    </li>
-                  </ul>
-                </div>
-
-                <p className="text-xs text-muted-foreground">
-                  💡 <strong>Tip:</strong> Consider exporting your data before deleting your account.
-                </p>
-
-                <div className="space-y-2 pt-2">
-                  <label htmlFor="delete-confirm" className="text-sm font-medium text-red-600 dark:text-red-400">
-                    Type <code className="text-red-600 dark:text-red-400">{"\"delete my account\""}</code> to confirm:
-                  </label>
-                  <Input
-                    id="delete-confirm"
-                    type="text"
-                    placeholder="delete my account"
-                    value={deleteConfirmText}
-                    onChange={(e) => setDeleteConfirmText(e.target.value)}
-                    className="border-red-500/30 focus-visible:ring-red-500/30 backdrop-blur-sm"
-                  />
-                </div>
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel disabled={deleteLoading} className="backdrop-blur-sm">Cancel</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={handleDeleteAccount}
-                disabled={deleteLoading || deleteConfirmText.toLowerCase() !== 'delete my account'}
-                className="bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 text-white"
-              >
-                {deleteLoading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Deleting...
-                  </>
-                ) : (
-                  <>
-                    <Trash2 className="w-4 h-4 mr-2" />
-                    Delete Account
-                  </>
-                )}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      </div>
+      )}
     </div>
   );
 };
-
-// Sub-components
-interface InfoCardProps {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-  completed?: boolean;
-}
-
-const InfoCard: React.FC<InfoCardProps> = ({ icon, label, value, completed = true }) => (
-  <div className={`flex items-center gap-3 p-3 rounded-xl transition-all duration-300 backdrop-blur-sm ${completed
-    ? 'bg-gradient-to-br from-purple-50/30 to-blue-50/30 dark:from-purple-950/10 dark:to-blue-950/10 hover:from-purple-50/50 hover:to-blue-50/50 border border-purple-500/10'
-    : 'bg-gradient-to-br from-yellow-50/50 to-orange-50/50 dark:from-yellow-950/20 dark:to-orange-950/20 border border-yellow-500/30'
-    }`}>
-    <div className={completed ? 'text-purple-600 dark:text-purple-400' : 'text-yellow-600 dark:text-yellow-400'} aria-hidden="true">
-      {icon}
-    </div>
-    <div className="flex-1 min-w-0">
-      <div className="flex items-center gap-2">
-        <p className="text-sm text-muted-foreground">{label}</p>
-        {!completed && (
-          <AlertCircle className="w-3 h-3 text-yellow-600 dark:text-yellow-400" />
-        )}
-      </div>
-      <p className={`font-medium truncate ${!completed && value === 'Not provided' ? 'text-yellow-700 dark:text-yellow-400' : ''}`} title={value}>
-        {value}
-      </p>
-    </div>
-    {completed && value !== 'Not provided' && (
-      <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400 flex-shrink-0" />
-    )}
-  </div>
-);
-
-interface StatCardProps {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-  color: 'primary' | 'success' | 'secondary';
-}
-
-const StatCard: React.FC<StatCardProps> = ({ icon, label, value, color }) => {
-  const colorClasses = {
-    primary: 'from-purple-600 to-blue-600',
-    success: 'from-green-600 to-emerald-600',
-    secondary: 'from-pink-600 to-orange-600'
-  };
-
-  return (
-    <div className="bg-gradient-to-br from-white/60 to-white/40 dark:from-gray-800/60 dark:to-gray-800/40 rounded-xl p-4 hover:shadow-lg transition-all duration-300 backdrop-blur-sm border border-purple-500/10">
-      <div className="flex items-center gap-2 mb-2">
-        <div className={`bg-gradient-to-r ${colorClasses[color]} bg-clip-text text-transparent`} aria-hidden="true">{icon}</div>
-        <span className="font-medium text-sm">{label}</span>
-      </div>
-      <p className={`text-2xl font-bold bg-gradient-to-r ${colorClasses[color]} bg-clip-text text-transparent`}>{value}</p>
-    </div>
-  );
-};
-
-interface PixelItemProps {
-  pixel: UserPixel;
-  onVisit: (url: string) => void;
-  onEdit: () => void;
-}
-
-// Update PixelItem component:
-const PixelItem: React.FC<PixelItemProps> = ({ pixel, onVisit, onEdit }) => (
-  <div className="flex items-center justify-between py-3 px-4 bg-white/60 dark:bg-gray-800/60 rounded-xl border border-purple-500/10 hover:border-purple-500/30 transition-all duration-300 hover:shadow-md backdrop-blur-sm">
-    <div className="flex items-center gap-3 flex-1 min-w-0">
-      {pixel.image_url && (
-        <img
-          src={pixel.image_url}
-          alt={pixel.alt_text || `Pixel at (${pixel.x}, ${pixel.y})`}
-          className="w-10 h-10 rounded-lg object-cover flex-shrink-0 border border-purple-500/10"
-          loading="lazy"
-        />
-      )}
-      <div className="flex-1 min-w-0">
-        <p className="font-medium truncate">
-          {pixel.alt_text || `Pixel (${pixel.x}, ${pixel.y})`}
-        </p>
-        <p className="text-sm text-muted-foreground">
-          Position: ({pixel.x}, {pixel.y}) • <span className="bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent font-semibold">₹{pixel.price_paid.toLocaleString()}</span>
-        </p>
-      </div>
-    </div>
-    <div className="flex items-center gap-2">
-      <Button
-        size="sm"
-        variant="ghost"
-        onClick={onEdit}
-        className="flex-shrink-0 gap-1 backdrop-blur-sm hover:bg-purple-500/10"
-        aria-label={`Edit pixel at (${pixel.x}, ${pixel.y})`}
-      >
-        <Edit className="w-4 h-4 text-purple-600 dark:text-purple-400" aria-hidden="true" />
-      </Button>
-      {pixel.link_url && (
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => onVisit(pixel.link_url!)}
-          className="flex-shrink-0 gap-1 backdrop-blur-sm bg-white/60 dark:bg-gray-800/60 border-purple-500/20 hover:bg-white/80 dark:hover:bg-gray-800/80 hover:border-purple-500/30"
-          aria-label={`Visit link for pixel at (${pixel.x}, ${pixel.y})`}
-        >
-          <span className="hidden sm:inline">Visit</span>
-          <ExternalLink className="w-4 h-4 text-purple-600 dark:text-purple-400" aria-hidden="true" />
-        </Button>
-      )}
-    </div>
-  </div>
-);
-
-const EmptyPixelsState = () => (
-  <div className="text-center py-12 px-4">
-    <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-purple-500/10 to-blue-500/10 backdrop-blur-sm border border-purple-500/20 mb-4">
-      <MapPin className="w-10 h-10 text-purple-600 dark:text-purple-400" aria-hidden="true" />
-    </div>
-    <h3 className="text-lg font-semibold mb-2 bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">No Pixels Yet</h3>
-    <p className="text-muted-foreground mb-6 max-w-sm mx-auto">
-      Start building your digital real estate by purchasing your first pixels.
-    </p>
-    <Link to="/">
-      <Button className="gap-2 bg-gradient-to-r from-purple-600 via-pink-500 to-blue-600 hover:shadow-lg hover:shadow-purple-500/30 transition-all duration-300 text-white">
-        <MapPin className="w-4 h-4" aria-hidden="true" />
-        Buy Your First Pixels
-      </Button>
-    </Link>
-  </div>
-);
 
 export default Profile;

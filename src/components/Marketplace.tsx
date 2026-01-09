@@ -4,12 +4,12 @@ import { Badge } from "@/components/ui/badge";
 import { Link, useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { memo, useCallback } from "react";
-import { 
-  TrendingUp, 
-  DollarSign, 
-  Package, 
+import {
+  TrendingUp,
+  DollarSign,
+  Package,
   ArrowUpRight,
-  CheckCircle2 
+  CheckCircle2
 } from "lucide-react";
 
 // Type definitions for better type safety
@@ -103,17 +103,17 @@ const calculateProfitPercentage = (resalePrice: number, originalPrice: number): 
 };
 
 // Memoized listing card component
-const ListingCard = memo(({ 
-  listing, 
-  onBuy 
-}: { 
-  listing: MarketplaceListing; 
+const ListingCard = memo(({
+  listing,
+  onBuy
+}: {
+  listing: MarketplaceListing;
   onBuy: (title: string) => void;
 }) => {
   const profitPercentage = calculateProfitPercentage(listing.resalePrice, listing.originalPrice);
 
   return (
-    <Card 
+    <Card
       className="group hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden border-2 hover:border-primary/50"
       role="article"
       aria-label={`${listing.title} listing by ${listing.seller}`}
@@ -124,8 +124,8 @@ const ListingCard = memo(({
             {listing.title}
           </CardTitle>
           {listing.trending && (
-            <Badge 
-              variant="destructive" 
+            <Badge
+              variant="destructive"
               className="ml-2 shrink-0 animate-pulse shadow-md"
             >
               <TrendingUp className="w-3 h-3 mr-1" aria-hidden="true" />
@@ -138,11 +138,11 @@ const ListingCard = memo(({
           {listing.location}
         </div>
       </CardHeader>
-      
+
       <CardContent className="space-y-5">
         {/* Preview Box */}
         <div className="text-center">
-          <div 
+          <div
             className="w-24 h-24 bg-gradient-to-br from-pixel-available to-primary/10 border-2 border-primary/20 rounded-xl flex items-center justify-center text-5xl mb-3 mx-auto group-hover:scale-110 group-hover:rotate-3 transition-all duration-300 shadow-md"
             role="img"
             aria-label={`Preview showing ${listing.image}`}
@@ -185,8 +185,8 @@ const ListingCard = memo(({
         </div>
 
         {/* Buy Button */}
-        <Button 
-          className="w-full font-semibold group/btn hover:scale-105 active:scale-95 transition-all" 
+        <Button
+          className="w-full font-semibold group/btn hover:scale-105 active:scale-95 transition-all"
           variant="default"
           size="lg"
           onClick={() => onBuy(listing.title)}
@@ -209,39 +209,40 @@ const Marketplace = () => {
 
   // Handle marketplace purchase with toast notification
   const handleMarketplaceBuy = useCallback((listingTitle: string) => {
+    navigate('/marketplace');
     toast({
-      title: "Feature Coming Soon! 🚀",
-      description: `Marketplace buying for "${listingTitle}" will be available soon. For now, you can buy fresh pixels!`,
-      duration: 4000,
+      title: "Welcome to the Marketplace",
+      description: "Browse live listings and purchase pixels from other users.",
+      duration: 3000,
     });
-  }, [toast]);
+  }, [navigate, toast]);
 
   // Handle listing pixels - redirects to /marketplace
   const handleListPixels = useCallback(() => {
     navigate('/marketplace');
     toast({
-      title: "Listing Your Pixels",
-      description: "You'll be able to list your pixels for resale here soon. Purchase pixels first!",
-      duration: 4000,
+      title: "List Your Pixels",
+      description: "Go to the 'Sell' tab in the marketplace to list your pixels.",
+      duration: 3000,
     });
   }, [navigate, toast]);
 
   return (
-    <section 
-      id="marketplace" 
+    <section
+      id="marketplace"
       className="py-24 bg-gradient-to-b from-background via-muted/20 to-background scroll-mt-20"
       aria-labelledby="marketplace-heading"
     >
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl">
         {/* Header Section */}
         <header className="text-center mb-20 space-y-6">
-          <Badge 
-            variant="outline" 
+          <Badge
+            variant="outline"
             className="text-base px-6 py-2.5 mb-6 font-semibold border-2 hover:bg-accent/5 transition-colors"
           >
             <span role="img" aria-label="Building blocks">🧱</span> Secondary Market
           </Badge>
-          <h2 
+          <h2
             id="marketplace-heading"
             className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 tracking-tight"
           >
@@ -256,15 +257,15 @@ const Marketplace = () => {
         </header>
 
         {/* Listings Grid */}
-        <div 
+        <div
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-16"
           role="region"
           aria-label="Available marketplace listings"
         >
           {MARKETPLACE_LISTINGS.map((listing) => (
-            <ListingCard 
-              key={listing.id} 
-              listing={listing} 
+            <ListingCard
+              key={listing.id}
+              listing={listing}
               onBuy={handleMarketplaceBuy}
             />
           ))}
@@ -273,13 +274,13 @@ const Marketplace = () => {
         {/* Market Stats and Seller Info Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-6xl mx-auto">
           {/* Market Statistics Card */}
-          <Card 
+          <Card
             className="bg-gradient-to-br from-success/10 via-accent/5 to-green-500/10 border-2 hover:shadow-xl transition-all duration-300"
             role="region"
             aria-labelledby="market-stats-heading"
           >
             <CardHeader>
-              <CardTitle 
+              <CardTitle
                 id="market-stats-heading"
                 className="flex items-center gap-3 text-2xl"
               >
@@ -290,7 +291,7 @@ const Marketplace = () => {
             <CardContent>
               <div className="space-y-5" role="list">
                 {MARKET_STATS.map((stat, index) => (
-                  <div 
+                  <div
                     key={index}
                     className="flex justify-between items-center p-3 rounded-lg hover:bg-background/50 transition-colors group"
                     role="listitem"
@@ -298,14 +299,13 @@ const Marketplace = () => {
                     <span className="text-muted-foreground font-medium">
                       {stat.label}:
                     </span>
-                    <span 
-                      className={`font-bold text-lg group-hover:scale-110 transition-transform ${
-                        stat.highlight 
-                          ? stat.value.includes('%') 
-                            ? 'text-success' 
-                            : 'text-primary'
-                          : 'text-foreground'
-                      }`}
+                    <span
+                      className={`font-bold text-lg group-hover:scale-110 transition-transform ${stat.highlight
+                        ? stat.value.includes('%')
+                          ? 'text-success'
+                          : 'text-primary'
+                        : 'text-foreground'
+                        }`}
                     >
                       {stat.value}
                     </span>
@@ -316,13 +316,13 @@ const Marketplace = () => {
           </Card>
 
           {/* Seller Information Card */}
-          <Card 
+          <Card
             className="bg-gradient-to-br from-primary/10 via-secondary/5 to-purple-500/10 border-2 hover:shadow-xl transition-all duration-300"
             role="region"
             aria-labelledby="seller-info-heading"
           >
             <CardHeader>
-              <CardTitle 
+              <CardTitle
                 id="seller-info-heading"
                 className="flex items-center gap-3 text-2xl"
               >
@@ -334,16 +334,16 @@ const Marketplace = () => {
               <p className="text-muted-foreground leading-relaxed text-base">
                 List your pixels for resale and earn profits. Our marketplace makes it easy to connect with buyers.
               </p>
-              
+
               {/* Benefits List */}
               <ul className="space-y-3" role="list">
                 {SELLER_BENEFITS.map((benefit, index) => (
-                  <li 
+                  <li
                     key={index}
                     className="flex items-center gap-3 p-2 rounded-lg hover:bg-background/50 transition-colors group"
                   >
-                    <CheckCircle2 
-                      className="w-5 h-5 text-green-500 flex-shrink-0 group-hover:scale-110 transition-transform" 
+                    <CheckCircle2
+                      className="w-5 h-5 text-green-500 flex-shrink-0 group-hover:scale-110 transition-transform"
                       aria-hidden="true"
                     />
                     <span className="text-foreground font-medium">{benefit.text}</span>
@@ -352,7 +352,7 @@ const Marketplace = () => {
               </ul>
 
               {/* List Pixels Button */}
-              <Button 
+              <Button
                 className="w-full font-bold text-base h-12 group/btn hover:scale-105 active:scale-95 transition-all shadow-lg bg-gradient-to-r from-primary to-secondary"
                 size="lg"
                 onClick={handleListPixels}
@@ -372,8 +372,8 @@ const Marketplace = () => {
             Don't own any pixels yet?
           </p>
           <Link to="/buy-pixels" aria-label="Navigate to buy fresh pixels">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               size="lg"
               className="font-semibold hover:scale-105 transition-all"
             >

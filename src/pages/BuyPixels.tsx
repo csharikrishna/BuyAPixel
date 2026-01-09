@@ -32,8 +32,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { SharePixelDialog } from "@/components/SharePixelDialog";
 
 import { useLayout } from "@/contexts/LayoutContext";
+import { useNetworkStatus } from "@/hooks/useNetworkStatus";
+import confetti from "canvas-confetti";
 
 // --- Constants ---
 const CANVAS_WIDTH = 150;
@@ -62,6 +65,9 @@ const BuyPixels = () => {
   const navigate = useNavigate();
   const { setTickerVisible } = useLayout();
 
+  // Use global network status
+  const { isOnline } = useNetworkStatus();
+
   // --- State ---
   const [selectedPixels, setSelectedPixels] = useState<SelectedPixel[]>([]);
   const [zoom, setZoom] = useState(1);
@@ -72,30 +78,12 @@ const BuyPixels = () => {
   const [mode, setMode] = useState<'idle' | 'buying' | 'selling'>('idle');
   const [isLoading, setIsLoading] = useState(false);
   const [isPurchasing, setIsPurchasing] = useState(false);
-  const [isOnline, setIsOnline] = useState(navigator.onLine);
+
   const [showClearDialog, setShowClearDialog] = useState(false);
   const [selectionHistory, setSelectionHistory] = useState<SelectedPixel[][]>([]);
+  const [sharePixel, setSharePixel] = useState<{ x: number, y: number } | null>(null);
 
-  // --- Online/Offline Detection ---
-  useEffect(() => {
-    const handleOnline = () => {
-      setIsOnline(true);
-      toast.success("You're back online!");
-    };
 
-    const handleOffline = () => {
-      setIsOnline(false);
-      toast.error("You're offline. Please check your connection.");
-    };
-
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, []);
 
   // --- Keyboard Shortcuts ---
   useEffect(() => {
@@ -422,14 +410,38 @@ const BuyPixels = () => {
         });
         return;
       }
-
       if (successCount < selectedPixels.length) {
         toast.warning(`Purchased ${successCount} pixels`, {
           description: `${failedPixels.length} pixels were already taken.`
         });
       } else {
+        // Trigger celebration!
+        confetti({
+          particleCount: 150,
+          spread: 70,
+          origin: { y: 0.6 },
+          colors: ['#EF4444', '#10B981', '#F59E0B', '#6366F1'] // Brand colors
+        });
+
         toast.success(`🎉 Successfully purchased ${selectedPixels.length} pixels!`, {
           description: "Your pixels are now live on the canvas!"
+        });
+      }
+
+      const purchasedPixels = [...selectedPixels]; // Capture for sharing
+
+      // Send confirmation email
+      if (user?.email) {
+        supabase.functions.invoke('send-purchase-confirmation', {
+          body: {
+            email: user.email,
+            pixelCount: selectedPixels.length,
+            totalCost: totalCost,
+            pixelName: pixelName,
+            linkUrl: linkUrl
+          }
+        }).then(({ error }) => {
+          if (error) console.error('Failed to send confirmation email:', error);
         });
       }
 
@@ -441,6 +453,11 @@ const BuyPixels = () => {
       localStorage.removeItem('pixelDraft');
 
       setTimeout(() => {
+        // Open share dialog for the first pixel
+        if (purchasedPixels.length > 0) {
+          setSharePixel(purchasedPixels[0]);
+        }
+
         toast.message("Purchase complete!", {
           description: "View your pixels in your profile.",
           action: {
@@ -466,13 +483,6 @@ const BuyPixels = () => {
       <Header />
 
       {/* Offline Warning Banner */}
-      {!isOnline && (
-        <div className="bg-yellow-500/10 border-b border-yellow-500 text-yellow-700 dark:text-yellow-400 px-4 py-2 text-center flex items-center justify-center gap-2">
-          <WifiOff className="w-4 h-4" />
-          <span className="text-sm font-medium">You're offline. Some features may not work.</span>
-        </div>
-      )}
-
       {/* --- MAIN LAYOUT --- */}
       <main className="flex-1 container mx-auto px-2 sm:px-4 lg:px-6 py-4 flex flex-col lg:grid lg:grid-cols-12 gap-6">
 
@@ -513,6 +523,7 @@ const BuyPixels = () => {
                 onZoomChange={setZoom}
                 showGrid={showGrid}
                 showMyPixels={showMyPixels}
+                enableInteraction={mode === 'buying'}
               />
             </div>
           </div>
@@ -776,6 +787,12 @@ const BuyPixels = () => {
         onClose={() => !isPurchasing && setShowPurchasePreview(false)}
         selectedPixels={selectedPixels}
         onConfirmPurchase={handleConfirmPurchase}
+      />
+
+      <SharePixelDialog
+        isOpen={!!sharePixel}
+        onClose={() => setSharePixel(null)}
+        pixel={sharePixel}
       />
 
       {/* Mobile Canvas Panel */}

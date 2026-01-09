@@ -72,12 +72,21 @@ interface Transaction {
   seller_id: string;
   pixel_id: string;
   sale_price: number;
-  status: string;
+  status: 'completed' | 'pending' | 'failed';
   created_at: string;
   pixels: {
     x: number;
     y: number;
   } | null;
+}
+
+interface PurchaseResponse {
+  success: boolean;
+  pixel_id?: string;
+  price?: number;
+  seller_id?: string;
+  buyer_id?: string;
+  error?: string;
 }
 
 interface MarketplaceStats {
@@ -174,7 +183,7 @@ const MarketplacePage = () => {
       if (!session?.user?.id) return [];
 
       const { data, error } = await supabase
-        .from("marketplace_transactions" as any)
+        .from("marketplace_transactions")
         .select(`
           id,
           listing_id,
@@ -261,7 +270,7 @@ const MarketplacePage = () => {
 
       if (error) throw error;
 
-      const result = data as any;
+      const result = data as unknown as PurchaseResponse;
 
       if (result?.success) {
         toast({

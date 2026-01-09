@@ -12,6 +12,7 @@ import {
   BookOpen,
   Info,
   Shield,
+  ScanLine,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
@@ -30,9 +31,11 @@ import {
   SheetTrigger,
   SheetHeader,
   SheetTitle,
+  SheetDescription,
 } from "@/components/ui/sheet";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+
 
 const Header = () => {
   const { user, isAuthenticated, signOut } = useAuth();
@@ -46,6 +49,7 @@ const Header = () => {
   // ======================
   const navItems = [
     { label: "Buy Pixels", to: "/", icon: Home },
+    { label: "Scan", to: "/scan", icon: ScanLine },
     { label: "Marketplace", to: "/marketplace", icon: Store },
     { label: "Leaderboard", to: "/leaderboard", icon: Trophy },
     { label: "Blog", to: "/blog", icon: BookOpen },
@@ -119,7 +123,7 @@ const Header = () => {
               className={cn(
                 "gap-2 transition-all",
                 isActiveRoute("/admin") &&
-                  "bg-destructive/10 text-destructive font-semibold"
+                "bg-destructive/10 text-destructive font-semibold"
               )}
               asChild
             >
@@ -133,6 +137,7 @@ const Header = () => {
 
         {/* DESKTOP AUTH */}
         <div className="hidden md:flex items-center gap-3">
+
           {isAuthenticated ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -211,6 +216,7 @@ const Header = () => {
 
         {/* MOBILE MENU */}
         <div className="flex md:hidden items-center gap-2">
+
           {/* Mobile User Menu (Separate from navigation) */}
           {isAuthenticated && (
             <DropdownMenu>
@@ -281,6 +287,9 @@ const Header = () => {
                     BuyAPixel
                   </span>
                 </SheetTitle>
+                <SheetDescription className="text-left text-sm text-muted-foreground">
+                  Navigation menu
+                </SheetDescription>
               </SheetHeader>
 
               <div className="flex flex-col space-y-3 mt-8">
@@ -292,7 +301,7 @@ const Header = () => {
                     className={cn(
                       "justify-start gap-2",
                       isActiveRoute(to) &&
-                        "bg-primary/10 text-primary font-semibold"
+                      "bg-primary/10 text-primary font-semibold"
                     )}
                     asChild
                     onClick={() => setMobileMenuOpen(false)}
@@ -313,7 +322,7 @@ const Header = () => {
                       className={cn(
                         "justify-start gap-2",
                         isActiveRoute("/admin") &&
-                          "bg-destructive/10 text-destructive font-semibold"
+                        "bg-destructive/10 text-destructive font-semibold"
                       )}
                       asChild
                       onClick={() => setMobileMenuOpen(false)}
