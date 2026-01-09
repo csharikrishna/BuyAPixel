@@ -50,6 +50,7 @@ const ScanPixel = () => {
 
    // We use a ref to prevent double initialization in React Strict Mode
    const scannerRef = useRef<Html5QrcodeScanner | null>(null);
+   const timerRef = useRef<NodeJS.Timeout>();
 
    // Load history from local storage on mount
    useEffect(() => {
@@ -281,7 +282,6 @@ const ScanPixel = () => {
       };
 
       // Robust polling for the element to ensure it exists before initializing
-      const timerRef = useRef<NodeJS.Timeout>();
 
       const initScanner = () => {
          const element = document.getElementById("reader");
