@@ -43,8 +43,8 @@ export const VirtualizedPixelGrid = ({
   selectedPixels,
   onSelectionChange,
   isSelecting,
-  gridWidth = 150,
-  gridHeight = 150,
+  gridWidth = 100,
+  gridHeight = 100,
   pixelSize = 4,
   zoom,
   onZoomChange,
@@ -130,11 +130,11 @@ export const VirtualizedPixelGrid = ({
       const dy = Math.abs(y - centerY);
       const maxDist = Math.max(dx, dy);
 
-      // Gold Zone (60x60) -> Radius 30
-      if (maxDist < 30) return 299;
+      // Gold Zone (40x40) -> Radius 20
+      if (maxDist < 20) return 299;
 
-      // Premium Zone (120x120) -> Radius 60
-      if (maxDist < 60) return 199;
+      // Premium Zone (80x80) -> Radius 40
+      if (maxDist < 40) return 199;
 
       return 99;
     },

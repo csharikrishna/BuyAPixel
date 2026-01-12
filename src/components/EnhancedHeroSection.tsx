@@ -10,7 +10,7 @@ const EnhancedHeroSection = () => {
       <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-secondary/5" />
       <div className="absolute top-20 left-10 w-32 h-32 bg-primary/10 rounded-full blur-3xl animate-float" />
       <div className="absolute bottom-20 right-10 w-40 h-40 bg-secondary/10 rounded-full blur-3xl animate-float delay-1000" />
-      
+
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10 max-w-7xl">
         {/* Badge */}
         <div className="animate-fade-in mb-6">
@@ -27,12 +27,12 @@ const EnhancedHeroSection = () => {
               Buy A Pixel
             </span>
           </h1>
-          
+
           <p className="text-lg md:text-xl lg:text-2xl text-muted-foreground mb-4 max-w-3xl mx-auto leading-relaxed">
-            Own a piece of digital history on our 
-            <span className="text-primary font-semibold"> 50,000 pixel canvas</span>
+            Own a piece of digital history on our
+            <span className="text-primary font-semibold"> 10,000 pixel canvas</span>
           </p>
-          
+
           <p className="text-base md:text-lg text-muted-foreground/80 max-w-2xl mx-auto">
             Advertise your brand, showcase your art, or invest in premium digital real estate
           </p>
@@ -54,19 +54,19 @@ const EnhancedHeroSection = () => {
         {/* CTA Buttons */}
         <div className="animate-slide-up delay-600 flex flex-col sm:flex-row gap-4 justify-center items-center mb-16">
           <Link to="/buy-pixels" className="w-full sm:w-auto">
-            <Button 
-              size="lg" 
+            <Button
+              size="lg"
               className="btn-premium bg-gradient-primary hover:shadow-glow text-white px-8 py-4 text-base md:text-lg font-semibold border-0 w-full sm:min-w-[220px] h-14"
             >
               Start Buying Pixels
               <ArrowRight className="w-5 h-5 ml-2" />
             </Button>
           </Link>
-          
+
           <Link to="/canvas" className="w-full sm:w-auto">
-            <Button 
-              size="lg" 
-              variant="outline" 
+            <Button
+              size="lg"
+              variant="outline"
               className="hover-scale border-2 border-primary/60 text-primary hover:bg-primary hover:text-white px-8 py-4 text-base md:text-lg font-semibold w-full sm:min-w-[220px] h-14"
             >
               View Full Canvas
@@ -84,7 +84,7 @@ const EnhancedHeroSection = () => {
             },
             {
               icon: "💎",
-              title: "Invest", 
+              title: "Invest",
               description: "Buy premium locations and watch them appreciate"
             },
             {
@@ -93,7 +93,7 @@ const EnhancedHeroSection = () => {
               description: "Express yourself with pixel art and digital creativity"
             }
           ].map((feature, index) => (
-            <div 
+            <div
               key={feature.title}
               className="card-premium p-8 rounded-xl hover-scale cursor-pointer group transition-all duration-300"
             >

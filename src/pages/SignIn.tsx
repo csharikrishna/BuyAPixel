@@ -567,9 +567,64 @@ const SignIn = () => {
 
   return (
     <div className="min-h-screen lg:h-screen grid grid-cols-1 lg:grid-cols-2">
-      {/* Left Side - Hero/Branding (unchanged) */}
-      <div className="hidden lg:flex relative overflow-hidden">
-        {/* ... (keep existing hero section) ... */}
+      {/* Left Side - Hero/Branding */}
+      <div className="hidden lg:flex relative overflow-hidden bg-primary/5 items-center justify-center p-12">
+        {/* Background Gradients - Inspired by SignUp */}
+        <div className="absolute inset-0 bg-gradient-to-br from-accent via-secondary to-primary opacity-90" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent" />
+
+        {/* Animated Background Elements */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute -top-[20%] -left-[10%] w-[60%] h-[60%] rounded-full bg-white/10 blur-3xl animate-pulse" />
+          <div className="absolute bottom-[10%] right-[10%] w-[40%] h-[40%] rounded-full bg-white/5 blur-3xl animate-pulse delay-1000" />
+          <div className="absolute top-[40%] right-[20%] w-[20%] h-[20%] rounded-full bg-indigo-500/20 blur-2xl animate-pulse delay-500" />
+        </div>
+
+        {/* Content */}
+        <div className="relative z-10 text-white max-w-lg w-full">
+          <div className="mb-8 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/20">
+            <Sparkles className="w-4 h-4 text-yellow-300" />
+            <span className="text-xs font-medium tracking-wide uppercase">Return to the Canvas</span>
+          </div>
+
+          <h1 className="text-4xl md:text-5xl font-bold mb-6 leading-tight">
+            Welcome Back to <br />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-white/80">
+              BuyAPixel
+            </span>
+          </h1>
+
+          <p className="text-lg text-white/80 mb-10 leading-relaxed font-light">
+            Manage your digital real estate, track your portfolio performance, and connect with the pixel art community.
+          </p>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="group bg-white/5 backdrop-blur-sm hover:bg-white/10 transition-colors p-5 rounded-2xl border border-white/10">
+              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-yellow-400/20 to-orange-500/20 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                <Zap className="w-5 h-5 text-yellow-300" />
+              </div>
+              <h3 className="font-semibold mb-1">Fast Performance</h3>
+              <p className="text-xs text-white/60">Optimized dashboard experience</p>
+            </div>
+
+            <div className="group bg-white/5 backdrop-blur-sm hover:bg-white/10 transition-colors p-5 rounded-2xl border border-white/10">
+              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-400/20 to-indigo-500/20 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                <Shield className="w-5 h-5 text-blue-300" />
+              </div>
+              <h3 className="font-semibold mb-1">Secure Account</h3>
+              <p className="text-xs text-white/60">Enterprise-grade protection</p>
+            </div>
+          </div>
+
+          <div className="mt-12 flex items-center gap-4 text-sm text-white/50">
+            <div className="flex -space-x-2">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="w-8 h-8 rounded-full border-2 border-primary bg-white/10 backdrop-blur-sm" />
+              ))}
+            </div>
+            <p>Join thousands of pixel owners</p>
+          </div>
+        </div>
       </div>
 
       {/* Right Side - Sign In Form */}

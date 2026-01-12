@@ -22,10 +22,10 @@ import {
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 // Constants
-const CANVAS_WIDTH = 150;
-const CANVAS_HEIGHT = 150;
+const CANVAS_WIDTH = 100;
+const CANVAS_HEIGHT = 100;
 const PIXEL_SIZE = 4;
-const TOTAL_PIXELS = CANVAS_WIDTH * CANVAS_HEIGHT; // 22,500
+const TOTAL_PIXELS = CANVAS_WIDTH * CANVAS_HEIGHT; // 10,000
 const ZOOM_STEP = 1.2;
 const MIN_ZOOM = 0.5;
 const MAX_ZOOM = 8;
@@ -84,11 +84,11 @@ const Canvas = () => {
     const dy = Math.abs(y - centerY);
     const maxDist = Math.max(dx, dy);
 
-    // Gold Zone (60x60) -> Radius 30
-    if (maxDist < 30) return PREMIUM_PRICE;
+    // Gold Zone (40x40) -> Radius 20
+    if (maxDist < 20) return PREMIUM_PRICE;
 
-    // Standard Zone (120x120) -> Radius 60
-    if (maxDist < 60) return STANDARD_PRICE;
+    // Standard Zone (80x80) -> Radius 40
+    if (maxDist < 40) return STANDARD_PRICE;
 
     return ECONOMY_PRICE;
   }, [pricingHelper]);
@@ -121,9 +121,10 @@ const Canvas = () => {
 
   // Memoized pricing zone counts
   const pricingZones = useMemo(() => {
-    const premium = 1597;
-    const standard = 4752;
-    const economy = 16151;
+    // 100x100 Grid estimates based on square zones
+    const premium = 1600; // 40x40
+    const standard = 4800; // 80x80 - 1600
+    const economy = 3600; // 10000 - 6400
 
     return { premium, standard, economy };
   }, []);

@@ -223,7 +223,6 @@ const AuthCallback = () => {
           user_id: session.user.id,
           full_name: displayName,
           avatar_url: avatarUrl,
-          email: session.user.email,
           phone_number: session.user.user_metadata?.phone_number || null,
           date_of_birth: session.user.user_metadata?.date_of_birth || null,
           created_at: new Date().toISOString(),

@@ -39,8 +39,8 @@ import { useNetworkStatus } from "@/hooks/useNetworkStatus";
 import confetti from "canvas-confetti";
 
 // --- Constants ---
-const CANVAS_WIDTH = 150;
-const CANVAS_HEIGHT = 150;
+const CANVAS_WIDTH = 100;
+const CANVAS_HEIGHT = 100;
 const PIXEL_SIZE = 4;
 const MAX_PIXELS_PER_PURCHASE = 1000;
 const DRAFT_EXPIRY_HOURS = 1;
@@ -182,11 +182,11 @@ const BuyPixels = () => {
     const dy = Math.abs(y - centerY);
     const maxDist = Math.max(dx, dy);
 
-    // Gold Zone (60x60) -> Radius 30
-    if (maxDist < 30) return 299; // Premium
+    // Gold Zone (40x40) -> Radius 20
+    if (maxDist < 20) return 299; // Premium
 
-    // Standard Zone (120x120) -> Radius 60
-    if (maxDist < 60) return 199; // Standard
+    // Standard Zone (80x80) -> Radius 40
+    if (maxDist < 40) return 199; // Standard
 
     return 99; // Economy
   }, []);

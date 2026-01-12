@@ -1,3 +1,6 @@
+
+
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Eye, ExternalLink } from "lucide-react";
@@ -8,7 +11,7 @@ import { useQuery } from "@tanstack/react-query";
 const StaticPixelPreview = () => {
   const [hoveredPixel, setHoveredPixel] = useState<{ x: number; y: number; content: string } | null>(null);
   const [pixelsSold, setPixelsSold] = useState(0);
-  const [pixelsAvailable, setPixelsAvailable] = useState(50000);
+  const [pixelsAvailable, setPixelsAvailable] = useState(10000);
   const [isLoading, setIsLoading] = useState(true);
   const [currentAdIndex, setCurrentAdIndex] = useState(0);
 
@@ -39,10 +42,10 @@ const StaticPixelPreview = () => {
           .not('owner_id', 'is', null);
 
         if (error) throw error;
-        
+
         const sold = count || 0;
         setPixelsSold(sold);
-        setPixelsAvailable(50000 - sold);
+        setPixelsAvailable(10000 - sold);
       } catch (error) {
         console.error('Error fetching pixel stats:', error);
       } finally {
@@ -102,7 +105,7 @@ const StaticPixelPreview = () => {
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="relative" style={{ width: '100%', maxWidth: canvasWidth, aspectRatio: `${canvasWidth}/${canvasHeight}` }}>
                     {/* Grid Background */}
-                    <div 
+                    <div
                       className="absolute inset-0 border-2 border-border rounded-lg bg-background"
                       style={{
                         backgroundImage: `
@@ -112,7 +115,7 @@ const StaticPixelPreview = () => {
                         backgroundSize: `${gridSize}px ${gridSize}px`
                       }}
                     />
-                    
+
                     {/* Mock Pixels */}
                     {previewPixels.map((pixel, index) => (
                       <div
@@ -200,7 +203,7 @@ const StaticPixelPreview = () => {
                 <div className="text-xs md:text-sm text-muted-foreground">Total Value</div>
               </div>
               <div className="bg-muted/50 rounded-lg p-3 md:p-4">
-                <div className="text-xl md:text-2xl font-bold text-accent">50K</div>
+                <div className="text-xl md:text-2xl font-bold text-accent">10K</div>
                 <div className="text-xs md:text-sm text-muted-foreground">Total Pixels</div>
               </div>
             </div>
@@ -215,7 +218,7 @@ const StaticPixelPreview = () => {
                   View Live Canvas
                 </Button>
               </Link>
-              
+
               <Link to="/buy-pixels" className="w-full sm:w-auto">
                 <Button size="lg" variant="outline" className="hover-scale border-2 border-primary/60 text-primary hover:bg-primary hover:text-white px-8 py-4 text-base font-semibold w-full sm:min-w-[220px] h-14">
                   <ExternalLink className="w-5 h-5 mr-2" />
@@ -223,9 +226,9 @@ const StaticPixelPreview = () => {
                 </Button>
               </Link>
             </div>
-            
+
             <p className="text-sm text-muted-foreground/80 mt-4">
-              * This is a preview. The actual canvas contains 50,000 pixels (250x200)
+              * This is a preview. The actual canvas contains 10,000 pixels (100x100)
             </p>
           </div>
         </div>

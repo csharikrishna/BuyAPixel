@@ -46,7 +46,7 @@ const Help = () => {
                      <CardTitle>1. Select Pixels</CardTitle>
                   </CardHeader>
                   <CardContent className="text-muted-foreground">
-                     Navigate the 150x150 grid. Zoom in to find your perfect spot. Click individual pixels or drag to select a block.
+                     Navigate the 100x100 grid. Zoom in to find your perfect spot. Click individual pixels or drag to select a block.
                   </CardContent>
                </Card>
 
@@ -167,7 +167,7 @@ const Help = () => {
                      <AccordionItem value="item-5" className="bg-white px-6 rounded-lg border">
                         <AccordionTrigger className="text-lg font-medium">How big is the grid?</AccordionTrigger>
                         <AccordionContent className="text-muted-foreground text-base">
-                           The grid is 150x150 pixels, meaning there are 22,500 pixels in total. It's a limited supply of digital real estate!
+                           The grid is 100x100 pixels, meaning there are 10,000 pixels in total. It's a limited supply of digital real estate!
                         </AccordionContent>
                      </AccordionItem>
                   </Accordion>
