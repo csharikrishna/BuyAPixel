@@ -1,4 +1,5 @@
    -- Create a function to calculate and return user badges
+   DROP FUNCTION IF EXISTS get_user_badges(uuid);
    create or replace function get_user_badges(target_user_id uuid)
    returns table (
    badge_id text,

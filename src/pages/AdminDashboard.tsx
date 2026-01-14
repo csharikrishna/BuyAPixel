@@ -281,7 +281,7 @@ const AdminDashboard = () => {
       const { data: pixelsData, error: pixelsError } = await supabase
         .from('pixels')
         .select(`
-          id, x, y, price, owner_id, image_url, link_url, alt_text, created_at
+          id, x, y, price_paid, owner_id, image_url, link_url, alt_text, created_at
         `)
         .not('owner_id', 'is', null) // Only show owned pixels
         .order('created_at', { ascending: false }) // Newest first
@@ -302,13 +302,13 @@ const AdminDashboard = () => {
         setAuditLogs((logsData as unknown as AuditLog[]) || []);
       }
 
-      // 6. Load Active Announcement
+      // 3. Load active announcement
       const { data: announcementData, error: announcementError } = await supabase
         .from('announcements' as any)
         .select('*')
         .order('created_at', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
 
       if (!announcementError && announcementData) {
         setBroadcastMessage((announcementData as any).message);
@@ -316,6 +316,8 @@ const AdminDashboard = () => {
         setBroadcastId((announcementData as any).id);
       } else {
         // No active announcement or table not ready yet
+        setBroadcastMessage('');
+        setIsBroadcastActive(false);
       }
 
       setRefreshing(false);

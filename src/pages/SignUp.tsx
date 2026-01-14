@@ -216,8 +216,8 @@ const SignUp = () => {
       const redirectUrl =
         from !== '/'
           ? `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(
-              from
-            )}`
+            from
+          )}`
           : `${window.location.origin}/auth/callback`;
 
       const { error } = await supabase.auth.signInWithOAuth({
@@ -327,8 +327,8 @@ const SignUp = () => {
       const redirectUrl =
         from !== '/'
           ? `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(
-              from
-            )}`
+            from
+          )}`
           : `${window.location.origin}/auth/callback`;
 
       const { error, data } = await supabase.auth.signUp({
@@ -348,7 +348,10 @@ const SignUp = () => {
         let errorMessage = error.message;
         let errorTitle = 'Sign Up Failed';
 
-        if (error.message.includes('User already registered')) {
+        if (
+          error.message.includes('User already registered') ||
+          error.message.includes('already been registered')
+        ) {
           errorMessage =
             'An account with this email already exists. Please sign in instead.';
           errorTitle = 'Account Already Exists';
@@ -553,11 +556,10 @@ const SignUp = () => {
                     onBlur={handleBlur}
                     required
                     autoComplete="name"
-                    className={`h-11 pr-8 ${
-                      fieldErrors.fullName && touchedFields.fullName
+                    className={`h-11 pr-8 ${fieldErrors.fullName && touchedFields.fullName
                         ? 'border-destructive focus-visible:ring-destructive'
                         : ''
-                    }`}
+                      }`}
                     aria-invalid={
                       fieldErrors.fullName && touchedFields.fullName
                         ? 'true'
@@ -605,11 +607,10 @@ const SignUp = () => {
                     onBlur={handleBlur}
                     required
                     autoComplete="email"
-                    className={`h-11 pr-8 ${
-                      fieldErrors.email && touchedFields.email
+                    className={`h-11 pr-8 ${fieldErrors.email && touchedFields.email
                         ? 'border-destructive focus-visible:ring-destructive'
                         : ''
-                    }`}
+                      }`}
                     aria-invalid={
                       fieldErrors.email && touchedFields.email
                         ? 'true'
@@ -654,11 +655,10 @@ const SignUp = () => {
                     onChange={handleInputChange}
                     onBlur={handleBlur}
                     autoComplete="tel"
-                    className={`h-11 ${
-                      fieldErrors.phoneNumber && touchedFields.phoneNumber
+                    className={`h-11 ${fieldErrors.phoneNumber && touchedFields.phoneNumber
                         ? 'border-destructive focus-visible:ring-destructive'
                         : ''
-                    }`}
+                      }`}
                     aria-invalid={
                       fieldErrors.phoneNumber && touchedFields.phoneNumber
                         ? 'true'
@@ -689,11 +689,10 @@ const SignUp = () => {
                     onBlur={handleBlur}
                     max={new Date().toISOString().split('T')[0]}
                     autoComplete="bday"
-                    className={`h-11 ${
-                      fieldErrors.dateOfBirth && touchedFields.dateOfBirth
+                    className={`h-11 ${fieldErrors.dateOfBirth && touchedFields.dateOfBirth
                         ? 'border-destructive focus-visible:ring-destructive'
                         : ''
-                    }`}
+                      }`}
                   />
                 </div>
                 {fieldErrors.dateOfBirth && touchedFields.dateOfBirth && (
@@ -726,11 +725,10 @@ const SignUp = () => {
                     required
                     minLength={8}
                     autoComplete="new-password"
-                    className={`h-11 pr-9 ${
-                      fieldErrors.password && touchedFields.password
+                    className={`h-11 pr-9 ${fieldErrors.password && touchedFields.password
                         ? 'border-destructive focus-visible:ring-destructive'
                         : ''
-                    }`}
+                      }`}
                     aria-invalid={
                       fieldErrors.password && touchedFields.password
                         ? 'true'
@@ -760,13 +758,12 @@ const SignUp = () => {
                       Password Strength:
                     </span>
                     <span
-                      className={`font-medium ${
-                        passwordStrength.score >= 4
+                      className={`font-medium ${passwordStrength.score >= 4
                           ? 'text-green-600'
                           : passwordStrength.score >= 3
-                          ? 'text-yellow-600'
-                          : 'text-red-600'
-                      }`}
+                            ? 'text-yellow-600'
+                            : 'text-red-600'
+                        }`}
                     >
                       {passwordStrength.label}
                     </span>
@@ -790,11 +787,10 @@ const SignUp = () => {
                       className="text-[11px] space-y-0.5 mt-1.5"
                     >
                       <div
-                        className={`flex items-center gap-1 ${
-                          passwordStrength.checks.length
+                        className={`flex items-center gap-1 ${passwordStrength.checks.length
                             ? 'text-green-600'
                             : 'text-muted-foreground'
-                        }`}
+                          }`}
                       >
                         {passwordStrength.checks.length ? (
                           <CheckCircle2 className="h-3 w-3" />
@@ -804,11 +800,10 @@ const SignUp = () => {
                         At least 8 characters
                       </div>
                       <div
-                        className={`flex items-center gap-1 ${
-                          passwordStrength.checks.uppercase
+                        className={`flex items-center gap-1 ${passwordStrength.checks.uppercase
                             ? 'text-green-600'
                             : 'text-muted-foreground'
-                        }`}
+                          }`}
                       >
                         {passwordStrength.checks.uppercase ? (
                           <CheckCircle2 className="h-3 w-3" />
@@ -818,11 +813,10 @@ const SignUp = () => {
                         One uppercase letter
                       </div>
                       <div
-                        className={`flex items-center gap-1 ${
-                          passwordStrength.checks.lowercase
+                        className={`flex items-center gap-1 ${passwordStrength.checks.lowercase
                             ? 'text-green-600'
                             : 'text-muted-foreground'
-                        }`}
+                          }`}
                       >
                         {passwordStrength.checks.lowercase ? (
                           <CheckCircle2 className="h-3 w-3" />
@@ -832,11 +826,10 @@ const SignUp = () => {
                         One lowercase letter
                       </div>
                       <div
-                        className={`flex items-center gap-1 ${
-                          passwordStrength.checks.number
+                        className={`flex items-center gap-1 ${passwordStrength.checks.number
                             ? 'text-green-600'
                             : 'text-muted-foreground'
-                        }`}
+                          }`}
                       >
                         {passwordStrength.checks.number ? (
                           <CheckCircle2 className="h-3 w-3" />
@@ -846,11 +839,10 @@ const SignUp = () => {
                         One number
                       </div>
                       <div
-                        className={`flex items-center gap-1 ${
-                          passwordStrength.checks.special
+                        className={`flex items-center gap-1 ${passwordStrength.checks.special
                             ? 'text-green-600'
                             : 'text-muted-foreground'
-                        }`}
+                          }`}
                       >
                         {passwordStrength.checks.special ? (
                           <CheckCircle2 className="h-3 w-3" />
@@ -886,15 +878,14 @@ const SignUp = () => {
                     required
                     minLength={8}
                     autoComplete="new-password"
-                    className={`h-11 pr-9 ${
-                      fieldErrors.confirmPassword &&
-                      touchedFields.confirmPassword
+                    className={`h-11 pr-9 ${fieldErrors.confirmPassword &&
+                        touchedFields.confirmPassword
                         ? 'border-destructive focus-visible:ring-destructive'
                         : ''
-                    }`}
+                      }`}
                     aria-invalid={
                       fieldErrors.confirmPassword &&
-                      touchedFields.confirmPassword
+                        touchedFields.confirmPassword
                         ? 'true'
                         : 'false'
                     }
