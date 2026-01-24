@@ -121,14 +121,14 @@ const Leaderboard = () => {
     spendingRank: null
   });
 
-  // Fetch leaderboard data
+  // Fetch leaderboard data using existing database structure
   const fetchLeaderboardData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
 
       // Date filter based on time period
-      let startDate = null;
+      let startDate: string | null = null;
       const now = new Date();
       if (timePeriod === 'today') {
         startDate = new Date(now.setHours(0, 0, 0, 0)).toISOString();
@@ -138,38 +138,30 @@ const Leaderboard = () => {
         startDate = new Date(now.setMonth(now.getMonth() - 1)).toISOString();
       }
 
-      // 1. Fetch Top Pixels & Spenders via RPC
-      // Cast to any because types are not yet generated for these specific RPCs
-      const [pixelsData, spendingData, statsData] = await Promise.all([
-        (supabase as any).rpc("get_leaderboard_stats", {
-          sort_by: "pixels",
-          limit_count: 100,
-          start_date: startDate
-        }),
-        (supabase as any).rpc("get_leaderboard_stats", {
-          sort_by: "spending",
-          limit_count: 100,
-          start_date: startDate
-        }),
-        (supabase as any).rpc("get_general_stats")
-      ]);
+      // 1. Fetch all profiles with pixel stats (existing table data)
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('user_id, full_name, avatar_url, pixel_count, total_spent')
+        .gt('pixel_count', 0)
+        .order('pixel_count', { ascending: false })
+        .limit(100);
 
-      if (pixelsData.error) throw pixelsData.error;
-      if (spendingData.error) throw spendingData.error;
-      if (statsData.error) throw statsData.error;
+      if (profilesError) throw profilesError;
 
-      // Transform RPC data to LeaderboardUser
-      const transformUser = (data: any): LeaderboardUser => ({
-        id: data.user_id,
-        user_id: data.user_id,
-        full_name: data.full_name,
-        avatar_url: data.avatar_url,
-        pixel_count: Number(data.pixel_count),
-        total_spent: Number(data.total_spent)
-      });
+      // Transform to LeaderboardUser format
+      const allUsers: LeaderboardUser[] = (profilesData || []).map((profile) => ({
+        id: profile.user_id,
+        user_id: profile.user_id,
+        full_name: profile.full_name,
+        avatar_url: profile.avatar_url,
+        pixel_count: profile.pixel_count || 0,
+        total_spent: profile.total_spent || 0,
+      }));
 
-      const sortedByPixels = ((pixelsData.data as any[]) || []).map(transformUser);
-      const sortedBySpending = ((spendingData.data as any[]) || []).map(transformUser);
+      // Sort by pixels
+      const sortedByPixels = [...allUsers].sort((a, b) => b.pixel_count - a.pixel_count);
+      // Sort by spending
+      const sortedBySpending = [...allUsers].sort((a, b) => b.total_spent - a.total_spent);
 
       setTopByPixels(sortedByPixels);
       setTopBySpending(sortedBySpending);
@@ -185,20 +177,21 @@ const Leaderboard = () => {
         });
       }
 
-      // 2. Fetch Helper Stats
-      const statsArray = (statsData.data as any[]) || [];
-      if (statsArray.length > 0) {
-        setStats({
-          totalPixelsSold: Number(statsArray[0].total_pixels_sold),
-          totalRevenue: Number(statsArray[0].total_revenue),
-          totalUsers: Number(statsArray[0].total_users),
-          averagePrice: Number(statsArray[0].average_price),
-          recentGrowth: 12.5 // Placeholder or calculate separately if needed
-        });
-      }
+      // 2. Calculate stats from profiles data
+      const totalPixelsSold = allUsers.reduce((sum, u) => sum + u.pixel_count, 0);
+      const totalRevenue = allUsers.reduce((sum, u) => sum + u.total_spent, 0);
+      const totalUsers = allUsers.length;
+      const averagePrice = totalPixelsSold > 0 ? totalRevenue / totalPixelsSold : 0;
 
-      // 3. Fetch Recent Purchases (Lightweight, last 50 only)
-      // We still do a manual fetch here but limited to 50 rows
+      setStats({
+        totalPixelsSold,
+        totalRevenue,
+        totalUsers,
+        averagePrice,
+        recentGrowth: 0 // Would need additional tracking
+      });
+
+      // 3. Fetch Recent Purchases (last 50)
       const { data: recentPixels, error: recentError } = await supabase
         .from('pixels')
         .select('owner_id, price_paid, purchased_at, x, y, id, image_url, alt_text')
@@ -208,8 +201,7 @@ const Leaderboard = () => {
 
       if (recentError) throw recentError;
 
-      // Fetch profiles just for these 50 recent purchases
-      // Optimization: Extract unique user IDs from the 50 pixels
+      // Fetch profiles for recent purchases
       const recentUserIds = Array.from(new Set(recentPixels?.map(p => p.owner_id) || []));
 
       let profileMap = new Map();

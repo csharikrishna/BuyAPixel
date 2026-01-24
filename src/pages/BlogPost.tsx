@@ -7,11 +7,11 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
-import { 
-  Calendar, 
-  Clock, 
-  ArrowLeft, 
-  Share2, 
+import {
+  Calendar,
+  Clock,
+  ArrowLeft,
+  Share2,
   TrendingUp,
   Eye,
   Facebook,
@@ -69,34 +69,35 @@ const BlogPost = () => {
       setIsLoading(true);
 
       const { data: postData, error: postError } = await supabase
-        .from('blog_posts')
+        .from('blog_posts' as any)
         .select('*')
         .eq('slug', slug)
-        .eq('published', true)
+        .eq('status', 'published')
         .single();
 
       if (postError) throw postError;
 
-      setPost(postData);
+      const typedPost = postData as unknown as BlogPost;
+      setPost(typedPost);
 
       // Increment view count
       await supabase
-        .from('blog_posts')
-        .update({ views: (postData.views || 0) + 1 })
-        .eq('id', postData.id);
+        .from('blog_posts' as any)
+        .update({ view_count: (typedPost.views || 0) + 1 })
+        .eq('id', typedPost.id);
 
       // Load related posts
-      if (postData.tags && postData.tags.length > 0) {
+      if (typedPost.tags && typedPost.tags.length > 0) {
         const { data: relatedData } = await supabase
-          .from('blog_posts')
+          .from('blog_posts' as any)
           .select('id, slug, title, excerpt, featured_image, published_at, reading_time')
-          .eq('published', true)
-          .neq('id', postData.id)
-          .overlaps('tags', postData.tags)
+          .eq('status', 'published')
+          .neq('id', typedPost.id)
+          .overlaps('tags', typedPost.tags)
           .limit(3);
 
         if (relatedData) {
-          setRelatedPosts(relatedData);
+          setRelatedPosts(relatedData as unknown as RelatedPost[]);
         }
       }
     } catch (error) {
@@ -254,9 +255,9 @@ const BlogPost = () => {
 
               {/* Share Buttons */}
               <div className="flex items-center gap-2">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={() => handleShare()}
                   className="gap-2"
                 >
@@ -306,9 +307,9 @@ const BlogPost = () => {
               <h2 className="text-3xl font-bold mb-6">Related Articles</h2>
               <div className="grid md:grid-cols-3 gap-6">
                 {relatedPosts.map((related) => (
-                  <Link 
-                    key={related.id} 
-                    to={`/blog/${related.slug}`} 
+                  <Link
+                    key={related.id}
+                    to={`/blog/${related.slug}`}
                     className="group"
                     onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
                   >

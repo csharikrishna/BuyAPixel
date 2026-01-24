@@ -11,13 +11,14 @@ export const GRID_CONFIG = {
    PAN_CLAMP_BUFFER: 100,
 
    // Performance
-   CULLING_BUFFER: 2, // Will be increased in optimization
+   CULLING_BUFFER: 2,
    HOVER_DEBOUNCE_MS: 5,
    BILLBOARD_ROTATION_MS: 4000,
-   DRAG_THRESHOLD: 5, // Pixels moved before click is rejected
+   DRAG_THRESHOLD: 5,
    MAX_SELECTION_AREA: 2500,
 
-   // Optimization
-   CHUNK_SIZE: 32, // Size of chunks for spatial hashing
-   RENDER_BUFFER: 500, // Pixels around viewport to render
+   // Optimization - reduced for faster initial render
+   CHUNK_SIZE: 20, // Smaller chunks for finer spatial queries
+   RENDER_BUFFER: 150, // Reduced from 500 for faster rendering
 } as const;
+

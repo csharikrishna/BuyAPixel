@@ -4,12 +4,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/hooks/useAuth";
-import { 
-  TrendingUp, 
-  Users, 
-  Eye, 
-  Crown, 
-  Target, 
+import {
+  TrendingUp,
+  Users,
+  Eye,
+  Crown,
+  Target,
   Sparkles,
   Timer,
   DollarSign,
@@ -36,41 +36,73 @@ export const EnhancedStatsPanel = ({ selectedPixelsCount }: EnhancedStatsPanelPr
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const getStats = async () => {
-    const [{ count: totalCount }, { count: soldCount }] = await Promise.all([
-      supabase.from('pixels').select('id', { count: 'exact', head: true }),
-      supabase.from('pixels').select('id', { count: 'exact', head: true }).not('owner_id', 'is', null),
-    ]);
+    try {
+      // Try using RPC function for better performance (uses materialized view)
+      const { data: gridStats, error: rpcError } = await (supabase as any).rpc('get_grid_stats');
 
-    let userPixels = 0;
-    if (user?.id) {
-      const { count: userCount } = await supabase
+      if (!rpcError && gridStats) {
+        // Get user pixels separately if logged in
+        let userPixels = 0;
+        if (user?.id) {
+          const { count: userCount } = await supabase
+            .from('pixels')
+            .select('id', { count: 'exact', head: true })
+            .eq('owner_id', user.id);
+          userPixels = userCount || 0;
+        }
+
+        setStats({
+          totalPixels: gridStats.total_pixels || 10000,
+          pixelsSold: gridStats.sold_count || 0,
+          pixelsAvailable: gridStats.available_count || 10000,
+          uniqueOwners: gridStats.unique_owners || 0,
+          userPixels,
+          averagePrice: Math.round(gridStats.average_price || 0),
+        });
+        return;
+      }
+
+      // Fallback: Manual queries if RPC fails
+      console.warn('RPC failed, falling back to manual queries', rpcError);
+
+      const [{ count: totalCount }, { count: soldCount }] = await Promise.all([
+        supabase.from('pixels').select('id', { count: 'exact', head: true }),
+        supabase.from('pixels').select('id', { count: 'exact', head: true }).not('owner_id', 'is', null),
+      ]);
+
+      let userPixels = 0;
+      if (user?.id) {
+        const { count: userCount } = await supabase
+          .from('pixels')
+          .select('id', { count: 'exact', head: true })
+          .eq('owner_id', user.id);
+        userPixels = userCount || 0;
+      }
+
+      const { data: ownersData } = await supabase
         .from('pixels')
-        .select('id', { count: 'exact', head: true })
-        .eq('owner_id', user.id);
-      userPixels = userCount || 0;
+        .select('owner_id')
+        .not('owner_id', 'is', null);
+      const uniqueOwners = ownersData ? new Set(ownersData.map((r: any) => r.owner_id)).size : 0;
+
+      const { data: pricesData } = await supabase
+        .from('pixels')
+        .select('price_paid')
+        .not('owner_id', 'is', null);
+      const paid = (pricesData || []).map((p: any) => Number(p.price_paid) || 0);
+      const avg = paid.length ? Math.round(paid.reduce((a: number, b: number) => a + b, 0) / paid.length) : 0;
+
+      setStats({
+        totalPixels: totalCount || 0,
+        pixelsSold: soldCount || 0,
+        pixelsAvailable: Math.max(0, (totalCount || 0) - (soldCount || 0)),
+        uniqueOwners,
+        userPixels,
+        averagePrice: avg,
+      });
+    } catch (error) {
+      console.error('Error fetching stats:', error);
     }
-
-    const { data: ownersData } = await supabase
-      .from('pixels')
-      .select('owner_id')
-      .not('owner_id', 'is', null);
-    const uniqueOwners = ownersData ? new Set(ownersData.map((r: any) => r.owner_id)).size : 0;
-
-    const { data: pricesData } = await supabase
-      .from('pixels')
-      .select('price_paid')
-      .not('owner_id', 'is', null);
-    const paid = (pricesData || []).map((p: any) => Number(p.price_paid) || 0);
-    const avg = paid.length ? Math.round(paid.reduce((a: number, b: number) => a + b, 0) / paid.length) : 0;
-
-    setStats({
-      totalPixels: totalCount || 0,
-      pixelsSold: soldCount || 0,
-      pixelsAvailable: Math.max(0, (totalCount || 0) - (soldCount || 0)),
-      uniqueOwners,
-      userPixels,
-      averagePrice: avg,
-    });
   };
 
   useEffect(() => {

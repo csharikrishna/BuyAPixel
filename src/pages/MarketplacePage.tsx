@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { getThumbnailUrl } from "@/utils/imageOptimization";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -40,8 +41,48 @@ import {
   History,
   ArrowUpRight,
   ArrowDownRight,
-  Repeat
+  Repeat,
+  Loader2
 } from "lucide-react";
+
+// Razorpay type declarations
+declare global {
+  interface Window {
+    Razorpay: new (options: RazorpayOptions) => RazorpayInstance;
+  }
+}
+
+interface RazorpayOptions {
+  key: string;
+  amount: number;
+  currency: string;
+  name: string;
+  description: string;
+  order_id: string;
+  handler: (response: RazorpayResponse) => void;
+  prefill: {
+    name?: string;
+    email?: string;
+    contact?: string;
+  };
+  theme: {
+    color: string;
+  };
+  modal?: {
+    ondismiss?: () => void;
+  };
+}
+
+interface RazorpayInstance {
+  open: () => void;
+  close: () => void;
+}
+
+interface RazorpayResponse {
+  razorpay_order_id: string;
+  razorpay_payment_id: string;
+  razorpay_signature: string;
+}
 
 interface MarketplaceListing {
   id: string;
@@ -105,6 +146,29 @@ const MarketplacePage = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [sortBy, setSortBy] = useState<"newest" | "price-low" | "price-high">("newest");
   const [searchQuery, setSearchQuery] = useState("");
+  const [isPurchasing, setIsPurchasing] = useState<string | null>(null); // Track which listing is being purchased
+  const [razorpayLoaded, setRazorpayLoaded] = useState(false);
+
+  // Load Razorpay script
+  useEffect(() => {
+    if (window.Razorpay) {
+      setRazorpayLoaded(true);
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.async = true;
+    script.onload = () => setRazorpayLoaded(true);
+    script.onerror = () => console.error('Failed to load Razorpay');
+    document.body.appendChild(script);
+
+    return () => {
+      if (document.body.contains(script)) {
+        document.body.removeChild(script);
+      }
+    };
+  }, []);
 
   // Fetch marketplace statistics
   const { data: marketplaceStats } = useQuery({
@@ -263,29 +327,99 @@ const MarketplacePage = () => {
       return;
     }
 
-    try {
-      const { data, error } = await supabase.rpc("purchase_from_marketplace", {
-        listing_id: listingId,
+    if (!razorpayLoaded) {
+      toast({
+        title: "Payment Not Ready",
+        description: "Please wait while payment system loads",
+        variant: "destructive",
       });
+      return;
+    }
 
-      if (error) throw error;
+    setIsPurchasing(listingId);
 
-      const result = data as unknown as PurchaseResponse;
+    try {
+      // Step 1: Create Razorpay order via edge function
+      const { data: orderData, error: orderError } = await supabase.functions.invoke(
+        'create-marketplace-order',
+        {
+          body: { listing_id: listingId }
+        }
+      );
 
-      if (result?.success) {
-        toast({
-          title: "Purchase Successful! 🎉",
-          description: `You have successfully acquired a pixel for ₹${price.toLocaleString()}`,
-        });
-        refetchListings();
-      } else {
-        toast({
-          title: "Transaction Failed",
-          description: result?.error || "Unable to complete purchase",
-          variant: "destructive",
-        });
+      if (orderError || !orderData?.success) {
+        throw new Error(orderData?.error || orderError?.message || 'Failed to create order');
       }
+
+      const { order, user, listing } = orderData;
+
+      // Step 2: Open Razorpay payment modal
+      const options: RazorpayOptions = {
+        key: order.key_id,
+        amount: order.amount,
+        currency: order.currency,
+        name: 'BuyAPixel',
+        description: `Marketplace: Pixel (${listing.pixel_coords?.x}, ${listing.pixel_coords?.y})`,
+        order_id: order.razorpay_order_id,
+        handler: async (response: RazorpayResponse) => {
+          // Step 3: Verify payment and complete purchase
+          try {
+            const { data: verifyData, error: verifyError } = await supabase.functions.invoke(
+              'verify-marketplace-payment',
+              {
+                body: {
+                  razorpay_order_id: response.razorpay_order_id,
+                  razorpay_payment_id: response.razorpay_payment_id,
+                  razorpay_signature: response.razorpay_signature,
+                  payment_order_id: order.id,
+                }
+              }
+            );
+
+            if (verifyError || !verifyData?.success) {
+              throw new Error(verifyData?.error || verifyError?.message || 'Payment verification failed');
+            }
+
+            toast({
+              title: "Purchase Successful! 🎉",
+              description: `You have acquired a pixel for ₹${price.toLocaleString()}. A confirmation email has been sent.`,
+            });
+
+            refetchListings();
+          } catch (verifyErr) {
+            toast({
+              title: "Verification Failed",
+              description: getErrorMessage(verifyErr) || "Payment verification failed. Contact support if charged.",
+              variant: "destructive",
+            });
+          } finally {
+            setIsPurchasing(null);
+          }
+        },
+        prefill: {
+          name: user?.name || '',
+          email: user?.email || '',
+          contact: '', // Allow user to enter phone number
+        },
+        theme: {
+          color: '#6366f1',
+        },
+        modal: {
+          ondismiss: () => {
+            setIsPurchasing(null);
+            toast({
+              title: "Payment Cancelled",
+              description: "You cancelled the payment",
+            });
+          },
+        },
+      };
+
+      const razorpay = new window.Razorpay(options);
+      razorpay.open();
+
     } catch (error: unknown) {
+      setIsPurchasing(null);
       toast({
         title: "Error",
         description: getErrorMessage(error) || "An unexpected error occurred",
@@ -639,9 +773,10 @@ const MarketplacePage = () => {
                               <div className="w-full aspect-square bg-muted border-2 border-border rounded-lg flex items-center justify-center overflow-hidden transition-transform duration-300 group-hover:scale-[1.02]">
                                 {listing.pixels?.image_url ? (
                                   <img
-                                    src={listing.pixels.image_url}
+                                    src={getThumbnailUrl(listing.pixels.image_url)}
                                     alt="Pixel preview"
                                     className="w-full h-full object-cover"
+                                    loading="lazy"
                                   />
                                 ) : (
                                   <span className="text-5xl">📍</span>
@@ -682,9 +817,14 @@ const MarketplacePage = () => {
                                   className="w-full h-11 font-semibold"
                                   variant="default"
                                   onClick={() => handleBuyFromMarketplace(listing.id, listing.asking_price)}
-                                  disabled={!session}
+                                  disabled={!session || isPurchasing !== null}
                                 >
-                                  {!session ? (
+                                  {isPurchasing === listing.id ? (
+                                    <>
+                                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                      Processing...
+                                    </>
+                                  ) : !session ? (
                                     <>
                                       <AlertCircle className="w-4 h-4 mr-2" />
                                       Sign In to Purchase

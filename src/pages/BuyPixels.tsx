@@ -350,132 +350,43 @@ const BuyPixels = () => {
     linkUrl: string,
     imageUrl: string | null
   ) => {
-    if (!user || selectedPixels.length === 0 || isPurchasing || !isOnline) return;
+    // This function is now called AFTER successful Razorpay payment verification
+    // The actual pixel purchase is handled by the verify-razorpay-payment edge function
+    // Here we just handle UI updates and cleanup
 
-    setIsPurchasing(true);
-    const now = new Date().toISOString();
+    const purchasedPixels = [...selectedPixels]; // Capture for sharing
 
-    try {
-      const totalBatches = Math.ceil(selectedPixels.length / PURCHASE_BATCH_SIZE);
-      let successCount = 0;
-      let failedPixels: SelectedPixel[] = [];
+    // Trigger celebration!
+    confetti({
+      particleCount: 150,
+      spread: 70,
+      origin: { y: 0.6 },
+      colors: ['#EF4444', '#10B981', '#F59E0B', '#6366F1'] // Brand colors
+    });
 
-      const progressToast = toast.loading(`Processing batch 1 of ${totalBatches}...`);
+    // Reset UI state
+    setShowPurchasePreview(false);
+    setSelectedPixels([]);
+    setSelectionHistory([]);
+    setMode('idle');
+    setIsSelecting(false);
+    localStorage.removeItem('pixelDraft');
 
-      for (let i = 0; i < totalBatches; i++) {
-        const batch = selectedPixels.slice(
-          i * PURCHASE_BATCH_SIZE,
-          (i + 1) * PURCHASE_BATCH_SIZE
-        );
-
-        toast.loading(`Processing batch ${i + 1} of ${totalBatches}...`, {
-          id: progressToast
-        });
-
-        const updates = batch.map((p) => {
-          const price_tier = p.price === 299 ? 3 : p.price === 199 ? 2 : 1;
-          return supabase
-            .from('pixels')
-            .update({
-              owner_id: user.id,
-              price_paid: p.price,
-              price_tier,
-              purchased_at: now,
-              is_active: true,
-              image_url: imageUrl,
-              link_url: linkUrl || null,
-              alt_text: pixelName
-            })
-            .eq('x', p.x)
-            .eq('y', p.y)
-            .is('owner_id', null); // Optimistic locking
-        });
-
-        const results = await Promise.all(updates);
-
-        results.forEach((result, index) => {
-          if (!result.error) {
-            successCount++;
-          } else {
-            failedPixels.push(batch[index]);
-          }
-        });
+    setTimeout(() => {
+      // Open share dialog for the first pixel
+      if (purchasedPixels.length > 0) {
+        setSharePixel(purchasedPixels[0]);
       }
 
-      toast.dismiss(progressToast);
-
-      if (successCount === 0) {
-        toast.error("Purchase failed", {
-          description: "These pixels were just purchased by someone else!"
-        });
-        return;
-      }
-      if (successCount < selectedPixels.length) {
-        toast.warning(`Purchased ${successCount} pixels`, {
-          description: `${failedPixels.length} pixels were already taken.`
-        });
-      } else {
-        // Trigger celebration!
-        confetti({
-          particleCount: 150,
-          spread: 70,
-          origin: { y: 0.6 },
-          colors: ['#EF4444', '#10B981', '#F59E0B', '#6366F1'] // Brand colors
-        });
-
-        toast.success(`🎉 Successfully purchased ${selectedPixels.length} pixels!`, {
-          description: "Your pixels are now live on the canvas!"
-        });
-      }
-
-      const purchasedPixels = [...selectedPixels]; // Capture for sharing
-
-      // Send confirmation email
-      if (user?.email) {
-        supabase.functions.invoke('send-purchase-confirmation', {
-          body: {
-            email: user.email,
-            pixelCount: selectedPixels.length,
-            totalCost: totalCost,
-            pixelName: pixelName,
-            linkUrl: linkUrl
-          }
-        }).then(({ error }) => {
-          if (error) console.error('Failed to send confirmation email:', error);
-        });
-      }
-
-      setShowPurchasePreview(false);
-      setSelectedPixels([]);
-      setSelectionHistory([]);
-      setMode('idle');
-      setIsSelecting(false);
-      localStorage.removeItem('pixelDraft');
-
-      setTimeout(() => {
-        // Open share dialog for the first pixel
-        if (purchasedPixels.length > 0) {
-          setSharePixel(purchasedPixels[0]);
+      toast.message("Purchase complete!", {
+        description: "View your pixels in your profile.",
+        action: {
+          label: "Go to Profile",
+          onClick: () => navigate('/profile')
         }
-
-        toast.message("Purchase complete!", {
-          description: "View your pixels in your profile.",
-          action: {
-            label: "Go to Profile",
-            onClick: () => navigate('/profile')
-          }
-        });
-      }, 1000);
-
-    } catch (err) {
-      console.error('Purchase failed:', err);
-      toast.error("Purchase failed", {
-        description: err instanceof Error ? err.message : "Please try again or contact support."
       });
-    } finally {
-      setIsPurchasing(false);
-    }
-  }, [user, selectedPixels, navigate, isPurchasing, isOnline]);
+    }, 1000);
+  }, [selectedPixels, navigate]);
 
   return (
     <div className="min-h-screen bg-background flex flex-col">

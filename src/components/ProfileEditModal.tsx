@@ -10,22 +10,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Loader2, Upload, User } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Loader2, User } from "lucide-react";
 import { toast } from "sonner";
 import { ImageUpload } from '@/components/ImageUpload';
-
-interface Profile {
-  id: string;
-  user_id: string;
-  full_name: string | null;
-  phone_number: string | null;
-  date_of_birth: string | null;
-  avatar_url: string | null;
-  email: string | null;
-  created_at: string;
-  updated_at: string;
-}
+import { Profile } from '@/types/profile';
+import { getInitials } from '@/utils/stringUtils';
 
 interface ProfileEditModalProps {
   isOpen: boolean;
@@ -109,17 +99,6 @@ const ProfileEditModal: React.FC<ProfileEditModalProps> = ({
     }
   };
 
-  const getInitials = (name: string | null): string => {
-    if (!name || name.trim().length === 0) return 'U';
-    return name
-      .trim()
-      .split(' ')
-      .filter(n => n.length > 0)
-      .map(n => n[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2);
-  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>

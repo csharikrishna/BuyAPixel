@@ -121,14 +121,15 @@ const Profile = () => {
     };
   }, [profile]);
 
-  // Memoized pixel statistics
+  // Memoized pixel statistics - prefer database values over calculated
   const pixelStats = useMemo<PixelStats>(() => {
-    const totalPixels = userPixels.length;
-    const totalInvestment = userPixels.reduce((sum, p) => sum + (p.price_paid || 0), 0);
+    // Use database values if available (more accurate, includes transactions)
+    const totalPixels = profile?.pixel_count ?? userPixels.length;
+    const totalInvestment = profile?.total_spent ?? userPixels.reduce((sum, p) => sum + (p.price_paid || 0), 0);
     const averagePrice = totalPixels > 0 ? totalInvestment / totalPixels : 0;
 
     return { totalPixels, totalInvestment, averagePrice };
-  }, [userPixels]);
+  }, [profile?.pixel_count, profile?.total_spent, userPixels]);
 
   // Fetch profile data
   const fetchProfile = useCallback(async (showToast = false) => {
@@ -157,6 +158,7 @@ const Profile = () => {
               avatar_url: user.user_metadata?.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(user.email || 'User')}`,
               phone_number: null,
               date_of_birth: null,
+              // New fields will use database defaults (pixel_count=0, total_spent=0)
             })
             .select()
             .single();
@@ -216,7 +218,12 @@ const Profile = () => {
         link_url: row.link_url || undefined,
         alt_text: row.alt_text || undefined,
         price_paid: row.price_paid || 0,
-        purchased_at: row.purchased_at || new Date().toISOString()
+        purchased_at: row.purchased_at || new Date().toISOString(),
+        // Include new fields from database
+        block_id: row.block_id || undefined,
+        times_resold: row.times_resold || undefined,
+        last_sale_price: row.last_sale_price || undefined,
+        last_sale_date: row.last_sale_date || undefined
       }));
 
       setUserPixels(pixels);

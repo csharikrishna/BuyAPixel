@@ -1,18 +1,25 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { Html5QrcodeScanner, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { ArrowLeft, ScanLine, AlertCircle, QrCode, Share2, LogIn, History, Download, Trash2, ExternalLink, Contact, Link as LinkIcon, Smartphone, Mail } from 'lucide-react';
+import { ArrowLeft, ScanLine, AlertCircle, QrCode, Share2, LogIn, History, Download, ExternalLink, Contact, Link as LinkIcon, Smartphone } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import {
+   generateVCard,
+   downloadVCard,
+   parseVCardName,
+   isVCard,
+   sanitizeFilename,
+   type VCardProfile
+} from '@/utils/vcardUtils';
+import { getQrCodeUrl, downloadQrCode, getProfileUrl, getPixelUrl } from '@/utils/qrUtils';
 
 interface UserPixel {
    id: string;
@@ -21,11 +28,7 @@ interface UserPixel {
    image_url?: string;
 }
 
-interface UserProfile {
-   full_name: string | null;
-   phone_number: string | null;
-   email: string | null;
-}
+// Using VCardProfile from vcardUtils for profile data
 
 interface ScanHistoryItem {
    id: string;
@@ -42,7 +45,7 @@ const ScanPixel = () => {
    const [error, setError] = useState<string | null>(null);
    const [activeTab, setActiveTab] = useState("scan");
    const [userPixels, setUserPixels] = useState<UserPixel[]>([]);
-   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+   const [userProfile, setUserProfile] = useState<VCardProfile | null>(null);
    const [pixelsLoading, setPixelsLoading] = useState(false);
    const [scanHistory, setScanHistory] = useState<ScanHistoryItem[]>([]);
    const [isScanning, setIsScanning] = useState(false);
@@ -96,32 +99,7 @@ const ScanPixel = () => {
       return new Date(ms).toLocaleDateString();
    };
 
-   const generateVCard = (profile: UserProfile, userId: string): string => {
-      const vcard = [
-         'BEGIN:VCARD',
-         'VERSION:3.0',
-         `FN:${profile.full_name || 'BuyAPixel User'}`,
-         profile.email ? `EMAIL;TYPE=INTERNET:${profile.email}` : '',
-         profile.phone_number ? `TEL;TYPE=CELL:${profile.phone_number}` : '',
-         `URL:${window.location.origin}/profile?id=${userId}`,
-         'NOTE:Scanned via BuyAPixel',
-         'END:VCARD'
-      ].filter(Boolean).join('\n');
-      return vcard;
-   };
-
-   const downloadVCard = (vcardString: string, filename: string = 'contact.vcf') => {
-      const blob = new Blob([vcardString], { type: 'text/vcard' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-      toast.success("Contact saved to downloads");
-   };
+   // generateVCard and downloadVCard are now imported from @/utils/vcardUtils
 
    // Fetch user pixels and profile when "my-code" tab is active
    useEffect(() => {

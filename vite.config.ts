@@ -16,7 +16,6 @@ export default defineConfig(({ mode }) => ({
    resolve: {
       alias: {
          "@": path.resolve(__dirname, "./src"),
-         "~bootstrap": path.resolve(__dirname, "node_modules/bootstrap"),
       },
    },
 
@@ -25,18 +24,34 @@ export default defineConfig(({ mode }) => ({
       emptyOutDir: true,
       sourcemap: false,
       minify: 'esbuild',
+      // Target modern browsers for smaller builds
+      target: 'es2020',
+      // Increase chunk size warning limit
+      chunkSizeWarningLimit: 600,
       rollupOptions: {
          output: {
             manualChunks: {
+               // React core - always needed
                'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-               'ui-vendor': [
+               // Supabase - needed for auth/data
+               'supabase': ['@supabase/supabase-js'],
+               // UI Components - frequently used
+               'ui-core': [
                   '@radix-ui/react-dialog',
                   '@radix-ui/react-dropdown-menu',
                   '@radix-ui/react-toast',
-                  '@radix-ui/react-avatar',
-                  '@radix-ui/react-label',
+                  '@radix-ui/react-tooltip',
                ],
-               'supabase-vendor': ['@supabase/supabase-js'],
+               // Form handling - loaded when forms are used
+               'forms': [
+                  'react-hook-form',
+                  'zod',
+                  '@hookform/resolvers',
+               ],
+               // Charts - only needed in admin/leaderboard
+               'charts': ['recharts'],
+               // Image cropping - only needed during upload
+               'image-tools': ['react-easy-crop'],
             },
          },
       },
@@ -48,6 +63,9 @@ export default defineConfig(({ mode }) => ({
          'react-dom',
          'react-router-dom',
          '@supabase/supabase-js',
+         '@tanstack/react-query',
       ],
+      // Exclude large optional deps from pre-bundling
+      exclude: ['recharts'],
    },
 }));

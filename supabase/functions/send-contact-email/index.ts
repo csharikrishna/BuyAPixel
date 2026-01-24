@@ -102,14 +102,14 @@ async function logContactSubmission(data: ContactFormData, metadata: { ip: strin
   try {
     const supabase = supabaseJs2.createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!)
 
-    await supabase.from('contact_submissions').insert({
+    await supabase.from('contact_messages').insert({
       name: data.name,
       email: data.email,
       subject: data.subject,
       message: data.message,
       ip_address: metadata.ip,
       user_agent: metadata.userAgent,
-      submitted_at: new Date().toISOString(),
+      // submitted_at removed as created_at is default now()
     })
   } catch (error) {
     console.error('Failed to log contact submission:', error)

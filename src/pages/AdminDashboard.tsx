@@ -106,16 +106,16 @@ import { getErrorMessage } from '@/lib/utils';
 
 // --- Interfaces ---
 
+// Matches the return type of public.admin_get_all_users() function
 interface User {
-  full_name: string;
   user_id: string;
   email: string;
-  created_at: string;
-  last_sign_in_at: string;
-  pixels_owned: number;
+  full_name: string | null;
+  pixel_count: number;  // Was: pixels_owned
   total_spent: number;
   is_blocked: boolean;
-  blocked_reason: string | null;
+  created_at: string;
+  last_active_at: string | null;  // Was: last_sign_in_at
 }
 
 interface AuditLog {
@@ -146,6 +146,13 @@ interface MarketplaceListing {
   };
 }
 
+interface AdminUser {
+  user_id: string;
+  email: string;
+  full_name: string | null;
+  created_at: string;
+}
+
 interface MarketplaceAnalytics {
   total_revenue: number;
   total_refunds: number;
@@ -170,6 +177,7 @@ const AdminDashboard = () => {
   // --- State Management ---
 
   const [users, setUsers] = useState<User[]>([]);
+  const [admins, setAdmins] = useState<AdminUser[]>([]);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [marketplaceListings, setMarketplaceListings] = useState<MarketplaceListing[]>([]);
   const [marketplaceAnalytics, setMarketplaceAnalytics] = useState<MarketplaceAnalytics | null>(null);
@@ -201,6 +209,7 @@ const AdminDashboard = () => {
   const [blockNotes, setBlockNotes] = useState('');
   const [cancelReason, setCancelReason] = useState('');
   const [processing, setProcessing] = useState(false);
+  const [newAdminEmail, setNewAdminEmail] = useState('');
 
   // Pixel Management States
   const [pixels, setPixels] = useState<any[]>([]);
@@ -234,14 +243,32 @@ const AdminDashboard = () => {
 
       // 1. Load all users with stats
       const { data: usersData, error: usersError } = await supabase
-        .rpc('get_all_users_admin' as any);
+        .rpc('admin_get_all_users' as any);
 
       if (usersError) throw usersError;
-      setUsers((usersData as unknown as User[]) || []);
+      const allUsers = (usersData as unknown as User[]) || [];
+      setUsers(allUsers);
+
+      // 1b. Load admins (cross-reference with users)
+      const { data: adminProfiles } = await supabase
+        .from('profiles')
+        .select('user_id')
+        .eq('is_admin', true);
+
+      const adminIds = new Set(adminProfiles?.map(p => p.user_id));
+      const adminUsers = allUsers
+        .filter(u => adminIds.has(u.user_id))
+        .map(u => ({
+          user_id: u.user_id,
+          email: u.email,
+          full_name: u.full_name,
+          created_at: u.created_at
+        }));
+      setAdmins(adminUsers);
 
       // Calculate comprehensive stats
       const totalUsers = usersData?.length || 0;
-      const totalPixelsSold = usersData?.reduce((sum, u) => sum + (Number(u.pixels_owned) || 0), 0) || 0;
+      const totalPixelsSold = usersData?.reduce((sum, u) => sum + (Number(u.pixel_count) || 0), 0) || 0;
       const totalRevenue = usersData?.reduce((sum, u) => sum + (Number(u.total_spent) || 0), 0) || 0;
       const blockedUsers = usersData?.filter(u => u.is_blocked).length || 0;
       const activeUsers = usersData?.filter(u => !u.is_blocked).length || 0;
@@ -447,10 +474,9 @@ const AdminDashboard = () => {
 
     setProcessing(true);
     try {
-      const { error } = await supabase.rpc('block_user' as any, {
-        target_user_id: blockDialog.userId,
-        reason: blockReason,
-        admin_notes: blockNotes || null,
+      const { error } = await supabase.rpc('admin_block_user' as any, {
+        p_user_id: blockDialog.userId,
+        p_reason: blockReason,
       });
 
       if (error) throw error;
@@ -476,8 +502,8 @@ const AdminDashboard = () => {
   const handleUnblockUser = useCallback(async (userId: string, email: string) => {
     setProcessing(true);
     try {
-      const { error } = await supabase.rpc('unblock_user' as any, {
-        target_user_id: userId,
+      const { error } = await supabase.rpc('admin_unblock_user' as any, {
+        p_user_id: userId,
       });
 
       if (error) throw error;
@@ -646,6 +672,68 @@ const AdminDashboard = () => {
     }
   }, []);
 
+
+
+  // --- Admin Access Management ---
+
+  const handleGrantAccess = async () => {
+    if (!newAdminEmail.trim()) {
+      toast.error('Please enter an email address');
+      return;
+    }
+
+    setProcessing(true);
+    try {
+      const { data, error } = await supabase.rpc('admin_promote_user' as any, {
+        target_email: newAdminEmail.trim(),
+        make_admin: true
+      });
+
+      if (error) throw error;
+      if (data && (data as any).success === false) {
+        throw new Error((data as any).error || 'Failed to grant access');
+      }
+
+      toast.success('Admin access granted', {
+        description: `${newAdminEmail} is now an admin`
+      });
+      setNewAdminEmail('');
+      loadDashboardData(true);
+    } catch (error: any) {
+      console.error('Error granting admin access:', error);
+      toast.error(error.message || 'Failed to grant access');
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const handleRevokeAccess = async (email: string) => {
+    if (!confirm(`Are you sure you want to revoke admin access for ${email}?`)) return;
+
+    setProcessing(true);
+    try {
+      const { data, error } = await supabase.rpc('admin_promote_user' as any, {
+        target_email: email,
+        make_admin: false
+      });
+
+      if (error) throw error;
+      if (data && (data as any).success === false) {
+        throw new Error((data as any).error || 'Failed to revoke access');
+      }
+
+      toast.success('Admin access revoked', {
+        description: `${email} is no longer an admin`
+      });
+      loadDashboardData(true);
+    } catch (error: any) {
+      console.error('Error revoking admin access:', error);
+      toast.error(error.message || 'Failed to revoke access');
+    } finally {
+      setProcessing(false);
+    }
+  };
+
   const handleCancelListing = useCallback(async () => {
     if (!cancelListingDialog || !cancelReason.trim()) {
       toast.error('Please provide a reason for cancellation');
@@ -679,15 +767,14 @@ const AdminDashboard = () => {
   const exportUsers = useCallback(() => {
     try {
       const csv = [
-        ['Email', 'Status', 'Joined', 'Last Sign In', 'Pixels Owned', 'Total Spent', 'Blocked Reason'].join(','),
+        ['Email', 'Status', 'Joined', 'Last Active', 'Pixels Owned', 'Total Spent'].join(','),
         ...filteredAndSortedUsers.map(u => [
           `"${u.email}"`,
           u.is_blocked ? 'Blocked' : 'Active',
           format(new Date(u.created_at), 'yyyy-MM-dd HH:mm:ss'),
-          u.last_sign_in_at ? format(new Date(u.last_sign_in_at), 'yyyy-MM-dd HH:mm:ss') : 'Never',
-          u.pixels_owned,
+          u.last_active_at ? format(new Date(u.last_active_at), 'yyyy-MM-dd HH:mm:ss') : 'Never',
+          u.pixel_count,
           u.total_spent,
-          `"${u.blocked_reason || '-'}"`
         ].join(','))
       ].join('\n');
 
@@ -1238,7 +1325,78 @@ const AdminDashboard = () => {
               <FileText className="w-4 h-4" />
               <span className="hidden sm:inline">Blog</span>
             </TabsTrigger>
+            <TabsTrigger value="access" className="gap-2">
+              <KeyRound className="w-4 h-4" />
+              <span className="hidden sm:inline">Access</span>
+            </TabsTrigger>
           </TabsList>
+
+          {/* Access Management Tab Content */}
+          <TabsContent value="access" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <KeyRound className="w-5 h-5 text-primary" />
+                  Access Management
+                </CardTitle>
+                <CardDescription>
+                  Grant or revoke admin access to other users.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="flex gap-4 items-end">
+                  <div className="flex-1 space-y-2">
+                    <Label>Grant Admin Access</Label>
+                    <Input
+                      placeholder="Enter user email address"
+                      value={newAdminEmail}
+                      onChange={(e) => setNewAdminEmail(e.target.value)}
+                    />
+                  </div>
+                  <Button
+                    onClick={handleGrantAccess}
+                    disabled={processing || !newAdminEmail}
+                  >
+                    Grant Access
+                  </Button>
+                </div>
+
+                <div className="space-y-4">
+                  <h3 className="text-sm font-medium text-muted-foreground">Current Admins</h3>
+                  <div className="border rounded-md divide-y">
+                    {admins.length === 0 ? (
+                      <div className="p-4 text-center text-muted-foreground text-sm">
+                        No other admins found.
+                      </div>
+                    ) : (
+                      admins.map((admin) => (
+                        <div key={admin.user_id} className="p-4 flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                              <Shield className="w-4 h-4 text-primary" />
+                            </div>
+                            <div>
+                              <p className="font-medium text-sm">{admin.full_name || 'Unnamed'}</p>
+                              <p className="text-xs text-muted-foreground">{admin.email}</p>
+                            </div>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-destructive hover:text-destructive/90 hover:bg-destructive/10"
+                            onClick={() => handleRevokeAccess(admin.email)}
+                            disabled={processing}
+                          >
+                            Revoke
+                          </Button>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
           {/* Pixels Tab Content */}
           <TabsContent value="pixels" className="space-y-4">
@@ -1597,7 +1755,7 @@ const AdminDashboard = () => {
                                 </div>
                               </TableCell>
                               <TableCell className="text-right font-medium tabular-nums">
-                                {userData.pixels_owned}
+                                {userData.pixel_count}
                               </TableCell>
                               <TableCell className="text-right font-medium tabular-nums hidden sm:table-cell">
                                 ₹{userData.total_spent.toLocaleString()}
@@ -1635,7 +1793,7 @@ const AdminDashboard = () => {
                                         size="sm"
                                         variant="outline"
                                         onClick={() => setResetUserPixelsDialog({ open: true, userId: userData.user_id, email: userData.email })}
-                                        disabled={processing || userData.pixels_owned === 0}
+                                        disabled={processing || userData.pixel_count === 0}
                                         className="h-8 w-8 p-0"
                                         title="Reset all pixels"
                                       >
@@ -1693,7 +1851,7 @@ const AdminDashboard = () => {
                                       )}
                                       <DropdownMenuItem
                                         onClick={() => setResetUserPixelsDialog({ open: true, userId: userData.user_id, email: userData.email })}
-                                        disabled={processing || userData.pixels_owned === 0}
+                                        disabled={processing || userData.pixel_count === 0}
                                       >
                                         <RefreshCw className="w-4 h-4 mr-2" />
                                         Reset All Pixels

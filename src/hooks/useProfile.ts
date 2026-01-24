@@ -1,54 +1,80 @@
-import { useState, useEffect } from 'react';
+/**
+ * useProfile Hook
+ * Fetches and manages user profile data using React Query
+ */
+
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
+import { Profile } from '@/types/profile';
 
-interface Profile {
-  id: string;
-  user_id: string;
-  full_name: string | null;
-  phone_number: string | null;
-  date_of_birth: string | null;
-  avatar_url: string | null;
-  created_at: string;
-  updated_at: string;
+const PROFILE_QUERY_KEY = 'profile';
+
+/**
+ * Fetches the profile for a given user ID
+ */
+const fetchProfile = async (userId: string): Promise<Profile | null> => {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data as Profile | null;
+};
+
+interface UseProfileReturn {
+  profile: Profile | null;
+  loading: boolean;
+  error: Error | null;
+  refetch: () => Promise<void>;
 }
 
-export const useProfile = () => {
+/**
+ * Hook to fetch and manage the current user's profile
+ * Uses React Query for caching and automatic refetching
+ */
+export const useProfile = (): UseProfileReturn => {
   const { user } = useAuth();
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    if (user) {
-      fetchProfile();
-    } else {
-      setProfile(null);
-      setLoading(false);
-    }
-  }, [user]);
+  const {
+    data: profile,
+    isLoading: loading,
+    error,
+    refetch: queryRefetch,
+  } = useQuery({
+    queryKey: [PROFILE_QUERY_KEY, user?.id],
+    queryFn: () => fetchProfile(user!.id),
+    enabled: !!user?.id,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes (formerly cacheTime)
+  });
 
-  const fetchProfile = async () => {
-    if (!user) return;
-
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      if (error) throw error;
-      setProfile(data);
-    } catch (error) {
-      console.error('Error fetching profile:', error);
-    } finally {
-      setLoading(false);
-    }
+  const refetch = async (): Promise<void> => {
+    await queryRefetch();
   };
 
   return {
-    profile,
+    profile: profile ?? null,
     loading,
-    refetch: fetchProfile,
+    error: error as Error | null,
+    refetch,
+  };
+};
+
+/**
+ * Invalidates the profile cache, forcing a refetch on next access
+ * Useful after profile updates
+ */
+export const useInvalidateProfile = () => {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+
+  return () => {
+    if (user?.id) {
+      queryClient.invalidateQueries({ queryKey: [PROFILE_QUERY_KEY, user.id] });
+    }
   };
 };

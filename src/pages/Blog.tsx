@@ -8,14 +8,14 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { 
-  Calendar, 
-  Clock, 
-  Search, 
-  BookOpen, 
-  TrendingUp, 
+import {
+  Calendar,
+  Clock,
+  Search,
+  BookOpen,
+  TrendingUp,
   Filter,
-  X 
+  X
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { Helmet } from 'react-helmet-async';
@@ -53,14 +53,14 @@ const Blog = () => {
     try {
       setIsLoading(true);
       const { data, error } = await supabase
-        .from('blog_posts')
+        .from('blog_posts' as any)
         .select('*')
-        .eq('published', true)
+        .eq('status', 'published')
         .order('published_at', { ascending: false });
 
       if (error) throw error;
-      setPosts(data || []);
-      setFilteredPosts(data || []);
+      setPosts((data as unknown as BlogPost[]) || []);
+      setFilteredPosts((data as unknown as BlogPost[]) || []);
     } catch (error) {
       console.error('Error loading blog posts:', error);
       toast.error('Failed to load blog posts');

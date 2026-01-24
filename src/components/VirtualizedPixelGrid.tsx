@@ -16,6 +16,7 @@ import { usePixelGridData } from "@/hooks/usePixelGridData";
 import { useGridInteraction } from "@/hooks/useGridInteraction";
 import { GRID_CONFIG } from "@/utils/gridConstants";
 import { SelectedPixel, PurchasedPixel } from "@/types/grid";
+import { getGridImageUrl, getBillboardImageUrl } from "@/utils/imageOptimization";
 
 // ============================================
 // 📦 PROPS
@@ -60,6 +61,7 @@ export const VirtualizedPixelGrid = ({
     purchasedPixels,
     isLoading,
     error,
+    loadProgress,
     spatialIndex
   } = usePixelGridData();
 
@@ -345,6 +347,60 @@ export const VirtualizedPixelGrid = ({
     return spatialIndex.query(visibleRange.x, visibleRange.y, visibleRange.w, visibleRange.h);
   }, [spatialIndex, visibleRange, purchasedPixels]); // dependent on purchasedPixels reference change
 
+  // Group pixels by block_id for merged image rendering
+  // Pixels with the same block_id will be rendered as a single merged image
+  const { blockData, individualPixels } = useMemo(() => {
+    const blockMap = new Map<string, PurchasedPixel[]>();
+    const individuals: PurchasedPixel[] = [];
+
+    visiblePurchasedPixels.forEach((pixel) => {
+      // Only group pixels that have a block_id AND image_url
+      if (pixel.block_id && pixel.image_url) {
+        const existing = blockMap.get(pixel.block_id) || [];
+        existing.push(pixel);
+        blockMap.set(pixel.block_id, existing);
+      } else {
+        individuals.push(pixel);
+      }
+    });
+
+    // Calculate block bounds for merged rendering
+    const blocks: Array<{
+      blockId: string;
+      minX: number;
+      minY: number;
+      width: number;
+      height: number;
+      imageUrl: string;
+      linkUrl: string | null;
+      altText: string | null;
+      ownerId: string;
+    }> = [];
+
+    blockMap.forEach((pixels, blockId) => {
+      const minX = Math.min(...pixels.map((p) => p.x));
+      const minY = Math.min(...pixels.map((p) => p.y));
+      const maxX = Math.max(...pixels.map((p) => p.x));
+      const maxY = Math.max(...pixels.map((p) => p.y));
+
+      // Use the first pixel's data for the block
+      const firstPixel = pixels[0];
+      blocks.push({
+        blockId,
+        minX,
+        minY,
+        width: maxX - minX + 1,
+        height: maxY - minY + 1,
+        imageUrl: firstPixel.image_url!,
+        linkUrl: firstPixel.link_url,
+        altText: firstPixel.alt_text,
+        ownerId: firstPixel.owner_id,
+      });
+    });
+
+    return { blockData: blocks, individualPixels: individuals };
+  }, [visiblePurchasedPixels]);
+
   // For selected pixels, we just list them all if they are small, or filter similarly
   const visibleSelectedPixels = useMemo(() => {
     if (!visibleRange) return selectedPixels;
@@ -386,8 +442,13 @@ export const VirtualizedPixelGrid = ({
           aria-label="Pixel grid canvas"
         >
           {isLoading && (
-            <div className="absolute inset-0 bg-white/90 backdrop-blur-sm flex items-center justify-center z-50">
+            <div className="absolute inset-0 bg-white/90 backdrop-blur-sm flex flex-col items-center justify-center z-50 gap-3">
               <Loader2 className="h-12 w-12 animate-spin text-indigo-600" />
+              {loadProgress > 0 && loadProgress < 100 && (
+                <div className="text-sm font-medium text-indigo-600">
+                  Loading pixels... {loadProgress}%
+                </div>
+              )}
             </div>
           )}
 
@@ -483,7 +544,7 @@ export const VirtualizedPixelGrid = ({
                   <div
                     className="absolute inset-0 bg-cover bg-center transition-all duration-1000 ease-in-out"
                     style={{
-                      backgroundImage: `url(${currentFeaturedPixel.image_url})`,
+                      backgroundImage: `url(${getBillboardImageUrl(currentFeaturedPixel.image_url)})`,
                       opacity: 0.95,
                     }}
                   />
@@ -526,8 +587,47 @@ export const VirtualizedPixelGrid = ({
               />
             ))}
 
-            {/* 6. Purchased Pixels (Optimized) */}
-            {visiblePurchasedPixels.map((pixel) => {
+            {/* 6. Merged Block Images */}
+            {blockData.map((block) => {
+              const isOwner = block.ownerId === user?.id;
+              if (showMyPixels && !isOwner) return null;
+
+              return (
+                <div
+                  key={`block-${block.blockId}`}
+                  role={block.linkUrl ? "button" : undefined}
+                  tabIndex={block.linkUrl ? 0 : -1}
+                  className={block.linkUrl ? "cursor-pointer" : ""}
+                  style={{
+                    position: "absolute",
+                    left: block.minX * scaledPixelSize,
+                    top: block.minY * scaledPixelSize,
+                    width: block.width * scaledPixelSize,
+                    height: block.height * scaledPixelSize,
+                    backgroundImage: `url(${getGridImageUrl(block.imageUrl, zoom)})`,
+                    backgroundSize: "cover",
+                    backgroundPosition: "center",
+                    opacity: isOwner ? 1 : 0.9,
+                    boxShadow: isOwner ? "0 0 8px rgba(16,185,129,0.7)" : "0 2px 8px rgba(0,0,0,0.15)",
+                    border: isOwner ? "2px solid #10b981" : "1px solid #cbd5e1",
+                    borderRadius: "2px",
+                    zIndex: isOwner ? 15 : 5,
+                  }}
+                  onClick={(e) => {
+                    if (block.linkUrl) {
+                      e.stopPropagation();
+                      const validUrl = block.linkUrl.startsWith('http://') || block.linkUrl.startsWith('https://') ? block.linkUrl : `https://${block.linkUrl}`;
+                      window.open(validUrl, "_blank");
+                      toast.success(`Opening ${block.altText || "pixel block link"}...`);
+                    }
+                  }}
+                  aria-label={block.altText || `Pixel block at (${block.minX}, ${block.minY})`}
+                />
+              );
+            })}
+
+            {/* 7. Individual Purchased Pixels (no block_id or no image) */}
+            {individualPixels.map((pixel) => {
               // Quick check for "My Pixels" filter
               if (showMyPixels && pixel.owner_id !== user?.id) return null;
 
@@ -547,7 +647,7 @@ export const VirtualizedPixelGrid = ({
                     width: scaledPixelSize,
                     height: scaledPixelSize,
                     backgroundColor: image_url ? "transparent" : isOwner ? "#10b981" : "#ef4444",
-                    backgroundImage: image_url ? `url(${image_url})` : "none",
+                    backgroundImage: image_url ? `url(${getGridImageUrl(image_url, zoom)})` : "none",
                     backgroundSize: "cover",
                     opacity: isOwner ? 1 : 0.85,
                     boxShadow: isOwner ? "0 0 6px rgba(16,185,129,0.6)" : "none",

@@ -1,10 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription } from "@/components/ui/drawer";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -12,15 +11,53 @@ import {
   CreditCard,
   MapPin,
   TrendingUp,
-  Clock,
-  CheckCircle,
   AlertCircle,
-  ArrowRight,
-  Sparkles
+  Sparkles,
+  Shield
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { ImageUpload } from "@/components/ImageUpload";
+
+// Razorpay type declarations
+declare global {
+  interface Window {
+    Razorpay: new (options: RazorpayOptions) => RazorpayInstance;
+  }
+}
+
+interface RazorpayOptions {
+  key: string;
+  amount: number;
+  currency: string;
+  name: string;
+  description: string;
+  order_id: string;
+  handler: (response: RazorpayResponse) => void;
+  prefill: {
+    name?: string;
+    email?: string;
+    contact?: string;
+  };
+  theme: {
+    color: string;
+  };
+  modal?: {
+    ondismiss?: () => void;
+  };
+}
+
+interface RazorpayInstance {
+  open: () => void;
+  close: () => void;
+}
+
+interface RazorpayResponse {
+  razorpay_order_id: string;
+  razorpay_payment_id: string;
+  razorpay_signature: string;
+}
+
 
 interface SelectedPixel {
   x: number;
@@ -45,10 +82,29 @@ export const PurchasePreview = ({
   const isMobile = useIsMobile();
   const [isProcessing, setIsProcessing] = useState(false);
   const [linkUrl, setLinkUrl] = useState("");
+  const [linkUrlError, setLinkUrlError] = useState<string | null>(null);
   const [pixelName, setPixelName] = useState("");
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [razorpayLoaded, setRazorpayLoaded] = useState(false);
 
-  // File handlers removed as ImageUpload handles them internally
+  // Load Razorpay script
+  useEffect(() => {
+    if (typeof window.Razorpay !== 'undefined') {
+      setRazorpayLoaded(true);
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.async = true;
+    script.onload = () => setRazorpayLoaded(true);
+    script.onerror = () => console.error('Failed to load Razorpay script');
+    document.body.appendChild(script);
+
+    return () => {
+      // Cleanup if needed
+    };
+  }, []);
 
   const totalCost = selectedPixels.reduce((sum, pixel) => sum + pixel.price, 0);
   const pixelCounts = selectedPixels.reduce((acc, pixel) => {
@@ -76,32 +132,144 @@ export const PurchasePreview = ({
 
   const selectionInfo = getSelectionInfo();
 
+  // Validate URL format
+  const validateUrl = (url: string): boolean => {
+    if (!url) return true; // Optional field
+    try {
+      new URL(url);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  const handleLinkUrlChange = (value: string) => {
+    setLinkUrl(value);
+    if (value && !validateUrl(value)) {
+      setLinkUrlError("Please enter a valid URL (e.g., https://example.com)");
+    } else {
+      setLinkUrlError(null);
+    }
+  };
+
   const handleConfirmPurchase = async () => {
     if (!pixelName.trim()) {
       toast.error("Please enter a pixel name");
       return;
     }
 
+    if (linkUrl && !validateUrl(linkUrl)) {
+      toast.error("Please enter a valid URL");
+      return;
+    }
+
+    if (!razorpayLoaded) {
+      toast.error("Payment system is loading. Please wait...");
+      return;
+    }
+
     setIsProcessing(true);
+
     try {
-      // Image is already uploaded by ImageUpload component if imagePreview exists
-      const imageUrl = imagePreview;
+      // Get current session for auth
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error("Please sign in to continue");
+        setIsProcessing(false);
+        return;
+      }
 
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Step 1: Create Razorpay order
+      const { data: orderData, error: orderError } = await supabase.functions.invoke(
+        'create-razorpay-order',
+        {
+          body: {
+            pixels: selectedPixels.map(p => ({ x: p.x, y: p.y, price: p.price })),
+            totalAmount: totalCost,
+            imageUrl: imagePreview,
+            linkUrl: linkUrl,
+            altText: pixelName,
+          },
+        }
+      );
 
-      await onConfirmPurchase(pixelName, linkUrl, imageUrl);
-      toast.success("🎉 Purchase successful! Your pixels are now yours and visible on the canvas!", {
-        duration: 5000
-      });
-      onClose();
+      if (orderError || !orderData?.success) {
+        throw new Error(orderData?.error || 'Failed to create payment order');
+      }
 
-      setPixelName("");
-      setLinkUrl("");
-      setImagePreview(null);
+      // Step 2: Open Razorpay checkout
+      const options: RazorpayOptions = {
+        key: orderData.order.key_id,
+        amount: orderData.order.amount,
+        currency: orderData.order.currency,
+        name: 'BuyAPixel',
+        description: `Purchase ${selectedPixels.length} pixel${selectedPixels.length > 1 ? 's' : ''}`,
+        order_id: orderData.order.razorpay_order_id,
+        handler: async (response: RazorpayResponse) => {
+          // Step 3: Verify payment
+          try {
+            const { data: verifyData, error: verifyError } = await supabase.functions.invoke(
+              'verify-razorpay-payment',
+              {
+                body: {
+                  razorpay_order_id: response.razorpay_order_id,
+                  razorpay_payment_id: response.razorpay_payment_id,
+                  razorpay_signature: response.razorpay_signature,
+                  payment_order_id: orderData.order.id,
+                  image_url: imagePreview,
+                  link_url: linkUrl,
+                  alt_text: pixelName,
+                },
+              }
+            );
+
+            if (verifyError || !verifyData?.success) {
+              throw new Error(verifyData?.error || 'Payment verification failed');
+            }
+
+            // Success! Call the original onConfirmPurchase for any additional handling
+            await onConfirmPurchase(pixelName, linkUrl, imagePreview);
+
+            toast.success("🎉 Payment successful! Your pixels are now live on the canvas!", {
+              duration: 5000
+            });
+
+            // Reset form
+            setPixelName("");
+            setLinkUrl("");
+            setLinkUrlError(null);
+            setImagePreview(null);
+            onClose();
+
+          } catch (verifyErr) {
+            console.error('Payment verification error:', verifyErr);
+            toast.error("Payment verification failed. Please contact support.");
+          } finally {
+            setIsProcessing(false);
+          }
+        },
+        prefill: {
+          name: orderData.user?.name || '',
+          email: orderData.user?.email || '',
+          contact: '', // Allow user to enter phone number
+        },
+        theme: {
+          color: '#10B981', // Primary green color
+        },
+        modal: {
+          ondismiss: () => {
+            setIsProcessing(false);
+            toast.info("Payment cancelled");
+          },
+        },
+      };
+
+      const razorpay = new window.Razorpay(options);
+      razorpay.open();
+
     } catch (error) {
       console.error('Purchase error:', error);
-      toast.error("Failed to process purchase");
-    } finally {
+      toast.error(error instanceof Error ? error.message : "Failed to initiate payment");
       setIsProcessing(false);
     }
   };
@@ -120,7 +288,7 @@ export const PurchasePreview = ({
   };
 
   const purchaseContent = (
-    <div className="space-y-6 md:space-y-6">
+    <div className="space-y-6">
       {/* Connectivity Warning */}
       <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3 md:p-4 flex gap-3 text-yellow-700 dark:text-yellow-400">
         <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
@@ -247,30 +415,25 @@ export const PurchasePreview = ({
               type="url"
               placeholder="https://example.com"
               value={linkUrl}
-              onChange={(e) => setLinkUrl(e.target.value)}
+              onChange={(e) => handleLinkUrlChange(e.target.value)}
               inputMode="url"
               autoCapitalize="off"
               autoCorrect="off"
-              className="w-full px-4 py-3 border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 text-base"
+              className={`w-full px-4 py-3 border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 text-base ${linkUrlError ? 'border-destructive' : 'border-border'
+                }`}
             />
+            {linkUrlError && (
+              <p className="text-xs text-destructive mt-1">{linkUrlError}</p>
+            )}
           </div>
 
           <div>
             <label className="block text-sm font-medium mb-2">Image Upload</label>
             <ImageUpload
-              onImageUploaded={(url) => {
-                // We need to fetch the file blob if we want to upload it during purchase, 
-                // OR we can trust that ImageUpload already uploaded it to 'pixel-images' bucket.
-                // The current PurchasePreview logic expects us to upload later. 
-                // However, ImageUpload uploads immediately.
-                // We should adapt PurchasePreview to use the returned URL directly.
-                setImagePreview(url);
-                // We don't have the File object anymore, but we have the URL.
-                // We need to update handleConfirmPurchase to skip upload if we already have a URL.
-              }}
+              onImageUploaded={(url) => setImagePreview(url)}
               currentImage={imagePreview || ''}
               folder="user-pixels"
-              bucket="blog-images"
+              bucket="pixel-images"
               cropAspectRatio={1}
               placeholder="Upload Pixel Image"
               className="w-full"
@@ -279,15 +442,15 @@ export const PurchasePreview = ({
         </CardContent>
       </Card>
 
-      {/* Terms & Security */}
-      <Card className="border-accent/20 bg-accent/5">
+      {/* Secure Payment Info */}
+      <Card className="border-primary/20 bg-primary/5">
         <CardContent className="p-3 md:p-4">
           <div className="flex items-start gap-2 md:gap-3">
-            <CheckCircle className="w-4 h-4 md:w-5 md:h-5 text-accent mt-0.5 flex-shrink-0" />
+            <Shield className="w-4 h-4 md:w-5 md:h-5 text-primary mt-0.5 flex-shrink-0" />
             <div className="space-y-1">
-              <div className="text-sm md:text-base font-medium text-accent">Mock Purchase</div>
+              <div className="text-sm md:text-base font-medium text-primary">Secure Payment via Razorpay</div>
               <div className="text-xs md:text-sm text-muted-foreground">
-                This is a demo. Your pixels will be marked without payment.
+                Pay securely using UPI, Credit/Debit Cards, Net Banking, or Wallets.
               </div>
             </div>
           </div>
