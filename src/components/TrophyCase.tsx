@@ -59,7 +59,7 @@ export const TrophyCase = ({ userId }: TrophyCaseProps) => {
    if (!loading && badges.length === 0) return null;
 
    return (
-      <Card className="backdrop-blur-xl bg-white/60 dark:bg-gray-900/60 border-purple-500/20 shadow-xl">
+      <Card className="bg-white dark:bg-gray-900 border-amber-200 dark:border-purple-500/20 shadow-xl">
          <CardHeader>
             <CardTitle className="flex items-center gap-2 text-xl font-bold bg-gradient-to-r from-yellow-600 to-amber-600 bg-clip-text text-transparent">
                <Trophy className="w-5 h-5 text-amber-500" />
@@ -70,7 +70,7 @@ export const TrophyCase = ({ userId }: TrophyCaseProps) => {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                {loading ? (
                   Array(4).fill(0).map((_, i) => (
-                     <Skeleton key={i} className="h-24 rounded-lg bg-muted/40" />
+                     <Skeleton key={i} className="h-24 rounded-lg bg-slate-100 dark:bg-muted/40" />
                   ))
                ) : (
                   badges.map((badge) => {
@@ -82,8 +82,8 @@ export const TrophyCase = ({ userId }: TrophyCaseProps) => {
                                  <div className={cn(
                                     "flex flex-col items-center justify-center p-4 rounded-xl border transition-all duration-300 relative overflow-hidden group hover:scale-105",
                                     badge.earned
-                                       ? "bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-yellow-950/20 dark:to-amber-950/20 border-amber-200/50 dark:border-amber-500/30"
-                                       : "bg-muted/30 border-dashed border-muted-foreground/30 grayscale opacity-70 hover:opacity-100"
+                                       ? "bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-yellow-950/20 dark:to-amber-950/20 border-amber-300 dark:border-amber-500/30"
+                                       : "bg-slate-50 dark:bg-muted/30 border-dashed border-slate-300 dark:border-muted-foreground/30 grayscale opacity-70 hover:opacity-100"
                                  )}>
                                     {!badge.earned && (
                                        <div className="absolute inset-0 bg-background/10 backdrop-blur-[1px] flex items-center justify-center z-10">
@@ -97,7 +97,7 @@ export const TrophyCase = ({ userId }: TrophyCaseProps) => {
                                        <Icon className="w-6 h-6" />
                                     </div>
                                     <h4 className="font-semibold text-sm text-center mb-1">{badge.name}</h4>
-                                    {badge.earned && <Badge variant="secondary" className="text-[10px] h-5 bg-amber-100/50 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 border-0">Earned</Badge>}
+                                    {badge.earned && <Badge variant="secondary" className="text-[10px] h-5 bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 border-amber-200 dark:border-0">Earned</Badge>}
                                  </div>
                               </TooltipTrigger>
                               <TooltipContent side="bottom" className="max-w-[200px] text-center">

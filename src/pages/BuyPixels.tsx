@@ -1,4 +1,10 @@
-import { useState, useCallback, useEffect, useMemo } from "react";
+import {
+  useState,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+} from "react";
 import { VirtualizedPixelGrid } from "@/components/VirtualizedPixelGrid";
 import { FloatingActionButton } from "@/components/FloatingActionButton";
 import { OnboardingTutorial } from "@/components/OnboardingTutorial";
@@ -15,7 +21,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { ShoppingCart, Store, Loader2, WifiOff, Undo2, X } from "lucide-react";
+import { ShoppingCart, Store, Loader2, WifiOff, Undo2, X, AlertTriangle } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -46,6 +52,8 @@ const MAX_PIXELS_PER_PURCHASE = 1000;
 const DRAFT_EXPIRY_HOURS = 1;
 const SELECTION_HISTORY_LIMIT = 10;
 const PURCHASE_BATCH_SIZE = 10;
+const DRAFT_STORAGE_KEY = "pixelDraft";
+const AUTOSAVE_DEBOUNCE_MS = 500;
 
 // --- Interfaces ---
 interface SelectedPixel {
@@ -58,6 +66,58 @@ interface SelectedPixel {
 interface PixelDraft {
   pixels: SelectedPixel[];
   timestamp: number;
+  version: number; // Add versioning for future compatibility
+}
+
+type Mode = "idle" | "buying" | "selling";
+
+// --- Utility Functions ---
+
+/**
+ * Safely parse localStorage draft with error handling
+ */
+function parseDraft(draftString: string | null): PixelDraft | null {
+  if (!draftString) return null;
+
+  try {
+    const draft = JSON.parse(draftString) as PixelDraft;
+
+    // Validate draft structure
+    if (
+      !draft.pixels ||
+      !Array.isArray(draft.pixels) ||
+      typeof draft.timestamp !== "number"
+    ) {
+      return null;
+    }
+
+    return draft;
+  } catch (error) {
+    console.error("Failed to parse draft:", error);
+    return null;
+  }
+}
+
+/**
+ * Check if draft is expired
+ */
+function isDraftExpired(draft: PixelDraft): boolean {
+  const expiryTime = Date.now() - DRAFT_EXPIRY_HOURS * 60 * 60 * 1000;
+  return draft.timestamp <= expiryTime;
+}
+
+/**
+ * Debounce function for autosave
+ */
+function debounce<T extends (...args: any[]) => any>(
+  func: T,
+  wait: number
+): (...args: Parameters<T>) => void {
+  let timeout: NodeJS.Timeout;
+  return function (...args: Parameters<T>) {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func(...args), wait);
+  };
 }
 
 const BuyPixels = () => {
@@ -65,8 +125,14 @@ const BuyPixels = () => {
   const navigate = useNavigate();
   const { setTickerVisible } = useLayout();
 
-  // Use global network status
+  // Refs for cleanup and optimization
+  const isMountedRef = useRef(true);
+  const autosaveTimeoutRef = useRef<NodeJS.Timeout>();
+
+  // Network status
   const { isOnline } = useNetworkStatus();
+
+
 
   // --- State ---
   const [selectedPixels, setSelectedPixels] = useState<SelectedPixel[]>([]);
@@ -75,101 +141,24 @@ const BuyPixels = () => {
   const [showGrid, setShowGrid] = useState(true);
   const [showMyPixels, setShowMyPixels] = useState(false);
   const [showPurchasePreview, setShowPurchasePreview] = useState(false);
-  const [mode, setMode] = useState<'idle' | 'buying' | 'selling'>('idle');
+  const [mode, setMode] = useState<Mode>("idle");
   const [isLoading, setIsLoading] = useState(false);
   const [isPurchasing, setIsPurchasing] = useState(false);
 
   const [showClearDialog, setShowClearDialog] = useState(false);
   const [selectionHistory, setSelectionHistory] = useState<SelectedPixel[][]>([]);
-  const [sharePixel, setSharePixel] = useState<{ x: number, y: number } | null>(null);
+  const [sharePixel, setSharePixel] = useState<{ x: number; y: number } | null>(null);
+  const [showDraftRestorePrompt, setShowDraftRestorePrompt] = useState(false);
+  const [draftToRestore, setDraftToRestore] = useState<PixelDraft | null>(null);
 
-
-
-  // --- Keyboard Shortcuts ---
+  // --- Cleanup on unmount ---
   useEffect(() => {
-    const handleKeyPress = (e: KeyboardEvent) => {
-      // Don't trigger if user is typing in an input
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
-        return;
-      }
-
-      // Escape to clear selection
-      if (e.key === 'Escape' && mode === 'buying') {
-        if (selectedPixels.length > 0) {
-          setShowClearDialog(true);
-        } else {
-          handleClearSelection();
-        }
-      }
-
-      // Ctrl+Z / Cmd+Z to undo
-      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && mode === 'buying') {
-        e.preventDefault();
-        handleUndoLastSelection();
-      }
-
-      // Ctrl+A to select all (prevent default)
-      if ((e.ctrlKey || e.metaKey) && e.key === 'a' && mode === 'buying') {
-        e.preventDefault();
-        toast.info("Use Quick Select tools to select areas");
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyPress);
-    return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [mode, selectedPixels.length]);
-
-  // --- Auto-save to localStorage (Draft Feature) ---
-  useEffect(() => {
-    if (mode === 'buying' && selectedPixels.length > 0) {
-      const draft: PixelDraft = {
-        pixels: selectedPixels,
-        timestamp: Date.now()
-      };
-      localStorage.setItem('pixelDraft', JSON.stringify(draft));
-    }
-  }, [selectedPixels, mode]);
-
-  // --- Sync Ticker Visibility ---
-  useEffect(() => {
-    setTickerVisible(!showPurchasePreview);
-
-    // Cleanup - ensure ticker is visible when component unmounts or modal closes
     return () => {
-      setTickerVisible(true);
-    };
-  }, [showPurchasePreview, setTickerVisible]);
-
-  // --- Restore draft on mount ---
-  useEffect(() => {
-    const draft = localStorage.getItem('pixelDraft');
-    if (!draft) return;
-
-    try {
-      const { pixels, timestamp }: PixelDraft = JSON.parse(draft);
-      const expiryTime = Date.now() - (DRAFT_EXPIRY_HOURS * 60 * 60 * 1000);
-
-      if (timestamp > expiryTime && pixels.length > 0) {
-        toast.info("Draft selection found", {
-          description: `${pixels.length} pixels from your last session`,
-          action: {
-            label: "Restore",
-            onClick: () => {
-              setSelectedPixels(pixels);
-              setMode('buying');
-              setIsSelecting(true);
-              toast.success("Draft restored!");
-            }
-          }
-        });
-      } else {
-        // Clean up expired draft
-        localStorage.removeItem('pixelDraft');
+      isMountedRef.current = false;
+      if (autosaveTimeoutRef.current) {
+        clearTimeout(autosaveTimeoutRef.current);
       }
-    } catch (e) {
-      console.error('Failed to restore draft:', e);
-      localStorage.removeItem('pixelDraft');
-    }
+    };
   }, []);
 
   // --- Memoized Calculations ---
@@ -177,18 +166,13 @@ const BuyPixels = () => {
     const centerX = CANVAS_WIDTH / 2.0;
     const centerY = CANVAS_HEIGHT / 2.0;
 
-    // Box-based pricing (Square zones)
     const dx = Math.abs(x - centerX);
     const dy = Math.abs(y - centerY);
     const maxDist = Math.max(dx, dy);
 
-    // Gold Zone (40x40) -> Radius 20
-    if (maxDist < 20) return 299; // Premium
-
-    // Standard Zone (80x80) -> Radius 40
-    if (maxDist < 40) return 199; // Standard
-
-    return 99; // Economy
+    if (maxDist < 20) return 299; // Gold Zone
+    if (maxDist < 40) return 199; // Premium Zone
+    return 99; // Economy Zone
   }, []);
 
   const totalCost = useMemo(() => {
@@ -196,18 +180,171 @@ const BuyPixels = () => {
   }, [selectedPixels]);
 
   const priceBreakdown = useMemo(() => {
-    const premium = selectedPixels.filter(p => p.price === 299).length;
-    const standard = selectedPixels.filter(p => p.price === 199).length;
-    const economy = selectedPixels.filter(p => p.price === 99).length;
+    const premium = selectedPixels.filter((p) => p.price === 299).length;
+    const standard = selectedPixels.filter((p) => p.price === 199).length;
+    const economy = selectedPixels.filter((p) => p.price === 99).length;
 
     return { premium, standard, economy };
   }, [selectedPixels]);
+
+  // --- Auto-save to localStorage with debouncing ---
+  const saveDraft = useCallback(
+    debounce((pixels: SelectedPixel[]) => {
+      if (pixels.length === 0) {
+        localStorage.removeItem(DRAFT_STORAGE_KEY);
+        return;
+      }
+
+      const draft: PixelDraft = {
+        pixels,
+        timestamp: Date.now(),
+        version: 1,
+      };
+
+      try {
+        localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draft));
+      } catch (error) {
+        console.error("Failed to save draft:", error);
+        // Handle quota exceeded error
+        if (error instanceof DOMException && error.name === "QuotaExceededError") {
+          toast.error("Storage limit reached", {
+            description: "Unable to auto-save selection",
+          });
+        }
+      }
+    }, AUTOSAVE_DEBOUNCE_MS),
+    []
+  );
+
+  useEffect(() => {
+    if (mode === "buying" && selectedPixels.length > 0) {
+      saveDraft(selectedPixels);
+    }
+  }, [selectedPixels, mode, saveDraft]);
+
+  // --- Sync Ticker Visibility ---
+  useEffect(() => {
+    setTickerVisible(!showPurchasePreview);
+
+    return () => {
+      if (isMountedRef.current) {
+        setTickerVisible(true);
+      }
+    };
+  }, [showPurchasePreview, setTickerVisible]);
+
+  // --- Restore draft on mount ---
+  useEffect(() => {
+    const draftString = localStorage.getItem(DRAFT_STORAGE_KEY);
+    const draft = parseDraft(draftString);
+
+    if (!draft) {
+      localStorage.removeItem(DRAFT_STORAGE_KEY);
+      return;
+    }
+
+    if (isDraftExpired(draft)) {
+      localStorage.removeItem(DRAFT_STORAGE_KEY);
+      return;
+    }
+
+    if (draft.pixels.length > 0) {
+      setDraftToRestore(draft);
+      setShowDraftRestorePrompt(true);
+    }
+  }, []);
+
+  // --- Handle draft restore ---
+  const handleRestoreDraft = useCallback(() => {
+    if (!draftToRestore) return;
+
+    setSelectedPixels(draftToRestore.pixels);
+    setMode("buying");
+    setIsSelecting(true);
+
+    setShowDraftRestorePrompt(false);
+    toast.success("Draft restored!", {
+      description: `${draftToRestore.pixels.length} pixels from your last session`,
+    });
+  }, [draftToRestore]);
+
+  const handleDismissDraft = useCallback(() => {
+    localStorage.removeItem(DRAFT_STORAGE_KEY);
+    setShowDraftRestorePrompt(false);
+    setDraftToRestore(null);
+  }, []);
+
+  // --- Keyboard Shortcuts ---
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      // Don't trigger if user is typing in an input
+      const target = e.target as HTMLElement;
+      if (
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLTextAreaElement ||
+        target.isContentEditable
+      ) {
+        return;
+      }
+
+      // Escape to clear selection or exit mode
+      if (e.key === "Escape") {
+        if (mode === "buying") {
+          if (selectedPixels.length > 0) {
+            setShowClearDialog(true);
+          } else {
+            handleExitBuyingMode();
+          }
+        } else if (showPurchasePreview) {
+          setShowPurchasePreview(false);
+        }
+        return;
+      }
+
+      // Only process other shortcuts in buying mode
+      if (mode !== "buying") return;
+
+      // Ctrl+Z / Cmd+Z to undo
+      if ((e.ctrlKey || e.metaKey) && e.key === "z" && !e.shiftKey) {
+        e.preventDefault();
+        handleUndoLastSelection();
+        return;
+      }
+
+      // Ctrl+Shift+Z / Cmd+Shift+Z to redo (future enhancement)
+      if ((e.ctrlKey || e.metaKey) && e.key === "z" && e.shiftKey) {
+        e.preventDefault();
+        toast.info("Redo not yet implemented");
+        return;
+      }
+
+      // Ctrl+A to prevent default (inform user to use Quick Select)
+      if ((e.ctrlKey || e.metaKey) && e.key === "a") {
+        e.preventDefault();
+        toast.info("Use Quick Select tools to select areas");
+        return;
+      }
+
+      // Delete to clear selection
+      if (e.key === "Delete" || e.key === "Backspace") {
+        if (selectedPixels.length > 0) {
+          e.preventDefault();
+          setShowClearDialog(true);
+        }
+        return;
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyPress);
+    return () => window.removeEventListener("keydown", handleKeyPress);
+  }, [mode, selectedPixels.length, showPurchasePreview]);
 
   // --- Event Handlers ---
   const handleBuyClick = useCallback(() => {
     if (!isOnline) {
       toast.error("You're offline", {
-        description: "Please check your internet connection"
+        description: "Please check your internet connection",
+        icon: <WifiOff className="w-4 h-4" />,
       });
       return;
     }
@@ -217,21 +354,24 @@ const BuyPixels = () => {
         description: "Create an account or log in to purchase pixels",
         action: {
           label: "Sign In",
-          onClick: () => navigate('/signin')
-        }
+          onClick: () => navigate("/signin"),
+        },
       });
       return;
     }
 
     setIsLoading(true);
 
-    // Small delay for smooth transition
+    // Smooth transition with loading state
     setTimeout(() => {
-      setMode('buying');
+      if (!isMountedRef.current) return;
+
+      setMode("buying");
       setIsSelecting(true);
       setIsLoading(false);
+
       toast.success("Start selecting pixels", {
-        description: "Click and drag on the canvas. Press ESC to cancel."
+        description: "Click and drag on the canvas. Press ESC to cancel.",
       });
     }, 200);
   }, [user, navigate, isOnline]);
@@ -239,7 +379,8 @@ const BuyPixels = () => {
   const handleSellClick = useCallback(() => {
     if (!isOnline) {
       toast.error("You're offline", {
-        description: "Please check your internet connection"
+        description: "Please check your internet connection",
+        icon: <WifiOff className="w-4 h-4" />,
       });
       return;
     }
@@ -249,34 +390,40 @@ const BuyPixels = () => {
         description: "Create an account or log in to sell pixels",
         action: {
           label: "Sign In",
-          onClick: () => navigate('/signin')
-        }
+          onClick: () => navigate("/signin"),
+        },
       });
       return;
     }
 
     toast.info("Opening marketplace...");
-    navigate('/marketplace');
+    navigate("/marketplace");
   }, [user, navigate, isOnline]);
 
-  const handleSelectionChange = useCallback((pixels: SelectedPixel[]) => {
-    if (mode !== 'buying') return;
+  const handleSelectionChange = useCallback(
+    (pixels: SelectedPixel[]) => {
+      if (mode !== "buying") return;
 
-    // Check max limit
-    if (pixels.length > MAX_PIXELS_PER_PURCHASE) {
-      toast.warning(`Maximum ${MAX_PIXELS_PER_PURCHASE} pixels per purchase`, {
-        description: "Please reduce your selection"
-      });
-      return;
-    }
+      // Check max limit
+      if (pixels.length > MAX_PIXELS_PER_PURCHASE) {
+        toast.warning(`Maximum ${MAX_PIXELS_PER_PURCHASE} pixels per purchase`, {
+          description: "Please reduce your selection",
+        });
+        return;
+      }
 
-    // Save current state to history before updating
-    setSelectionHistory(prev =>
-      [...prev.slice(-SELECTION_HISTORY_LIMIT + 1), selectedPixels]
-    );
+      // Save current state to history before updating (limit history size)
+      if (pixels.length !== selectedPixels.length) {
+        setSelectionHistory((prev) => {
+          const newHistory = [...prev, selectedPixels].slice(-SELECTION_HISTORY_LIMIT);
+          return newHistory;
+        });
+      }
 
-    setSelectedPixels(pixels);
-  }, [selectedPixels, mode]);
+      setSelectedPixels(pixels);
+    },
+    [selectedPixels, mode]
+  );
 
   const handleUndoLastSelection = useCallback(() => {
     if (selectionHistory.length === 0) {
@@ -285,33 +432,43 @@ const BuyPixels = () => {
     }
 
     const previousState = selectionHistory[selectionHistory.length - 1];
+
     setSelectedPixels(previousState);
-    setSelectionHistory(prev => prev.slice(0, -1));
+    setSelectionHistory((prev) => prev.slice(0, -1));
+
     toast.success("Undo successful", {
-      description: "Previous selection restored"
+      description: "Previous selection restored",
     });
   }, [selectionHistory]);
 
   const confirmClearSelection = useCallback(() => {
-    setSelectionHistory(prev => [...prev, selectedPixels]);
+    // Save to history before clearing
+    if (selectedPixels.length > 0) {
+      setSelectionHistory((prev) => [...prev, selectedPixels].slice(-SELECTION_HISTORY_LIMIT));
+    }
+
     setSelectedPixels([]);
-    setMode('idle');
-    setIsSelecting(false);
+
     setShowClearDialog(false);
-    localStorage.removeItem('pixelDraft');
+    localStorage.removeItem(DRAFT_STORAGE_KEY);
+
     toast.success("Selection cleared");
   }, [selectedPixels]);
+
+  const handleExitBuyingMode = useCallback(() => {
+    setMode("idle");
+    setIsSelecting(false);
+    localStorage.removeItem(DRAFT_STORAGE_KEY);
+    toast.info("Selection mode exited");
+  }, []);
 
   const handleClearSelection = useCallback(() => {
     if (selectedPixels.length > 0) {
       setShowClearDialog(true);
     } else {
-      setMode('idle');
-      setIsSelecting(false);
-      localStorage.removeItem('pixelDraft');
-      toast.info("Selection mode exited");
+      handleExitBuyingMode();
     }
-  }, [selectedPixels]);
+  }, [selectedPixels, handleExitBuyingMode]);
 
   const handleResetView = useCallback(() => {
     setZoom(1);
@@ -321,7 +478,8 @@ const BuyPixels = () => {
   const handlePurchase = useCallback(() => {
     if (!isOnline) {
       toast.error("You're offline", {
-        description: "Please check your internet connection"
+        description: "Please check your internet connection",
+        icon: <WifiOff className="w-4 h-4" />,
       });
       return;
     }
@@ -331,8 +489,8 @@ const BuyPixels = () => {
         description: "Create an account or log in to purchase pixels",
         action: {
           label: "Sign In",
-          onClick: () => navigate('/signin')
-        }
+          onClick: () => navigate("/signin"),
+        },
       });
       return;
     }
@@ -345,48 +503,75 @@ const BuyPixels = () => {
     setShowPurchasePreview(true);
   }, [user, selectedPixels.length, navigate, isOnline]);
 
-  const handleConfirmPurchase = useCallback(async (
-    pixelName: string,
-    linkUrl: string,
-    imageUrl: string | null
-  ) => {
-    // This function is now called AFTER successful Razorpay payment verification
-    // The actual pixel purchase is handled by the verify-razorpay-payment edge function
-    // Here we just handle UI updates and cleanup
+  const handleConfirmPurchase = useCallback(
+    async (pixelName: string, linkUrl: string, imageUrl: string | null) => {
+      if (!isMountedRef.current) return;
 
-    const purchasedPixels = [...selectedPixels]; // Capture for sharing
+      const purchasedPixels = [...selectedPixels];
 
-    // Trigger celebration!
-    confetti({
-      particleCount: 150,
-      spread: 70,
-      origin: { y: 0.6 },
-      colors: ['#EF4444', '#10B981', '#F59E0B', '#6366F1'] // Brand colors
-    });
+      // Trigger celebration
+      confetti({
+        particleCount: 150,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ["#EF4444", "#10B981", "#F59E0B", "#6366F1"],
+      });
 
-    // Reset UI state
-    setShowPurchasePreview(false);
-    setSelectedPixels([]);
-    setSelectionHistory([]);
-    setMode('idle');
-    setIsSelecting(false);
-    localStorage.removeItem('pixelDraft');
+      // Reset UI state with transition
+      setShowPurchasePreview(false);
 
-    setTimeout(() => {
-      // Open share dialog for the first pixel
-      if (purchasedPixels.length > 0) {
-        setSharePixel(purchasedPixels[0]);
-      }
+      setSelectedPixels([]);
+      setSelectionHistory([]);
+      setMode("idle");
+      setIsSelecting(false);
 
-      toast.message("Purchase complete!", {
-        description: "View your pixels in your profile.",
-        action: {
-          label: "Go to Profile",
-          onClick: () => navigate('/profile')
+      localStorage.removeItem(DRAFT_STORAGE_KEY);
+
+      // Delayed actions
+      setTimeout(() => {
+        if (!isMountedRef.current) return;
+
+        // Open share dialog for the first pixel
+        if (purchasedPixels.length > 0) {
+          setSharePixel(purchasedPixels[0]);
+        }
+
+        toast.success("Purchase complete! 🎉", {
+          description: "View your pixels in your profile.",
+          action: {
+            label: "Go to Profile",
+            onClick: () => navigate("/profile"),
+          },
+        });
+      }, 1000);
+    },
+    [selectedPixels, navigate]
+  );
+
+  // --- Network Status Change Handler ---
+  useEffect(() => {
+    if (!isOnline && mode === "buying") {
+      toast.warning("Connection lost", {
+        description: "Your selection is saved locally",
+        icon: <WifiOff className="w-4 h-4" />,
+      });
+    }
+  }, [isOnline, mode]);
+
+  // --- Performance Monitoring (Development Only) ---
+  useEffect(() => {
+    if (process.env.NODE_ENV === "development") {
+      const observer = new PerformanceObserver((list) => {
+        for (const entry of list.getEntries()) {
+          if (entry.duration > 16) {
+            console.warn("Slow render:", entry.name, entry.duration);
+          }
         }
       });
-    }, 1000);
-  }, [selectedPixels, navigate]);
+      observer.observe({ entryTypes: ["measure"] });
+      return () => observer.disconnect();
+    }
+  }, []);
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -394,17 +579,51 @@ const BuyPixels = () => {
       <Header />
 
       {/* Offline Warning Banner */}
-      {/* --- MAIN LAYOUT --- */}
-      <main className="flex-1 container mx-auto px-2 sm:px-4 lg:px-6 py-4 flex flex-col lg:grid lg:grid-cols-12 gap-6">
+      {!isOnline && (
+        <div
+          className="bg-orange-500/90 text-white px-4 py-2 text-center text-sm font-medium flex items-center justify-center gap-2"
+          role="alert"
+          aria-live="polite"
+        >
+          <WifiOff className="w-4 h-4" />
+          You're offline - selections are saved locally
+        </div>
+      )}
 
+      {/* Draft Restore Prompt */}
+      <AlertDialog open={showDraftRestorePrompt} onOpenChange={setShowDraftRestorePrompt}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Restore Previous Selection?</AlertDialogTitle>
+            <AlertDialogDescription>
+              You have a saved draft with {draftToRestore?.pixels.length || 0} pixels (
+              ₹
+              {(draftToRestore?.pixels.reduce((sum, p) => sum + p.price, 0) || 0).toLocaleString()}
+              ) from your last session. Would you like to restore it?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleDismissDraft}>Discard</AlertDialogCancel>
+            <AlertDialogAction onClick={handleRestoreDraft} className="bg-primary">
+              Restore Selection
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* MAIN LAYOUT */}
+      <main className="flex-1 w-full h-[calc(100vh-64px)] overflow-hidden flex flex-col lg:grid lg:grid-cols-12">
         {/* LEFT COLUMN: CANVAS */}
         <div className="lg:col-span-9 order-1 flex flex-col gap-4">
-
-          {/* Canvas Wrapper with Sidebar Controls */}
-          <div className="w-full flex gap-3 h-[65vh] sm:h-[70vh] lg:h-[80vh]">
-            {/* Desktop Toolbar - Now Outside Canvas */}
-            {mode === 'buying' && (
-              <div className="hidden lg:flex flex-col shrink-0">
+          {/* Canvas Wrapper with Overlay Controls */}
+          <div className="w-full h-full relative">
+            {/* Desktop Toolbar */}
+            {mode === "buying" && (
+              <div
+                className="hidden lg:flex flex-col shrink-0 absolute left-4 top-4 z-10"
+                role="toolbar"
+                aria-label="Canvas controls"
+              >
                 <EnhancedCanvasControls
                   zoom={zoom}
                   onZoomChange={setZoom}
@@ -417,16 +636,15 @@ const BuyPixels = () => {
                   onResetView={handleResetView}
                   selectedCount={selectedPixels.length}
                 />
-
               </div>
             )}
 
             {/* THE GRID */}
-            <div className="flex-1 rounded-xl shadow-2xl border bg-card overflow-hidden h-full relative z-0">
+            <div className="flex-1 overflow-hidden h-full w-full relative z-0">
               <VirtualizedPixelGrid
                 selectedPixels={selectedPixels}
                 onSelectionChange={handleSelectionChange}
-                isSelecting={isSelecting && mode === 'buying'}
+                isSelecting={isSelecting && mode === "buying"}
                 gridWidth={CANVAS_WIDTH}
                 gridHeight={CANVAS_HEIGHT}
                 pixelSize={PIXEL_SIZE}
@@ -434,37 +652,57 @@ const BuyPixels = () => {
                 onZoomChange={setZoom}
                 showGrid={showGrid}
                 showMyPixels={showMyPixels}
-                enableInteraction={mode === 'buying'}
+                enableInteraction={mode === "buying"}
               />
             </div>
           </div>
 
+          {/* Quick Action Bar in Buying Mode */}
+          {mode === "buying" && (
+            <div
+              className="flex gap-2 items-center bg-card p-3 rounded-lg border shadow-sm"
+              role="toolbar"
+              aria-label="Selection actions"
+            >
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      onClick={handleUndoLastSelection}
+                      disabled={selectionHistory.length === 0}
+                      variant="outline"
+                      size="sm"
+                      className="gap-1.5"
+                      aria-label="Undo last selection"
+                    >
+                      <Undo2 className="w-3.5 h-3.5" />
+                      <span className="hidden sm:inline">Undo</span>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Undo last selection (Ctrl+Z)</p>
+                  </TooltipContent>
+                </Tooltip>
 
-
-          {/* Quick Action Bar in Buying Mode - SIMPLIFIED WITHOUT COUNT */}
-          {mode === 'buying' && (
-            <div className="flex gap-2 items-center bg-card p-3 rounded-lg border shadow-sm">
-              <Button
-                onClick={handleUndoLastSelection}
-                disabled={selectionHistory.length === 0}
-                variant="outline"
-                size="sm"
-                className="gap-1.5"
-              >
-                <Undo2 className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Undo</span>
-              </Button>
-
-              <Button
-                onClick={() => setShowClearDialog(true)}
-                disabled={selectedPixels.length === 0}
-                variant="outline"
-                size="sm"
-                className="gap-1.5"
-              >
-                <X className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Clear</span>
-              </Button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      onClick={() => setShowClearDialog(true)}
+                      disabled={selectedPixels.length === 0}
+                      variant="outline"
+                      size="sm"
+                      className="gap-1.5"
+                      aria-label="Clear all selections"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                      <span className="hidden sm:inline">Clear</span>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Clear selection (ESC)</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
 
               <div className="flex-1" />
 
@@ -473,22 +711,34 @@ const BuyPixels = () => {
                 disabled={selectedPixels.length === 0 || !isOnline}
                 size="sm"
                 className="bg-primary hover:bg-primary/90 gap-1.5"
+                aria-label={`Proceed to checkout with ${selectedPixels.length} pixels`}
               >
                 <ShoppingCart className="w-3.5 h-3.5" />
                 Proceed to Checkout
+                {selectedPixels.length > 0 && (
+                  <span className="ml-1 font-mono">({selectedPixels.length})</span>
+                )}
               </Button>
             </div>
           )}
 
           {/* Mobile Controls Bar */}
-          {mode === 'buying' && (
-            <div className="lg:hidden grid grid-cols-5 gap-2 bg-card p-2 rounded-lg border shadow-sm">
+          {mode === "buying" && (
+            <div
+              className="lg:hidden grid grid-cols-5 gap-2 bg-card p-2 rounded-lg border shadow-sm"
+              role="toolbar"
+              aria-label="Mobile canvas controls"
+            >
               <button
                 onClick={() => setIsSelecting(!isSelecting)}
-                className={`col-span-2 flex items-center justify-center gap-2 h-10 rounded-md text-sm font-medium transition-colors ${isSelecting ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+                className={`col-span-2 flex items-center justify-center gap-2 h-10 rounded-md text-sm font-medium transition-colors ${isSelecting
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground"
                   }`}
+                aria-label={isSelecting ? "Switch to pan mode" : "Switch to select mode"}
+                aria-pressed={isSelecting}
               >
-                {isSelecting ? '👆 Select' : '✋ Pan'}
+                {isSelecting ? "👆 Select" : "✋ Pan"}
               </button>
 
               <button
@@ -499,7 +749,10 @@ const BuyPixels = () => {
                 -
               </button>
 
-              <div className="flex items-center justify-center text-xs font-mono bg-background border rounded-md">
+              <div
+                className="flex items-center justify-center text-xs font-mono bg-background border rounded-md"
+                aria-label={`Current zoom level: ${Math.round(zoom * 100)}%`}
+              >
                 {Math.round(zoom * 100)}%
               </div>
 
@@ -515,13 +768,11 @@ const BuyPixels = () => {
         </div>
 
         {/* RIGHT COLUMN: SIDEBAR */}
-        <div className="lg:col-span-3 order-2 space-y-4">
-
-
-          {/* Action Buttons - Moved to Sidebar for Better Visibility */}
-          {mode === 'idle' && (
+        <div className="hidden lg:block lg:col-span-3 order-2 space-y-4">
+          {/* Action Buttons - Idle Mode */}
+          {mode === "idle" && (
             <TooltipProvider>
-              <div className="flex flex-col gap-3 w-full">
+              <div className="flex flex-col gap-3 w-full" role="group" aria-label="Main actions">
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
@@ -529,6 +780,7 @@ const BuyPixels = () => {
                       disabled={isLoading || !isOnline}
                       size="default"
                       className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-semibold text-base h-12 rounded-xl shadow-md transition-all duration-200 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed gap-2"
+                      aria-label="Buy pixels"
                     >
                       {isLoading ? (
                         <>
@@ -555,6 +807,7 @@ const BuyPixels = () => {
                       disabled={isLoading || !isOnline}
                       size="default"
                       className="w-full bg-gradient-to-r from-rose-600 to-rose-700 hover:from-rose-700 hover:to-rose-800 text-white font-semibold text-base h-12 rounded-xl shadow-md transition-all duration-200 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed gap-2"
+                      aria-label="Open marketplace"
                     >
                       {isLoading ? (
                         <>
@@ -583,7 +836,8 @@ const BuyPixels = () => {
               Select Pixels & Make History
             </h1>
             <p className="text-sm text-muted-foreground mb-4">
-              Choose from {(CANVAS_WIDTH * CANVAS_HEIGHT).toLocaleString()} pixels to showcase your brand forever.
+              Choose from {(CANVAS_WIDTH * CANVAS_HEIGHT).toLocaleString()} pixels to showcase
+              your brand forever.
             </p>
             <div className="flex justify-center gap-2 text-xs font-medium">
               <span className="bg-primary/10 text-primary px-2 py-1 rounded">₹99+</span>
@@ -591,7 +845,7 @@ const BuyPixels = () => {
             </div>
 
             {/* Keyboard Shortcuts Hint */}
-            {mode === 'buying' && (
+            {mode === "buying" && (
               <div className="mt-4 pt-4 border-t text-left">
                 <p className="text-xs font-semibold text-muted-foreground mb-2">⌨️ Shortcuts:</p>
                 <div className="space-y-1 text-xs text-muted-foreground">
@@ -603,32 +857,42 @@ const BuyPixels = () => {
                     <span>Cancel</span>
                     <kbd className="px-2 py-0.5 bg-muted rounded text-xs font-mono">ESC</kbd>
                   </div>
+                  <div className="flex justify-between">
+                    <span>Clear</span>
+                    <kbd className="px-2 py-0.5 bg-muted rounded text-xs font-mono">Del</kbd>
+                  </div>
                 </div>
               </div>
             )}
           </div>
 
           {/* Price Breakdown Card */}
-          {mode === 'buying' && selectedPixels.length > 0 && (
+          {mode === "buying" && selectedPixels.length > 0 && (
             <div className="hidden lg:block bg-card rounded-xl border p-4">
               <h3 className="text-sm font-semibold mb-3">Price Breakdown</h3>
               <div className="space-y-2 text-sm">
                 {priceBreakdown.premium > 0 && (
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Premium (₹299)</span>
-                    <span className="font-medium">{priceBreakdown.premium} × ₹299</span>
+                    <span className="font-medium">
+                      {priceBreakdown.premium} × ₹299
+                    </span>
                   </div>
                 )}
                 {priceBreakdown.standard > 0 && (
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Standard (₹199)</span>
-                    <span className="font-medium">{priceBreakdown.standard} × ₹199</span>
+                    <span className="font-medium">
+                      {priceBreakdown.standard} × ₹199
+                    </span>
                   </div>
                 )}
                 {priceBreakdown.economy > 0 && (
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Economy (₹99)</span>
-                    <span className="font-medium">{priceBreakdown.economy} × ₹99</span>
+                    <span className="font-medium">
+                      {priceBreakdown.economy} × ₹99
+                    </span>
                   </div>
                 )}
                 <div className="pt-2 border-t flex justify-between font-bold">
@@ -640,7 +904,7 @@ const BuyPixels = () => {
           )}
 
           {/* Sticky Stats & Tools */}
-          {mode === 'buying' && (
+          {mode === "buying" && (
             <div className="sticky top-4 space-y-4">
               <EnhancedSelectionSummary
                 selectedPixels={selectedPixels}
@@ -655,7 +919,11 @@ const BuyPixels = () => {
                   gridWidth={CANVAS_WIDTH}
                   gridHeight={CANVAS_HEIGHT}
                   calculatePixelPrice={calculatePixelPrice}
-                  anchorPixel={selectedPixels.length > 0 ? selectedPixels[selectedPixels.length - 1] : null}
+                  anchorPixel={
+                    selectedPixels.length > 0
+                      ? selectedPixels[selectedPixels.length - 1]
+                      : null
+                  }
                 />
               </div>
 
@@ -663,7 +931,6 @@ const BuyPixels = () => {
             </div>
           )}
         </div>
-
       </main>
 
       <Footer />
@@ -677,7 +944,7 @@ const BuyPixels = () => {
             <AlertDialogTitle>Clear Selection?</AlertDialogTitle>
             <AlertDialogDescription>
               You have {selectedPixels.length} pixels selected (₹{totalCost.toLocaleString()}).
-              Are you sure you want to clear your selection?
+              Are you sure you want to clear your selection? This action can be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -700,6 +967,7 @@ const BuyPixels = () => {
         onConfirmPurchase={handleConfirmPurchase}
       />
 
+      {/* Share Pixel Dialog */}
       <SharePixelDialog
         isOpen={!!sharePixel}
         onClose={() => setSharePixel(null)}
@@ -707,7 +975,7 @@ const BuyPixels = () => {
       />
 
       {/* Mobile Canvas Panel */}
-      {mode === 'buying' && (
+      {mode === "buying" && (
         <MobileCanvasPanel
           selectedPixels={selectedPixels}
           onPurchase={handlePurchase}
@@ -716,12 +984,44 @@ const BuyPixels = () => {
       )}
 
       {/* Floating Action Button (Mobile fallback) */}
-      {mode === 'buying' && selectedPixels.length > 0 && (
+      {mode === "buying" && selectedPixels.length > 0 && (
         <div className="lg:hidden">
           <FloatingActionButton
             selectedCount={selectedPixels.length}
             onClick={handlePurchase}
           />
+        </div>
+      )}
+
+      {/* Mobile Fixed Action Buttons (Idle Mode) */}
+      {mode === "idle" && (
+        <div className="fixed bottom-16 left-4 right-4 z-50 lg:hidden flex gap-3">
+          <Button
+            onClick={handleBuyClick}
+            disabled={isLoading || !isOnline}
+            className="flex-1 bg-gradient-to-r from-emerald-500 to-emerald-600 shadow-lg text-white font-semibold h-12 rounded-xl"
+            aria-label="Buy pixels"
+          >
+            {isLoading ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <ShoppingCart className="w-5 h-5 mr-2" />
+            )}
+            Buy Pixels
+          </Button>
+          <Button
+            onClick={handleSellClick}
+            disabled={isLoading || !isOnline}
+            className="flex-1 bg-gradient-to-r from-rose-600 to-rose-700 shadow-lg text-white font-semibold h-12 rounded-xl"
+            aria-label="Open marketplace"
+          >
+            {isLoading ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Store className="w-5 h-5 mr-2" />
+            )}
+            Marketplace
+          </Button>
         </div>
       )}
     </div>

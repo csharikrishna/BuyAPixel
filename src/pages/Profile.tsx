@@ -3,7 +3,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
+import { ProfileSkeleton } from '@/components/ui/skeleton-primitives';
 import {
   ArrowLeft, RefreshCw, Edit, AlertCircle,
   User, Sparkles, CheckCircle2, Phone, Calendar
@@ -20,27 +20,15 @@ import { MyPixels } from '@/components/profile/MyPixels';
 import { TrophyCase } from '@/components/TrophyCase';
 import { Profile as UserProfile, UserPixel, PixelStats, ProfileField, ProfileCompletionData } from '@/types/profile';
 
-// Loading skeleton component
-const ProfileSkeleton = () => (
-  <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 pb-20 lg:pb-8">
-    <div className="container mx-auto px-4 py-4 md:py-8">
-      <div className="flex items-center space-x-4 mb-8">
-        <Skeleton className="h-10 w-32" />
-        <Skeleton className="h-8 w-48" />
-      </div>
-      <Card className="w-full max-w-4xl mx-auto backdrop-blur-xl bg-white/60 dark:bg-gray-900/60 border-purple-500/20">
-        <CardHeader className="text-center">
-          <Skeleton className="w-32 h-32 rounded-full mx-auto mb-4" />
-          <Skeleton className="h-8 w-48 mx-auto" />
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <Skeleton className="h-24 w-full" />
-          <Skeleton className="h-24 w-full" />
-        </CardContent>
-      </Card>
+// Wrapper for ProfileSkeleton with page layout
+const ProfilePageSkeleton = () => (
+  <div className="min-h-screen bg-gradient-to-br from-purple-50 via-slate-50 to-blue-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 pb-20 lg:pb-8">
+    <div className="container mx-auto px-4 py-4 md:py-8 max-w-4xl">
+      <ProfileSkeleton />
     </div>
   </div>
 );
+
 
 const Profile = () => {
   const { user, loading: authLoading } = useAuth();
@@ -427,7 +415,7 @@ const Profile = () => {
 
   // Loading state
   if (authLoading || (profileLoading && !profile)) {
-    return <ProfileSkeleton />;
+    return <ProfilePageSkeleton />;
   }
 
   // If no public user ID and no authenticated user
@@ -438,10 +426,10 @@ const Profile = () => {
   // Error state
   if (error && !profile) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-purple-50 via-white to-blue-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950">
-        <Card className="w-full max-w-md border-red-500/20 backdrop-blur-xl bg-white/80 dark:bg-gray-900/80 shadow-2xl">
+      <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-purple-50 via-slate-50 to-blue-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950">
+        <Card className="w-full max-w-md border-red-200 dark:border-red-500/20 bg-white dark:bg-gray-900 shadow-2xl">
           <CardContent className="p-6 text-center space-y-4">
-            <div className="w-16 h-16 mx-auto bg-gradient-to-br from-red-500/20 to-orange-500/20 rounded-full flex items-center justify-center backdrop-blur-sm border border-red-500/20">
+            <div className="w-16 h-16 mx-auto bg-gradient-to-br from-red-100 to-orange-100 dark:from-red-500/20 dark:to-orange-500/20 rounded-full flex items-center justify-center border border-red-200 dark:border-red-500/20">
               <AlertCircle className="w-8 h-8 text-red-600 dark:text-red-400" />
             </div>
             <div>
@@ -466,16 +454,16 @@ const Profile = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-950 pb-20 lg:pb-8 relative">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-slate-50 to-blue-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-950 pb-20 lg:pb-8 relative">
       {/* Premium gradient overlay */}
-      <div className="fixed inset-0 bg-gradient-to-b from-purple-500/5 via-transparent to-blue-500/5 pointer-events-none" />
+      <div className="fixed inset-0 bg-gradient-to-b from-purple-100/30 via-transparent to-blue-100/30 dark:from-purple-500/5 dark:via-transparent dark:to-blue-500/5 pointer-events-none" />
 
       <div className="container relative mx-auto px-4 py-4 md:py-8 max-w-6xl">
         {/* Header */}
         <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 md:mb-8">
           <div className="flex items-center space-x-3 md:space-x-4">
             <Link to="/" aria-label="Back to home">
-              <Button variant="ghost" size="sm" className="group backdrop-blur-sm hover:bg-white/60 dark:hover:bg-gray-800/60">
+              <Button variant="ghost" size="sm" className="group hover:bg-white dark:hover:bg-gray-800 border border-transparent hover:border-purple-200 dark:hover:border-purple-500/20">
                 <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" aria-hidden="true" />
                 <span className="hidden sm:inline">Back to Home</span>
                 <span className="sm:hidden">Back</span>
@@ -497,7 +485,7 @@ const Profile = () => {
               size="sm"
               disabled={isRefreshing}
               aria-label="Refresh data"
-              className="backdrop-blur-sm bg-white/60 dark:bg-gray-800/60 border-purple-500/20 hover:bg-white/80 dark:hover:bg-gray-800/80 hover:border-purple-500/30 transition-all duration-300"
+              className="bg-white dark:bg-gray-800 border-purple-200 dark:border-purple-500/20 hover:bg-purple-50 dark:hover:bg-gray-700 hover:border-purple-300 dark:hover:border-purple-500/30 transition-all duration-300"
             >
               <RefreshCw className={`w-4 h-4 text-purple-600 dark:text-purple-400 ${isRefreshing ? 'animate-spin' : ''}`} aria-hidden="true" />
               <span className="hidden sm:inline ml-2">Refresh</span>
@@ -520,7 +508,7 @@ const Profile = () => {
 
         {/* Profile Completion Alert - Only for Owner */}
         {isOwnProfile && profileCompletionData.percentage < 100 && (
-          <div className="mb-6 rounded-xl p-4 border border-orange-500/20 bg-gradient-to-r from-orange-50/80 to-pink-50/80 dark:from-orange-950/30 dark:to-pink-950/30 backdrop-blur-xl shadow-lg flex items-center gap-4">
+          <div className="mb-6 rounded-xl p-4 border border-orange-200 dark:border-orange-500/20 bg-gradient-to-r from-orange-50 to-pink-50 dark:from-orange-950/30 dark:to-pink-950/30 shadow-lg flex items-center gap-4">
             <div className="p-2 bg-orange-100 dark:bg-orange-900/50 rounded-full shrink-0">
               <Sparkles className="h-5 w-5 text-orange-600 dark:text-orange-400" />
             </div>

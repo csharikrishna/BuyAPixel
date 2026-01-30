@@ -1,0 +1,5 @@
+{
+  "artifactType": "ARTIFACT_TYPE_WALKTHROUGH",
+  "summary": "Complete documentation of the BuyAPixel codebase including:\n- Overview of tech stack (React 18, TypeScript, Vite, Supabase)\n- All root configuration files (package.json, vite.config.ts, tailwind.config.ts)\n- Entry points and main App component architecture\n- Type definitions for grid, profile, and marketplace\n- 9 custom hooks with functionality details\n- 7 utility modules including SpatialIndex for performance\n- 21 pages with features and responsibilities\n- 30+ components plus 41 UI components from shadcn\n- Supabase backend with 7 Edge Functions and 21 migrations\n- Architecture diagram and data flow documentation\n- Performance optimization strategies",
+  "updatedAt": "2026-01-24T21:18:28.576619900Z"
+}

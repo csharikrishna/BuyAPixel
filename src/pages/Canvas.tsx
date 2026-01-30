@@ -20,6 +20,7 @@ import {
   RefreshCw
 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Separator } from "@/components/ui/separator";
 
 // Constants
 const CANVAS_WIDTH = 100;
@@ -156,7 +157,7 @@ const Canvas = () => {
         owner_id: row.owner_id as string,
         image_url: row.image_url || undefined,
         link_url: row.link_url || undefined,
-        price_tier: row.price_tier ?? 1,
+        price_tier: (row as any).price_tier ?? 1,
         alt_text: row.alt_text || undefined,
         purchased_at: row.purchased_at || ''
       }));
@@ -304,250 +305,83 @@ const Canvas = () => {
     <div className="min-h-screen bg-background">
       <Header />
 
-      {/* Hero Section */}
-      <div className="relative overflow-hidden border-b bg-gradient-to-br from-primary/10 via-background to-accent/10">
-        <div className="container mx-auto px-4 py-12 md:py-16">
-          <div className="text-center space-y-4">
-            <Badge variant="secondary" className="mb-2">
-              <Eye className="w-3 h-3 mr-1" />
-              Live Canvas
-              {isRefreshing && (
-                <RefreshCw className="w-3 h-3 ml-2 animate-spin" />
-              )}
-            </Badge>
-            <h1 className="text-4xl md:text-6xl font-bold tracking-tight">
-              <span className="bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
-                Pixel Canvas
-              </span>
-            </h1>
-            <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">
-              Explore {TOTAL_PIXELS.toLocaleString()} pixels of creativity.
-              Click any pixel to visit its link.
-            </p>
+      <div className="flex-1 w-full h-[calc(100vh-64px)] overflow-hidden relative">
+        {/* Controls Overlay */}
+        <div className="absolute top-4 left-4 z-10 hidden xl:block">
+          <EnhancedCanvasControls
+            zoom={zoom}
+            onZoomChange={setZoom}
+            isSelecting={false}
+            onToggleSelecting={() => { }}
+            showGrid={showGrid}
+            onToggleGrid={handleToggleGrid}
+            showMyPixels={showMyPixels}
+            onToggleMyPixels={handleToggleMyPixels}
+            onResetView={handleResetView}
+            selectedCount={0}
+          />
+          <div className="mt-4">
+            <Button
+              onClick={handleRefresh}
+              variant="outline"
+              size="icon"
+              className="bg-background/90 backdrop-blur shadow-md"
+              disabled={isRefreshing}
+              title="Refresh Canvas"
+            >
+              <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+            </Button>
           </div>
         </div>
-      </div>
 
-      <div className="container mx-auto px-4 py-6 md:py-8 space-y-6">
-        {/* Stats Section */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-          <Card className="border-primary/20 hover:border-primary/40 transition-colors">
-            <CardContent className="p-4 md:p-6">
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                  <Eye className="w-5 h-5 md:w-6 md:h-6 text-primary" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-xl md:text-2xl font-bold truncate tabular-nums">
-                    {stats.totalPixels.toLocaleString()}
-                  </p>
-                  <p className="text-xs md:text-sm text-muted-foreground">Pixels Owned</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-primary/20 hover:border-primary/40 transition-colors">
-            <CardContent className="p-4 md:p-6">
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-green-500/10 flex items-center justify-center shrink-0">
-                  <TrendingUp className="w-5 h-5 md:w-6 md:h-6 text-green-500" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-xl md:text-2xl font-bold truncate tabular-nums">
-                    ₹{stats.totalValue.toLocaleString()}
-                  </p>
-                  <p className="text-xs md:text-sm text-muted-foreground">Total Value</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-primary/20 hover:border-primary/40 transition-colors">
-            <CardContent className="p-4 md:p-6">
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-blue-500/10 flex items-center justify-center shrink-0">
-                  <Users className="w-5 h-5 md:w-6 md:h-6 text-blue-500" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-xl md:text-2xl font-bold tabular-nums">
-                    {stats.uniqueOwners}
-                  </p>
-                  <p className="text-xs md:text-sm text-muted-foreground">Unique Owners</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-primary/20 hover:border-primary/40 transition-colors">
-            <CardContent className="p-4 md:p-6">
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-yellow-500/10 flex items-center justify-center shrink-0">
-                  <Zap className="w-5 h-5 md:w-6 md:h-6 text-yellow-500" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-xl md:text-2xl font-bold tabular-nums">
-                    {stats.percentageFilled.toFixed(1)}%
-                  </p>
-                  <p className="text-xs md:text-sm text-muted-foreground">Canvas Filled</p>
-                </div>
-              </div>
+        {/* Mobile Controls */}
+        <div className="absolute bottom-4 left-4 right-4 z-10 xl:hidden flex justify-center gap-2 pointer-events-none">
+          <Card className="border-primary/20 pointer-events-auto shadow-lg backdrop-blur-md bg-background/90">
+            <CardContent className="p-2 flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleZoomOut}
+                disabled={zoom <= MIN_ZOOM}
+              >
+                <ZoomOut className="w-4 h-4" />
+              </Button>
+              <span className="text-xs font-mono w-12 text-center">{Math.round(zoom * 100)}%</span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleZoomIn}
+                disabled={zoom >= MAX_ZOOM}
+              >
+                <ZoomIn className="w-4 h-4" />
+              </Button>
+              <Separator orientation="vertical" className="h-4" />
+              <Button
+                variant={showGrid ? "secondary" : "ghost"}
+                size="sm"
+                onClick={handleToggleGrid}
+              >
+                <Grid3x3 className="w-4 h-4" />
+              </Button>
             </CardContent>
           </Card>
         </div>
 
-        {/* Canvas Section */}
-        <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 md:gap-6">
-          {/* Desktop Controls Sidebar */}
-          <div className="hidden xl:block xl:col-span-3">
-            <div className="sticky top-20 space-y-4">
-              <EnhancedCanvasControls
-                zoom={zoom}
-                onZoomChange={setZoom}
-                isSelecting={false}
-                onToggleSelecting={() => { }}
-                showGrid={showGrid}
-                onToggleGrid={handleToggleGrid}
-                showMyPixels={showMyPixels}
-                onToggleMyPixels={handleToggleMyPixels}
-                onResetView={handleResetView}
-                selectedCount={0}
-              />
-
-              <Card className="border-primary/20">
-                <CardContent className="p-4">
-                  <Button
-                    onClick={handleRefresh}
-                    variant="outline"
-                    size="sm"
-                    className="w-full"
-                    disabled={isRefreshing}
-                  >
-                    <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
-                    Refresh Canvas
-                  </Button>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-
-          {/* Mobile Controls */}
-          <div className="xl:hidden">
-            <Card className="border-primary/20">
-              <CardContent className="p-3">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleZoomOut}
-                      disabled={zoom <= MIN_ZOOM}
-                      aria-label="Zoom out"
-                    >
-                      <ZoomOut className="w-4 h-4" />
-                    </Button>
-                    <Badge variant="secondary" className="min-w-16 text-center tabular-nums">
-                      {Math.round(zoom * 100)}%
-                    </Badge>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleZoomIn}
-                      disabled={zoom >= MAX_ZOOM}
-                      aria-label="Zoom in"
-                    >
-                      <ZoomIn className="w-4 h-4" />
-                    </Button>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant={showGrid ? "default" : "outline"}
-                      size="sm"
-                      onClick={handleToggleGrid}
-                      aria-label="Toggle grid"
-                    >
-                      <Grid3x3 className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleResetView}
-                      aria-label="Reset view"
-                    >
-                      <RotateCcw className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Main Canvas */}
-          <div className="xl:col-span-9">
-            <Card className="border-primary/20 overflow-hidden">
-              <VirtualizedPixelGrid
-                selectedPixels={[]}
-                onSelectionChange={() => { }}
-                isSelecting={false}
-                gridWidth={CANVAS_WIDTH}
-                gridHeight={CANVAS_HEIGHT}
-                pixelSize={PIXEL_SIZE}
-                zoom={zoom}
-                onZoomChange={setZoom}
-                showGrid={showGrid}
-                showMyPixels={showMyPixels}
-              />
-            </Card>
-          </div>
+        {/* Main Canvas */}
+        <div className="w-full h-full relative z-0">
+          <VirtualizedPixelGrid
+            selectedPixels={[]}
+            onSelectionChange={() => { }}
+            isSelecting={false}
+            gridWidth={CANVAS_WIDTH}
+            gridHeight={CANVAS_HEIGHT}
+            pixelSize={PIXEL_SIZE}
+            zoom={zoom}
+            onZoomChange={setZoom}
+            showGrid={showGrid}
+            showMyPixels={showMyPixels}
+          />
         </div>
-
-        {/* Pricing Info Card */}
-        <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-accent/5">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold">Pricing Zones</h3>
-              <Badge variant="outline">
-                {TOTAL_PIXELS.toLocaleString()} Total Pixels
-              </Badge>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-lg bg-yellow-500/20 border-2 border-yellow-500/50 shrink-0" />
-                <div>
-                  <p className="font-bold text-yellow-600 dark:text-yellow-400">
-                    ₹{PREMIUM_PRICE}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Premium Center ({pricingZones.premium.toLocaleString()} px)
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-lg bg-blue-500/20 border-2 border-blue-500/50 shrink-0" />
-                <div>
-                  <p className="font-bold text-blue-600 dark:text-blue-400">
-                    ₹{STANDARD_PRICE}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Standard Zone ({pricingZones.standard.toLocaleString()} px)
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-lg bg-green-500/20 border-2 border-green-500/50 shrink-0" />
-                <div>
-                  <p className="font-bold text-green-600 dark:text-green-400">
-                    ₹{ECONOMY_PRICE}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Economy Zone ({pricingZones.economy.toLocaleString()} px)
-                  </p>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
       </div>
     </div>
   );

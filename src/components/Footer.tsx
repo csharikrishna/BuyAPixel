@@ -18,7 +18,6 @@ const Footer = () => {
         { name: "Buy Pixels", href: "/" },
         { name: "Marketplace", href: "/marketplace" },
         { name: "Leaderboard", href: "/leaderboard" },
-        { name: "How It Works", href: "/#how-it-works" },
       ]
     },
     {
@@ -34,9 +33,7 @@ const Footer = () => {
       title: "Community",
       links: [
         { name: "Discord Server", href: "https://discord.com" },
-        { name: "Success Stories", href: "/success-stories" },
         { name: "Blog", href: "/blog" },
-        { name: "Newsletter", href: "/newsletter" },
       ]
     }
   ];
@@ -61,23 +58,23 @@ const Footer = () => {
               </Badge>
             </div>
             <p className="text-muted-foreground mb-6 max-w-md text-sm leading-relaxed">
-              India's first pixel marketplace where creativity meets opportunity. 
+              India's first pixel marketplace where creativity meets opportunity.
               Own your digital space and be part of internet history.
             </p>
-            
+
             <div className="space-y-6">
               <div>
                 <h4 className="font-semibold mb-3 text-sm">Contact Information</h4>
                 <div className="space-y-2 text-sm text-muted-foreground">
-                  <a 
-                    href="mailto:support@buyapixel.in" 
+                  <a
+                    href="mailto:support@buyapixel.in"
                     className="flex items-center gap-2 hover:text-foreground transition-colors group"
                   >
                     <Mail className="w-4 h-4 flex-shrink-0 group-hover:text-primary transition-colors" />
                     support@buyapixel.in
                   </a>
-                  <a 
-                    href="tel:+919876543210" 
+                  <a
+                    href="tel:+919876543210"
                     className="flex items-center gap-2 hover:text-foreground transition-colors group"
                   >
                     <Phone className="w-4 h-4 flex-shrink-0 group-hover:text-primary transition-colors" />
@@ -89,23 +86,23 @@ const Footer = () => {
                   </div>
                 </div>
               </div>
-              
+
               <div>
                 <h4 className="font-semibold mb-3 text-sm">Follow Us</h4>
                 <div className="flex space-x-2">
                   {socialLinks.map((link) => {
                     const Icon = link.icon;
                     return (
-                      <Button 
-                        key={link.name} 
-                        variant="outline" 
-                        size="sm" 
+                      <Button
+                        key={link.name}
+                        variant="outline"
+                        size="sm"
                         className="w-9 h-9 p-0 hover:bg-primary/10 hover:border-primary/30 transition-all"
                         asChild
                       >
-                        <a 
-                          href={link.url} 
-                          target="_blank" 
+                        <a
+                          href={link.url}
+                          target="_blank"
                           rel="noopener noreferrer"
                           aria-label={link.name}
                         >
@@ -128,7 +125,7 @@ const Footer = () => {
                   {section.links.map((link) => (
                     <li key={link.name}>
                       {link.href.startsWith('http') ? (
-                        <a 
+                        <a
                           href={link.href}
                           target="_blank"
                           rel="noopener noreferrer"
@@ -162,7 +159,7 @@ const Footer = () => {
                 Made with <Heart className="w-3 h-3 text-red-500 fill-red-500 inline-block" /> in India
               </span>
             </div>
-            
+
             <div className="flex items-center gap-4 text-xs">
               <Link to="/terms" className="hover:text-foreground transition-colors">
                 Terms

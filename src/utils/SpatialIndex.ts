@@ -42,6 +42,36 @@ export class SpatialIndex {
       return Array.from(this.pixelMap.values());
    }
 
+   remove(x: number, y: number): boolean {
+      const key = `${x}-${y}`;
+      const pixel = this.pixelMap.get(key);
+
+      if (!pixel) return false;
+
+      // Remove from pixelMap
+      this.pixelMap.delete(key);
+
+      // Remove from chunks
+      const cx = Math.floor(x / CHUNK_SIZE);
+      const cy = Math.floor(y / CHUNK_SIZE);
+      const chunkKey = `${cx}-${cy}`;
+      const chunk = this.chunks.get(chunkKey);
+
+      if (chunk) {
+         const index = chunk.findIndex(p => p.x === x && p.y === y);
+         if (index !== -1) {
+            chunk.splice(index, 1);
+         }
+         // Clean up empty chunks
+         if (chunk.length === 0) {
+            this.chunks.delete(chunkKey);
+         }
+      }
+
+      return true;
+   }
+
+
    query(x: number, y: number, width: number, height: number): PurchasedPixel[] {
       const results: PurchasedPixel[] = [];
 

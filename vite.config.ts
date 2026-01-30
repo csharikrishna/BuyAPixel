@@ -64,8 +64,14 @@ export default defineConfig(({ mode }) => ({
          'react-router-dom',
          '@supabase/supabase-js',
          '@tanstack/react-query',
+         'lodash',
+         'lodash/get',
+         'lodash/set',
+         'lodash/debounce',
+         'lodash/throttle',
+         'lodash/isNaN',
       ],
       // Exclude large optional deps from pre-bundling
-      exclude: ['recharts'],
+      exclude: [],
    },
 }));

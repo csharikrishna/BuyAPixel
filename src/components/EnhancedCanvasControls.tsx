@@ -12,7 +12,6 @@ import {
   Grid3X3,
   Eye,
   EyeOff,
-  MoreVertical,
   Minus,
   Plus
 } from "lucide-react";
@@ -22,14 +21,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+
 
 interface EnhancedCanvasControlsProps {
   zoom: number;
@@ -164,26 +156,20 @@ export const EnhancedCanvasControls = ({
         <Separator className="w-6 opacity-50" />
 
         {/* More / Reset */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-muted">
-              <MoreVertical className="h-4 w-4" />
+        {/* Reset View Button */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onResetView}
+              className="h-8 w-8 hover:bg-muted text-muted-foreground hover:text-foreground"
+            >
+              <RotateCcw className="h-4 w-4" />
             </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent side="right" align="start" className="w-48 ml-2">
-            <DropdownMenuLabel>Canvas Options</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={onResetView}>
-              <RotateCcw className="mr-2 h-4 w-4" />
-              Reset View
-            </DropdownMenuItem>
-            <DropdownMenuItem disabled>
-              <span className="text-xs text-muted-foreground">
-                Shortcuts: Drag to pan, Click to select
-              </span>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+          </TooltipTrigger>
+          <TooltipContent side="right">Reset View</TooltipContent>
+        </Tooltip>
 
       </Card>
     </TooltipProvider>

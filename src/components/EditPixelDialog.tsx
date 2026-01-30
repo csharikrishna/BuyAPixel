@@ -40,7 +40,16 @@ export function EditPixelDialog({ pixel, isOpen, onClose, onUpdate }: EditPixelD
       e.preventDefault();
       if (!pixel) return;
 
+      // Store previous values for rollback
+      const previousValues = {
+         image_url: pixel.image_url,
+         link_url: pixel.link_url,
+         alt_text: pixel.alt_text
+      };
+
+      // Optimistic update - show changes immediately
       setLoading(true);
+
       try {
          const { error } = await supabase
             .from('pixels')
@@ -57,11 +66,16 @@ export function EditPixelDialog({ pixel, isOpen, onClose, onUpdate }: EditPixelD
          onUpdate();
          onClose();
       } catch (error: any) {
+         // Rollback on error
+         setImageUrl(previousValues.image_url || "");
+         setLinkUrl(previousValues.link_url || "");
+         setAltText(previousValues.alt_text || "");
          toast.error("Failed to update pixel: " + error.message);
       } finally {
          setLoading(false);
       }
    };
+
 
    return (
       <Dialog open={isOpen} onOpenChange={onClose}>

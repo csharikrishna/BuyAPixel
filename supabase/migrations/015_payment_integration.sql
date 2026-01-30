@@ -78,12 +78,12 @@ ALTER TABLE public.payment_orders ENABLE ROW LEVEL SECURITY;
 -- Users can view their own payment orders
 CREATE POLICY "payment_orders_select_own" ON public.payment_orders
   FOR SELECT TO authenticated
-  USING (user_id = auth.uid());
+  USING (user_id = (select auth.uid()));
 
 -- Users can insert their own payment orders (via edge function)
 CREATE POLICY "payment_orders_insert_own" ON public.payment_orders
   FOR INSERT TO authenticated
-  WITH CHECK (user_id = auth.uid());
+  WITH CHECK (user_id = (select auth.uid()));
 
 -- Only allow updates via service role (edge functions)
 -- No direct user updates to prevent manipulation

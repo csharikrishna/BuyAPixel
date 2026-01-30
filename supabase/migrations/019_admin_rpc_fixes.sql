@@ -1,6 +1,7 @@
 -- ============================================================================
--- 019: FIX ADMIN RPC FUNCTIONS
--- BuyAPixel - Fix column name mismatches and DELETE clauses
+-- 019: ADMIN RPC FIXES
+-- BuyAPixel - Consolidated fixes for admin RPC functions
+-- Includes: Marketplace analytics, Clear All Content with proper FK order
 -- ============================================================================
 
 -- ============================================================================
@@ -54,7 +55,8 @@ $$;
 
 -- ============================================================================
 -- FIX admin_clear_all_content
--- Add WHERE true clauses to DELETE statements and remove all users except super admin
+-- Comprehensive cleanup with correct FK deletion order
+-- Deletes: transactions, history, activity, achievements, moderation, content, pixels, users
 -- ============================================================================
 
 CREATE OR REPLACE FUNCTION public.admin_clear_all_content()
@@ -65,39 +67,44 @@ SET search_path = public
 AS $$
 DECLARE
   v_pixels INTEGER;
-  v_blocks INTEGER;
-  v_listings INTEGER;
-  v_announcements INTEGER;
   v_users INTEGER;
-  v_profiles INTEGER;
-  v_transactions INTEGER;
-  v_payment_orders INTEGER;
 BEGIN
   IF NOT is_current_user_super_admin() THEN
     RETURN jsonb_build_object('success', false, 'error', 'Unauthorized');
   END IF;
 
-  -- Delete marketplace transactions (with WHERE clause)
+  -- ========================================================================
+  -- PHASE 1: DELETE DEPENDENT TABLES (Prevents FK violations)
+  -- Order: Most dependent first (leaf nodes)
+  -- ========================================================================
+
+  -- 1.1 Marketplace & Transactions
   DELETE FROM public.marketplace_transactions WHERE true;
-  GET DIAGNOSTICS v_transactions = ROW_COUNT;
-
-  -- Delete marketplace listings (with WHERE clause)
-  DELETE FROM public.marketplace_listings WHERE true;
-  GET DIAGNOSTICS v_listings = ROW_COUNT;
   
-  -- Delete pixel blocks (with WHERE clause)
+  -- 1.2 Activity & History (These caused 409 errors before)
+  DELETE FROM public.pixel_history WHERE true;
+  DELETE FROM public.user_activity WHERE true;
+  DELETE FROM public.admin_audit_log WHERE true;
+
+  -- 1.3 User Engagements
+  DELETE FROM public.user_achievements WHERE true;
+  DELETE FROM public.user_notification_preferences WHERE true;
+  DELETE FROM public.contact_messages WHERE true;
+  
+  -- 1.4 Moderation
+  DELETE FROM public.moderation_queue WHERE true;
+
+  -- 1.5 Content
+  DELETE FROM public.marketplace_listings WHERE true;
   DELETE FROM public.pixel_blocks WHERE true;
-  GET DIAGNOSTICS v_blocks = ROW_COUNT;
-
-  -- Delete announcements (with WHERE clause)
   DELETE FROM public.announcements WHERE true;
-  GET DIAGNOSTICS v_announcements = ROW_COUNT;
+  DELETE FROM public.blog_posts WHERE true; -- Cascades to blog_post_categories
 
-  -- Delete payment orders (with WHERE clause)
-  DELETE FROM public.payment_orders WHERE true;
-  GET DIAGNOSTICS v_payment_orders = ROW_COUNT;
+  -- ========================================================================
+  -- PHASE 2: BREAK CYCLES (Pixels <-> Payment Orders)
+  -- ========================================================================
 
-  -- Reset all pixels
+  -- 2.1 Reset Pixels (Removes references to Owners and Payment Orders)
   UPDATE public.pixels SET
     owner_id = NULL,
     block_id = NULL,
@@ -112,33 +119,40 @@ BEGIN
     last_sale_date = NULL,
     view_count = 0,
     is_active = true
-  WHERE owner_id IS NOT NULL;
+  WHERE owner_id IS NOT NULL OR payment_order_id IS NOT NULL;
+  
   GET DIAGNOSTICS v_pixels = ROW_COUNT;
 
-  -- Delete user statuses (except super admin)
+  -- 2.2 Payment Orders (Now safe to delete)
+  DELETE FROM public.payment_orders WHERE true;
+
+  -- ========================================================================
+  -- PHASE 3: USERS & PROFILES (Except Super Admin)
+  -- ========================================================================
+
+  -- 3.1 User Status
   DELETE FROM public.user_status 
   WHERE user_id != (SELECT id FROM auth.users WHERE email = 'notbot4444@gmail.com');
 
-  -- Delete profiles (except super admin) - this sets up for user deletion
+  -- 3.2 Profiles
   DELETE FROM public.profiles 
   WHERE user_id != (SELECT id FROM auth.users WHERE email = 'notbot4444@gmail.com');
-  GET DIAGNOSTICS v_profiles = ROW_COUNT;
 
-  -- Delete all users except super admin from auth.users
+  -- 3.3 Auth Users
   DELETE FROM auth.users 
   WHERE email != 'notbot4444@gmail.com';
+  
   GET DIAGNOSTICS v_users = ROW_COUNT;
 
+  -- ========================================================================
+  -- RETURN SUMMARY
+  -- ========================================================================
+  
   RETURN jsonb_build_object(
     'success', true,
     'pixels_reset', v_pixels,
-    'blocks_deleted', v_blocks,
-    'listings_deleted', v_listings,
-    'announcements_deleted', v_announcements,
-    'transactions_deleted', v_transactions,
-    'payment_orders_deleted', v_payment_orders,
     'users_deleted', v_users,
-    'profiles_deleted', v_profiles
+    'message', 'All content cleared successfully.'
   );
 END;
 $$;

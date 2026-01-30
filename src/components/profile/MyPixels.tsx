@@ -112,7 +112,7 @@ export const MyPixels = memo(({
    }, [userPixels]);
 
    return (
-      <div className="lg:col-span-2 space-y-6">
+      <div className="space-y-6">
          {/* Stats Overview */}
          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Card className="bg-gradient-to-br from-purple-500 to-blue-600 text-white border-0 shadow-lg group hover:scale-[1.02] transition-transform duration-300">
@@ -126,7 +126,7 @@ export const MyPixels = memo(({
                </CardContent>
             </Card>
 
-            <Card className="bg-white dark:bg-gray-900 border-purple-500/10 shadow-lg group hover:scale-[1.02] transition-transform duration-300 backdrop-blur-xl bg-white/60 dark:bg-gray-900/60">
+            <Card className="bg-white dark:bg-gray-900 border-purple-200 dark:border-purple-500/20 shadow-lg group hover:scale-[1.02] transition-transform duration-300">
                <CardContent className="p-6">
                   <div className="flex items-center justify-between mb-2">
                      <p className="text-muted-foreground">Total Pixels</p>
@@ -141,7 +141,7 @@ export const MyPixels = memo(({
          </div>
 
          {/* Pixels List */}
-         <Card className="shadow-xl backdrop-blur-xl bg-white/80 dark:bg-gray-900/80 border-purple-500/10">
+         <Card className="shadow-xl bg-white dark:bg-gray-900 border-purple-200 dark:border-purple-500/20">
             <CardHeader className="flex flex-row items-center justify-between">
                <div>
                   <CardTitle>My Pixels</CardTitle>
@@ -225,7 +225,7 @@ export const MyPixels = memo(({
                                        {isBlock ? (
                                           <>
                                              <span>Block ({summary?.pixelCount} pixels)</span>
-                                             <Badge variant="secondary" className="text-[10px] h-5 px-1.5 bg-blue-50 text-blue-700 border-blue-200">
+                                             <Badge variant="secondary" className="text-[10px] h-5 px-1.5 bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-900/50 dark:text-blue-300 dark:border-blue-700">
                                                 Merged
                                              </Badge>
                                           </>
@@ -257,11 +257,11 @@ export const MyPixels = memo(({
                                     <Badge variant="outline" className="text-xs font-normal">
                                        Purchased {formatRelativeDate(isBlock ? summary!.purchasedAt : pixel.purchased_at)}
                                     </Badge>
-                                    <Badge variant="outline" className="text-xs font-normal bg-green-50 text-green-700 border-green-200">
+                                    <Badge variant="outline" className="text-xs font-normal bg-green-100 text-green-700 border-green-300 dark:bg-green-900/50 dark:text-green-300 dark:border-green-700">
                                        ${isBlock ? summary!.totalPrice.toFixed(2) : pixel.price_paid}
                                     </Badge>
                                     {(pixel.times_resold || 0) > 0 && (
-                                       <Badge variant="outline" className="text-xs font-normal bg-orange-50 text-orange-700 border-orange-200">
+                                       <Badge variant="outline" className="text-xs font-normal bg-orange-100 text-orange-700 border-orange-300 dark:bg-orange-900/50 dark:text-orange-300 dark:border-orange-700">
                                           Resold {pixel.times_resold}x
                                        </Badge>
                                     )}
@@ -311,3 +311,5 @@ export const MyPixels = memo(({
       </div>
    );
 });
+
+MyPixels.displayName = 'MyPixels';

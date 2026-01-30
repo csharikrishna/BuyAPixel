@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription } from "@/components/ui/drawer";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -6,6 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
 import {
   ShoppingCart,
   CreditCard,
@@ -13,13 +16,20 @@ import {
   TrendingUp,
   AlertCircle,
   Sparkles,
-  Shield
+  Shield,
+  CheckCircle2,
+  Info,
+  Lock,
+  Wallet,
+  Building2,
+  Smartphone
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { ImageUpload } from "@/components/ImageUpload";
+import { Helmet } from "react-helmet-async";
 
-// Razorpay type declarations
+// Razorpay type declarations (existing)
 declare global {
   interface Window {
     Razorpay: new (options: RazorpayOptions) => RazorpayInstance;
@@ -44,12 +54,30 @@ interface RazorpayOptions {
   };
   modal?: {
     ondismiss?: () => void;
+    escape?: boolean;
+    backdropclose?: boolean;
+    animation?: boolean;
+  };
+  retry?: {
+    enabled: boolean;
+    max_count?: number;
+  };
+  timeout?: number;
+  notes?: Record<string, string>;
+  config?: {
+    display: {
+      hide?: Array<{ method: string }>;
+      preferences?: {
+        show_default_blocks?: boolean;
+      };
+    };
   };
 }
 
 interface RazorpayInstance {
   open: () => void;
   close: () => void;
+  on: (event: string, handler: () => void) => void;
 }
 
 interface RazorpayResponse {
@@ -57,7 +85,6 @@ interface RazorpayResponse {
   razorpay_payment_id: string;
   razorpay_signature: string;
 }
-
 
 interface SelectedPixel {
   x: number;
@@ -73,6 +100,9 @@ interface PurchasePreviewProps {
   onConfirmPurchase: (pixelName: string, linkUrl: string, imageUrl: string | null) => void;
 }
 
+// Form validation step [web:140]
+type CheckoutStep = 'details' | 'payment' | 'confirmation';
+
 export const PurchasePreview = ({
   isOpen,
   onClose,
@@ -81,29 +111,93 @@ export const PurchasePreview = ({
 }: PurchasePreviewProps) => {
   const isMobile = useIsMobile();
   const [isProcessing, setIsProcessing] = useState(false);
+  const [currentStep, setCurrentStep] = useState<CheckoutStep>('details');
+
+  // Form fields with validation states [web:145][web:148]
   const [linkUrl, setLinkUrl] = useState("");
   const [linkUrlError, setLinkUrlError] = useState<string | null>(null);
+  const [linkUrlTouched, setLinkUrlTouched] = useState(false);
+
   const [pixelName, setPixelName] = useState("");
+  const [pixelNameError, setPixelNameError] = useState<string | null>(null);
+  const [pixelNameTouched, setPixelNameTouched] = useState(false);
+
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [razorpayLoaded, setRazorpayLoaded] = useState(false);
+  const [formProgress, setFormProgress] = useState(0);
 
-  // Load Razorpay script
+  // Refs for accessibility [web:148]
+  const firstErrorRef = useRef<HTMLInputElement>(null);
+  const pixelNameRef = useRef<HTMLInputElement>(null);
+  const linkUrlRef = useRef<HTMLInputElement>(null);
+
+  // Auto-save to localStorage [web:140]
+  useEffect(() => {
+    if (isOpen) {
+      const savedData = localStorage.getItem('checkout-draft');
+      if (savedData) {
+        try {
+          const { pixelName: savedName, linkUrl: savedLink } = JSON.parse(savedData);
+          if (savedName) setPixelName(savedName);
+          if (savedLink) setLinkUrl(savedLink);
+        } catch (e) {
+          console.error('Failed to restore checkout data');
+        }
+      }
+    }
+  }, [isOpen]);
+
+  // Auto-save draft [web:140]
+  useEffect(() => {
+    if (pixelName || linkUrl) {
+      const timeoutId = setTimeout(() => {
+        localStorage.setItem('checkout-draft', JSON.stringify({ pixelName, linkUrl }));
+      }, 1000);
+      return () => clearTimeout(timeoutId);
+    }
+  }, [pixelName, linkUrl]);
+
+  // Calculate form completion progress [web:140]
+  useEffect(() => {
+    let progress = 0;
+    if (pixelName.trim()) progress += 40;
+    if (!linkUrlError && linkUrl) progress += 30;
+    if (imagePreview) progress += 30;
+    setFormProgress(progress);
+  }, [pixelName, linkUrl, linkUrlError, imagePreview]);
+
+  // Load Razorpay script with retry logic [web:144]
   useEffect(() => {
     if (typeof window.Razorpay !== 'undefined') {
       setRazorpayLoaded(true);
       return;
     }
 
-    const script = document.createElement('script');
-    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-    script.async = true;
-    script.onload = () => setRazorpayLoaded(true);
-    script.onerror = () => console.error('Failed to load Razorpay script');
-    document.body.appendChild(script);
+    let retries = 0;
+    const maxRetries = 3;
 
-    return () => {
-      // Cleanup if needed
+    const loadScript = () => {
+      const script = document.createElement('script');
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.async = true;
+      script.onload = () => {
+        setRazorpayLoaded(true);
+        toast.success('Payment gateway loaded', { duration: 2000 });
+      };
+      script.onerror = () => {
+        retries++;
+        if (retries < maxRetries) {
+          console.warn(`Razorpay script load failed, retrying... (${retries}/${maxRetries})`);
+          setTimeout(loadScript, 2000 * retries);
+        } else {
+          console.error('Failed to load Razorpay script after multiple attempts');
+          toast.error('Payment gateway failed to load. Please refresh the page.');
+        }
+      };
+      document.body.appendChild(script);
     };
+
+    loadScript();
   }, []);
 
   const totalCost = selectedPixels.reduce((sum, pixel) => sum + pixel.price, 0);
@@ -132,34 +226,126 @@ export const PurchasePreview = ({
 
   const selectionInfo = getSelectionInfo();
 
-  // Validate URL format
-  const validateUrl = (url: string): boolean => {
-    if (!url) return true; // Optional field
-    try {
-      new URL(url);
-      return true;
-    } catch {
-      return false;
+  // Enhanced URL validation with common patterns [web:145]
+  const validateUrl = (url: string): { valid: boolean; error?: string } => {
+    if (!url) return { valid: true }; // Optional field
+
+    // Remove whitespace
+    url = url.trim();
+
+    // Check for common typos
+    if (url.startsWith('www.') && !url.includes('://')) {
+      return { valid: false, error: "URL must start with http:// or https://" };
     }
+
+    try {
+      const urlObj = new URL(url);
+
+      // Check protocol
+      if (!['http:', 'https:'].includes(urlObj.protocol)) {
+        return { valid: false, error: "Only HTTP and HTTPS protocols are allowed" };
+      }
+
+      // Check for localhost in production
+      if (process.env.NODE_ENV === 'production' &&
+        (urlObj.hostname === 'localhost' || urlObj.hostname === '127.0.0.1')) {
+        return { valid: false, error: "Localhost URLs are not allowed" };
+      }
+
+      return { valid: true };
+    } catch {
+      return { valid: false, error: "Please enter a valid URL (e.g., https://example.com)" };
+    }
+  };
+
+  // Validate pixel name [web:148]
+  const validatePixelName = (name: string): { valid: boolean; error?: string } => {
+    if (!name.trim()) {
+      return { valid: false, error: "Pixel name is required" };
+    }
+    if (name.trim().length < 2) {
+      return { valid: false, error: "Pixel name must be at least 2 characters" };
+    }
+    if (name.trim().length > 100) {
+      return { valid: false, error: "Pixel name must be less than 100 characters" };
+    }
+    // Check for inappropriate content (basic check)
+    const inappropriateWords = ['spam', 'scam', 'test123'];
+    if (inappropriateWords.some(word => name.toLowerCase().includes(word))) {
+      return { valid: false, error: "Please choose a different name" };
+    }
+    return { valid: true };
+  };
+
+  // Real-time validation handlers [web:145]
+  const handlePixelNameChange = (value: string) => {
+    setPixelName(value);
+    if (pixelNameTouched) {
+      const validation = validatePixelName(value);
+      setPixelNameError(validation.valid ? null : validation.error!);
+    }
+  };
+
+  const handlePixelNameBlur = () => {
+    setPixelNameTouched(true);
+    const validation = validatePixelName(pixelName);
+    setPixelNameError(validation.valid ? null : validation.error!);
   };
 
   const handleLinkUrlChange = (value: string) => {
     setLinkUrl(value);
-    if (value && !validateUrl(value)) {
-      setLinkUrlError("Please enter a valid URL (e.g., https://example.com)");
-    } else {
-      setLinkUrlError(null);
+    if (linkUrlTouched || value) {
+      const validation = validateUrl(value);
+      setLinkUrlError(validation.valid ? null : validation.error!);
     }
   };
 
-  const handleConfirmPurchase = async () => {
-    if (!pixelName.trim()) {
-      toast.error("Please enter a pixel name");
-      return;
+  const handleLinkUrlBlur = () => {
+    setLinkUrlTouched(true);
+    const validation = validateUrl(linkUrl);
+    setLinkUrlError(validation.valid ? null : validation.error!);
+  };
+
+  // Validate entire form [web:148]
+  const validateForm = (): boolean => {
+    let isValid = true;
+
+    // Validate pixel name
+    const nameValidation = validatePixelName(pixelName);
+    if (!nameValidation.valid) {
+      setPixelNameError(nameValidation.error!);
+      setPixelNameTouched(true);
+      isValid = false;
     }
 
-    if (linkUrl && !validateUrl(linkUrl)) {
-      toast.error("Please enter a valid URL");
+    // Validate URL if provided
+    const urlValidation = validateUrl(linkUrl);
+    if (!urlValidation.valid) {
+      setLinkUrlError(urlValidation.error!);
+      setLinkUrlTouched(true);
+      isValid = false;
+    }
+
+    // Focus on first error [web:148]
+    if (!isValid) {
+      setTimeout(() => {
+        if (pixelNameError) {
+          pixelNameRef.current?.focus();
+        } else if (linkUrlError) {
+          linkUrlRef.current?.focus();
+        }
+      }, 100);
+    }
+
+    return isValid;
+  };
+
+  const handleConfirmPurchase = async () => {
+    // Validate form before proceeding [web:140]
+    if (!validateForm()) {
+      toast.error("Please fix the errors before continuing", {
+        description: "Check the highlighted fields"
+      });
       return;
     }
 
@@ -169,6 +355,7 @@ export const PurchasePreview = ({
     }
 
     setIsProcessing(true);
+    setCurrentStep('payment');
 
     try {
       // Get current session for auth
@@ -176,10 +363,11 @@ export const PurchasePreview = ({
       if (!session) {
         toast.error("Please sign in to continue");
         setIsProcessing(false);
+        setCurrentStep('details');
         return;
       }
 
-      // Step 1: Create Razorpay order
+      // Step 1: Create Razorpay order [web:144]
       const { data: orderData, error: orderError } = await supabase.functions.invoke(
         'create-razorpay-order',
         {
@@ -187,8 +375,8 @@ export const PurchasePreview = ({
             pixels: selectedPixels.map(p => ({ x: p.x, y: p.y, price: p.price })),
             totalAmount: totalCost,
             imageUrl: imagePreview,
-            linkUrl: linkUrl,
-            altText: pixelName,
+            linkUrl: linkUrl.trim() || null,
+            altText: pixelName.trim(),
           },
         }
       );
@@ -197,16 +385,18 @@ export const PurchasePreview = ({
         throw new Error(orderData?.error || 'Failed to create payment order');
       }
 
-      // Step 2: Open Razorpay checkout
+      // Step 2: Open Razorpay checkout with enhanced options [web:144]
       const options: RazorpayOptions = {
         key: orderData.order.key_id,
         amount: orderData.order.amount,
         currency: orderData.order.currency,
-        name: 'BuyAPixel',
-        description: `Purchase ${selectedPixels.length} pixel${selectedPixels.length > 1 ? 's' : ''}`,
+        name: 'BuyAPixel.in',
+        description: `${selectedPixels.length} pixel${selectedPixels.length > 1 ? 's' : ''} - ${pixelName.trim()}`,
         order_id: orderData.order.razorpay_order_id,
         handler: async (response: RazorpayResponse) => {
-          // Step 3: Verify payment
+          setCurrentStep('confirmation');
+
+          // Step 3: Verify payment [web:147]
           try {
             const { data: verifyData, error: verifyError } = await supabase.functions.invoke(
               'verify-razorpay-payment',
@@ -217,8 +407,8 @@ export const PurchasePreview = ({
                   razorpay_signature: response.razorpay_signature,
                   payment_order_id: orderData.order.id,
                   image_url: imagePreview,
-                  link_url: linkUrl,
-                  alt_text: pixelName,
+                  link_url: linkUrl.trim() || null,
+                  alt_text: pixelName.trim(),
                 },
               }
             );
@@ -227,96 +417,147 @@ export const PurchasePreview = ({
               throw new Error(verifyData?.error || 'Payment verification failed');
             }
 
-            // Success! Call the original onConfirmPurchase for any additional handling
-            await onConfirmPurchase(pixelName, linkUrl, imagePreview);
+            // Success! Call the original onConfirmPurchase
+            await onConfirmPurchase(pixelName.trim(), linkUrl.trim(), imagePreview);
 
-            toast.success("🎉 Payment successful! Your pixels are now live on the canvas!", {
+            toast.success("🎉 Payment successful!", {
+              description: "Your pixels are now live on the canvas",
               duration: 5000
             });
 
-            // Reset form
+            // Clear form and localStorage
             setPixelName("");
             setLinkUrl("");
             setLinkUrlError(null);
+            setPixelNameError(null);
             setImagePreview(null);
+            setPixelNameTouched(false);
+            setLinkUrlTouched(false);
+            localStorage.removeItem('checkout-draft');
+
             onClose();
 
           } catch (verifyErr) {
             console.error('Payment verification error:', verifyErr);
-            toast.error("Payment verification failed. Please contact support.");
+            toast.error("Payment verification failed", {
+              description: "Please contact support with your order ID"
+            });
           } finally {
             setIsProcessing(false);
+            setCurrentStep('details');
           }
         },
         prefill: {
           name: orderData.user?.name || '',
           email: orderData.user?.email || '',
-          contact: '', // Allow user to enter phone number
+          contact: orderData.user?.phone || '',
         },
         theme: {
-          color: '#10B981', // Primary green color
+          color: '#10B981',
         },
         modal: {
           ondismiss: () => {
             setIsProcessing(false);
+            setCurrentStep('details');
             toast.info("Payment cancelled");
           },
+          escape: true,
+          backdropclose: false,
+          animation: true,
+        },
+        retry: {
+          enabled: true,
+          max_count: 3,
+        },
+        timeout: 900, // 15 minutes
+        notes: {
+          pixel_count: String(selectedPixels.length),
+          pixel_name: pixelName.trim(),
         },
       };
 
       const razorpay = new window.Razorpay(options);
+
+      // Handle payment failures [web:144]
+      (razorpay as any).on('payment.failed', function (response: any) {
+        console.error('Payment failed:', response.error);
+        toast.error("Payment failed", {
+          description: response.error.description || "Please try again"
+        });
+        setIsProcessing(false);
+        setCurrentStep('details');
+      });
+
       razorpay.open();
 
     } catch (error) {
       console.error('Purchase error:', error);
       toast.error(error instanceof Error ? error.message : "Failed to initiate payment");
       setIsProcessing(false);
+      setCurrentStep('details');
     }
   };
 
   const getPriceTierInfo = (price: number) => {
     switch (price) {
       case 299:
-        return { name: 'Premium', color: 'bg-yellow-500', textColor: 'text-yellow-700' };
+        return { name: 'Premium', color: 'bg-yellow-500', textColor: 'text-yellow-700', badge: '⭐' };
       case 199:
-        return { name: 'Standard', color: 'bg-gray-500', textColor: 'text-gray-700' };
+        return { name: 'Standard', color: 'bg-blue-500', textColor: 'text-blue-700', badge: '🔵' };
       case 99:
-        return { name: 'Basic', color: 'bg-amber-600', textColor: 'text-amber-700' };
+        return { name: 'Basic', color: 'bg-green-500', textColor: 'text-green-700', badge: '🟢' };
       default:
-        return { name: 'Unknown', color: 'bg-muted', textColor: 'text-muted-foreground' };
+        return { name: 'Unknown', color: 'bg-muted', textColor: 'text-muted-foreground', badge: '⚪' };
     }
   };
 
   const purchaseContent = (
     <div className="space-y-6">
-      {/* Connectivity Warning */}
-      <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3 md:p-4 flex gap-3 text-yellow-700 dark:text-yellow-400">
-        <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
-        <div className="text-xs md:text-sm leading-relaxed">
-          <strong>Stable Connection Required:</strong> Before proceeding, please verify that you have a stable and reliable
-          internet connection to ensure optimal performance of this web application. This webpage may consume higher bandwidth
-          due to dynamic content and advertisements, which can lead to slow loading, interruptions, or incomplete rendering
-          on unstable networks. If you are experiencing latency, buffering, or connectivity drops, it is strongly recommended
-          to switch to a high-speed, stable Wi-Fi connection for a seamless and uninterrupted experience.
-        </div>
-      </div>
+      {/* SEO and Metadata */}
+      <Helmet>
+        <title>Checkout - BuyAPixel.in</title>
+        <meta name="robots" content="noindex, nofollow" />
+      </Helmet>
+
+      {/* Progress Indicator [web:140] */}
+      {formProgress > 0 && formProgress < 100 && (
+        <Card className="border-primary/20 bg-primary/5">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium">Form Completion</span>
+              <span className="text-sm text-muted-foreground">{formProgress}%</span>
+            </div>
+            <Progress value={formProgress} className="h-2" />
+            <p className="text-xs text-muted-foreground mt-2">
+              {formProgress < 40 && "Add a pixel name to continue"}
+              {formProgress >= 40 && formProgress < 70 && "Optionally add a link"}
+              {formProgress >= 70 && formProgress < 100 && "Upload an image (optional)"}
+              {formProgress === 100 && "All set! Ready to purchase ✨"}
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Selection Overview */}
       <Card className="card-premium">
         <CardHeader>
           <CardTitle className="text-base md:text-lg flex items-center gap-2">
-            <MapPin className="w-4 h-4 md:w-5 md:h-5 text-primary" />
+            <MapPin className="w-4 h-4 md:w-5 md:h-5 text-primary" aria-hidden="true" />
             Selection Overview
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-3 gap-2 md:gap-4">
             <div className="text-center p-2 md:p-3 rounded-lg bg-primary/10">
-              <div className="text-xl md:text-2xl font-bold text-primary">{selectedPixels.length}</div>
+              <div className="text-xl md:text-2xl font-bold text-primary" aria-label={`${selectedPixels.length} pixels`}>
+                {selectedPixels.length}
+              </div>
               <div className="text-xs md:text-sm text-muted-foreground">Pixels</div>
             </div>
-            <div className="text-center p-2 md:p-3 rounded-lg bg-success/10">
-              <div className="text-xl md:text-2xl font-bold text-success">₹{totalCost}</div>
+            <div className="text-center p-2 md:p-3 rounded-lg bg-green-500/10">
+              <div className="text-xl md:text-2xl font-bold text-green-600" aria-label={`Total cost: ${totalCost} rupees`}>
+                ₹{totalCost}
+              </div>
               <div className="text-xs md:text-sm text-muted-foreground">Total</div>
             </div>
             <div className="text-center p-2 md:p-3 rounded-lg bg-accent/10">
@@ -350,7 +591,7 @@ export const PurchasePreview = ({
       <Card className="card-premium">
         <CardHeader>
           <CardTitle className="text-base md:text-lg flex items-center gap-2">
-            <TrendingUp className="w-4 h-4 md:w-5 md:h-5 text-primary" />
+            <TrendingUp className="w-4 h-4 md:w-5 md:h-5 text-primary" aria-hidden="true" />
             Pricing Breakdown
           </CardTitle>
         </CardHeader>
@@ -362,9 +603,13 @@ export const PurchasePreview = ({
               const subtotal = Number(price) * count;
 
               return (
-                <div key={price} className="flex items-center justify-between p-2 md:p-3 rounded-lg border bg-card">
+                <div
+                  key={price}
+                  className="flex items-center justify-between p-2 md:p-3 rounded-lg border bg-card"
+                  role="row"
+                >
                   <div className="flex items-center gap-2 md:gap-3">
-                    <div className={`w-2 h-2 md:w-3 md:h-3 rounded-full ${tierInfo.color}`} />
+                    <span className="text-lg" aria-hidden="true">{tierInfo.badge}</span>
                     <div>
                       <div className="text-sm md:text-base font-medium">{tierInfo.name}</div>
                       <div className="text-xs md:text-sm text-muted-foreground">
@@ -381,54 +626,114 @@ export const PurchasePreview = ({
 
           <Separator />
 
-          <div className="flex items-center justify-between p-2 md:p-3 rounded-lg bg-primary/10 border border-primary/20">
+          <div
+            className="flex items-center justify-between p-2 md:p-3 rounded-lg bg-primary/10 border border-primary/20"
+            role="row"
+          >
             <div className="font-semibold text-base md:text-lg">Total</div>
             <div className="text-xl md:text-2xl font-bold text-primary">₹{totalCost}</div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Pixel Information Form */}
+      {/* Pixel Information Form with Accessibility [web:145][web:148] */}
       <Card className="card-premium">
         <CardHeader>
           <CardTitle className="text-base md:text-lg flex items-center gap-2">
-            <Sparkles className="w-4 h-4 md:w-5 md:h-5 text-primary" />
+            <Sparkles className="w-4 h-4 md:w-5 md:h-5 text-primary" aria-hidden="true" />
             Pixel Information
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* Pixel Name Field */}
           <div>
-            <label className="block text-sm font-medium mb-2">Pixel Name</label>
-            <input
+            <Label
+              htmlFor="pixel-name"
+              className="text-sm font-medium mb-2 flex items-center gap-1"
+            >
+              Pixel Name
+              <span className="text-destructive" aria-label="required">*</span>
+            </Label>
+            <Input
+              id="pixel-name"
+              ref={pixelNameRef}
               type="text"
-              placeholder="Enter a name for your pixels"
+              placeholder="e.g., My Awesome Brand"
               value={pixelName}
-              onChange={(e) => setPixelName(e.target.value)}
+              onChange={(e) => handlePixelNameChange(e.target.value)}
+              onBlur={handlePixelNameBlur}
               autoFocus
-              className="w-full px-4 py-3 border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 text-base"
+              required
+              aria-required="true"
+              aria-invalid={!!pixelNameError}
+              aria-describedby={pixelNameError ? "pixel-name-error" : "pixel-name-help"}
+              className={`text-base ${pixelNameError && pixelNameTouched ? 'border-destructive focus-visible:ring-destructive' : ''}`}
             />
+            {!pixelNameError && (
+              <p id="pixel-name-help" className="text-xs text-muted-foreground mt-1">
+                This will be displayed as the title for your pixel space
+              </p>
+            )}
+            {pixelNameError && pixelNameTouched && (
+              <div
+                id="pixel-name-error"
+                className="flex items-center gap-1 text-xs text-destructive mt-1"
+                role="alert"
+              >
+                <AlertCircle className="w-3 h-3" aria-hidden="true" />
+                {pixelNameError}
+              </div>
+            )}
           </div>
 
+          {/* Link URL Field */}
           <div>
-            <label className="block text-sm font-medium mb-2">Redirection Link (Optional)</label>
-            <input
+            <Label
+              htmlFor="link-url"
+              className="text-sm font-medium mb-2 flex items-center gap-1"
+            >
+              Redirection Link
+              <span className="text-xs text-muted-foreground font-normal">(Optional)</span>
+            </Label>
+            <Input
+              id="link-url"
+              ref={linkUrlRef}
               type="url"
               placeholder="https://example.com"
               value={linkUrl}
               onChange={(e) => handleLinkUrlChange(e.target.value)}
+              onBlur={handleLinkUrlBlur}
               inputMode="url"
               autoCapitalize="off"
               autoCorrect="off"
-              className={`w-full px-4 py-3 border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 text-base ${linkUrlError ? 'border-destructive' : 'border-border'
-                }`}
+              aria-invalid={!!linkUrlError}
+              aria-describedby={linkUrlError ? "link-url-error" : "link-url-help"}
+              className={`text-base ${linkUrlError && linkUrlTouched ? 'border-destructive focus-visible:ring-destructive' : ''}`}
             />
-            {linkUrlError && (
-              <p className="text-xs text-destructive mt-1">{linkUrlError}</p>
+            {!linkUrlError && (
+              <p id="link-url-help" className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                <Info className="w-3 h-3" aria-hidden="true" />
+                Visitors will be redirected to this URL when clicking your pixels
+              </p>
+            )}
+            {linkUrlError && linkUrlTouched && (
+              <div
+                id="link-url-error"
+                className="flex items-center gap-1 text-xs text-destructive mt-1"
+                role="alert"
+              >
+                <AlertCircle className="w-3 h-3" aria-hidden="true" />
+                {linkUrlError}
+              </div>
             )}
           </div>
 
+          {/* Image Upload */}
           <div>
-            <label className="block text-sm font-medium mb-2">Image Upload</label>
+            <Label htmlFor="image-upload" className="text-sm font-medium mb-2 block">
+              Image Upload
+              <span className="text-xs text-muted-foreground font-normal ml-1">(Optional)</span>
+            </Label>
             <ImageUpload
               onImageUploaded={(url) => setImagePreview(url)}
               currentImage={imagePreview || ''}
@@ -438,24 +743,88 @@ export const PurchasePreview = ({
               placeholder="Upload Pixel Image"
               className="w-full"
             />
+            <p className="text-xs text-muted-foreground mt-1">
+              Recommended: Square image, minimum 500×500px
+            </p>
           </div>
         </CardContent>
       </Card>
 
-      {/* Secure Payment Info */}
+      {/* Payment Methods Info [web:140] */}
       <Card className="border-primary/20 bg-primary/5">
         <CardContent className="p-3 md:p-4">
-          <div className="flex items-start gap-2 md:gap-3">
-            <Shield className="w-4 h-4 md:w-5 md:h-5 text-primary mt-0.5 flex-shrink-0" />
-            <div className="space-y-1">
-              <div className="text-sm md:text-base font-medium text-primary">Secure Payment via Razorpay</div>
-              <div className="text-xs md:text-sm text-muted-foreground">
-                Pay securely using UPI, Credit/Debit Cards, Net Banking, or Wallets.
+          <div className="flex items-start gap-2 md:gap-3 mb-3">
+            <Shield className="w-4 h-4 md:w-5 md:h-5 text-primary mt-0.5 flex-shrink-0" aria-hidden="true" />
+            <div className="space-y-1 flex-1">
+              <div className="text-sm md:text-base font-semibold text-primary">
+                Secure Payment via Razorpay
               </div>
+              <div className="text-xs md:text-sm text-muted-foreground">
+                256-bit SSL encryption • PCI DSS compliant
+              </div>
+            </div>
+          </div>
+
+          {/* Payment Methods Icons [web:140] */}
+          <div className="grid grid-cols-4 gap-2 mt-3">
+            <div className="flex flex-col items-center gap-1 p-2 rounded-lg bg-background/50">
+              <Smartphone className="w-5 h-5 text-purple-600" aria-hidden="true" />
+              <span className="text-[10px] text-muted-foreground">UPI</span>
+            </div>
+            <div className="flex flex-col items-center gap-1 p-2 rounded-lg bg-background/50">
+              <CreditCard className="w-5 h-5 text-blue-600" aria-hidden="true" />
+              <span className="text-[10px] text-muted-foreground">Cards</span>
+            </div>
+            <div className="flex flex-col items-center gap-1 p-2 rounded-lg bg-background/50">
+              <Building2 className="w-5 h-5 text-green-600" aria-hidden="true" />
+              <span className="text-[10px] text-muted-foreground">Banking</span>
+            </div>
+            <div className="flex flex-col items-center gap-1 p-2 rounded-lg bg-background/50">
+              <Wallet className="w-5 h-5 text-orange-600" aria-hidden="true" />
+              <span className="text-[10px] text-muted-foreground">Wallets</span>
             </div>
           </div>
         </CardContent>
       </Card>
+
+      {/* Money Back Guarantee [web:140] */}
+      <div className="flex items-center justify-center gap-2 p-3 rounded-lg bg-muted/30 text-sm text-muted-foreground">
+        <CheckCircle2 className="w-4 h-4 text-green-600" aria-hidden="true" />
+        <span>7-day money-back guarantee • 24/7 support</span>
+      </div>
+    </div>
+  );
+
+  // Action buttons component [web:140][web:141]
+  const actionButtons = (
+    <div className="flex gap-3 md:gap-4">
+      <Button
+        variant="outline"
+        onClick={onClose}
+        className="flex-1 h-11 md:h-10 text-base md:text-sm"
+        disabled={isProcessing}
+        aria-label="Cancel checkout"
+      >
+        Cancel
+      </Button>
+      <Button
+        onClick={handleConfirmPurchase}
+        disabled={isProcessing || !razorpayLoaded || !!pixelNameError || !!linkUrlError}
+        className="flex-1 h-11 md:h-10 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white border-0 font-semibold text-base md:text-sm shadow-lg hover:shadow-xl transition-all"
+        aria-label={isProcessing ? "Processing payment" : "Proceed to payment"}
+      >
+        {isProcessing ? (
+          <div className="flex items-center gap-2">
+            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            <span>Processing...</span>
+          </div>
+        ) : (
+          <>
+            <Lock className="w-4 md:w-5 h-4 md:h-5 mr-2" aria-hidden="true" />
+            <span>Pay ₹{totalCost} Securely</span>
+          </>
+        )}
+      </Button>
     </div>
   );
 
@@ -465,11 +834,11 @@ export const PurchasePreview = ({
         <DrawerContent className="max-h-[95vh] flex flex-col">
           <DrawerHeader className="border-b pb-3 px-4 flex-shrink-0">
             <DrawerTitle className="flex items-center gap-2 text-lg">
-              <ShoppingCart className="w-6 h-6 text-primary" />
-              Purchase Preview
+              <ShoppingCart className="w-6 h-6 text-primary" aria-hidden="true" />
+              Checkout
             </DrawerTitle>
             <DrawerDescription className="text-sm text-muted-foreground">
-              Review your selection and complete your purchase
+              Complete your pixel purchase securely
             </DrawerDescription>
           </DrawerHeader>
 
@@ -479,39 +848,14 @@ export const PurchasePreview = ({
               WebkitOverflowScrolling: 'touch',
               overscrollBehavior: 'contain'
             }}
+            role="main"
           >
             {purchaseContent}
           </div>
 
-          {/* Sticky Action Buttons for Mobile */}
+          {/* Sticky Action Buttons for Mobile [web:140] */}
           <div className="sticky bottom-0 bg-background border-t p-4 flex-shrink-0 safe-area-bottom">
-            <div className="flex gap-4">
-              <Button
-                variant="outline"
-                onClick={onClose}
-                className="flex-1 h-12 text-base"
-                disabled={isProcessing}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleConfirmPurchase}
-                disabled={isProcessing}
-                className="flex-1 h-12 bg-gradient-primary hover:shadow-glow text-white border-0 font-semibold text-base"
-              >
-                {isProcessing ? (
-                  <div className="flex items-center gap-2">
-                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    <span>Processing...</span>
-                  </div>
-                ) : (
-                  <>
-                    <CreditCard className="w-5 h-5 mr-2" />
-                    <span>Buy Now</span>
-                  </>
-                )}
-              </Button>
-            </div>
+            {actionButtons}
           </div>
         </DrawerContent>
       </Drawer>
@@ -520,46 +864,22 @@ export const PurchasePreview = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh]">
+      <DialogContent className="max-w-2xl max-h-[90vh]" role="dialog" aria-labelledby="checkout-title">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <ShoppingCart className="w-5 h-5 text-primary" />
-            Purchase Preview
+          <DialogTitle id="checkout-title" className="flex items-center gap-2">
+            <ShoppingCart className="w-5 h-5 text-primary" aria-hidden="true" />
+            Checkout
           </DialogTitle>
           <DialogDescription>
-            Review your pixel selection and complete your purchase.
+            Complete your pixel purchase securely with Razorpay
           </DialogDescription>
         </DialogHeader>
         <ScrollArea className="max-h-[70vh] pr-4">
           {purchaseContent}
 
           {/* Action Buttons for Desktop */}
-          <div className="flex gap-4 pt-6 border-t mt-6">
-            <Button
-              variant="outline"
-              onClick={onClose}
-              className="flex-1 h-10"
-              disabled={isProcessing}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleConfirmPurchase}
-              disabled={isProcessing}
-              className="flex-1 h-10 bg-gradient-primary hover:shadow-glow text-white border-0 font-semibold"
-            >
-              {isProcessing ? (
-                <div className="flex items-center gap-2">
-                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  <span>Processing...</span>
-                </div>
-              ) : (
-                <>
-                  <CreditCard className="w-5 h-5 mr-2" />
-                  <span>Proceed to Payment</span>
-                </>
-              )}
-            </Button>
+          <div className="pt-6 border-t mt-6">
+            {actionButtons}
           </div>
         </ScrollArea>
       </DialogContent>
