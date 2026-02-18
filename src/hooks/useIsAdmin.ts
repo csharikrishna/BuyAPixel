@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 
-const SUPER_ADMIN_EMAIL = 'notbot4444@gmail.com';
+const SUPER_ADMIN_EMAIL = import.meta.env.VITE_SUPER_ADMIN_EMAIL || 'notbot4444@gmail.com';
 
 export const useIsAdmin = () => {
   const { user } = useAuth();

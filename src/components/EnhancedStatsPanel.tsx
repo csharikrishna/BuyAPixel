@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, memo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -23,7 +23,7 @@ interface EnhancedStatsPanelProps {
   selectedPixelsCount: number;
 }
 
-export const EnhancedStatsPanel = ({ selectedPixelsCount }: EnhancedStatsPanelProps) => {
+export const EnhancedStatsPanel = memo(function EnhancedStatsPanel({ selectedPixelsCount }: EnhancedStatsPanelProps) {
   const { user } = useAuth();
   const [stats, setStats] = useState({
     totalPixels: 0,
@@ -210,4 +210,4 @@ export const EnhancedStatsPanel = ({ selectedPixelsCount }: EnhancedStatsPanelPr
 
     </div>
   );
-};
+});

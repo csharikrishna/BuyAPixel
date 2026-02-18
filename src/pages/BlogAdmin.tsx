@@ -42,13 +42,14 @@ import {
 } from 'lucide-react';
 import { getErrorMessage } from '@/lib/utils';
 import DOMPurify from 'dompurify';
+import debounce from 'lodash/debounce';
 
 
 // ======================
 // TYPES & INTERFACES
 // ======================
 
-interface FormData {
+interface BlogFormData {
   title: string;
   slug: string;
   excerpt: string;
@@ -105,7 +106,7 @@ function calculateReadingTime(content: string): number {
 /**
  * Calculate SEO score
  */
-function calculateSEOScore(formData: FormData): SEOScore {
+function calculateSEOScore(formData: BlogFormData): SEOScore {
   const issues: string[] = [];
   const suggestions: string[] = [];
   let score = 100;
@@ -164,17 +165,6 @@ function calculateSEOScore(formData: FormData): SEOScore {
   return { score: Math.max(0, score), issues, suggestions };
 }
 
-/**
- * Debounce function
- */
-function debounce<T extends (...args: any[]) => any>(func: T, wait: number) {
-  let timeout: NodeJS.Timeout;
-  return function (...args: Parameters<T>) {
-    clearTimeout(timeout);
-    timeout = setTimeout(() => func(...args), wait);
-  };
-}
-
 // ======================
 // COMPONENT
 // ======================
@@ -187,7 +177,7 @@ const BlogAdmin = () => {
   // Refs
   const isMountedRef = useRef(true);
   const autoSaveTimerRef = useRef<NodeJS.Timeout>();
-  const initialFormDataRef = useRef<FormData | null>(null);
+  const initialFormDataRef = useRef<BlogFormData | null>(null);
 
   // React 19 hooks
   const [isPending, startTransition] = useTransition();
@@ -197,7 +187,7 @@ const BlogAdmin = () => {
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [showExitDialog, setShowExitDialog] = useState(false);
-  const [formData, setFormData] = useState<FormData>({
+  const [formData, setFormData] = useState<BlogFormData>({
     title: '',
     slug: '',
     excerpt: '',

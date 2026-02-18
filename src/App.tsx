@@ -131,10 +131,10 @@ const AppContent = () => {
         <Suspense fallback={<PageLoader />}>
           <Routes>
             {/* Admin Page */}
-            <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/admin" element={<ErrorBoundary pageName="Admin Dashboard"><AdminDashboard /></ErrorBoundary>} />
 
             {/* Main Pages (BuyPixels is static for fast first load) */}
-            <Route path="/" element={<BuyPixels />} />
+            <Route path="/" element={<ErrorBoundary pageName="BuyPixels"><BuyPixels /></ErrorBoundary>} />
             <Route path="/about" element={<Index />} />
             <Route path="/canvas" element={<Canvas />} />
             <Route path="/scan" element={<ScanPixel />} />
@@ -147,14 +147,14 @@ const AppContent = () => {
             <Route path="/auth/callback" element={<AuthCallback />} />
 
             {/* User Pages */}
-            <Route path="/profile" element={<Profile />} />
+            <Route path="/profile" element={<ErrorBoundary pageName="Profile"><Profile /></ErrorBoundary>} />
             <Route path="/leaderboard" element={<Leaderboard />} />
             <Route path="/marketplace" element={<MarketplacePage />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/help" element={<Help />} />
 
             {/* Blog Routes */}
-            <Route path="/blog" element={<Blog />} />
+            <Route path="/blog" element={<ErrorBoundary pageName="Blog"><Blog /></ErrorBoundary>} />
             <Route path="/blog/admin" element={<BlogAdmin />} />
             <Route path="/blog/:slug" element={<BlogPost />} />
 

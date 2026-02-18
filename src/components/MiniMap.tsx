@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState, useRef, useEffect } from "react";
+import { useCallback, useMemo, useState, useRef, useEffect, memo } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import { Navigation, Crosshair, Star } from "lucide-react";
@@ -14,7 +14,7 @@ interface MiniMapProps {
   pixelSize: number;
 }
 
-export const MiniMap = ({
+export const MiniMap = memo(function MiniMap({
   gridWidth,
   gridHeight,
   viewportOffset,
@@ -23,7 +23,7 @@ export const MiniMap = ({
   containerHeight,
   onViewportChange,
   pixelSize = 10,
-}: MiniMapProps) => {
+}: MiniMapProps) {
   const isMobile = useIsMobile();
   const mapRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -281,4 +281,4 @@ export const MiniMap = ({
       </div>
     </div>
   );
-};
+});

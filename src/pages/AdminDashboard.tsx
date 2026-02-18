@@ -1,8 +1,9 @@
-import { useState, useEffect, useMemo, useCallback, useTransition, useDeferredValue, Component, ErrorInfo, ReactNode } from 'react';
+import { useState, useEffect, useMemo, useCallback, useTransition, useDeferredValue, useRef, Component, ErrorInfo, ReactNode } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useIsAdmin } from '@/hooks/useIsAdmin';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 import Header from '@/components/Header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -240,7 +241,7 @@ const AdminDashboard = () => {
   // --- Performance & Security State ---
   const [isPending, startTransition] = useTransition();
   const deferredSearchTerm = useDeferredValue(searchTerm);
-  const [sessionTimeout, setSessionTimeout] = useState<NodeJS.Timeout | null>(null);
+  const sessionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [mfaDialog, setMfaDialog] = useState<{
     open: boolean;
     action: 'delete' | 'clearDb' | 'block';
@@ -256,17 +257,15 @@ const AdminDashboard = () => {
     const SESSION_TIMEOUT = 15 * 60 * 1000; // 15 minutes
 
     const resetTimeout = () => {
-      if (sessionTimeout) clearTimeout(sessionTimeout);
+      if (sessionTimeoutRef.current) clearTimeout(sessionTimeoutRef.current);
 
-      const timeout = setTimeout(() => {
+      sessionTimeoutRef.current = setTimeout(() => {
         toast.error('Session expired for security', {
           description: 'Please sign in again'
         });
         supabase.auth.signOut();
         navigate('/signin');
       }, SESSION_TIMEOUT);
-
-      setSessionTimeout(timeout);
     };
 
     // Reset on user activity
@@ -278,7 +277,7 @@ const AdminDashboard = () => {
     resetTimeout();
 
     return () => {
-      if (sessionTimeout) clearTimeout(sessionTimeout);
+      if (sessionTimeoutRef.current) clearTimeout(sessionTimeoutRef.current);
       activities.forEach(activity => {
         window.removeEventListener(activity, resetTimeout);
       });
@@ -307,25 +306,22 @@ const AdminDashboard = () => {
   // --- Helper: Verify MFA ---
   const verifyMFA = async (code: string): Promise<boolean> => {
     try {
-      // NOTE: This assumes a backend RPC exists. If not, this is a mock.
-      // For now, we'll allow "123456" as a dev backdoor if RPC fails, OR rigidly require the RPC.
-      // Per plan: "MFA feature relies on a verify_admin_mfa RPC function."
-      // I will try to call it, if it fails, I will simulate failure or success based on code for testing if strictly requested,
-      // but safely we should default to false unless verified.
-
-      const { data, error } = await supabase.rpc('verify_admin_mfa', {
+      const { data, error } = await supabase.rpc('verify_admin_mfa' as any, {
         code: code,
         user_id: user?.id
       });
 
       if (error) {
-        console.warn('MFA RPC failed/missing, falling back to dev mode check (remove in prod)', error);
-        // DEV ONLY:
-        return code === '123456';
+        // Only allow dev bypass in development builds — stripped from production
+        if (import.meta.env.DEV) {
+          console.warn('[DEV] MFA RPC unavailable, using dev bypass', error);
+          return code === '123456';
+        }
+        return false;
       }
 
       return data?.valid === true;
-    } catch (error) {
+    } catch {
       return false;
     }
   };
@@ -2783,59 +2779,11 @@ const AdminDashboard = () => {
   );
 };
 
-// Error Boundary Component
-interface ErrorBoundaryProps {
-  children: ReactNode;
-}
-
-interface ErrorBoundaryState {
-  hasError: boolean;
-  error: Error | null;
-}
-
-class AdminErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
-  constructor(props: ErrorBoundaryProps) {
-    super(props);
-    this.state = { hasError: false, error: null };
-  }
-
-  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
-    return { hasError: true, error };
-  }
-
-  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('Admin Dashboard Error:', error, errorInfo);
-  }
-
-  render() {
-    if (this.state.hasError) {
-      return (
-        <div className="min-h-screen flex items-center justify-center p-4">
-          <Card className="max-w-md w-full">
-            <CardContent className="pt-6 text-center">
-              <AlertTriangle className="w-16 h-16 text-destructive mx-auto mb-4" />
-              <h2 className="text-2xl font-bold mb-2">Dashboard Error</h2>
-              <p className="text-muted-foreground mb-6">
-                Something went wrong. Please refresh the page or contact support.
-              </p>
-              <Button onClick={() => window.location.reload()}>
-                Refresh Dashboard
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-      );
-    }
-
-    return this.props.children;
-  }
-}
-
-// Wrapped Export
+// Wrapped Export — uses the shared ErrorBoundary
 export default function AdminDashboardWrapper() {
   return (
-    <AdminErrorBoundary>
+    <ErrorBoundary pageName="Admin Dashboard">
       <AdminDashboard />
-    </AdminErrorBoundary>
+    </ErrorBoundary>
   );
 }

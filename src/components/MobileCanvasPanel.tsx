@@ -2,9 +2,9 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { 
-  ChevronUp, 
-  ChevronDown, 
+import {
+  ChevronUp,
+  ChevronDown,
   ShoppingCart,
   Maximize2,
   Minimize2,
@@ -12,13 +12,7 @@ import {
   MapPin
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-interface SelectedPixel {
-  x: number;
-  y: number;
-  price: number;
-  id: string;
-}
+import { SelectedPixel } from "@/types/grid";
 
 interface MobileCanvasPanelProps {
   selectedPixels: SelectedPixel[];
@@ -66,8 +60,8 @@ export const MobileCanvasPanel = ({
         >
           <div className="relative">
             <ShoppingCart className="w-6 h-6" />
-            <Badge 
-              variant="destructive" 
+            <Badge
+              variant="destructive"
               className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-xs"
             >
               {selectedPixels.length}
@@ -79,7 +73,7 @@ export const MobileCanvasPanel = ({
   }
 
   return (
-    <div 
+    <div
       className={cn(
         "fixed bottom-16 left-0 right-0 z-50 lg:hidden transition-all duration-300 ease-in-out",
         isExpanded ? "h-[70vh]" : "h-auto"
@@ -96,7 +90,7 @@ export const MobileCanvasPanel = ({
                 {selectedPixels.length}
               </Badge>
             </div>
-            
+
             <div className="flex items-center gap-1">
               <Button
                 variant="ghost"
@@ -151,13 +145,13 @@ export const MobileCanvasPanel = ({
                 <MapPin className="w-4 h-4 text-primary" />
                 Pricing Breakdown
               </div>
-              
+
               {Object.entries(pixelCounts)
                 .sort(([a], [b]) => Number(b) - Number(a))
                 .map(([price, count]) => {
                   const tierInfo = getPriceTierInfo(Number(price));
                   const subtotal = Number(price) * count;
-                  
+
                   return (
                     <div key={price} className="flex items-center justify-between p-2 rounded-lg bg-muted/30">
                       <div className="flex items-center gap-2">

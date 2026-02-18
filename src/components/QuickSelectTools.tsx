@@ -20,13 +20,7 @@ import {
   ChevronUp
 } from "lucide-react";
 import { toast } from "sonner";
-
-interface SelectedPixel {
-  x: number;
-  y: number;
-  price: number;
-  id: string;
-}
+import { SelectedPixel } from "@/types/grid";
 
 interface QuickSelectToolsProps {
   onPixelsSelected: (pixels: SelectedPixel[]) => void;
@@ -51,7 +45,7 @@ const PATTERNS = {
     [-1, 2], [0, 2], [1, 2],
     [0, 3]
   ],
-  
+
   // Classic smiley face (circular with eyes and smile)
   smile: [
     // Top arc
@@ -67,7 +61,7 @@ const PATTERNS = {
     // Bottom arc
     [-1, 3], [0, 3], [1, 3]
   ],
-  
+
   // Rocket ship
   rocket: [
     // Nose cone
@@ -85,7 +79,7 @@ const PATTERNS = {
     [-2, 3], [0, 3], [2, 3],
     [-1, 4], [1, 4]
   ],
-  
+
   // Brain (symmetrical lobes)
   brain: [
     // Top lobes
@@ -97,7 +91,7 @@ const PATTERNS = {
     // Bottom
     [-1, 2], [0, 2], [1, 2]
   ],
-  
+
   // Sparkle/star
   sparkle: [
     // Top point
@@ -111,7 +105,7 @@ const PATTERNS = {
     [-1, -1], [1, -1],
     [-1, 1], [1, 1]
   ],
-  
+
   square3x3: Array.from({ length: 9 }, (_, i) => [i % 3 - 1, Math.floor(i / 3) - 1]),
   square5x5: Array.from({ length: 25 }, (_, i) => [i % 5 - 2, Math.floor(i / 5) - 2]),
   square10x10: Array.from({ length: 100 }, (_, i) => [i % 10 - 4.5, Math.floor(i / 10) - 4.5])

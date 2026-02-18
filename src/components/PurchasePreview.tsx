@@ -28,6 +28,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { ImageUpload } from "@/components/ImageUpload";
 import { Helmet } from "react-helmet-async";
+import { SelectedPixel } from "@/types/grid";
 
 // Razorpay type declarations (existing)
 declare global {
@@ -84,13 +85,6 @@ interface RazorpayResponse {
   razorpay_order_id: string;
   razorpay_payment_id: string;
   razorpay_signature: string;
-}
-
-interface SelectedPixel {
-  x: number;
-  y: number;
-  price: number;
-  id: string;
 }
 
 interface PurchasePreviewProps {

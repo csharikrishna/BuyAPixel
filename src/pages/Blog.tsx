@@ -24,6 +24,7 @@ import { format } from 'date-fns';
 import { Helmet } from 'react-helmet-async';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import debounce from 'lodash/debounce';
 
 // ======================
 // TYPES & INTERFACES
@@ -53,20 +54,6 @@ const FEATURED_IMAGE_PLACEHOLDER = '/placeholder-blog.jpg';
 // ======================
 // UTILITY FUNCTIONS
 // ======================
-
-/**
- * Debounce function for search input
- */
-function debounce<T extends (...args: any[]) => any>(
-  func: T,
-  wait: number
-): (...args: Parameters<T>) => void {
-  let timeout: NodeJS.Timeout;
-  return function (...args: Parameters<T>) {
-    clearTimeout(timeout);
-    timeout = setTimeout(() => func(...args), wait);
-  };
-}
 
 /**
  * Get unique tags from posts

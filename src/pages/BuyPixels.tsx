@@ -43,6 +43,8 @@ import { SharePixelDialog } from "@/components/SharePixelDialog";
 import { useLayout } from "@/contexts/LayoutContext";
 import { useNetworkStatus } from "@/hooks/useNetworkStatus";
 import confetti from "canvas-confetti";
+import debounce from "lodash/debounce";
+import { SelectedPixel } from "@/types/grid";
 
 // --- Constants ---
 const CANVAS_WIDTH = 100;
@@ -56,12 +58,6 @@ const DRAFT_STORAGE_KEY = "pixelDraft";
 const AUTOSAVE_DEBOUNCE_MS = 500;
 
 // --- Interfaces ---
-interface SelectedPixel {
-  x: number;
-  y: number;
-  price: number;
-  id: string;
-}
 
 interface PixelDraft {
   pixels: SelectedPixel[];
@@ -104,20 +100,6 @@ function parseDraft(draftString: string | null): PixelDraft | null {
 function isDraftExpired(draft: PixelDraft): boolean {
   const expiryTime = Date.now() - DRAFT_EXPIRY_HOURS * 60 * 60 * 1000;
   return draft.timestamp <= expiryTime;
-}
-
-/**
- * Debounce function for autosave
- */
-function debounce<T extends (...args: any[]) => any>(
-  func: T,
-  wait: number
-): (...args: Parameters<T>) => void {
-  let timeout: NodeJS.Timeout;
-  return function (...args: Parameters<T>) {
-    clearTimeout(timeout);
-    timeout = setTimeout(() => func(...args), wait);
-  };
 }
 
 const BuyPixels = () => {
@@ -612,11 +594,11 @@ const BuyPixels = () => {
       </AlertDialog>
 
       {/* MAIN LAYOUT */}
-      <main className="flex-1 w-full h-[calc(100vh-64px)] overflow-hidden flex flex-col lg:grid lg:grid-cols-12">
+      <main className="flex-1 w-full overflow-hidden flex flex-col lg:grid lg:grid-cols-12">
         {/* LEFT COLUMN: CANVAS */}
-        <div className="lg:col-span-9 order-1 flex flex-col gap-4">
+        <div className="lg:col-span-9 order-1 flex flex-col gap-4 min-h-[400px] h-[60vh] lg:h-[calc(100vh-64px)]">
           {/* Canvas Wrapper with Overlay Controls */}
-          <div className="w-full h-full relative">
+          <div className="w-full h-full relative flex-1">
             {/* Desktop Toolbar */}
             {mode === "buying" && (
               <div

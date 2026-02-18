@@ -1,13 +1,7 @@
 import { ShoppingCart, Trash2, Undo2, Sparkles, Crown, Target } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-
-interface SelectedPixel {
-  x: number;
-  y: number;
-  price: number;
-  id: string;
-}
+import { SelectedPixel } from "@/types/grid";
 
 interface EnhancedSelectionSummaryProps {
   selectedPixels: SelectedPixel[];
@@ -42,7 +36,7 @@ export const EnhancedSelectionSummary = ({
       {/* Animated Background */}
       <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5 opacity-50" />
       <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-3xl" />
-      
+
       <CardHeader className="relative pb-3 sm:pb-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -128,7 +122,7 @@ export const EnhancedSelectionSummary = ({
             </div>
 
             {/* Purchase Button */}
-            <Button 
+            <Button
               onClick={onPurchase}
               className="w-full h-11 sm:h-12 text-sm sm:text-base font-bold shadow-xl hover:shadow-glow transition-all hover:scale-105 bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90"
             >

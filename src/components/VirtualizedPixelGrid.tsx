@@ -20,28 +20,7 @@ import { useGridInteraction } from "@/hooks/useGridInteraction";
 import { GRID_CONFIG } from "@/utils/gridConstants";
 import { SelectedPixel, PurchasedPixel } from "@/types/grid";
 import { getGridImageUrl, getBillboardImageUrl } from "@/utils/imageOptimization";
-
-// ============================================
-// 🛠️ UTILITY FUNCTIONS
-// ============================================
-
-// Throttle function for performance optimization
-function throttle<T extends (...args: any[]) => any>(
-  func: T,
-  limit: number
-): (...args: Parameters<T>) => void {
-  let inThrottle: boolean;
-  let lastResult: ReturnType<T>;
-
-  return function (this: any, ...args: Parameters<T>) {
-    if (!inThrottle) {
-      inThrottle = true;
-      lastResult = func.apply(this, args);
-      setTimeout(() => (inThrottle = false), limit);
-    }
-    return lastResult;
-  };
-}
+import throttle from "lodash/throttle";
 
 // ============================================
 // 📦 PROPS
@@ -455,23 +434,14 @@ export const VirtualizedPixelGrid = forwardRef<GridHandle, VirtualizedPixelGridP
     const fullGridW = gridWidth * pixelSize;
     const fullGridH = gridHeight * pixelSize;
 
-    const fitScaleX = (clientWidth - 10) / fullGridW;
-    const fitScaleY = (clientHeight - 10) / fullGridH;
-
-    const isMobileDevice = window.innerWidth < 768;
-    const fitScale = isMobileDevice
-      ? Math.max(fitScaleX, fitScaleY) * 0.9
-      : Math.min(fitScaleX, fitScaleY);
-
-    const initialScale = Math.min(
-      Math.max(GRID_CONFIG.INITIAL_ZOOM, fitScale),
-      GRID_CONFIG.MAX_INITIAL_ZOOM
-    );
+    // Always use 100% zoom (1.0)
+    const initialScale = 1;
 
     onZoomChange(initialScale);
 
-    const initialX = (clientWidth - fullGridW * initialScale) / 2;
-    const initialY = (clientHeight - fullGridH * initialScale) / 2;
+    // Center the grid within the container
+    const initialX = Math.max(0, (clientWidth - fullGridW * initialScale) / 2);
+    const initialY = Math.max(0, (clientHeight - fullGridH * initialScale) / 2);
     setViewportOffset({ x: initialX, y: initialY });
     hasInitializedRef.current = true;
   }, [gridWidth, gridHeight, pixelSize, onZoomChange, setViewportOffset]);
@@ -617,13 +587,13 @@ export const VirtualizedPixelGrid = forwardRef<GridHandle, VirtualizedPixelGridP
   // ---------------------------------------------------------------------------
 
   return (
-    <div className="relative w-full h-full">
+    <div className="relative w-full h-full flex items-center justify-center">
       <div
         ref={containerRef}
-        className="relative overflow-hidden bg-white select-none"
+        className="relative overflow-hidden select-none rounded-lg shadow-2xl"
         style={{
           width: "100%",
-          height: "calc(100vh - 120px)",
+          height: "100%",
           touchAction: enableInteraction ? "none" : "auto",
           WebkitUserSelect: "none",
           cursor: !enableInteraction
@@ -633,7 +603,9 @@ export const VirtualizedPixelGrid = forwardRef<GridHandle, VirtualizedPixelGridP
               : isSelecting
                 ? "crosshair"
                 : "grab",
-          backgroundColor: "#f8fafc",
+          backgroundColor: "#f1f5f9",
+          backgroundImage: "radial-gradient(circle at center, #e2e8f0 1px, transparent 1px)",
+          backgroundSize: "20px 20px",
         }}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
@@ -673,23 +645,24 @@ export const VirtualizedPixelGrid = forwardRef<GridHandle, VirtualizedPixelGridP
         >
           {/* 1. Grid Background */}
           <div
-            className="absolute pointer-events-none shadow-[0_0_50px_rgba(0,0,0,0.15)]"
+            className="absolute pointer-events-none rounded-md"
             style={{
               width: gridWidth * scaledPixelSize,
               height: gridHeight * scaledPixelSize,
-              backgroundColor: "white",
+              backgroundColor: "#ffffff",
+              boxShadow: "0 4px 40px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.05)",
             }}
           />
 
           {/* 2. Grid Lines */}
           {showGrid && zoom > 0.5 && (
             <div
-              className="absolute pointer-events-none"
+              className="absolute pointer-events-none rounded-md"
               style={{
                 width: gridWidth * scaledPixelSize,
                 height: gridHeight * scaledPixelSize,
                 backgroundImage:
-                  "linear-gradient(to right, rgba(100,116,139,0.4) 1px, transparent 1px), linear-gradient(to bottom, rgba(100,116,139,0.4) 1px, transparent 1px)",
+                  "linear-gradient(to right, rgba(148,163,184,0.3) 1px, transparent 1px), linear-gradient(to bottom, rgba(148,163,184,0.3) 1px, transparent 1px)",
                 backgroundSize: `${scaledPixelSize}px ${scaledPixelSize}px`,
               }}
             />
@@ -697,40 +670,44 @@ export const VirtualizedPixelGrid = forwardRef<GridHandle, VirtualizedPixelGridP
 
           {/* 3. Price Zones */}
           <div className="absolute pointer-events-none">
+            {/* Premium Zone (Blue) */}
             <div
-              className="absolute rounded-sm"
+              className="absolute rounded-md"
               style={{
                 left: Math.floor((gridWidth / 2 - GRID_CONFIG.PREMIUM_ZONE_SIZE / 2) * scaledPixelSize),
                 top: Math.floor((gridHeight / 2 - GRID_CONFIG.PREMIUM_ZONE_SIZE / 2) * scaledPixelSize),
                 width: GRID_CONFIG.PREMIUM_ZONE_SIZE * scaledPixelSize,
                 height: GRID_CONFIG.PREMIUM_ZONE_SIZE * scaledPixelSize,
-                border: "3px solid rgba(96, 165, 250, 0.6)",
-                boxShadow: "0 0 20px rgba(59,130,246,0.2)",
+                border: "2px solid rgba(59, 130, 246, 0.5)",
+                boxShadow: "inset 0 0 30px rgba(59,130,246,0.08)",
               }}
             />
+            {/* Gold Zone (Yellow) */}
             <div
-              className="absolute rounded-sm shadow-lg"
+              className="absolute rounded-md"
               style={{
                 left: Math.floor((gridWidth / 2 - GRID_CONFIG.GOLD_ZONE_SIZE / 2) * scaledPixelSize),
                 top: Math.floor((gridHeight / 2 - GRID_CONFIG.GOLD_ZONE_SIZE / 2) * scaledPixelSize),
                 width: GRID_CONFIG.GOLD_ZONE_SIZE * scaledPixelSize,
                 height: GRID_CONFIG.GOLD_ZONE_SIZE * scaledPixelSize,
-                border: "3px solid rgba(251, 191, 36, 0.8)",
-                boxShadow: "0 0 25px rgba(251,191,36,0.3)",
+                border: "2px solid rgba(234, 179, 8, 0.7)",
+                boxShadow: "inset 0 0 25px rgba(234,179,8,0.1)",
               }}
             />
           </div>
 
           {/* 4. Billboard */}
           <div
-            className="absolute z-30 shadow-2xl bg-black overflow-hidden flex flex-col items-center justify-center group"
+            className="absolute z-30 overflow-hidden flex flex-col items-center justify-center group rounded-md"
             style={{
               left: Math.floor(billboardConfig.x * scaledPixelSize),
               top: Math.floor(billboardConfig.y * scaledPixelSize),
               width: billboardConfig.width * scaledPixelSize,
               height: billboardConfig.height * scaledPixelSize,
               pointerEvents: "auto",
-              border: "5px solid #eab308",
+              border: "3px solid #eab308",
+              backgroundColor: "#18181b",
+              boxShadow: "0 8px 30px rgba(0,0,0,0.3)",
             }}
             role="region"
             aria-label="Featured billboard area"
@@ -939,11 +916,7 @@ export const VirtualizedPixelGrid = forwardRef<GridHandle, VirtualizedPixelGridP
           )}
         </div>
 
-        {/* 9. HUD Elements */}
-        <div className="absolute top-3 left-3 pointer-events-none bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-full text-xs font-semibold shadow-lg border border-slate-200">
-          <span className="text-slate-700">{Math.round(zoom * 100)}%</span>
-        </div>
-
+        {/* Selection Count Badge (only when selecting) */}
         {selectedPixels.length > 0 && (
           <div className="absolute top-3 right-3 pointer-events-none bg-purple-500/90 backdrop-blur-md text-white px-3 py-1.5 rounded-full text-xs font-semibold shadow-lg">
             {selectedPixels.length} selected
