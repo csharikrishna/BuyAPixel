@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import {
   Loader2,
   Lock,
@@ -76,15 +76,25 @@ const ResetPassword = () => {
   );
   const [resetSuccess, setResetSuccess] = useState(false);
   const [searchParams] = useSearchParams();
-  const { toast } = useToast();
   const navigate = useNavigate();
+  const redirectTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  // Cleanup all pending redirect timers on unmount
+  useEffect(() => {
+    return () => {
+      redirectTimersRef.current.forEach(clearTimeout);
+    };
+  }, []);
+
+  /** Schedule a delayed navigation that auto-cleans on unmount */
+  const scheduleRedirect = useCallback((path: string, ms: number, state?: Record<string, unknown>) => {
+    const id = setTimeout(() => navigate(path, state ? { state } : undefined), ms);
+    redirectTimersRef.current.push(id);
+  }, [navigate]);
 
   useEffect(() => {
     const checkSession = async () => {
       try {
-        console.log('🔓 ResetPassword component mounted');
-        console.log('URL params:', Object.fromEntries(searchParams));
-
         // Check for error parameters in URL
         const error = searchParams.get('error');
         const errorCode = searchParams.get('error_code');
@@ -107,26 +117,14 @@ const ResetPassword = () => {
             message
           );
 
-          toast({
-            title: 'Link Expired',
-            description: message,
-            variant: 'destructive',
-          });
+          toast.error('Link Expired', { description: message });
 
           setIsValidSession(false);
-          setTimeout(() => navigate('/forgot-password'), 3000);
+          scheduleRedirect('/forgot-password', 3000);
           return;
         }
 
-        // Check for recovery type parameter
-        const type = searchParams.get('type');
-
-        if (type === 'recovery') {
-          console.log('🔓 Password recovery flow detected');
-        }
-
         // Check if user has a valid session (should be set by AuthCallback)
-        console.log('📋 Checking for valid session...');
         const {
           data: { session },
           error: sessionError,
@@ -134,50 +132,37 @@ const ResetPassword = () => {
 
         if (sessionError) {
           console.error('❌ Session error:', sessionError);
-          toast({
-            title: 'Session Error',
+          toast.error('Session Error', {
             description:
               'Unable to verify your session. Please request a new reset link.',
-            variant: 'destructive',
           });
           setIsValidSession(false);
-          setTimeout(() => navigate('/forgot-password'), 3000);
+          scheduleRedirect('/forgot-password', 3000);
           return;
         }
 
         if (session) {
-          console.log('✅ Valid session found for password reset');
-          console.log('User ID:', session.user.id);
-          console.log(
-            'Session expires at:',
-            new Date(session.expires_at || 0).toLocaleString()
-          );
           setIsValidSession(true);
         } else {
-          console.log('❌ No valid session found');
-          toast({
-            title: 'Invalid Session',
+          toast.error('Invalid Session', {
             description:
               'Your session has expired. Please request a new password reset link.',
-            variant: 'destructive',
           });
           setIsValidSession(false);
-          setTimeout(() => navigate('/forgot-password'), 3000);
+          scheduleRedirect('/forgot-password', 3000);
         }
-      } catch (err) {
+      } catch (err: unknown) {
         console.error('❌ Unexpected error in checkSession:', err);
-        toast({
-          title: 'Error',
+        toast.error('Error', {
           description: 'An unexpected error occurred. Please try again.',
-          variant: 'destructive',
         });
         setIsValidSession(false);
-        setTimeout(() => navigate('/forgot-password'), 3000);
+        scheduleRedirect('/forgot-password', 3000);
       }
     };
 
     checkSession();
-  }, [navigate, toast, searchParams]);
+  }, [navigate, searchParams]);
 
   const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -188,8 +173,6 @@ const ResetPassword = () => {
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    console.log('🔐 Attempting password reset...');
-
     // Validate passwords
     const validation = resetPasswordSchema.safeParse({
       password,
@@ -198,21 +181,15 @@ const ResetPassword = () => {
 
     if (!validation.success) {
       const firstError = validation.error.errors[0];
-      toast({
-        title: 'Validation Error',
-        description: firstError.message,
-        variant: 'destructive',
-      });
+      toast.error('Validation Error', { description: firstError.message });
       return;
     }
 
     // Check password strength - STRICT requirement for password reset
     if (passwordStrength.score < 3) {
-      toast({
-        title: 'Weak Password',
+      toast.error('Weak Password', {
         description:
           'Please choose a stronger password with uppercase, lowercase, numbers, and special characters.',
-        variant: 'destructive',
       });
       return;
     }
@@ -227,17 +204,14 @@ const ResetPassword = () => {
 
       if (!session) {
         console.error('❌ No session available for password update');
-        toast({
-          title: 'Session Expired',
+        toast.error('Session Expired', {
           description:
             'Your session has expired. Please request a new password reset link.',
-          variant: 'destructive',
         });
-        setTimeout(() => navigate('/forgot-password'), 2000);
+        scheduleRedirect('/forgot-password', 2000);
         return;
       }
 
-      console.log('📝 Updating password...');
       const { error } = await supabase.auth.updateUser({
         password: validation.data.password,
       });
@@ -245,8 +219,6 @@ const ResetPassword = () => {
       if (error) {
         let errorMessage = error.message;
         let errorTitle = 'Password Reset Failed';
-
-        console.error('❌ Password update error:', error);
 
         // Enhanced error messages
         if (
@@ -267,51 +239,38 @@ const ResetPassword = () => {
           errorMessage =
             'Your session has expired. Please request a new password reset link.';
           errorTitle = 'Session Expired';
-          setTimeout(() => navigate('/forgot-password'), 2000);
+          scheduleRedirect('/forgot-password', 2000);
         } else if (error.message.includes('not authenticated')) {
           errorMessage =
             'Authentication failed. Please request a new password reset link.';
           errorTitle = 'Authentication Error';
-          setTimeout(() => navigate('/forgot-password'), 2000);
+          scheduleRedirect('/forgot-password', 2000);
         }
 
-        toast({
-          title: errorTitle,
-          description: errorMessage,
-          variant: 'destructive',
-        });
+        toast.error(errorTitle, { description: errorMessage });
       } else {
         // Success!
-        console.log('✅ Password reset successful');
         setResetSuccess(true);
 
-        toast({
-          title: 'Password Reset Successful! 🎉',
+        toast.success('Password Reset Successful! 🎉', {
           description:
             'Your password has been updated. Redirecting to sign in...',
         });
 
         // Sign out to ensure user signs in with new password
-        console.log('🚪 Signing out user...');
         await supabase.auth.signOut();
 
-        setTimeout(() => {
-          navigate('/signin', {
-            state: {
-              message:
-                'Password reset successful! You can now sign in with your new password.',
-            },
-          });
-        }, 2000);
+        scheduleRedirect('/signin', 2000, {
+          message:
+            'Password reset successful! You can now sign in with your new password.',
+        });
       }
     } catch (error: unknown) {
       console.error('❌ Unexpected password reset error:', error);
-      toast({
-        title: 'Error',
+      toast.error('Error', {
         description:
           getErrorMessage(error) ||
           'An unexpected error occurred. Please try again.',
-        variant: 'destructive',
       });
     } finally {
       setLoading(false);

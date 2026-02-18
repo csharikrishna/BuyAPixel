@@ -4,6 +4,16 @@ import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
    Check,
    X,
    RotateCw,
@@ -280,7 +290,7 @@ export const ImageCropper = ({
          });
 
          onCropComplete(croppedImage);
-      } catch (error) {
+      } catch (error: unknown) {
          if (!isMountedRef.current) return;
 
          console.error('Crop error:', error);
@@ -428,18 +438,15 @@ export const ImageCropper = ({
       return () => window.removeEventListener('keydown', handleKeyDown);
    }, [handleKeyDown]);
 
+   const [showCloseWarning, setShowCloseWarning] = useState(false);
+
    // Warn user if leaving with unsaved changes
    const handleDialogClose = useCallback(
       (shouldClose: boolean) => {
          if (!shouldClose) return;
 
          if (hasChanges && !isProcessing) {
-            const confirmClose = window.confirm(
-               'You have unsaved changes. Are you sure you want to close?'
-            );
-            if (confirmClose) {
-               onCancel();
-            }
+            setShowCloseWarning(true);
          } else {
             onCancel();
          }
@@ -448,6 +455,7 @@ export const ImageCropper = ({
    );
 
    return (
+      <>
       <Dialog open={open} onOpenChange={handleDialogClose}>
          <DialogContent
             className="sm:max-w-[600px] w-[95vw] max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden"
@@ -709,5 +717,23 @@ export const ImageCropper = ({
             </div>
          </DialogContent>
       </Dialog>
+
+      <AlertDialog open={showCloseWarning} onOpenChange={setShowCloseWarning}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Unsaved Changes</AlertDialogTitle>
+            <AlertDialogDescription>
+              You have unsaved changes. Are you sure you want to close?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Continue Editing</AlertDialogCancel>
+            <AlertDialogAction onClick={onCancel} className="bg-destructive hover:bg-destructive/90">
+              Discard Changes
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      </>
    );
 };

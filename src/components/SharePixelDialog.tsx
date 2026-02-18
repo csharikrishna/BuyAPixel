@@ -63,8 +63,8 @@ export const SharePixelDialog = ({ isOpen, onClose, pixel }: SharePixelDialogPro
                url: shareContent.url
             });
             toast.success("Shared successfully!");
-         } catch (err: any) {
-            if (err.name !== 'AbortError') {
+         } catch (err: unknown) {
+            if (!(err instanceof DOMException && err.name === 'AbortError')) {
                toast.error("Failed to share");
             }
          }
@@ -134,7 +134,7 @@ export const SharePixelDialog = ({ isOpen, onClose, pixel }: SharePixelDialogPro
          document.body.removeChild(link);
          window.URL.revokeObjectURL(url);
          toast.success("QR Code downloaded!");
-      } catch (err) {
+      } catch (err: unknown) {
          toast.error("Failed to download QR code");
       }
    }, [shareContent.url, pixel]);

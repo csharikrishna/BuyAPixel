@@ -91,7 +91,7 @@ const ProfileEditModal: React.FC<ProfileEditModalProps> = ({
       toast.success('Profile updated successfully');
       onProfileUpdate();
       onClose();
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error updating profile:', error);
       toast.error('Failed to update profile');
     } finally {

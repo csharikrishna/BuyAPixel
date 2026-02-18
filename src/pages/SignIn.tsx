@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
 import {
@@ -128,7 +128,6 @@ const getPasswordStrengthInfo = (password: string, strength: number) => {
 // ======================
 
 const SignIn = () => {
-  const { toast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
   const { isAuthenticated } = useAuth();
@@ -193,7 +192,7 @@ const SignIn = () => {
         } else {
           setLoginAttempts(attempts);
         }
-      } catch (e) {
+      } catch (e: unknown) {
         console.error('Failed to parse login attempts:', e);
       }
     }
@@ -280,9 +279,9 @@ const SignIn = () => {
         message = errorMap[errorCode].message;
       }
 
-      toast({ title, description: message, variant: 'destructive' });
+      toast.error(title, { description: message });
     },
-    [toast]
+    []
   );
 
   // Email validation [web:94]
@@ -352,12 +351,10 @@ const SignIn = () => {
 
     if (loginAttempts.lockedUntil && loginAttempts.lockedUntil > now) {
       const remainingMinutes = Math.ceil((loginAttempts.lockedUntil - now) / 60000);
-      toast({
-        title: 'Account Temporarily Locked',
+      toast.error('Account Temporarily Locked', {
         description: `Too many failed attempts. Please try again in ${remainingMinutes} minute${
           remainingMinutes > 1 ? 's' : ''
         }.`,
-        variant: 'destructive',
       });
       return false;
     }
@@ -366,16 +363,14 @@ const SignIn = () => {
       const remainingSeconds = Math.ceil(
         (RATE_LIMIT_DURATION_MS - (now - loginAttempts.lastAttempt)) / 1000
       );
-      toast({
-        title: 'Please Wait',
+      toast.error('Please Wait', {
         description: `Please wait ${remainingSeconds} seconds before trying again.`,
-        variant: 'destructive',
       });
       return false;
     }
 
     return true;
-  }, [loginAttempts, toast]);
+  }, [loginAttempts]);
 
   // Record failed attempt [web:89]
   const recordFailedAttempt = useCallback(() => {
@@ -390,25 +385,21 @@ const SignIn = () => {
 
     if (newCount >= MAX_LOGIN_ATTEMPTS) {
       newAttempts.lockedUntil = now + LOCKOUT_DURATION_MS;
-      toast({
-        title: 'Account Locked',
+      toast.error('Account Locked', {
         description: `Too many failed login attempts. Your account is locked for 15 minutes.`,
-        variant: 'destructive',
       });
     } else {
       const remainingAttempts = MAX_LOGIN_ATTEMPTS - newCount;
-      toast({
-        title: 'Invalid Credentials',
+      toast.error('Invalid Credentials', {
         description: `Incorrect email or password. ${remainingAttempts} attempt${
           remainingAttempts > 1 ? 's' : ''
         } remaining.`,
-        variant: 'destructive',
       });
     }
 
     setLoginAttempts(newAttempts);
     localStorage.setItem('login_attempts', JSON.stringify(newAttempts));
-  }, [loginAttempts.count, toast]);
+  }, [loginAttempts.count]);
 
   // Reset login attempts
   const resetLoginAttempts = useCallback(() => {
@@ -440,10 +431,8 @@ const SignIn = () => {
       });
       setFormErrors(errors);
 
-      toast({
-        title: 'Validation Error',
+      toast.error('Validation Error', {
         description: validation.error.errors[0].message,
-        variant: 'destructive',
       });
       return;
     }
@@ -485,10 +474,8 @@ const SignIn = () => {
         }
 
         if (!error.message.includes('Invalid login credentials')) {
-          toast({
-            title: 'Sign In Failed',
+          toast.error('Sign In Failed', {
             description: errorMessage,
-            variant: 'destructive',
           });
         }
       } else {
@@ -501,8 +488,7 @@ const SignIn = () => {
           localStorage.removeItem('remembered_email');
         }
 
-        toast({
-          title: 'Welcome back! 👋',
+        toast.success('Welcome back! 👋', {
           description: "You've been successfully signed in.",
         });
 
@@ -511,10 +497,8 @@ const SignIn = () => {
     } catch (error: unknown) {
       console.error('Unexpected sign in error:', error);
       setAuthPhase('error');
-      toast({
-        title: 'Error',
+      toast.error('Error', {
         description: 'An unexpected error occurred. Please try again.',
-        variant: 'destructive',
       });
     } finally {
       if (isMountedRef.current) {
@@ -528,10 +512,8 @@ const SignIn = () => {
     const emailError = validateEmail(email);
     if (emailError) {
       setFormErrors((prev) => ({ ...prev, email: emailError }));
-      toast({
-        title: 'Invalid Email',
+      toast.error('Invalid Email', {
         description: emailError,
-        variant: 'destructive',
       });
       return;
     }
@@ -583,7 +565,7 @@ const SignIn = () => {
           }
         }
 
-        toast({ title: errorTitle, description: errorMessage, variant: 'destructive' });
+        toast.error(errorTitle, { description: errorMessage });
       } else {
         setMagicLinkSent(true);
         setAuthPhase('success');
@@ -592,8 +574,7 @@ const SignIn = () => {
           localStorage.setItem('remembered_email', email);
         }
 
-        toast({
-          title: 'Check Your Email! 📧',
+        toast.success('Check Your Email! 📧', {
           description: `We've sent a magic link to ${email}. Click the link to sign in.`,
           duration: 6000,
         });
@@ -601,10 +582,8 @@ const SignIn = () => {
     } catch (error: unknown) {
       console.error('Unexpected magic link error:', error);
       setAuthPhase('error');
-      toast({
-        title: 'Error',
+      toast.error('Error', {
         description: getErrorMessage(error) || 'Failed to send magic link. Please try again.',
-        variant: 'destructive',
       });
     } finally {
       if (isMountedRef.current) {
@@ -651,10 +630,8 @@ const SignIn = () => {
           }
         }
 
-        toast({
-          title: 'Sign In Failed',
+        toast.error('Sign In Failed', {
           description: errorMessage,
-          variant: 'destructive',
         });
         setOauthLoading(false);
       }
@@ -662,10 +639,8 @@ const SignIn = () => {
       setTimeout(() => setOauthLoading(false), 10000);
     } catch (error: unknown) {
       console.error('Unexpected Google OAuth error:', error);
-      toast({
-        title: 'Error',
+      toast.error('Error', {
         description: getErrorMessage(error) || 'Failed to initiate Google sign-in.',
-        variant: 'destructive',
       });
       setOauthLoading(false);
     }

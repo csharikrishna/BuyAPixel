@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useRef, useTransition, useMemo } from 'react';
-import { Html5QrcodeScanner, Html5QrcodeSupportedFormats } from 'html5-qrcode';
+import type { Html5QrcodeScanner as Html5QrcodeScannerType } from 'html5-qrcode';
 import { useNavigate, Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { Button } from '@/components/ui/button';
@@ -73,10 +73,9 @@ type CameraPermissionState = 'prompt' | 'granted' | 'denied' | 'checking';
 const HISTORY_KEY = 'qr_scan_history';
 const MAX_HISTORY_ITEMS = 20;
 const SCAN_SUCCESS_DELAY = 500;
-const SCANNER_CONFIG = {
+const SCANNER_CONFIG_BASE = {
   fps: 10,
   qrbox: { width: 250, height: 250 },
-  formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
   rememberLastUsedCamera: true,
   aspectRatio: 1.0,
 };
@@ -107,7 +106,7 @@ const ScanPixel = () => {
   const { user, isAuthenticated } = useAuth();
 
   // Refs
-  const scannerRef = useRef<Html5QrcodeScanner | null>(null);
+  const scannerRef = useRef<Html5QrcodeScannerType | null>(null);
   const timerRef = useRef<NodeJS.Timeout>();
   const isMountedRef = useRef(true);
 
@@ -162,7 +161,7 @@ const ScanPixel = () => {
         } else {
           setCameraPermission('prompt');
         }
-      } catch (err) {
+      } catch (err: unknown) {
         console.error('Permission check error:', err);
         setCameraPermission('prompt');
       }
@@ -179,7 +178,7 @@ const ScanPixel = () => {
     if (savedHistory) {
       try {
         setScanHistory(JSON.parse(savedHistory));
-      } catch (e) {
+      } catch (e: unknown) {
         console.error('Failed to parse history', e);
       }
     }
@@ -214,7 +213,7 @@ const ScanPixel = () => {
               email: user.email || null,
             });
           }
-        } catch (err) {
+        } catch (err: unknown) {
           console.error('Error fetching data:', err);
           toast.error('Failed to load your data');
         } finally {
@@ -337,7 +336,7 @@ const ScanPixel = () => {
           });
           window.location.href = decodedText;
         }
-      } catch (err) {
+      } catch (err: unknown) {
         console.error('Scan processing error', err);
         setError('Could not process the scanned QR code.');
       }
@@ -354,10 +353,13 @@ const ScanPixel = () => {
       // Ignore frame failures
     };
 
-    const initScanner = () => {
+    const initScanner = async () => {
       const element = document.getElementById('reader');
       if (element) {
-        const scanner = new Html5QrcodeScanner('reader', SCANNER_CONFIG, false);
+        const { Html5QrcodeScanner, Html5QrcodeSupportedFormats } = await import('html5-qrcode');
+        if (!isMountedRef.current) return;
+        const config = { ...SCANNER_CONFIG_BASE, formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE] };
+        const scanner = new Html5QrcodeScanner('reader', config, false);
         scannerRef.current = scanner;
         scanner.render(onScanSuccess, onScanFailure);
         setIsScanning(true);
@@ -384,8 +386,8 @@ const ScanPixel = () => {
       try {
         await navigator.share({ title, text, url });
         toast.success('Shared successfully!');
-      } catch (err) {
-        if ((err as Error).name !== 'AbortError') {
+      } catch (err: unknown) {
+        if (err instanceof DOMException && err.name !== 'AbortError') {
           console.error('Share failed:', err);
         }
       }
@@ -410,7 +412,7 @@ const ScanPixel = () => {
       document.body.removeChild(link);
       window.URL.revokeObjectURL(blobUrl);
       toast.success('QR code saved to downloads');
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('Download failed:', err);
       toast.error('Download failed');
     }
@@ -441,7 +443,7 @@ const ScanPixel = () => {
       stream.getTracks().forEach((track) => track.stop());
       setCameraPermission('granted');
       toast.success('Camera access granted!');
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('Camera permission denied:', err);
       setCameraPermission('denied');
       toast.error('Camera access denied. Please check your browser settings.');

@@ -15,7 +15,7 @@ const Index = () => {
   useEffect(() => {
     const fetchBroadcast = async () => {
       const { data } = await supabase
-        .from('announcements' as any)
+        .from('announcements')
         .select('message')
         .eq('is_active', true)
         .order('created_at', { ascending: false })
@@ -23,7 +23,7 @@ const Index = () => {
         .single();
 
       if (data) {
-        setBroadcast((data as any).message);
+        setBroadcast(data.message);
       }
     };
     fetchBroadcast();

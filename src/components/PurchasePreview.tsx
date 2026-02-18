@@ -134,7 +134,7 @@ export const PurchasePreview = ({
           const { pixelName: savedName, linkUrl: savedLink } = JSON.parse(savedData);
           if (savedName) setPixelName(savedName);
           if (savedLink) setLinkUrl(savedLink);
-        } catch (e) {
+        } catch (e: unknown) {
           console.error('Failed to restore checkout data');
         }
       }
@@ -241,7 +241,7 @@ export const PurchasePreview = ({
       }
 
       // Check for localhost in production
-      if (process.env.NODE_ENV === 'production' &&
+      if (import.meta.env.PROD &&
         (urlObj.hostname === 'localhost' || urlObj.hostname === '127.0.0.1')) {
         return { valid: false, error: "Localhost URLs are not allowed" };
       }
@@ -431,7 +431,7 @@ export const PurchasePreview = ({
 
             onClose();
 
-          } catch (verifyErr) {
+          } catch (verifyErr: unknown) {
             console.error('Payment verification error:', verifyErr);
             toast.error("Payment verification failed", {
               description: "Please contact support with your order ID"
@@ -484,7 +484,7 @@ export const PurchasePreview = ({
 
       razorpay.open();
 
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Purchase error:', error);
       toast.error(error instanceof Error ? error.message : "Failed to initiate payment");
       setIsProcessing(false);

@@ -98,10 +98,10 @@ export function usePixelGridData() {
 
          setPurchasedPixels(allPixels);
          loadedRef.current = true;
-      } catch (err: any) {
+      } catch (err: unknown) {
          if (!isMountedRef.current) return;
 
-         if (err.name === 'AbortError') {
+         if (err instanceof DOMException && err.name === 'AbortError') {
             console.warn("Pixel grid load timed out");
             setError("Loading took too long. Please refresh.");
             toast.error("Map loading timed out. Check connection.");

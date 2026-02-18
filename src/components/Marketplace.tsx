@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Link, useNavigate } from "react-router-dom";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { memo, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -168,7 +168,6 @@ ListingCard.displayName = "ListingCard";
 // --- Main Component ---
 
 const Marketplace = () => {
-  const { toast } = useToast();
   const navigate = useNavigate();
 
   // Fetch Marketplace Stats
@@ -179,7 +178,7 @@ const Marketplace = () => {
       try {
         const { data, error } = await supabase.functions.invoke('get_marketplace_stats');
         if (!error && data) return data as MarketplaceStats;
-      } catch (e) {
+      } catch (e: unknown) {
         console.warn('Edge function failed, falling back to basic calculation', e);
       }
 
@@ -235,21 +234,19 @@ const Marketplace = () => {
 
   const handleMarketplaceBuy = useCallback((id: string, price: number) => {
     navigate('/marketplace');
-    toast({
-      title: "View Listing",
+    toast("View Listing", {
       description: "Redirecting you to the full marketplace view...",
       duration: 2000,
     });
-  }, [navigate, toast]);
+  }, [navigate]);
 
   const handleListPixels = useCallback(() => {
     navigate('/marketplace');
-    toast({
-      title: "List Your Pixels",
+    toast("List Your Pixels", {
       description: "Go to the 'Sell' tab in the marketplace to list your pixels.",
       duration: 3000,
     });
-  }, [navigate, toast]);
+  }, [navigate]);
 
   // Prepared stats for display
   const displayStats = [

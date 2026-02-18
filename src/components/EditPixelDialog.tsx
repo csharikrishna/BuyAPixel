@@ -65,12 +65,12 @@ export function EditPixelDialog({ pixel, isOpen, onClose, onUpdate }: EditPixelD
          toast.success("Pixel updated successfully!");
          onUpdate();
          onClose();
-      } catch (error: any) {
+      } catch (error: unknown) {
          // Rollback on error
          setImageUrl(previousValues.image_url || "");
          setLinkUrl(previousValues.link_url || "");
          setAltText(previousValues.alt_text || "");
-         toast.error("Failed to update pixel: " + error.message);
+         toast.error("Failed to update pixel: " + (error instanceof Error ? error.message : 'Unknown error'));
       } finally {
          setLoading(false);
       }

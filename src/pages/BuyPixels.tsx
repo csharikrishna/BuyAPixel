@@ -45,10 +45,11 @@ import { useNetworkStatus } from "@/hooks/useNetworkStatus";
 import confetti from "canvas-confetti";
 import debounce from "lodash/debounce";
 import { SelectedPixel } from "@/types/grid";
+import { GRID_CONFIG, PIXEL_PRICING, calculatePixelPrice } from "@/utils/gridConstants";
 
 // --- Constants ---
-const CANVAS_WIDTH = 100;
-const CANVAS_HEIGHT = 100;
+const CANVAS_WIDTH = GRID_CONFIG.CANVAS_WIDTH;
+const CANVAS_HEIGHT = GRID_CONFIG.CANVAS_HEIGHT;
 const PIXEL_SIZE = 4;
 const MAX_PIXELS_PER_PURCHASE = 1000;
 const DRAFT_EXPIRY_HOURS = 1;
@@ -88,7 +89,7 @@ function parseDraft(draftString: string | null): PixelDraft | null {
     }
 
     return draft;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Failed to parse draft:", error);
     return null;
   }
@@ -110,6 +111,7 @@ const BuyPixels = () => {
   // Refs for cleanup and optimization
   const isMountedRef = useRef(true);
   const autosaveTimeoutRef = useRef<NodeJS.Timeout>();
+  const transitionTimeoutRef = useRef<NodeJS.Timeout>();
 
   // Network status
   const { isOnline } = useNetworkStatus();
@@ -140,21 +142,11 @@ const BuyPixels = () => {
       if (autosaveTimeoutRef.current) {
         clearTimeout(autosaveTimeoutRef.current);
       }
+      if (transitionTimeoutRef.current) {
+        clearTimeout(transitionTimeoutRef.current);
+      }
+      saveDraft.cancel?.();
     };
-  }, []);
-
-  // --- Memoized Calculations ---
-  const calculatePixelPrice = useCallback((x: number, y: number) => {
-    const centerX = CANVAS_WIDTH / 2.0;
-    const centerY = CANVAS_HEIGHT / 2.0;
-
-    const dx = Math.abs(x - centerX);
-    const dy = Math.abs(y - centerY);
-    const maxDist = Math.max(dx, dy);
-
-    if (maxDist < 20) return 299; // Gold Zone
-    if (maxDist < 40) return 199; // Premium Zone
-    return 99; // Economy Zone
   }, []);
 
   const totalCost = useMemo(() => {
@@ -162,9 +154,9 @@ const BuyPixels = () => {
   }, [selectedPixels]);
 
   const priceBreakdown = useMemo(() => {
-    const premium = selectedPixels.filter((p) => p.price === 299).length;
-    const standard = selectedPixels.filter((p) => p.price === 199).length;
-    const economy = selectedPixels.filter((p) => p.price === 99).length;
+    const premium = selectedPixels.filter((p) => p.price === PIXEL_PRICING.GOLD_PRICE).length;
+    const standard = selectedPixels.filter((p) => p.price === PIXEL_PRICING.PREMIUM_PRICE).length;
+    const economy = selectedPixels.filter((p) => p.price === PIXEL_PRICING.ECONOMY_PRICE).length;
 
     return { premium, standard, economy };
   }, [selectedPixels]);
@@ -185,7 +177,7 @@ const BuyPixels = () => {
 
       try {
         localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draft));
-      } catch (error) {
+      } catch (error: unknown) {
         console.error("Failed to save draft:", error);
         // Handle quota exceeded error
         if (error instanceof DOMException && error.name === "QuotaExceededError") {
@@ -345,7 +337,7 @@ const BuyPixels = () => {
     setIsLoading(true);
 
     // Smooth transition with loading state
-    setTimeout(() => {
+    transitionTimeoutRef.current = setTimeout(() => {
       if (!isMountedRef.current) return;
 
       setMode("buying");
@@ -542,7 +534,7 @@ const BuyPixels = () => {
 
   // --- Performance Monitoring (Development Only) ---
   useEffect(() => {
-    if (process.env.NODE_ENV === "development") {
+    if (import.meta.env.DEV) {
       const observer = new PerformanceObserver((list) => {
         for (const entry of list.getEntries()) {
           if (entry.duration > 16) {
@@ -594,9 +586,9 @@ const BuyPixels = () => {
       </AlertDialog>
 
       {/* MAIN LAYOUT */}
-      <main className="flex-1 w-full overflow-hidden flex flex-col lg:grid lg:grid-cols-12">
+      <main className="flex-1 w-full overflow-hidden flex flex-col lg:grid lg:grid-cols-12 lg:gap-0">
         {/* LEFT COLUMN: CANVAS */}
-        <div className="lg:col-span-9 order-1 flex flex-col gap-4 min-h-[400px] h-[60vh] lg:h-[calc(100vh-64px)]">
+        <div className="lg:col-span-9 order-1 flex flex-col gap-4 min-h-[400px] h-[60vh] lg:h-[calc(100vh-64px)] lg:border-r border-border/40">
           {/* Canvas Wrapper with Overlay Controls */}
           <div className="w-full h-full relative flex-1">
             {/* Desktop Toolbar */}
@@ -750,168 +742,209 @@ const BuyPixels = () => {
         </div>
 
         {/* RIGHT COLUMN: SIDEBAR */}
-        <div className="hidden lg:block lg:col-span-3 order-2 space-y-4">
-          {/* Action Buttons - Idle Mode */}
-          {mode === "idle" && (
-            <TooltipProvider>
-              <div className="flex flex-col gap-3 w-full" role="group" aria-label="Main actions">
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      onClick={handleBuyClick}
-                      disabled={isLoading || !isOnline}
-                      size="default"
-                      className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-semibold text-base h-12 rounded-xl shadow-md transition-all duration-200 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed gap-2"
-                      aria-label="Buy pixels"
-                    >
-                      {isLoading ? (
-                        <>
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                          Loading...
-                        </>
-                      ) : (
-                        <>
-                          <ShoppingCart className="w-5 h-5" />
-                          Buy Pixels
-                        </>
-                      )}
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent side="left">
-                    <p>Purchase pixels to display your content</p>
-                  </TooltipContent>
-                </Tooltip>
+        <div className="hidden lg:flex lg:flex-col lg:col-span-3 order-2 bg-gradient-to-b from-muted/20 to-background overflow-y-auto lg:h-[calc(100vh-64px)]">
+          <div className="p-6 xl:p-8 space-y-6 flex-1">
+            {/* Action Buttons - Idle Mode */}
+            {mode === "idle" && (
+              <TooltipProvider>
+                <div className="flex flex-col gap-3 w-full" role="group" aria-label="Main actions">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        onClick={handleBuyClick}
+                        disabled={isLoading || !isOnline}
+                        size="lg"
+                        className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-semibold text-base h-14 rounded-2xl shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed gap-2.5"
+                        aria-label="Buy pixels"
+                      >
+                        {isLoading ? (
+                          <>
+                            <Loader2 className="w-5 h-5 animate-spin" />
+                            Loading...
+                          </>
+                        ) : (
+                          <>
+                            <ShoppingCart className="w-5 h-5" />
+                            Buy Pixels
+                          </>
+                        )}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="left">
+                      <p>Purchase pixels to display your content</p>
+                    </TooltipContent>
+                  </Tooltip>
 
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      onClick={handleSellClick}
-                      disabled={isLoading || !isOnline}
-                      size="default"
-                      className="w-full bg-gradient-to-r from-rose-600 to-rose-700 hover:from-rose-700 hover:to-rose-800 text-white font-semibold text-base h-12 rounded-xl shadow-md transition-all duration-200 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed gap-2"
-                      aria-label="Open marketplace"
-                    >
-                      {isLoading ? (
-                        <>
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                          Loading...
-                        </>
-                      ) : (
-                        <>
-                          <Store className="w-5 h-5" />
-                          Marketplace
-                        </>
-                      )}
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent side="left">
-                    <p>Browse and manage pixels in the marketplace</p>
-                  </TooltipContent>
-                </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        onClick={handleSellClick}
+                        disabled={isLoading || !isOnline}
+                        size="lg"
+                        className="w-full bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 text-white font-semibold text-base h-14 rounded-2xl shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed gap-2.5"
+                        aria-label="Open marketplace"
+                      >
+                        {isLoading ? (
+                          <>
+                            <Loader2 className="w-5 h-5 animate-spin" />
+                            Loading...
+                          </>
+                        ) : (
+                          <>
+                            <Store className="w-5 h-5" />
+                            Marketplace
+                          </>
+                        )}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="left">
+                      <p>Browse and manage pixels in the marketplace</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+              </TooltipProvider>
+            )}
+
+            {/* Desktop Intro Box */}
+            <div className="hidden lg:block rounded-2xl border border-border/50 bg-card/80 backdrop-blur-sm p-7 text-center shadow-sm">
+              <h1 className="text-2xl xl:text-3xl font-bold mb-3 bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent leading-tight">
+                Select Pixels &<br />Make History
+              </h1>
+              <p className="text-sm text-muted-foreground mb-5 leading-relaxed">
+                Choose from {(CANVAS_WIDTH * CANVAS_HEIGHT).toLocaleString()} pixels to showcase
+                your brand forever.
+              </p>
+              <div className="flex justify-center gap-3 text-xs font-semibold">
+                <span className="bg-primary/10 text-primary px-3 py-1.5 rounded-full border border-primary/20">₹99+</span>
+                <span className="bg-accent/10 text-accent px-3 py-1.5 rounded-full border border-accent/20">Permanent</span>
               </div>
-            </TooltipProvider>
-          )}
 
-          {/* Desktop Intro Box */}
-          <div className="hidden lg:block bg-gradient-to-br from-primary/5 to-accent/5 rounded-xl border p-6 text-center">
-            <h1 className="text-2xl font-bold mb-2 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-              Select Pixels & Make History
-            </h1>
-            <p className="text-sm text-muted-foreground mb-4">
-              Choose from {(CANVAS_WIDTH * CANVAS_HEIGHT).toLocaleString()} pixels to showcase
-              your brand forever.
-            </p>
-            <div className="flex justify-center gap-2 text-xs font-medium">
-              <span className="bg-primary/10 text-primary px-2 py-1 rounded">₹99+</span>
-              <span className="bg-accent/10 text-accent px-2 py-1 rounded">Permanent</span>
+              {/* Keyboard Shortcuts Hint */}
+              {mode === "buying" && (
+                <div className="mt-5 pt-5 border-t border-border/50 text-left">
+                  <p className="text-xs font-semibold text-muted-foreground mb-3">⌨️ Shortcuts:</p>
+                  <div className="space-y-2 text-xs text-muted-foreground">
+                    <div className="flex justify-between items-center">
+                      <span>Undo</span>
+                      <kbd className="px-2.5 py-1 bg-muted rounded-md text-xs font-mono border border-border/50">Ctrl+Z</kbd>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span>Cancel</span>
+                      <kbd className="px-2.5 py-1 bg-muted rounded-md text-xs font-mono border border-border/50">ESC</kbd>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span>Clear</span>
+                      <kbd className="px-2.5 py-1 bg-muted rounded-md text-xs font-mono border border-border/50">Del</kbd>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
-            {/* Keyboard Shortcuts Hint */}
-            {mode === "buying" && (
-              <div className="mt-4 pt-4 border-t text-left">
-                <p className="text-xs font-semibold text-muted-foreground mb-2">⌨️ Shortcuts:</p>
-                <div className="space-y-1 text-xs text-muted-foreground">
-                  <div className="flex justify-between">
-                    <span>Undo</span>
-                    <kbd className="px-2 py-0.5 bg-muted rounded text-xs font-mono">Ctrl+Z</kbd>
+            {/* Zone Pricing Guide (Idle Mode) */}
+            {mode === "idle" && (
+              <div className="hidden lg:block rounded-2xl border border-border/50 bg-card/80 backdrop-blur-sm p-6 shadow-sm">
+                <h3 className="text-sm font-semibold mb-4 text-foreground/80">Pricing Zones</h3>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-3 h-3 rounded-full bg-amber-400 shadow-sm shadow-amber-400/30" />
+                      <span className="text-sm text-muted-foreground">Gold Center</span>
+                    </div>
+                    <span className="text-sm font-bold text-foreground">₹299</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span>Cancel</span>
-                    <kbd className="px-2 py-0.5 bg-muted rounded text-xs font-mono">ESC</kbd>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-3 h-3 rounded-full bg-violet-400 shadow-sm shadow-violet-400/30" />
+                      <span className="text-sm text-muted-foreground">Premium</span>
+                    </div>
+                    <span className="text-sm font-bold text-foreground">₹199</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span>Clear</span>
-                    <kbd className="px-2 py-0.5 bg-muted rounded text-xs font-mono">Del</kbd>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-3 h-3 rounded-full bg-emerald-400 shadow-sm shadow-emerald-400/30" />
+                      <span className="text-sm text-muted-foreground">Economy</span>
+                    </div>
+                    <span className="text-sm font-bold text-foreground">₹99</span>
                   </div>
                 </div>
               </div>
             )}
-          </div>
 
-          {/* Price Breakdown Card */}
-          {mode === "buying" && selectedPixels.length > 0 && (
-            <div className="hidden lg:block bg-card rounded-xl border p-4">
-              <h3 className="text-sm font-semibold mb-3">Price Breakdown</h3>
-              <div className="space-y-2 text-sm">
-                {priceBreakdown.premium > 0 && (
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Premium (₹299)</span>
-                    <span className="font-medium">
-                      {priceBreakdown.premium} × ₹299
-                    </span>
+            {/* Price Breakdown Card */}
+            {mode === "buying" && selectedPixels.length > 0 && (
+              <div className="hidden lg:block rounded-2xl border border-border/50 bg-card/80 backdrop-blur-sm p-6 shadow-sm">
+                <h3 className="text-sm font-semibold mb-4 text-foreground/80">Price Breakdown</h3>
+                <div className="space-y-3 text-sm">
+                  {priceBreakdown.premium > 0 && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-amber-400" />
+                        Gold (₹299)
+                      </span>
+                      <span className="font-medium tabular-nums">
+                        {priceBreakdown.premium} × ₹299
+                      </span>
+                    </div>
+                  )}
+                  {priceBreakdown.standard > 0 && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-violet-400" />
+                        Premium (₹199)
+                      </span>
+                      <span className="font-medium tabular-nums">
+                        {priceBreakdown.standard} × ₹199
+                      </span>
+                    </div>
+                  )}
+                  {priceBreakdown.economy > 0 && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-emerald-400" />
+                        Economy (₹99)
+                      </span>
+                      <span className="font-medium tabular-nums">
+                        {priceBreakdown.economy} × ₹99
+                      </span>
+                    </div>
+                  )}
+                  <div className="pt-3 mt-1 border-t border-border/50 flex justify-between items-center font-bold">
+                    <span>Total</span>
+                    <span className="text-primary text-base">₹{totalCost.toLocaleString()}</span>
                   </div>
-                )}
-                {priceBreakdown.standard > 0 && (
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Standard (₹199)</span>
-                    <span className="font-medium">
-                      {priceBreakdown.standard} × ₹199
-                    </span>
-                  </div>
-                )}
-                {priceBreakdown.economy > 0 && (
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Economy (₹99)</span>
-                    <span className="font-medium">
-                      {priceBreakdown.economy} × ₹99
-                    </span>
-                  </div>
-                )}
-                <div className="pt-2 border-t flex justify-between font-bold">
-                  <span>Total</span>
-                  <span className="text-primary">₹{totalCost.toLocaleString()}</span>
                 </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Sticky Stats & Tools */}
-          {mode === "buying" && (
-            <div className="sticky top-4 space-y-4">
-              <EnhancedSelectionSummary
-                selectedPixels={selectedPixels}
-                onClearSelection={handleClearSelection}
-                onUndoLastSelection={handleUndoLastSelection}
-                onPurchase={handlePurchase}
-              />
-
-              <div className="hidden sm:block">
-                <QuickSelectTools
-                  onPixelsSelected={handleSelectionChange}
-                  gridWidth={CANVAS_WIDTH}
-                  gridHeight={CANVAS_HEIGHT}
-                  calculatePixelPrice={calculatePixelPrice}
-                  anchorPixel={
-                    selectedPixels.length > 0
-                      ? selectedPixels[selectedPixels.length - 1]
-                      : null
-                  }
+            {/* Sticky Stats & Tools */}
+            {mode === "buying" && (
+              <div className="sticky top-4 space-y-5">
+                <EnhancedSelectionSummary
+                  selectedPixels={selectedPixels}
+                  onClearSelection={handleClearSelection}
+                  onUndoLastSelection={handleUndoLastSelection}
+                  onPurchase={handlePurchase}
                 />
-              </div>
 
-              <EnhancedStatsPanel selectedPixelsCount={selectedPixels.length} />
-            </div>
-          )}
+                <div className="hidden sm:block">
+                  <QuickSelectTools
+                    onPixelsSelected={handleSelectionChange}
+                    gridWidth={CANVAS_WIDTH}
+                    gridHeight={CANVAS_HEIGHT}
+                    calculatePixelPrice={calculatePixelPrice}
+                    anchorPixel={
+                      selectedPixels.length > 0
+                        ? selectedPixels[selectedPixels.length - 1]
+                        : null
+                    }
+                  />
+                </div>
+
+                <EnhancedStatsPanel selectedPixelsCount={selectedPixels.length} />
+              </div>
+            )}
+          </div>
         </div>
       </main>
 

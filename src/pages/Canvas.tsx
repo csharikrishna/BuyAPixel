@@ -56,7 +56,7 @@ const Canvas = () => {
       if (fetchError) {
         throw new Error(fetchError.message);
       }
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('Error loading canvas:', err);
       setError(err instanceof Error ? err.message : 'Failed to load canvas');
     } finally {

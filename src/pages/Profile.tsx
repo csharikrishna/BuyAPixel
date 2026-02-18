@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 import ProfileEditModal from '@/components/ProfileEditModal';
 import { SharePixelDialog } from '@/components/SharePixelDialog';
 import { RealtimeChannel } from '@supabase/supabase-js';
+import Footer from '@/components/Footer';
 import { EditPixelDialog } from '@/components/EditPixelDialog';
 
 import { ProfileDetails } from '@/components/profile/ProfileDetails';
@@ -137,7 +138,7 @@ const Profile = () => {
 
       if (!data) {
         if (isOwnProfile && user) {
-          console.warn('Profile not found, attempting to create one');
+          // Profile not found, attempting to create one
           const { data: newProfile, error: createError } = await supabase
             .from('profiles')
             .insert({
@@ -173,7 +174,7 @@ const Profile = () => {
           toast.success("Profile refreshed successfully");
         }
       }
-    } catch (err) {
+    } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to load profile';
       console.error('Error fetching profile:', err);
       setError(errorMessage);
@@ -218,7 +219,7 @@ const Profile = () => {
       if (showToast && pixels.length > 0) {
         toast.success(`Loaded ${pixels.length} pixel${pixels.length !== 1 ? 's' : ''}`);
       }
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('Error fetching user pixels:', err);
       toast.error("Failed to load pixels");
     } finally {
@@ -251,7 +252,7 @@ const Profile = () => {
       URL.revokeObjectURL(url);
 
       toast.success("Your data has been exported successfully!");
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('Error exporting data:', err);
       toast.error("Failed to export data");
     } finally {
@@ -268,7 +269,7 @@ const Profile = () => {
     setDeleteLoading(true);
 
     try {
-      console.log('🗑️ Starting account deletion process...');
+      // Delete user's owned pixels first, then profile
 
       if (userPixels.length > 0) {
         const { error: pixelsError } = await supabase
@@ -307,7 +308,7 @@ const Profile = () => {
         navigate('/', { replace: true });
       }, 2000);
 
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('Error deleting account:', err);
       toast.error('Failed to delete account. Please try again or contact support.');
       setDeleteLoading(false); // Only set to false on error, otherwise we are navigating away
@@ -354,8 +355,7 @@ const Profile = () => {
           schema: 'public',
           table: 'pixels',
           filter: `owner_id=eq.${user.id}`
-        }, (payload) => {
-          console.log('Pixel change detected:', payload);
+        }, () => {
           fetchUserPixels();
         })
         .on('postgres_changes', {
@@ -363,8 +363,7 @@ const Profile = () => {
           schema: 'public',
           table: 'profiles',
           filter: `user_id=eq.${user.id}`
-        }, (payload) => {
-          console.log('Profile change detected:', payload);
+        }, () => {
           fetchProfile();
         })
         .subscribe();
@@ -394,7 +393,7 @@ const Profile = () => {
         ? url
         : `https://${url}`;
       window.open(validUrl, '_blank', 'noopener,noreferrer');
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('Invalid URL:', err);
       toast.error("Invalid URL format");
     }
@@ -407,7 +406,7 @@ const Profile = () => {
 
       toast.success("Signed out successfully");
       navigate('/');
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('Sign out error:', err);
       toast.error("Failed to sign out");
     }
@@ -603,6 +602,7 @@ const Profile = () => {
           }}
         />
       )}
+      <Footer />
     </div>
   );
 };

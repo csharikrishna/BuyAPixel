@@ -187,6 +187,7 @@ const BlogAdmin = () => {
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [showExitDialog, setShowExitDialog] = useState(false);
+  const [showSeoWarning, setShowSeoWarning] = useState(false);
   const [formData, setFormData] = useState<BlogFormData>({
     title: '',
     slug: '',
@@ -294,7 +295,7 @@ const BlogAdmin = () => {
         } else {
           localStorage.removeItem('blog_draft');
         }
-      } catch (error) {
+      } catch (error: unknown) {
         console.error('Failed to parse draft:', error);
         localStorage.removeItem('blog_draft');
       }
@@ -330,7 +331,7 @@ const BlogAdmin = () => {
       // Ctrl/Cmd + S to save
       if ((e.ctrlKey || e.metaKey) && e.key === 's') {
         e.preventDefault();
-        handleSubmit(new Event('submit') as any);
+        performSave();
       }
 
       // Ctrl/Cmd + P to toggle preview
@@ -418,12 +419,15 @@ const BlogAdmin = () => {
     }
 
     if (seoScore.score < 50 && formData.published) {
-      const proceed = window.confirm(
-        `Your SEO score is low (${seoScore.score}/100). Do you still want to publish?`
-      );
-      if (!proceed) return;
+      setShowSeoWarning(true);
+      return;
     }
 
+    await performSave();
+  };
+
+  const performSave = async () => {
+    setShowSeoWarning(false);
     setIsLoading(true);
 
     try {
@@ -433,7 +437,7 @@ const BlogAdmin = () => {
         .map((tag) => tag.trim())
         .filter((tag) => tag);
 
-      const { error } = await supabase.from('blog_posts' as any).insert({
+      const { error } = await supabase.from('blog_posts').insert({
         title: formData.title,
         slug,
         excerpt: formData.excerpt || null,
@@ -441,7 +445,7 @@ const BlogAdmin = () => {
         featured_image: formData.featured_image,
         tags,
         reading_time: formData.reading_time,
-        published: formData.published,
+        status: formData.published ? 'published' : 'draft',
         published_at: formData.published ? new Date().toISOString() : null,
         seo_title: formData.seo_title || formData.title,
         seo_description: formData.seo_description || formData.excerpt || null,
@@ -466,7 +470,7 @@ const BlogAdmin = () => {
       console.error('Error creating blog post:', error);
 
       const errorMessage = getErrorMessage(error);
-      if ((error as any)?.code === '23505') {
+      if (error instanceof Object && 'code' in error && error.code === '23505') {
         toast.error('A post with this slug already exists. Please use a different slug.');
       } else {
         toast.error(errorMessage || 'Failed to create blog post');
@@ -938,6 +942,24 @@ const BlogAdmin = () => {
             <AlertDialogCancel>Continue Editing</AlertDialogCancel>
             <AlertDialogAction onClick={confirmExit} className="bg-destructive hover:bg-destructive/90">
               Leave Anyway
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* SEO Score Warning Dialog */}
+      <AlertDialog open={showSeoWarning} onOpenChange={setShowSeoWarning}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Low SEO Score</AlertDialogTitle>
+            <AlertDialogDescription>
+              Your SEO score is {seoScore.score}/100. Publishing with a low score may reduce search visibility. Do you still want to publish?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Go Back &amp; Improve</AlertDialogCancel>
+            <AlertDialogAction onClick={performSave}>
+              Publish Anyway
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

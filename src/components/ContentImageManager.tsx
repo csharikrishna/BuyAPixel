@@ -43,7 +43,7 @@ export const ContentImageManager = ({ onInsertImage }: ContentImageManagerProps)
       });
 
       setRecentImages(urls);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error loading images:', error);
     } finally {
       setLoading(false);

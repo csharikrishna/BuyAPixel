@@ -28,13 +28,13 @@ export const TrophyCase = ({ userId }: TrophyCaseProps) => {
       const fetchBadges = async () => {
          setLoading(true);
          try {
-            const { data, error } = await (supabase as any).rpc("get_user_badges", {
+            const { data, error } = await supabase.rpc("get_user_badges", {
                target_user_id: userId
             });
 
             if (error) throw error;
             setBadges(data || []);
-         } catch (error) {
+         } catch (error: unknown) {
             console.error("Error fetching badges:", error);
          } finally {
             setLoading(false);

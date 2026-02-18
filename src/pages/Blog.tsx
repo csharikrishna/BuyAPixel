@@ -39,7 +39,7 @@ interface BlogPost {
   published_at: string;
   reading_time: number;
   tags: string[];
-  views: number;
+  view_count: number | null;
   author_id: string;
 }
 
@@ -113,7 +113,7 @@ const Blog = () => {
       setError(null);
 
       const { data, error: fetchError } = await supabase
-        .from('blog_posts' as any)
+        .from('blog_posts')
         .select('*')
         .eq('status', 'published')
         .order('published_at', { ascending: false });
@@ -123,7 +123,7 @@ const Blog = () => {
       if (!isMountedRef.current) return;
 
       setPosts((data as unknown as BlogPost[]) || []);
-    } catch (error) {
+    } catch (error: unknown) {
       if (!isMountedRef.current) return;
 
       console.error('Error loading blog posts:', error);
@@ -231,7 +231,7 @@ const Blog = () => {
         queryKey: ['blog-post', slug],
         queryFn: async () => {
           const { data } = await supabase
-            .from('blog_posts' as any)
+            .from('blog_posts')
             .select('*')
             .eq('slug', slug)
             .eq('status', 'published')
@@ -504,11 +504,11 @@ const Blog = () => {
                             <span aria-hidden="true">•</span>
                             <Clock className="w-3 h-3" aria-hidden="true" />
                             <span>{post.reading_time} min read</span>
-                            {post.views > 0 && (
+                            {(post.view_count ?? 0) > 0 && (
                               <>
                                 <span aria-hidden="true">•</span>
                                 <TrendingUp className="w-3 h-3" aria-hidden="true" />
-                                <span>{post.views} views</span>
+                                <span>{post.view_count} views</span>
                               </>
                             )}
                           </div>

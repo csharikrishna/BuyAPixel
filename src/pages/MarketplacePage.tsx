@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from 'sonner';
 import { getErrorMessage } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -140,7 +140,6 @@ interface MarketplaceStats {
 
 const MarketplacePage = () => {
   const { session } = useAuth();
-  const { toast } = useToast();
   const [selectedPixelId, setSelectedPixelId] = useState<string | null>(null);
   const [listingPrice, setListingPrice] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -178,7 +177,7 @@ const MarketplacePage = () => {
         const { data, error } = await supabase.functions.invoke("get_marketplace_stats");
         if (error) throw error;
         return data as MarketplaceStats;
-      } catch (err) {
+      } catch (err: unknown) {
         console.warn("Failed to fetch marketplace stats (using defaults):", err);
         return {
           active_listings: 0,
@@ -319,19 +318,15 @@ const MarketplacePage = () => {
 
   const handleBuyFromMarketplace = async (listingId: string, price: number) => {
     if (!session) {
-      toast({
-        title: "Authentication Required",
+      toast.error("Authentication Required", {
         description: "Please sign in to purchase from the marketplace",
-        variant: "destructive",
       });
       return;
     }
 
     if (!razorpayLoaded) {
-      toast({
-        title: "Payment Not Ready",
+      toast.error("Payment Not Ready", {
         description: "Please wait while payment system loads",
-        variant: "destructive",
       });
       return;
     }
@@ -380,17 +375,14 @@ const MarketplacePage = () => {
               throw new Error(verifyData?.error || verifyError?.message || 'Payment verification failed');
             }
 
-            toast({
-              title: "Purchase Successful! 🎉",
+            toast.success("Purchase Successful! 🎉", {
               description: `You have acquired a pixel for ₹${price.toLocaleString()}. A confirmation email has been sent.`,
             });
 
             refetchListings();
-          } catch (verifyErr) {
-            toast({
-              title: "Verification Failed",
+          } catch (verifyErr: unknown) {
+            toast.error("Verification Failed", {
               description: getErrorMessage(verifyErr) || "Payment verification failed. Contact support if charged.",
-              variant: "destructive",
             });
           } finally {
             setIsPurchasing(null);
@@ -407,8 +399,7 @@ const MarketplacePage = () => {
         modal: {
           ondismiss: () => {
             setIsPurchasing(null);
-            toast({
-              title: "Payment Cancelled",
+            toast("Payment Cancelled", {
               description: "You cancelled the payment",
             });
           },
@@ -420,30 +411,24 @@ const MarketplacePage = () => {
 
     } catch (error: unknown) {
       setIsPurchasing(null);
-      toast({
-        title: "Error",
+      toast.error("Error", {
         description: getErrorMessage(error) || "An unexpected error occurred",
-        variant: "destructive",
       });
     }
   };
 
   const handleListPixel = async () => {
     if (!session || !selectedPixelId || !listingPrice) {
-      toast({
-        title: "Incomplete Information",
+      toast.error("Incomplete Information", {
         description: "Please select a pixel and enter a listing price",
-        variant: "destructive",
       });
       return;
     }
 
     const price = parseFloat(listingPrice);
     if (isNaN(price) || price <= 0) {
-      toast({
-        title: "Invalid Price",
+      toast.error("Invalid Price", {
         description: "Please enter a valid price greater than zero",
-        variant: "destructive",
       });
       return;
     }
@@ -458,8 +443,7 @@ const MarketplacePage = () => {
 
       if (error) throw error;
 
-      toast({
-        title: "Listing Created Successfully ✅",
+      toast.success("Listing Created Successfully ✅", {
         description: `Your pixel is now available for ₹${price.toLocaleString()}`,
       });
 
@@ -469,10 +453,8 @@ const MarketplacePage = () => {
       refetchListings();
       refetchUserPixels();
     } catch (error: unknown) {
-      toast({
-        title: "Error",
+      toast.error("Error", {
         description: getErrorMessage(error) || "Unable to create listing",
-        variant: "destructive",
       });
     }
   };
@@ -489,18 +471,15 @@ const MarketplacePage = () => {
 
       if (error) throw error;
 
-      toast({
-        title: "Listing Removed",
+      toast.success("Listing Removed", {
         description: "Your pixel has been removed from the marketplace",
       });
 
       refetchListings();
       refetchUserPixels();
     } catch (error: unknown) {
-      toast({
-        title: "Error",
+      toast.error("Error", {
         description: getErrorMessage(error) || "Unable to remove listing",
-        variant: "destructive",
       });
     }
   };

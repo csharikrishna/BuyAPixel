@@ -11,16 +11,14 @@ import {
 } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { PixelTooltip } from "./PixelTooltip";
-import { MiniMap } from "./MiniMap";
 import { toast } from "sonner";
 import { Star, ExternalLink, Loader2 } from "lucide-react";
 
 import { usePixelGridData } from "@/hooks/usePixelGridData";
 import { useGridInteraction } from "@/hooks/useGridInteraction";
-import { GRID_CONFIG } from "@/utils/gridConstants";
+import { GRID_CONFIG, calculatePixelPrice } from "@/utils/gridConstants";
 import { SelectedPixel, PurchasedPixel } from "@/types/grid";
 import { getGridImageUrl, getBillboardImageUrl } from "@/utils/imageOptimization";
-import throttle from "lodash/throttle";
 
 // ============================================
 // 📦 PROPS
@@ -155,22 +153,6 @@ export const VirtualizedPixelGrid = forwardRef<GridHandle, VirtualizedPixelGridP
   // 🔄 Pixel Logic
   // ---------------------------------------------------------------------------
 
-  const calculatePixelPrice = useCallback(
-    (x: number, y: number) => {
-      const centerX = gridWidth / 2.0;
-      const centerY = gridHeight / 2.0;
-
-      const dx = Math.abs(x - centerX);
-      const dy = Math.abs(y - centerY);
-      const maxDist = Math.max(dx, dy);
-
-      if (maxDist < 20) return 299; // Gold Zone
-      if (maxDist < 40) return 199; // Premium Zone
-      return 99;
-    },
-    [gridWidth, gridHeight]
-  );
-
   const getPixelStatus = useCallback(
     (x: number, y: number) => {
       // Check billboard area first
@@ -195,7 +177,7 @@ export const VirtualizedPixelGrid = forwardRef<GridHandle, VirtualizedPixelGridP
   );
 
   const handlePixelClick = useCallback(
-    (x: number, y: number, event: React.MouseEvent | React.TouchEvent) => {
+    (x: number, y: number, event: React.MouseEvent | React.TouchEvent | React.KeyboardEvent) => {
       if (!isSelecting) return;
 
       const status = getPixelStatus(x, y);
@@ -332,7 +314,7 @@ export const VirtualizedPixelGrid = forwardRef<GridHandle, VirtualizedPixelGridP
           break;
         case "Enter":
         case " ":
-          handlePixelClick(hoveredPixel.x, hoveredPixel.y, event as any);
+          handlePixelClick(hoveredPixel.x, hoveredPixel.y, event);
           event.preventDefault();
           break;
       }
@@ -471,7 +453,7 @@ export const VirtualizedPixelGrid = forwardRef<GridHandle, VirtualizedPixelGridP
 
   // Performance monitoring (development only)
   useEffect(() => {
-    if (process.env.NODE_ENV === "development") {
+    if (import.meta.env.DEV) {
       const observer = new PerformanceObserver((list) => {
         for (const entry of list.getEntries()) {
           if (entry.duration > 16) {
@@ -572,15 +554,6 @@ export const VirtualizedPixelGrid = forwardRef<GridHandle, VirtualizedPixelGridP
         pixel.y <= visibleRange.y + visibleRange.h
     );
   }, [selectedPixels, visibleRange]);
-
-  // Throttled hover update
-  const throttledSetHover = useMemo(
-    () => throttle((pixel: { x: number; y: number } | null) => {
-      // This would need to be exposed from useGridInteraction hook
-      // setHoveredPixel(pixel);
-    }, 16),
-    []
-  );
 
   // ---------------------------------------------------------------------------
   // 🖼️ RENDER
@@ -940,19 +913,6 @@ export const VirtualizedPixelGrid = forwardRef<GridHandle, VirtualizedPixelGridP
         />
       )}
 
-      {/* 11. Minimap (Desktop Only) - Optional */}
-      {false && !isMobile && (
-        <MiniMap
-          gridWidth={gridWidth}
-          gridHeight={gridHeight}
-          viewportOffset={viewportOffset}
-          zoom={zoom}
-          containerWidth={containerSize.width}
-          containerHeight={containerSize.height}
-          onViewportChange={setViewportOffset}
-          pixelSize={pixelSize}
-        />
-      )}
     </div>
   );
 });

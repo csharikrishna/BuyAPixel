@@ -46,7 +46,7 @@ const StaticPixelPreview = () => {
         const sold = count || 0;
         setPixelsSold(sold);
         setPixelsAvailable(10000 - sold);
-      } catch (error) {
+      } catch (error: unknown) {
         console.error('Error fetching pixel stats:', error);
       } finally {
         setIsLoading(false);

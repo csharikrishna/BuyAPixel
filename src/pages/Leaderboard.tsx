@@ -51,7 +51,7 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { cn, getErrorMessage } from '@/lib/utils';
 import { RealtimeChannel } from '@supabase/supabase-js';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 // ======================
 // TYPES & INTERFACES
@@ -184,7 +184,6 @@ const LeaderboardRowSkeleton = () => (
 
 const Leaderboard = () => {
   const { user } = useAuth();
-  const { toast } = useToast();
   const navigate = useNavigate();
 
   // Refs
@@ -354,10 +353,8 @@ const Leaderboard = () => {
         setError(errorMsg);
 
         if (!showRefreshIndicator) {
-          toast({
-            title: 'Error',
+          toast.error('Error', {
             description: errorMsg,
-            variant: 'destructive',
           });
         }
       } finally {
@@ -367,7 +364,7 @@ const Leaderboard = () => {
         }
       }
     },
-    [user, timePeriod, toast]
+    [user, timePeriod]
   );
 
   // Initial fetch
@@ -528,11 +525,10 @@ const Leaderboard = () => {
     link.click();
     window.URL.revokeObjectURL(url);
 
-    toast({
-      title: 'Export Successful',
+    toast.success('Export Successful', {
       description: 'Leaderboard data has been downloaded.',
     });
-  }, [activeTab, topByPixels, topBySpending, toast]);
+  }, [activeTab, topByPixels, topBySpending]);
 
   // Manual refresh
   const handleManualRefresh = useCallback(() => {

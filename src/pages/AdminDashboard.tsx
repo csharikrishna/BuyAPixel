@@ -1,124 +1,55 @@
-import { useState, useEffect, useMemo, useCallback, useTransition, useDeferredValue, useRef, Component, ErrorInfo, ReactNode } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useIsAdmin } from '@/hooks/useIsAdmin';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import Header from '@/components/Header';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Switch } from '@/components/ui/switch';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
+  Tabs, TabsContent, TabsList, TabsTrigger,
 } from '@/components/ui/tabs';
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+} from '@/components/ui/dialog';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import {
-  Shield,
-  Users,
-  Image,
-  FileText,
-  Activity,
-  Ban,
-  Trash2,
-  Unlock,
-  AlertTriangle,
-  Loader2,
-  Search,
-  Download,
-  RefreshCw,
-  Filter,
-  TrendingUp,
-  DollarSign,
-  UserCheck,
-  UserX,
-  Eye,
-  Calendar,
-  MoreVertical,
-  CheckCircle2,
-  Store,
-  Star,
-  XCircle,
-  LayoutGrid,
-  List as ListIcon,
-  Megaphone,
-  Database,
-  KeyRound,
-  ShieldCheck,
-  Keyboard
+  Shield, Users, Image, FileText, Activity,
+  RefreshCw, CheckCircle2, Store,
+  Megaphone, KeyRound, ShieldCheck,
 } from 'lucide-react';
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  LineChart,
-  Line
-} from 'recharts';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { getErrorMessage } from '@/lib/utils';
 
-// --- Interfaces ---
+import {
+  AdminStatsGrid,
+  AdminAnalyticsCharts,
+  AdminDangerZone,
+  AdminMarketplaceOverview,
+  AdminUsersTab,
+  AdminPixelsTab,
+  AdminMarketplaceTab,
+  AdminAccessTab,
+  AdminBroadcastTab,
+  AdminAuditTab,
+} from '@/components/admin';
+import type { AdminStats } from '@/components/admin';
 
-// Matches the return type of public.admin_get_all_users() function
+// --- Interfaces (shared / parent-only) ---
+
 interface User {
   user_id: string;
   email: string;
   full_name: string | null;
-  pixel_count: number;  // Was: pixels_owned
+  pixel_count: number;
   total_spent: number;
   is_blocked: boolean;
   created_at: string;
-  last_active_at: string | null;  // Was: last_sign_in_at
+  last_active_at: string | null;
 }
 
 interface AuditLog {
@@ -127,7 +58,7 @@ interface AuditLog {
   action: string;
   target_type: string;
   target_id: string;
-  details: any;
+  details: Record<string, unknown>;
   created_at: string;
 }
 
@@ -139,14 +70,8 @@ interface MarketplaceListing {
   status: string;
   featured: boolean;
   created_at: string;
-  pixels: {
-    x: number;
-    y: number;
-  };
-  profiles: {
-    email: string;
-    full_name: string;
-  };
+  pixels: { x: number; y: number };
+  profiles: { email: string; full_name: string };
 }
 
 interface AdminUser {
@@ -161,31 +86,23 @@ interface MarketplaceAnalytics {
   total_refunds: number;
   active_listings: number;
   featured_listings: number;
-  top_sellers: Array<{
-    seller_id: string;
-    sales: number;
-    earned: number;
-  }>;
+  top_sellers: Array<{ seller_id: string; sales: number; earned: number }>;
 }
-
-type UserFilter = 'all' | 'active' | 'blocked' | 'paid';
-type SortField = 'created_at' | 'pixels_owned' | 'total_spent';
-type SortOrder = 'asc' | 'desc';
 
 const AdminDashboard = () => {
   const { user } = useAuth();
   const { isAdmin, isLoading: checkingAdmin } = useIsAdmin();
   const navigate = useNavigate();
 
-  // --- State Management ---
-
+  // --- Shared State ---
   const [users, setUsers] = useState<User[]>([]);
   const [admins, setAdmins] = useState<AdminUser[]>([]);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [marketplaceListings, setMarketplaceListings] = useState<MarketplaceListing[]>([]);
   const [marketplaceAnalytics, setMarketplaceAnalytics] = useState<MarketplaceAnalytics | null>(null);
+  const [pixels, setPixels] = useState<any[]>([]);
 
-  const [stats, setStats] = useState({
+  const [stats, setStats] = useState<AdminStats>({
     totalUsers: 0,
     totalPixelsSold: 0,
     totalRevenue: 0,
@@ -196,52 +113,17 @@ const AdminDashboard = () => {
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [userFilter, setUserFilter] = useState<UserFilter>('all');
-  const [sortField, setSortField] = useState<SortField>('created_at');
-  const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
-
-  // Dialog States
-  const [blockDialog, setBlockDialog] = useState<{ open: boolean; userId: string; email: string } | null>(null);
-  const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; userId: string; email: string } | null>(null);
-  const [resetUserPixelsDialog, setResetUserPixelsDialog] = useState<{ open: boolean; userId: string; email: string } | null>(null);
-  const [cancelListingDialog, setCancelListingDialog] = useState<{ open: boolean; listingId: string } | null>(null);
-
-  // Form States
-  const [blockReason, setBlockReason] = useState('');
-  const [blockNotes, setBlockNotes] = useState('');
-  const [cancelReason, setCancelReason] = useState('');
   const [processing, setProcessing] = useState(false);
+
+  // Access management
   const [newAdminEmail, setNewAdminEmail] = useState('');
 
-  // Pixel Management States
-  const [pixels, setPixels] = useState<any[]>([]);
-  const [pixelSearchTerm, setPixelSearchTerm] = useState('');
-  const [loadingPixels, setLoadingPixels] = useState(false);
-  const [pixelViewMode, setPixelViewMode] = useState<'list' | 'grid'>('grid');
-  const [resetPixelDialog, setResetPixelDialog] = useState<{ open: boolean; pixelId: string } | null>(null);
-  const [clearContentDialog, setClearContentDialog] = useState<{ open: boolean; pixelId: string } | null>(null);
-
-  // Clear Database States
-  const [clearDbDialog, setClearDbDialog] = useState<{ open: boolean } | null>(null);
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [passwordError, setPasswordError] = useState('');
-  const [clearingDb, setClearingDb] = useState(false);
-
-  // Broadcast State
+  // Broadcast
   const [broadcastMessage, setBroadcastMessage] = useState('');
   const [isBroadcastActive, setIsBroadcastActive] = useState(false);
   const [broadcastId, setBroadcastId] = useState<string | null>(null);
 
-  // Bulk Actions State
-  const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
-  const [bulkAction, setBulkAction] = useState<'block' | 'unblock' | 'export' | null>(null);
-  const [exportCooldown, setExportCooldown] = useState(0);
-
-  // --- Performance & Security State ---
-  const [isPending, startTransition] = useTransition();
-  const deferredSearchTerm = useDeferredValue(searchTerm);
-  const sessionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  // MFA
   const [mfaDialog, setMfaDialog] = useState<{
     open: boolean;
     action: 'delete' | 'clearDb' | 'block';
@@ -249,371 +131,162 @@ const AdminDashboard = () => {
   } | null>(null);
   const [mfaCode, setMfaCode] = useState('');
 
-  // URL State
-  const [searchParams, setSearchParams] = useSearchParams();
+  // Session timeout
+  const sessionTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // --- Security: Session Timeout ---
   useEffect(() => {
-    const SESSION_TIMEOUT = 15 * 60 * 1000; // 15 minutes
-
+    const SESSION_TIMEOUT = 15 * 60 * 1000;
     const resetTimeout = () => {
       if (sessionTimeoutRef.current) clearTimeout(sessionTimeoutRef.current);
-
       sessionTimeoutRef.current = setTimeout(() => {
-        toast.error('Session expired for security', {
-          description: 'Please sign in again'
-        });
+        toast.error('Session expired for security', { description: 'Please sign in again' });
         supabase.auth.signOut();
         navigate('/signin');
       }, SESSION_TIMEOUT);
     };
 
-    // Reset on user activity
     const activities = ['mousedown', 'keydown', 'scroll', 'touchstart'];
-    activities.forEach(activity => {
-      window.addEventListener(activity, resetTimeout);
-    });
-
+    activities.forEach(a => window.addEventListener(a, resetTimeout));
     resetTimeout();
 
     return () => {
       if (sessionTimeoutRef.current) clearTimeout(sessionTimeoutRef.current);
-      activities.forEach(activity => {
-        window.removeEventListener(activity, resetTimeout);
-      });
+      activities.forEach(a => window.removeEventListener(a, resetTimeout));
     };
   }, [navigate]);
-
-  // --- Helper: Audit Log ---
-  const logAdminAction = async (action: string, targetType: string, targetId: string, details: any) => {
-    try {
-      if (!user) return;
-
-      await supabase.from('admin_audit_log').insert({
-        admin_id: user.id,
-        admin_email: user.email,
-        action,
-        target_type: targetType,
-        target_id: targetId,
-        details,
-        ip_address: 'masked' // In a real app, you might want to fetch this, but be careful with privacy
-      });
-    } catch (error) {
-      console.error('Failed to log action:', error);
-    }
-  };
 
   // --- Helper: Verify MFA ---
   const verifyMFA = async (code: string): Promise<boolean> => {
     try {
       const { data, error } = await supabase.rpc('verify_admin_mfa' as any, {
-        code: code,
-        user_id: user?.id
+        code,
+        user_id: user?.id,
       });
-
       if (error) {
-        // Only allow dev bypass in development builds — stripped from production
         if (import.meta.env.DEV) {
           console.warn('[DEV] MFA RPC unavailable, using dev bypass', error);
           return code === '123456';
         }
         return false;
       }
-
       return data?.valid === true;
     } catch {
       return false;
     }
   };
 
+  // --- Data Loading ---
   useEffect(() => {
-    if (isAdmin) {
-      loadDashboardData();
-    }
+    if (isAdmin) loadDashboardData();
   }, [isAdmin]);
 
-  // --- Feature: URL State Sync ---
+  // --- Real-time Updates ---
   useEffect(() => {
-    const filter = searchParams.get('filter') as UserFilter || 'all';
-    const sort = searchParams.get('sort') as SortField || 'created_at';
-    const order = searchParams.get('order') as SortOrder || 'desc';
-    const search = searchParams.get('search') || '';
+    if (!isAdmin) return;
+    const userSub = supabase
+      .channel('admin_users_changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => loadDashboardData(true))
+      .subscribe();
+    const marketSub = supabase
+      .channel('admin_marketplace_changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'marketplace_listings' }, () => loadDashboardData(true))
+      .subscribe();
+    return () => { supabase.removeChannel(userSub); supabase.removeChannel(marketSub); };
+  }, [isAdmin]);
 
-    // Only set if different to avoid loops/double-renders on mount
-    if (filter !== userFilter) setUserFilter(filter);
-    if (sort !== sortField) setSortField(sort);
-    if (order !== sortOrder) setSortOrder(order);
-    if (search !== searchTerm) setSearchTerm(search);
-  }, [searchParams]); // Depend on searchParams changes
-
-  const updateFilters = (updates: Partial<{
-    filter: UserFilter;
-    sort: SortField;
-    order: SortOrder;
-    search: string;
-  }>) => {
-    const params = new URLSearchParams(searchParams);
-
-    if (updates.filter) {
-      params.set('filter', updates.filter);
-      setUserFilter(updates.filter);
-    }
-    if (updates.sort) {
-      params.set('sort', updates.sort);
-      setSortField(updates.sort);
-    }
-    if (updates.order) {
-      params.set('order', updates.order);
-      setSortOrder(updates.order);
-    }
-    if (updates.search !== undefined) {
-      if (updates.search) params.set('search', updates.search);
-      else params.delete('search');
-
-      startTransition(() => {
-        setSearchTerm(updates.search || '');
-      });
-    }
-
-    setSearchParams(params);
-  };
-
-  // --- Feature: Export Users to CSV ---
-  const exportUsers = useCallback(() => {
-    if (exportCooldown > 0) {
-      toast.error('Please wait before exporting again');
-      return;
-    }
-
-    if (users.length === 0) {
-      toast.error('No users to export');
-      return;
-    }
-
-    try {
-      const csv = [
-        ['Email', 'Full Name', 'Status', 'Joined', 'Last Active', 'Pixels Owned', 'Total Spent'].join(','),
-        ...users.map(u => [
-          `"${u.email}"`,
-          `"${u.full_name || ''}"`,
-          u.is_blocked ? 'Blocked' : 'Active',
-          format(new Date(u.created_at), 'yyyy-MM-dd HH:mm:ss'),
-          u.last_active_at ? format(new Date(u.last_active_at), 'yyyy-MM-dd HH:mm:ss') : 'Never',
-          u.pixel_count,
-          u.total_spent,
-        ].join(','))
-      ].join('\n');
-
-      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `users_export_${format(new Date(), 'yyyy-MM-dd_HH-mm-ss')}.csv`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
-
-      toast.success('Users exported', {
-        description: `${users.length} users exported to CSV`
-      });
-
-      // Set cooldown to prevent spam
-      setExportCooldown(5);
-      const interval = setInterval(() => {
-        setExportCooldown(prev => {
-          if (prev <= 1) {
-            clearInterval(interval);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    } catch (error) {
-      console.error('Export failed:', error);
-      toast.error('Failed to export users');
-    }
-  }, [users, exportCooldown]);
-
-  // --- Feature: Keyboard Shortcuts ---
+  // --- Keyboard Shortcuts ---
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
-      // Cmd/Ctrl + K for search
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();
-        // Assuming there's an input with this ID - need to add it to the Input component
         document.getElementById('user-search')?.focus();
       }
-
-      // Cmd/Ctrl + R for refresh
       if ((e.metaKey || e.ctrlKey) && e.key === 'r') {
         e.preventDefault();
         loadDashboardData(true);
       }
-
-      // Cmd/Ctrl + E for export
-      if ((e.metaKey || e.ctrlKey) && e.key === 'e') {
-        e.preventDefault();
-        exportUsers();
-      }
     };
-
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [exportUsers]); // Depend on exportUsers which is useCallback
-
-  // --- Feature: Real-time Updates ---
-  useEffect(() => {
-    if (!isAdmin) return;
-
-    // Subscribe to user changes
-    const userSubscription = supabase
-      .channel('admin_users_changes')
-      .on('postgres_changes',
-        { event: '*', schema: 'public', table: 'profiles' },
-        () => {
-          loadDashboardData(true); // Silent refresh
-        }
-      )
-      .subscribe();
-
-    // Subscribe to marketplace changes
-    const marketplaceSubscription = supabase
-      .channel('admin_marketplace_changes')
-      .on('postgres_changes',
-        { event: '*', schema: 'public', table: 'marketplace_listings' },
-        () => {
-          loadDashboardData(true);
-        }
-      )
-      .subscribe();
-
-    return () => {
-      userSubscription.unsubscribe();
-      marketplaceSubscription.unsubscribe();
-    };
-  }, [isAdmin]);
-
+  }, []);
 
   const loadDashboardData = async (silent = false) => {
     try {
       if (!silent) setLoading(true);
       else setRefreshing(true);
 
-      // 1. Load all users with stats
-      const { data: usersData, error: usersError } = await supabase
-        .rpc('admin_get_all_users' as any);
-
+      // 1. Users
+      const { data: usersData, error: usersError } = await supabase.rpc('admin_get_all_users');
       if (usersError) throw usersError;
       const allUsers = (usersData as unknown as User[]) || [];
       setUsers(allUsers);
 
-      // 1b. Load admins (cross-reference with users)
-      const { data: adminProfiles } = await supabase
-        .from('profiles')
-        .select('user_id')
-        .eq('is_admin', true);
-
+      // 1b. Admins
+      const { data: adminProfiles } = await supabase.from('profiles').select('user_id').eq('is_admin', true);
       const adminIds = new Set(adminProfiles?.map(p => p.user_id));
-      const adminUsers = allUsers
-        .filter(u => adminIds.has(u.user_id))
-        .map(u => ({
-          user_id: u.user_id,
-          email: u.email,
-          full_name: u.full_name,
-          created_at: u.created_at
-        }));
-      setAdmins(adminUsers);
+      setAdmins(allUsers.filter(u => adminIds.has(u.user_id)).map(u => ({
+        user_id: u.user_id, email: u.email, full_name: u.full_name, created_at: u.created_at,
+      })));
 
-      // Calculate comprehensive stats
+      // Stats
       const totalUsers = usersData?.length || 0;
-      const totalPixelsSold = usersData?.reduce((sum, u) => sum + (Number(u.pixel_count) || 0), 0) || 0;
-      const totalRevenue = usersData?.reduce((sum, u) => sum + (Number(u.total_spent) || 0), 0) || 0;
-      const blockedUsers = usersData?.filter(u => u.is_blocked).length || 0;
-      const activeUsers = usersData?.filter(u => !u.is_blocked).length || 0;
-      const paidUsers = usersData?.filter(u => u.total_spent > 0).length || 0;
-
+      const totalPixelsSold = usersData?.reduce((sum: number, u) => sum + (Number(u.pixel_count) || 0), 0) || 0;
+      const totalRevenue = usersData?.reduce((sum: number, u) => sum + (Number(u.total_spent) || 0), 0) || 0;
+      const blockedUsers = usersData?.filter((u) => u.is_blocked).length || 0;
+      const activeUsers = usersData?.filter((u) => !u.is_blocked).length || 0;
+      const paidUsers = usersData?.filter((u) => u.total_spent > 0).length || 0;
       setStats({ totalUsers, totalPixelsSold, totalRevenue, blockedUsers, activeUsers, paidUsers });
 
-      // 2. Load marketplace analytics
-      const { data: analyticsData, error: analyticsError } = await supabase
-        .rpc('admin_get_marketplace_analytics' as any, { p_days: 30 });
+      // 2. Marketplace analytics
+      const { data: analyticsData, error: analyticsError } = await supabase.rpc('admin_get_marketplace_analytics', { p_days: 30 });
+      if (!analyticsError) setMarketplaceAnalytics(analyticsData as unknown as MarketplaceAnalytics);
 
-      if (!analyticsError) {
-        setMarketplaceAnalytics(analyticsData as unknown as MarketplaceAnalytics);
-      }
-
-      // 3. Load marketplace listings
+      // 3. Marketplace listings
       const { data: listingsData, error: listingsError } = await supabase
         .from('marketplace_listings')
-        .select(`
-          id,
-          pixel_id,
-          seller_id,
-          asking_price,
-          status,
-          featured,
-          created_at
-        `)
+        .select('id, pixel_id, seller_id, asking_price, status, featured, created_at')
         .order('created_at', { ascending: false })
         .limit(50);
+      if (!listingsError) setMarketplaceListings(listingsData as unknown as MarketplaceListing[] || []);
 
-      if (!listingsError) {
-        // Need to cast appropriately or map the data to ensure it fits the interface
-        setMarketplaceListings(listingsData as unknown as MarketplaceListing[] || []);
-      }
-
-      // 4. Load (and default to) recent pixels for moderation
+      // 4. Pixels
       const { data: pixelsData, error: pixelsError } = await supabase
         .from('pixels')
-        .select(`
-          id, x, y, price_paid, owner_id, image_url, link_url, alt_text, created_at
-        `)
-        .not('owner_id', 'is', null) // Only show owned pixels
-        .order('created_at', { ascending: false }) // Newest first
+        .select('id, x, y, price_paid, owner_id, image_url, link_url, alt_text, created_at')
+        .not('owner_id', 'is', null)
+        .order('created_at', { ascending: false })
         .limit(20);
+      if (!pixelsError) setPixels(pixelsData || []);
 
-      if (!pixelsError) {
-        setPixels(pixelsData || []);
-      }
-
-      // 5. Load audit logs
+      // 5. Audit logs
       const { data: logsData, error: logsError } = await supabase
-        .from('admin_audit_log' as any)
+        .from('admin_audit_log')
         .select('*')
         .order('created_at', { ascending: false })
         .limit(50);
+      if (!logsError) setAuditLogs((logsData as unknown as AuditLog[]) || []);
 
-      if (!logsError) {
-        setAuditLogs((logsData as unknown as AuditLog[]) || []);
-      }
-
-      // 3. Load active announcement
+      // 6. Announcement
       const { data: announcementData, error: announcementError } = await supabase
-        .from('announcements' as any)
+        .from('announcements')
         .select('*')
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
 
       if (!announcementError && announcementData) {
-        setBroadcastMessage((announcementData as any).message);
-        setIsBroadcastActive((announcementData as any).is_active);
-        setBroadcastId((announcementData as any).id);
+        setBroadcastMessage(announcementData.message);
+        setIsBroadcastActive(announcementData.is_active);
+        setBroadcastId(announcementData.id);
       } else {
-        // No active announcement or table not ready yet
         setBroadcastMessage('');
         setIsBroadcastActive(false);
       }
 
       setRefreshing(false);
-
-      if (silent) {
-        toast.success('Dashboard refreshed', {
-          icon: <CheckCircle2 className="w-4 h-4" />
-        });
-      }
-    } catch (error) {
+      if (silent) toast.success('Dashboard refreshed', { icon: <CheckCircle2 className="w-4 h-4" /> });
+    } catch (error: unknown) {
       console.error('Error loading dashboard data:', error);
       toast.error('Failed to load dashboard data');
     } finally {
@@ -622,70 +295,23 @@ const AdminDashboard = () => {
     }
   };
 
-  // Filtered and sorted users (Optimized)
-  const filteredAndSortedUsers = useMemo(() => {
-    let filtered = users.filter(u =>
-      u.email.toLowerCase().includes(deferredSearchTerm.toLowerCase())
-    );
+  // --- Helper functions shared across tabs ---
+  const getUserEmail = useCallback((userId: string) => {
+    const u = users.find(u => u.user_id === userId);
+    return u ? u.email : 'Unknown';
+  }, [users]);
 
-    // Apply filter
-    switch (userFilter) {
-      case 'active':
-        filtered = filtered.filter(u => !u.is_blocked);
-        break;
-      case 'blocked':
-        filtered = filtered.filter(u => u.is_blocked);
-        break;
-      case 'paid':
-        filtered = filtered.filter(u => u.total_spent > 0);
-        break;
-    }
+  const getUserName = useCallback((userId: string) => {
+    const u = users.find(u => u.user_id === userId);
+    return u ? (u.full_name || 'User') : 'Unknown';
+  }, [users]);
 
-    // Apply sorting
-    filtered.sort((a, b) => {
-      // Type safe access
-      const aVal = a[sortField];
-      const bVal = b[sortField];
+  const getPixelCoords = useCallback((pixelId: string) => {
+    const p = pixels.find(p => p.id === pixelId);
+    return p ? `(${p.x}, ${p.y})` : `ID: ${pixelId.slice(0, 8)}...`;
+  }, [pixels]);
 
-      if (aVal === bVal) return 0;
-
-      if (sortOrder === 'asc') {
-        return aVal > bVal ? 1 : -1;
-      } else {
-        return aVal < bVal ? 1 : -1;
-      }
-    });
-
-    return filtered;
-  }, [users, deferredSearchTerm, userFilter, sortField, sortOrder]);
-
-  // Handle Search with Transition
-  const handleSearchChange = (value: string) => {
-    setSearchTerm(value); // Immediate update for input
-    // URL update can happen in useEffect or here if debounced, 
-    // but for now we stick to simple state + params sync later
-  };
-
-  // Helper to get email from user ID
-  const getUserEmail = (userId: string) => {
-    const user = users.find(u => u.user_id === userId);
-    return user ? user.email : 'Unknown';
-  };
-
-  // Helper to get name from user ID
-  const getUserName = (userId: string) => {
-    const user = users.find(u => u.user_id === userId);
-    return user ? (user.full_name || 'User') : 'Unknown';
-  };
-
-  // Helper to get pixel coordinates from pixel_id (for marketplace listings)
-  const getPixelCoords = (pixelId: string) => {
-    const pixel = pixels.find(p => p.id === pixelId);
-    return pixel ? `(${pixel.x}, ${pixel.y})` : `ID: ${pixelId.slice(0, 8)}...`;
-  };
-
-  // --- Visual Analytics Data Preparation ---
-  // Aggregate user joins by date (last 14 days)
+  // --- Analytics data ---
   const userGrowthData = useMemo(() => {
     const last14Days = Array.from({ length: 14 }, (_, i) => {
       const d = new Date();
@@ -693,354 +319,42 @@ const AdminDashboard = () => {
       return format(d, 'MMM dd');
     }).reverse();
 
-    const dataMap = new Map();
+    const dataMap = new Map<string, number>();
     last14Days.forEach(day => dataMap.set(day, 0));
-
-    users.forEach(user => {
-      const date = format(new Date(user.created_at), 'MMM dd');
-      if (dataMap.has(date)) {
-        dataMap.set(date, dataMap.get(date) + 1);
-      }
+    users.forEach(u => {
+      const date = format(new Date(u.created_at), 'MMM dd');
+      if (dataMap.has(date)) dataMap.set(date, dataMap.get(date)! + 1);
     });
-
     return Array.from(dataMap.entries()).map(([date, count]) => ({ date, users: count }));
   }, [users]);
 
-  // Aggregate pixel uploads by date (approximate from pixels array if available, or just mock structure for now)
-  // Since we only load recent pixels, this might be sparse, so we'll just show what we have
   const pixelActivityData = useMemo(() => {
     if (pixels.length === 0) return [];
-
-    const dataMap = new Map();
-
+    const dataMap = new Map<string, number>();
     pixels.forEach(p => {
       const date = format(new Date(p.created_at), 'MMM dd');
-      if (!dataMap.has(date)) {
-        dataMap.set(date, 0);
-      }
-      dataMap.set(date, dataMap.get(date) + 1);
+      dataMap.set(date, (dataMap.get(date) || 0) + 1);
     });
-
-    // Fill user growth dates for consistency if pixel data is empty for those days
-    const dates = userGrowthData.map(d => d.date);
-    return dates.map(date => ({
-      date,
-      pixels: dataMap.get(date) || 0
-    }));
+    return userGrowthData.map(d => ({ date: d.date, pixels: dataMap.get(d.date) || 0 }));
   }, [pixels, userGrowthData]);
 
-  // --- User Management Actions ---
-
-  const handleBlockUser = useCallback(async () => {
-    if (!blockDialog || !blockReason.trim()) {
-      toast.error('Please provide a reason for blocking');
-      return;
-    }
-
-    setProcessing(true);
-    try {
-      const { error } = await supabase.rpc('admin_block_user' as any, {
-        p_user_id: blockDialog.userId,
-        p_reason: blockReason,
-      });
-
-      if (error) throw error;
-
-      toast.success('User blocked successfully', {
-        description: `${blockDialog.email} can no longer access the platform`
-      });
-
-      setBlockDialog(null);
-      setBlockReason('');
-      setBlockNotes('');
-      loadDashboardData(true);
-    } catch (error: unknown) {
-      console.error('Error blocking user:', error);
-      toast.error('Failed to block user', {
-        description: getErrorMessage(error)
-      });
-    } finally {
-      setProcessing(false);
-    }
-  }, [blockDialog, blockReason, blockNotes]);
-
-  const handleUnblockUser = useCallback(async (userId: string, email: string) => {
-    setProcessing(true);
-    try {
-      const { error } = await supabase.rpc('admin_unblock_user' as any, {
-        p_user_id: userId,
-      });
-
-      if (error) throw error;
-
-      toast.success('User unblocked', {
-        description: `${email} can now access the platform`
-      });
-
-      loadDashboardData(true);
-    } catch (error: unknown) {
-      console.error('Error unblocking user:', error);
-      toast.error('Failed to unblock user', {
-        description: getErrorMessage(error)
-      });
-    } finally {
-      setProcessing(false);
-    }
-  }, []);
-
-  const handleDeleteUser = useCallback(async () => {
-    if (!deleteDialog) return;
-
-    setProcessing(true);
-    try {
-      const { error: cleanupError } = await supabase.rpc('delete_user_completely' as any, {
-        target_user_id: deleteDialog.userId,
-      });
-
-      if (cleanupError) throw cleanupError;
-
-      toast.success('User data deleted', {
-        description: 'All associated data has been permanently removed',
-        duration: 8000,
-      });
-
-      setDeleteDialog(null);
-      loadDashboardData(true);
-    } catch (error: unknown) {
-      console.error('Error deleting user:', error);
-      toast.error('Failed to delete user', {
-        description: getErrorMessage(error)
-      });
-    } finally {
-      setProcessing(false);
-    }
-  }, [deleteDialog]);
-
-  const handleResetUserPixels = useCallback(async () => {
-    if (!resetUserPixelsDialog) return;
-
-    setProcessing(true);
-    try {
-      // Logic: Update all pixels owned by this user to have no owner and no content
-      const { error } = await supabase
-        .from('pixels')
-        .update({
-          owner_id: null,
-          image_url: null,
-          link_url: null,
-          alt_text: null,
-          purchased_at: null,
-          price_paid: null
-        })
-        .eq('owner_id', resetUserPixelsDialog.userId);
-
-      if (error) throw error;
-
-      toast.success('All user pixels reset', {
-        description: `Pixels owned by ${resetUserPixelsDialog.email} are now available for purchase.`
-      });
-
-      setResetUserPixelsDialog(null);
-      loadDashboardData(true);
-    } catch (error: unknown) {
-      console.error('Error resetting user pixels:', error);
-      toast.error('Failed to reset user pixels', {
-        description: getErrorMessage(error)
-      });
-    } finally {
-      setProcessing(false);
-    }
-  }, [resetUserPixelsDialog]);
-
-  // --- Bulk Actions ---
-  const handleBulkAction = async () => {
-    if (selectedUsers.size === 0 || !bulkAction) return;
-
-    setProcessing(true);
-    const userIds = Array.from(selectedUsers);
-
-    try {
-      switch (bulkAction) {
-        case 'block':
-          await Promise.all(
-            userIds.map(id =>
-              supabase.rpc('admin_block_user', {
-                p_user_id: id,
-                p_reason: 'Bulk action'
-              })
-            )
-          );
-          toast.success(`${userIds.length} users blocked`);
-          break;
-
-        case 'unblock':
-          await Promise.all(
-            userIds.map(id =>
-              supabase.rpc('admin_unblock_user', { p_user_id: id })
-            )
-          );
-          toast.success(`${userIds.length} users unblocked`);
-          break;
-
-        case 'export':
-          // Re-use export logic specifically for selected
-          const usersToExport = users.filter(u => userIds.includes(u.user_id));
-          // Generate CSV for selected
-          const csv = [
-            ['Email', 'Status', 'Joined', 'Last Active', 'Pixels Owned', 'Total Spent'].join(','),
-            ...usersToExport.map(u => [
-              `"${u.email}"`,
-              u.is_blocked ? 'Blocked' : 'Active',
-              format(new Date(u.created_at), 'yyyy-MM-dd HH:mm:ss'),
-              u.last_active_at ? format(new Date(u.last_active_at), 'yyyy-MM-dd HH:mm:ss') : 'Never',
-              u.pixel_count,
-              u.total_spent,
-            ].join(','))
-          ].join('\n');
-          const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-          const url = window.URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = `selected_users_export_${format(new Date(), 'yyyy-MM-dd_HH-mm-ss')}.csv`;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          window.URL.revokeObjectURL(url);
-          break;
-      }
-
-      setSelectedUsers(new Set());
-      setBulkAction(null);
-      loadDashboardData(true);
-
-      await logAdminAction('BULK_ACTION', 'users', 'multiple', {
-        action: bulkAction,
-        count: userIds.length
-      });
-    } catch (error: any) {
-      toast.error('Bulk action failed', {
-        description: getErrorMessage(error)
-      });
-    } finally {
-      setProcessing(false);
-    }
-  };
-
-  // --- Broadcast Management ---
-
-  const handleSaveBroadcast = async () => {
-    setProcessing(true);
-    try {
-      const userAuth = await supabase.auth.getUser();
-      const adminId = userAuth.data.user?.id;
-
-      if (!adminId) {
-        throw new Error("Admin user not authenticated.");
-      }
-
-      if (broadcastId) {
-        // Update existing broadcast
-        const { error } = await supabase
-          .from('announcements' as any)
-          .update({
-            message: broadcastMessage,
-            is_active: isBroadcastActive,
-            updated_at: new Date().toISOString(),
-            updated_by: adminId
-          })
-          .eq('id', broadcastId);
-
-        if (error) throw error;
-
-        toast.success('Broadcast updated', {
-          description: isBroadcastActive ? 'Announcement is now live on homepage' : 'Announcement saved as inactive'
-        });
-      } else {
-        // Insert new broadcast
-        const { data, error } = await supabase
-          .from('announcements' as any)
-          .insert({
-            message: broadcastMessage,
-            is_active: isBroadcastActive,
-            created_by: adminId
-          })
-          .select('id')
-          .single();
-
-        if (error) throw error;
-
-        setBroadcastId((data as any).id); // Set the new ID
-        toast.success('Broadcast published', {
-          description: isBroadcastActive ? 'Announcement is now live on homepage' : 'Announcement saved as inactive'
-        });
-      }
-
-      loadDashboardData(true); // Refresh to get new ID or updated status
-    } catch (error: unknown) {
-      console.error('Error saving broadcast:', error);
-      toast.error('Failed to save broadcast', {
-        description: getErrorMessage(error)
-      });
-    } finally {
-      setProcessing(false);
-    }
-  };
-
-  // --- Marketplace Management Actions ---
-
-  const handleToggleFeatured = useCallback(async (listingId: string, currentFeatured: boolean) => {
-    setProcessing(true);
-    try {
-      const { error } = await supabase.rpc('admin_toggle_featured_listing' as any, {
-        p_listing_id: listingId,
-        p_featured: !currentFeatured,
-      });
-
-      if (error) throw error;
-
-      toast.success(currentFeatured ? 'Listing unfeatured' : 'Listing featured', {
-        description: currentFeatured ? 'Removed from featured listings' : 'Added to featured listings'
-      });
-
-      loadDashboardData(true);
-    } catch (error: unknown) {
-      console.error('Error toggling featured:', error);
-      toast.error(getErrorMessage(error) || 'Failed to update listing');
-    } finally {
-      setProcessing(false);
-    }
-  }, []);
-
-
-
-  // --- Admin Access Management ---
-
+  // --- Access management handlers ---
   const handleGrantAccess = async () => {
-    if (!newAdminEmail.trim()) {
-      toast.error('Please enter an email address');
-      return;
-    }
-
+    if (!newAdminEmail.trim()) { toast.error('Please enter an email address'); return; }
     setProcessing(true);
     try {
-      const { data, error } = await supabase.rpc('admin_promote_user' as any, {
-        target_email: newAdminEmail.trim(),
-        make_admin: true
+      const { data, error } = await supabase.rpc('admin_promote_user', {
+        target_email: newAdminEmail.trim(), make_admin: true,
       });
-
       if (error) throw error;
-      if (data && (data as any).success === false) {
-        throw new Error((data as any).error || 'Failed to grant access');
-      }
-
-      toast.success('Admin access granted', {
-        description: `${newAdminEmail} is now an admin`
-      });
+      const result = data as Record<string, unknown> | null;
+      if (result && result.success === false) throw new Error((result.error as string) || 'Failed to grant access');
+      toast.success('Admin access granted', { description: `${newAdminEmail} is now an admin` });
       setNewAdminEmail('');
       loadDashboardData(true);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error granting admin access:', error);
-      toast.error(error.message || 'Failed to grant access');
+      toast.error(getErrorMessage(error) || 'Failed to grant access');
     } finally {
       setProcessing(false);
     }
@@ -1048,214 +362,65 @@ const AdminDashboard = () => {
 
   const handleRevokeAccess = async (email: string) => {
     if (!confirm(`Are you sure you want to revoke admin access for ${email}?`)) return;
-
     setProcessing(true);
     try {
-      const { data, error } = await supabase.rpc('admin_promote_user' as any, {
-        target_email: email,
-        make_admin: false
+      const { data, error } = await supabase.rpc('admin_promote_user', {
+        target_email: email, make_admin: false,
       });
-
       if (error) throw error;
-      if (data && (data as any).success === false) {
-        throw new Error((data as any).error || 'Failed to revoke access');
-      }
-
-      toast.success('Admin access revoked', {
-        description: `${email} is no longer an admin`
-      });
+      const result = data as Record<string, unknown> | null;
+      if (result && result.success === false) throw new Error((result.error as string) || 'Failed to revoke access');
+      toast.success('Admin access revoked', { description: `${email} is no longer an admin` });
       loadDashboardData(true);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error revoking admin access:', error);
-      toast.error(error.message || 'Failed to revoke access');
+      toast.error(getErrorMessage(error) || 'Failed to revoke access');
     } finally {
       setProcessing(false);
     }
   };
 
-  const handleCancelListing = useCallback(async () => {
-    if (!cancelListingDialog || !cancelReason.trim()) {
-      toast.error('Please provide a reason for cancellation');
-      return;
-    }
-
+  // --- Broadcast handler ---
+  const handleSaveBroadcast = async () => {
     setProcessing(true);
     try {
-      const { error } = await supabase.rpc('admin_cancel_marketplace_listing' as any, {
-        p_listing_id: cancelListingDialog.listingId,
-        p_reason: cancelReason,
-      });
+      const userAuth = await supabase.auth.getUser();
+      const adminId = userAuth.data.user?.id;
+      if (!adminId) throw new Error('Admin user not authenticated.');
 
-      if (error) throw error;
-
-      toast.success('Listing cancelled', {
-        description: 'Listing has been removed from marketplace'
-      });
-
-      setCancelListingDialog(null);
-      setCancelReason('');
-      loadDashboardData(true);
-    } catch (error: unknown) {
-      console.error('Error cancelling listing:', error);
-      toast.error(getErrorMessage(error) || 'Failed to cancel listing');
-    } finally {
-      setProcessing(false);
-    }
-  }, [cancelListingDialog, cancelReason]);
-
-
-  // --- Pixel Management Actions ---
-
-  const searchPixels = useCallback(async () => {
-    if (!pixelSearchTerm.trim()) {
-      toast.error("Please enter a search term (Pixel ID, Owner ID, or coordinates like '10,20')");
-      return;
-    }
-
-    setLoadingPixels(true);
-    try {
-      let query = supabase.from('pixels').select(`
-        id, x, y, price, owner_id, image_url, link_url, alt_text, created_at
-      `);
-
-      // Simple heuristic for search
-      if (pixelSearchTerm.includes(',')) {
-        const [x, y] = pixelSearchTerm.split(',').map(s => parseInt(s.trim()));
-        if (!isNaN(x) && !isNaN(y)) {
-          query = query.eq('x', x).eq('y', y);
-        }
-      } else if (pixelSearchTerm.length > 20) {
-        // Assume UUID
-        query = query.or(`id.eq.${pixelSearchTerm},owner_id.eq.${pixelSearchTerm}`);
+      if (broadcastId) {
+        const { error } = await supabase
+          .from('announcements')
+          .update({ message: broadcastMessage, is_active: isBroadcastActive, updated_at: new Date().toISOString(), updated_by: adminId })
+          .eq('id', broadcastId);
+        if (error) throw error;
+        toast.success('Broadcast updated', {
+          description: isBroadcastActive ? 'Announcement is now live on homepage' : 'Announcement saved as inactive',
+        });
       } else {
-        // Maybe coordinates or partial ID? defaulting to finding nothing for now unless strict format
-        toast.info("Search by UUID (User/Pixel) or Coordinates (x,y)");
-        setLoadingPixels(false);
-        return;
+        const { data, error } = await supabase
+          .from('announcements')
+          .insert({ message: broadcastMessage, is_active: isBroadcastActive, created_by: adminId })
+          .select('id')
+          .single();
+        if (error) throw error;
+        setBroadcastId(data.id);
+        toast.success('Broadcast published', {
+          description: isBroadcastActive ? 'Announcement is now live on homepage' : 'Announcement saved as inactive',
+        });
       }
-
-      const { data, error } = await query;
-      if (error) throw error;
-      setPixels(data || []);
-      if (data?.length === 0) toast.info("No pixels found");
-    } catch (error) {
-      console.error('Error searching pixels:', error);
-      toast.error('Failed to search pixels');
-    } finally {
-      setLoadingPixels(false);
-    }
-  }, [pixelSearchTerm]);
-
-  const handleResetPixelOwnership = useCallback(async () => {
-    if (!resetPixelDialog) return;
-
-    setProcessing(true);
-    try {
-      const { error } = await supabase
-        .from('pixels')
-        .update({
-          owner_id: null,
-          image_url: null,
-          link_url: null,
-          alt_text: null,
-          purchased_at: null,
-          price_paid: null // Assuming this field exists or similar tracking
-        })
-        .eq('id', resetPixelDialog.pixelId);
-
-      if (error) throw error;
-
-      toast.success('Pixel ownership reset to system');
-      setResetPixelDialog(null);
-      searchPixels(); // Refresh list
-    } catch (error: any) {
-      console.error('Error resetting pixel:', error);
-      toast.error('Failed to reset pixel: ' + error.message);
-    } finally {
-      setProcessing(false);
-    }
-  }, [resetPixelDialog, searchPixels]);
-
-  const handleClearPixelContent = useCallback(async () => {
-    if (!clearContentDialog) return;
-
-    setProcessing(true);
-    try {
-      const { error } = await supabase
-        .from('pixels')
-        .update({
-          image_url: null,
-          link_url: null,
-          alt_text: null
-        })
-        .eq('id', clearContentDialog.pixelId);
-
-      if (error) throw error;
-
-      toast.success('Pixel content cleared (Moderated)');
-      setClearContentDialog(null);
-      searchPixels(); // Refresh list
-    } catch (error: any) {
-      console.error('Error clearing pixel content:', error);
-      toast.error('Failed to clear content: ' + error.message);
-    } finally {
-      setProcessing(false);
-    }
-  }, [clearContentDialog, searchPixels]);
-
-  // --- Clear Database Handler (with Password Re-auth) ---
-
-  const handleClearDatabase = useCallback(async () => {
-    if (!confirmPassword.trim()) {
-      setPasswordError('Please enter your password');
-      return;
-    }
-
-    setClearingDb(true);
-    setPasswordError('');
-
-    try {
-      // Step 1: Re-authenticate with password
-      const { error: authError } = await supabase.auth.signInWithPassword({
-        email: user?.email || '',
-        password: confirmPassword,
-      });
-
-      if (authError) {
-        setPasswordError('Incorrect password. Please try again.');
-        setClearingDb(false);
-        return;
-      }
-
-      // Step 2: Call the clear database RPC function
-      const { data, error } = await supabase.rpc('admin_clear_all_content' as any);
-
-      if (error) throw error;
-
-      toast.success('Database cleared successfully', {
-        description: 'All pixel ownership and marketplace listings have been reset.',
-        duration: 8000,
-      });
-
-      // Reset dialog state
-      setClearDbDialog(null);
-      setConfirmPassword('');
-      setPasswordError('');
-
-      // Refresh dashboard data
       loadDashboardData(true);
     } catch (error: unknown) {
-      console.error('Error clearing database:', error);
-      toast.error('Failed to clear database', {
-        description: getErrorMessage(error)
-      });
+      console.error('Error saving broadcast:', error);
+      toast.error('Failed to save broadcast', { description: getErrorMessage(error) });
     } finally {
-      setClearingDb(false);
+      setProcessing(false);
     }
-  }, [confirmPassword, user, loadDashboardData]);
+  };
 
+  const handleRefresh = useCallback(() => loadDashboardData(true), []);
 
-  // Loading skeleton
+  // --- Loading skeleton ---
   if (checkingAdmin || loading) {
     return (
       <div className="min-h-screen bg-background">
@@ -1269,22 +434,14 @@ const AdminDashboard = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
               {[1, 2, 3, 4, 5, 6].map(i => (
                 <Card key={i}>
-                  <CardHeader className="pb-2">
-                    <Skeleton className="h-4 w-24" />
-                  </CardHeader>
-                  <CardContent>
-                    <Skeleton className="h-8 w-20" />
-                  </CardContent>
+                  <CardHeader className="pb-2"><Skeleton className="h-4 w-24" /></CardHeader>
+                  <CardContent><Skeleton className="h-8 w-20" /></CardContent>
                 </Card>
               ))}
             </div>
             <Card>
-              <CardHeader>
-                <Skeleton className="h-6 w-48" />
-              </CardHeader>
-              <CardContent>
-                <Skeleton className="h-64 w-full" />
-              </CardContent>
+              <CardHeader><Skeleton className="h-6 w-48" /></CardHeader>
+              <CardContent><Skeleton className="h-64 w-full" /></CardContent>
             </Card>
           </div>
         </div>
@@ -1292,7 +449,7 @@ const AdminDashboard = () => {
     );
   }
 
-  // Access denied
+  // --- Access denied ---
   if (!user || !isAdmin) {
     return (
       <div className="min-h-screen bg-background">
@@ -1307,9 +464,7 @@ const AdminDashboard = () => {
               <p className="text-muted-foreground mb-6">
                 You do not have permission to access the admin dashboard
               </p>
-              <Button onClick={() => navigate('/')} className="w-full">
-                Return to Home
-              </Button>
+              <Button onClick={() => navigate('/')} className="w-full">Return to Home</Button>
             </CardContent>
           </Card>
         </div>
@@ -1317,12 +472,13 @@ const AdminDashboard = () => {
     );
   }
 
+  // --- Main Render ---
   return (
     <div className="min-h-screen bg-background">
       <Header />
 
       <div className="container mx-auto px-4 py-8 max-w-7xl">
-        {/* Header Section */}
+        {/* Header */}
         <div className="mb-8">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex items-center gap-3">
@@ -1338,8 +494,7 @@ const AdminDashboard = () => {
             </div>
             <div className="flex items-center gap-2 w-full sm:w-auto">
               <Button
-                variant="outline"
-                size="sm"
+                variant="outline" size="sm"
                 onClick={() => loadDashboardData(true)}
                 disabled={refreshing}
                 className="flex-1 sm:flex-none"
@@ -1355,259 +510,21 @@ const AdminDashboard = () => {
           </div>
         </div>
 
-        {/* Enhanced Stats Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-8">
-          <Card className="hover:shadow-lg transition-all duration-200 border-blue-500/20">
-            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Total Users
-              </CardTitle>
-              <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
-                <Users className="w-4 h-4 text-blue-600" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.totalUsers}</div>
-              <p className="text-xs text-muted-foreground mt-1">
-                All registered
-              </p>
-            </CardContent>
-          </Card>
+        {/* Stats Grid */}
+        <AdminStatsGrid stats={stats} />
 
-          <Card className="hover:shadow-lg transition-all duration-200 border-green-500/20">
-            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Active Users
-              </CardTitle>
-              <div className="w-8 h-8 rounded-lg bg-green-500/10 flex items-center justify-center">
-                <UserCheck className="w-4 h-4 text-green-600" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-700">{stats.activeUsers}</div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Not blocked
-              </p>
-            </CardContent>
-          </Card>
+        {/* Charts */}
+        <AdminAnalyticsCharts userGrowthData={userGrowthData} pixelActivityData={pixelActivityData} />
 
-          <Card className="hover:shadow-lg transition-all duration-200 border-purple-500/20">
-            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Paid Users
-              </CardTitle>
-              <div className="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center">
-                <DollarSign className="w-4 h-4 text-purple-600" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-purple-700">{stats.paidUsers}</div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Made purchases
-              </p>
-            </CardContent>
-          </Card>
+        {/* Marketplace Overview */}
+        <AdminMarketplaceOverview analytics={marketplaceAnalytics} />
 
-          <Card className="hover:shadow-lg transition-all duration-200 border-orange-500/20">
-            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Pixels Sold
-              </CardTitle>
-              <div className="w-8 h-8 rounded-lg bg-orange-500/10 flex items-center justify-center">
-                <Image className="w-4 h-4 text-orange-600" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-orange-700">{stats.totalPixelsSold.toLocaleString()}</div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Total owned
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="hover:shadow-lg transition-all duration-200 border-emerald-500/20">
-            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Total Revenue
-              </CardTitle>
-              <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
-                <TrendingUp className="w-4 h-4 text-emerald-600" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-emerald-700">₹{stats.totalRevenue.toLocaleString()}</div>
-              <p className="text-xs text-muted-foreground mt-1">
-                All-time
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="hover:shadow-lg transition-all duration-200 border-destructive/30">
-            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Blocked Users
-              </CardTitle>
-              <div className="w-8 h-8 rounded-lg bg-destructive/10 flex items-center justify-center">
-                <UserX className="w-4 h-4 text-destructive" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-destructive">{stats.blockedUsers}</div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Access denied
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Visual Analytics Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm font-medium">New User Growth (14 Days)</CardTitle>
-            </CardHeader>
-            <CardContent className="h-[250px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={userGrowthData}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
-                  <XAxis
-                    dataKey="date"
-                    tick={{ fontSize: 12, fill: '#6B7280' }}
-                    tickLine={false}
-                    axisLine={false}
-                    dy={10}
-                  />
-                  <YAxis
-                    tick={{ fontSize: 12, fill: '#6B7280' }}
-                    tickLine={false}
-                    axisLine={false}
-                    allowDecimals={false}
-                  />
-                  <Tooltip
-                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="users"
-                    stroke="hsl(var(--primary))"
-                    strokeWidth={3}
-                    dot={{ r: 4, fill: "hsl(var(--primary))" }}
-                    activeDot={{ r: 6 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm font-medium">Recent Pixel Activity</CardTitle>
-            </CardHeader>
-            <CardContent className="h-[250px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={pixelActivityData}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
-                  <XAxis
-                    dataKey="date"
-                    tick={{ fontSize: 12, fill: '#6B7280' }}
-                    tickLine={false}
-                    axisLine={false}
-                    dy={10}
-                  />
-                  <YAxis
-                    tick={{ fontSize: 12, fill: '#6B7280' }}
-                    tickLine={false}
-                    axisLine={false}
-                    allowDecimals={false}
-                  />
-                  <Tooltip
-                    cursor={{ fill: 'rgba(0,0,0,0.05)' }}
-                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
-                  />
-                  <Bar
-                    dataKey="pixels"
-                    fill="#F59E0B"
-                    radius={[4, 4, 0, 0]}
-                    barSize={30}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Marketplace Stats Card */}
-        {marketplaceAnalytics && (
-          <Card className="mb-8 border-amber-500/20">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Store className="w-5 h-5" />
-                Marketplace Overview (Last 30 Days)
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div>
-                  <p className="text-sm text-muted-foreground">Revenue</p>
-                  <p className="text-2xl font-bold text-emerald-600">
-                    ₹{marketplaceAnalytics.total_revenue.toLocaleString()}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Active Listings</p>
-                  <p className="text-2xl font-bold">{marketplaceAnalytics.active_listings}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Featured</p>
-                  <p className="text-2xl font-bold text-amber-600">{marketplaceAnalytics.featured_listings}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Refunds</p>
-                  <p className="text-2xl font-bold text-red-600">{marketplaceAnalytics.total_refunds}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Danger Zone Section */}
-        <Card className="mb-8 border-destructive/50 bg-destructive/5">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-destructive">
-              <AlertTriangle className="w-5 h-5" />
-              Danger Zone
-            </CardTitle>
-            <CardDescription>
-              Irreversible administrative actions. Proceed with extreme caution.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 rounded-lg border border-destructive/30 bg-background">
-              <div className="space-y-1">
-                <div className="flex items-center gap-2 font-semibold">
-                  <Database className="w-4 h-4 text-destructive" />
-                  Clear All Database Content
-                </div>
-                <p className="text-sm text-muted-foreground max-w-lg">
-                  Resets all pixel ownership, clears marketplace listings, and removes all user-uploaded content.
-                  User accounts and profiles remain intact.
-                </p>
-              </div>
-              <Button
-                variant="destructive"
-                onClick={() => setClearDbDialog({ open: true })}
-                className="gap-2 shrink-0"
-              >
-                <Database className="w-4 h-4" />
-                Clear Database
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Danger Zone */}
+        <AdminDangerZone userEmail={user.email || ''} onRefresh={handleRefresh} />
 
         {/* Tabs */}
         <Tabs defaultValue="users" className="space-y-6">
-          <TabsList className="grid w-full max-w-3xl grid-cols-6">
+          <TabsList className="grid w-full max-w-3xl grid-cols-7">
             <TabsTrigger value="users" className="gap-2">
               <Users className="w-4 h-4" />
               <span className="hidden sm:inline">Users</span>
@@ -1638,756 +555,48 @@ const AdminDashboard = () => {
             </TabsTrigger>
           </TabsList>
 
-          {/* Access Management Tab Content */}
-          <TabsContent value="access" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <KeyRound className="w-5 h-5 text-primary" />
-                  Access Management
-                </CardTitle>
-                <CardDescription>
-                  Grant or revoke admin access to other users.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="flex gap-4 items-end">
-                  <div className="flex-1 space-y-2">
-                    <Label>Grant Admin Access</Label>
-                    <Input
-                      placeholder="Enter user email address"
-                      value={newAdminEmail}
-                      onChange={(e) => setNewAdminEmail(e.target.value)}
-                    />
-                  </div>
-                  <Button
-                    onClick={handleGrantAccess}
-                    disabled={processing || !newAdminEmail}
-                  >
-                    Grant Access
-                  </Button>
-                </div>
-
-                <div className="space-y-4">
-                  <h3 className="text-sm font-medium text-muted-foreground">Current Admins</h3>
-                  <div className="border rounded-md divide-y">
-                    {admins.length === 0 ? (
-                      <div className="p-4 text-center text-muted-foreground text-sm">
-                        No other admins found.
-                      </div>
-                    ) : (
-                      admins.map((admin) => (
-                        <div key={admin.user_id} className="p-4 flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                              <Shield className="w-4 h-4 text-primary" />
-                            </div>
-                            <div>
-                              <p className="font-medium text-sm">{admin.full_name || 'Unnamed'}</p>
-                              <p className="text-xs text-muted-foreground">{admin.email}</p>
-                            </div>
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-destructive hover:text-destructive/90 hover:bg-destructive/10"
-                            onClick={() => handleRevokeAccess(admin.email)}
-                            disabled={processing}
-                          >
-                            Revoke
-                          </Button>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Pixels Tab Content */}
-          <TabsContent value="pixels" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Pixel Management</CardTitle>
-                <CardDescription>Search and manage individual pixels</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="Search by Pixel ID, Owner ID, or 'x,y'..."
-                    value={pixelSearchTerm}
-                    onChange={(e) => setPixelSearchTerm(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && searchPixels()}
-                  />
-                  <Button onClick={searchPixels} disabled={loadingPixels}>
-                    {loadingPixels ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
-                  </Button>
-                  <div className="flex bg-muted rounded-md p-1 border">
-                    <Button
-                      variant={pixelViewMode === 'list' ? 'secondary' : 'ghost'}
-                      size="sm"
-                      className="h-8 w-8 p-0"
-                      onClick={() => setPixelViewMode('list')}
-                    >
-                      <ListIcon className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      variant={pixelViewMode === 'grid' ? 'secondary' : 'ghost'}
-                      size="sm"
-                      className="h-8 w-8 p-0"
-                      onClick={() => setPixelViewMode('grid')}
-                    >
-                      <LayoutGrid className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
-
-                {pixelViewMode === 'list' ? (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Location</TableHead>
-                        <TableHead>Owner</TableHead>
-                        <TableHead>Content</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {pixels.map((pixel) => (
-                        <TableRow key={pixel.id}>
-                          <TableCell className="font-mono">({pixel.x}, {pixel.y})</TableCell>
-                          <TableCell>
-                            {pixel.owner_id ? (
-                              <div className="flex flex-col">
-                                <span className="font-medium">{getUserName(pixel.owner_id)}</span>
-                                <span className="text-xs text-muted-foreground">{getUserEmail(pixel.owner_id)}</span>
-                                <span className="text-[10px] text-muted-foreground font-mono">{pixel.owner_id}</span>
-                              </div>
-                            ) : (
-                              <Badge variant="outline">System / Available</Badge>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            <div className="space-y-1">
-                              {pixel.image_url ? (
-                                <div className="flex items-center gap-2 text-xs text-green-600">
-                                  <Image className="w-3 h-3" /> Image Set
-                                </div>
-                              ) : <div className="text-xs text-muted-foreground">No Image</div>}
-                              {pixel.link_url && (
-                                <div className="flex items-center gap-2 text-xs text-blue-600 truncate max-w-[150px]">
-                                  <TrendingUp className="w-3 h-3" /> {pixel.link_url}
-                                </div>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" className="h-8 w-8 p-0">
-                                  <span className="sr-only">Open menu</span>
-                                  <MoreVertical className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem
-                                  onClick={() => window.open(`/?x=${pixel.x}&y=${pixel.y}`, '_blank')}
-                                >
-                                  <Eye className="mr-2 h-4 w-4" />
-                                  View on Canvas
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  className="text-amber-600"
-                                  onClick={() => setClearContentDialog({ open: true, pixelId: pixel.id })}
-                                  disabled={!pixel.image_url && !pixel.link_url}
-                                >
-                                  <Ban className="mr-2 h-4 w-4" />
-                                  Clear Content
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  className="text-destructive"
-                                  onClick={() => setResetPixelDialog({ open: true, pixelId: pixel.id })}
-                                  disabled={!pixel.owner_id}
-                                >
-                                  <Trash2 className="mr-2 h-4 w-4" />
-                                  Reset Ownership
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                      {!loadingPixels && pixels.length === 0 && (
-                        <TableRow>
-                          <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
-                            No pixels found. Try searching.
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                ) : (
-                  // Grid View
-                  <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                    {pixels.length === 0 && !loadingPixels && (
-                      <div className="col-span-full text-center py-12 text-muted-foreground">
-                        No pixels found.
-                      </div>
-                    )}
-                    {pixels.map((pixel) => (
-                      <Card key={pixel.id} className="overflow-hidden group relative hover:ring-2 hover:ring-primary/50 transition-all">
-                        <div className="aspect-square bg-muted/20 relative">
-                          {pixel.image_url ? (
-                            <img
-                              src={pixel.image_url}
-                              alt={pixel.alt_text}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center text-muted-foreground/30">
-                              <Image className="w-8 h-8" />
-                            </div>
-                          )}
-
-                          {/* Hover Overlay */}
-                          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 p-2">
-                            <Button
-                              size="sm"
-                              variant="secondary"
-                              className="w-full h-8 text-xs"
-                              onClick={() => window.open(`/?x=${pixel.x}&y=${pixel.y}`, '_blank')}
-                            >
-                              <Eye className="w-3 h-3 mr-1" /> View
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              className="w-full h-8 text-xs"
-                              onClick={() => setClearContentDialog({ open: true, pixelId: pixel.id })}
-                              disabled={!pixel.image_url}
-                            >
-                              <Ban className="w-3 h-3 mr-1" /> Clear
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="w-full h-8 text-xs bg-transparent text-white border-white/50 hover:bg-white/20"
-                              onClick={() => setResetPixelDialog({ open: true, pixelId: pixel.id })}
-                            >
-                              <RefreshCw className="w-3 h-3 mr-1" /> Reset
-                            </Button>
-                          </div>
-                        </div>
-                        <div className="p-2 border-t">
-                          <div className="flex justify-between items-center text-xs">
-                            <span className="font-mono text-muted-foreground">({pixel.x}, {pixel.y})</span>
-                            {pixel.owner_id ? (
-                              <Badge variant="outline" className="h-4 px-1 text-[10px] border-green-500/30 text-green-600">Owned</Badge>
-                            ) : (
-                              <Badge variant="outline" className="h-4 px-1 text-[10px]">Free</Badge>
-                            )}
-                          </div>
-                        </div>
-                      </Card>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Broadcast Tab Content */}
-          <TabsContent value="broadcast">
-            <Card>
-              <CardHeader>
-                <CardTitle>Global Announcements</CardTitle>
-                <CardDescription>Publish a message to all users on the home page.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="bg-muted/30 p-4 rounded-lg border">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="space-y-0.5">
-                      <Label className="text-base">Active Status</Label>
-                      <p className="text-sm text-muted-foreground">
-                        Enable this to show the banner on the homepage
-                      </p>
-                    </div>
-                    <Switch
-                      checked={isBroadcastActive}
-                      onCheckedChange={setIsBroadcastActive}
-                      disabled={processing}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Banner Message</Label>
-                    <Textarea
-                      placeholder="e.g., '🎉 50% Off All Pixels This Weekend!'"
-                      value={broadcastMessage}
-                      onChange={(e) => setBroadcastMessage(e.target.value)}
-                      rows={3}
-                      className="resize-none font-medium"
-                      disabled={processing}
-                    />
-                    <p className="text-xs text-muted-foreground text-right">
-                      {broadcastMessage.length} characters
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex justify-end gap-3">
-                  <Button variant="outline" onClick={() => loadDashboardData(true)} disabled={processing}>
-                    Reset
-                  </Button>
-                  <Button onClick={handleSaveBroadcast} disabled={processing || !broadcastMessage.trim()}>
-                    {processing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Megaphone className="w-4 h-4 mr-2" />}
-                    {broadcastId ? 'Update Broadcast' : 'Publish Broadcast'}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Users Tab Content */}
           <TabsContent value="users" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                  <div>
-                    <CardTitle>User Management</CardTitle>
-                    <CardDescription>
-                      Showing {filteredAndSortedUsers.length} of {users.length} users
-                    </CardDescription>
-                  </div>
-                  <Button
-                    onClick={handleBulkAction}
-                    variant={bulkAction ? "default" : "outline"}
-                    size="sm"
-                    className="gap-2 w-full lg:w-auto"
-                    disabled={selectedUsers.size === 0 || !bulkAction}
-                  >
-                    Run Bulk Action
-                  </Button>
-                  <Select value={bulkAction || ''} onValueChange={(v) => setBulkAction(v as any)}>
-                    <SelectTrigger className="w-[180px]">
-                      <SelectValue placeholder="Bulk Actions..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="block">Block Selected</SelectItem>
-                      <SelectItem value="unblock">Unblock Selected</SelectItem>
-                      <SelectItem value="export">Export Selected</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Button
-                    onClick={exportUsers}
-                    variant="outline"
-                    size="sm"
-                    className="gap-2 w-full lg:w-auto"
-                  >
-                    <Download className="w-4 h-4" />
-                    Export CSV
-                  </Button>
-                </div>
-
-                {/* Filters */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-                    <Input
-                      placeholder="Search by email..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10"
-                    />
-                  </div>
-
-                  <Select value={userFilter} onValueChange={(v) => setUserFilter(v as UserFilter)}>
-                    <SelectTrigger>
-                      <Filter className="w-4 h-4 mr-2" />
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Users ({users.length})</SelectItem>
-                      <SelectItem value="active">Active Only ({stats.activeUsers})</SelectItem>
-                      <SelectItem value="blocked">Blocked Only ({stats.blockedUsers})</SelectItem>
-                      <SelectItem value="paid">Paid Users ({stats.paidUsers})</SelectItem>
-                    </SelectContent>
-                  </Select>
-
-                  <Select value={`${sortField}-${sortOrder}`} onValueChange={(v) => {
-                    const [field, order] = v.split('-');
-                    setSortField(field as SortField);
-                    setSortOrder(order as SortOrder);
-                  }}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Sort by..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="created_at-desc">Newest First</SelectItem>
-                      <SelectItem value="created_at-asc">Oldest First</SelectItem>
-                      <SelectItem value="pixels_owned-desc">Most Pixels</SelectItem>
-                      <SelectItem value="pixels_owned-asc">Least Pixels</SelectItem>
-                      <SelectItem value="total_spent-desc">Highest Spend</SelectItem>
-                      <SelectItem value="total_spent-asc">Lowest Spend</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </CardHeader>
-
-              <CardContent>
-                <div className="rounded-lg border overflow-hidden">
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead className="w-12">
-                            <input
-                              type="checkbox"
-                              checked={selectedUsers.size === filteredAndSortedUsers.length && filteredAndSortedUsers.length > 0}
-                              onChange={(e) => {
-                                if (e.target.checked) {
-                                  setSelectedUsers(new Set(filteredAndSortedUsers.map(u => u.user_id)));
-                                } else {
-                                  setSelectedUsers(new Set());
-                                }
-                              }}
-                              className="rounded border-gray-300 accent-primary w-4 h-4 cursor-pointer"
-                            />
-                          </TableHead>
-                          <TableHead className="min-w-[200px]">User</TableHead>
-                          <TableHead className="hidden md:table-cell min-w-[120px]">Joined</TableHead>
-                          <TableHead className="text-right min-w-[80px]">Pixels</TableHead>
-                          <TableHead className="text-right hidden sm:table-cell min-w-[100px]">Spent</TableHead>
-                          <TableHead className="min-w-[100px]">Status</TableHead>
-                          <TableHead className="text-right min-w-[140px]">Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {filteredAndSortedUsers.length === 0 ? (
-                          <TableRow>
-                            <TableCell colSpan={6} className="h-40">
-                              <div className="flex flex-col items-center justify-center text-center">
-                                <Users className="w-12 h-12 text-muted-foreground/30 mb-3" />
-                                <p className="text-sm font-medium text-muted-foreground">No users found</p>
-                                <p className="text-xs text-muted-foreground mt-1">
-                                  {searchTerm || userFilter !== 'all'
-                                    ? 'Try adjusting your filters'
-                                    : 'No users registered yet'}
-                                </p>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ) : (
-                          filteredAndSortedUsers.map((userData) => (
-                            <TableRow key={userData.user_id} className="hover:bg-muted/50">
-                              <TableCell>
-                                <input
-                                  type="checkbox"
-                                  checked={selectedUsers.has(userData.user_id)}
-                                  onChange={(e) => {
-                                    const newSelected = new Set(selectedUsers);
-                                    if (e.target.checked) {
-                                      newSelected.add(userData.user_id);
-                                    } else {
-                                      newSelected.delete(userData.user_id);
-                                    }
-                                    setSelectedUsers(newSelected);
-                                  }}
-                                  className="rounded border-gray-300 accent-primary w-4 h-4 cursor-pointer"
-                                />
-                              </TableCell>
-                              <TableCell>
-                                <div className="flex flex-col">
-                                  <span className="font-medium text-sm">{userData.email}</span>
-                                  <span className="text-xs text-muted-foreground md:hidden">
-                                    {format(new Date(userData.created_at), 'MMM dd, yyyy')}
-                                  </span>
-                                </div>
-                              </TableCell>
-                              <TableCell className="hidden md:table-cell text-sm text-muted-foreground">
-                                <div className="flex items-center gap-1.5">
-                                  <Calendar className="w-3.5 h-3.5" />
-                                  {format(new Date(userData.created_at), 'MMM dd, yyyy')}
-                                </div>
-                              </TableCell>
-                              <TableCell className="text-right font-medium tabular-nums">
-                                {userData.pixel_count}
-                              </TableCell>
-                              <TableCell className="text-right font-medium tabular-nums hidden sm:table-cell">
-                                ₹{userData.total_spent.toLocaleString()}
-                              </TableCell>
-                              <TableCell>
-                                {userData.is_blocked ? (
-                                  <Badge variant="destructive" className="gap-1.5 font-medium">
-                                    <Ban className="w-3 h-3" />
-                                    Blocked
-                                  </Badge>
-                                ) : (
-                                  <Badge variant="outline" className="gap-1.5 bg-green-500/10 text-green-700 border-green-500/20 font-medium">
-                                    <UserCheck className="w-3 h-3" />
-                                    Active
-                                  </Badge>
-                                )}
-                              </TableCell>
-                              <TableCell className="text-right">
-                                {/* Desktop Actions */}
-                                <div className="hidden sm:flex items-center justify-end gap-2">
-                                  {userData.is_blocked ? (
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      onClick={() => handleUnblockUser(userData.user_id, userData.email)}
-                                      disabled={processing}
-                                      className="h-8 gap-1.5"
-                                    >
-                                      <Unlock className="w-3.5 h-3.5" />
-                                      <span className="hidden lg:inline">Unblock</span>
-                                    </Button>
-                                  ) : (
-                                    <>
-                                      <Button
-                                        size="sm"
-                                        variant="outline"
-                                        onClick={() => setResetUserPixelsDialog({ open: true, userId: userData.user_id, email: userData.email })}
-                                        disabled={processing || userData.pixel_count === 0}
-                                        className="h-8 w-8 p-0"
-                                        title="Reset all pixels"
-                                      >
-                                        <RefreshCw className="w-3.5 h-3.5" />
-                                      </Button>
-                                      <Button
-                                        size="sm"
-                                        variant="outline"
-                                        onClick={() => setBlockDialog({ open: true, userId: userData.user_id, email: userData.email })}
-                                        disabled={processing}
-                                        className="h-8 gap-1.5"
-                                      >
-                                        <Ban className="w-3.5 h-3.5" />
-                                        <span className="hidden lg:inline">Block</span>
-                                      </Button>
-                                    </>
-                                  )}
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => setDeleteDialog({ open: true, userId: userData.user_id, email: userData.email })}
-                                    disabled={processing}
-                                    className="h-8 text-destructive hover:bg-destructive hover:text-destructive-foreground"
-                                    title="Delete user"
-                                  >
-                                    <Trash2 className="w-3.5 h-3.5" />
-                                  </Button>
-                                </div>
-
-                                {/* Mobile Dropdown */}
-                                <div className="sm:hidden flex justify-end">
-                                  <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                        <MoreVertical className="w-4 h-4" />
-                                      </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end">
-                                      {userData.is_blocked ? (
-                                        <DropdownMenuItem
-                                          onClick={() => handleUnblockUser(userData.user_id, userData.email)}
-                                          disabled={processing}
-                                        >
-                                          <Unlock className="w-4 h-4 mr-2" />
-                                          Unblock User
-                                        </DropdownMenuItem>
-                                      ) : (
-                                        <DropdownMenuItem
-                                          onClick={() => setBlockDialog({ open: true, userId: userData.user_id, email: userData.email })}
-                                          disabled={processing}
-                                        >
-                                          <Ban className="w-4 h-4 mr-2" />
-                                          Block User
-                                        </DropdownMenuItem>
-                                      )}
-                                      <DropdownMenuItem
-                                        onClick={() => setResetUserPixelsDialog({ open: true, userId: userData.user_id, email: userData.email })}
-                                        disabled={processing || userData.pixel_count === 0}
-                                      >
-                                        <RefreshCw className="w-4 h-4 mr-2" />
-                                        Reset All Pixels
-                                      </DropdownMenuItem>
-                                      <DropdownMenuItem
-                                        onClick={() => setDeleteDialog({ open: true, userId: userData.user_id, email: userData.email })}
-                                        disabled={processing}
-                                        className="text-destructive focus:text-destructive"
-                                      >
-                                        <Trash2 className="w-4 h-4 mr-2" />
-                                        Delete User
-                                      </DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                  </DropdownMenu>
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          ))
-                        )}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <AdminUsersTab users={users} stats={stats} onRefresh={handleRefresh} />
           </TabsContent>
 
-          {/* Marketplace Tab Content */}
           <TabsContent value="marketplace">
-            <Card>
-              <CardHeader>
-                <CardTitle>Marketplace Management</CardTitle>
-                <CardDescription>
-                  Manage listings, feature items, and moderate marketplace activity
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {marketplaceListings.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-16">
-                      <Store className="w-16 h-16 text-muted-foreground/30 mb-4" />
-                      <p className="text-sm font-medium">No marketplace listings</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {marketplaceListings.map((listing) => (
-                        <div
-                          key={listing.id}
-                          className="flex items-center justify-between p-4 rounded-lg border hover:bg-accent/50 transition-colors"
-                        >
-                          <div className="flex-1">
-                            <div className="flex items-center gap-3">
-                              <div className="font-semibold">
-                                Pixel {getPixelCoords(listing.pixel_id)}
-                              </div>
-                              <Badge variant={listing.status === 'active' ? 'default' : 'secondary'}>
-                                {listing.status}
-                              </Badge>
-                              {listing.featured && (
-                                <Badge variant="default" className="bg-amber-500">
-                                  <Star className="w-3 h-3 mr-1" />
-                                  Featured
-                                </Badge>
-                              )}
-                            </div>
-                            <div className="text-sm text-muted-foreground mt-1">
-                              Seller: {getUserEmail(listing.seller_id)} ·
-                              Price: ₹{listing.asking_price.toLocaleString()} ·
-                              Listed: {format(new Date(listing.created_at), 'MMM dd, yyyy')}
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            {listing.status === 'active' && (
-                              <>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => handleToggleFeatured(listing.id, listing.featured)}
-                                  disabled={processing}
-                                >
-                                  <Star className="w-4 h-4 mr-1" />
-                                  {listing.featured ? 'Unfeature' : 'Feature'}
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => setCancelListingDialog({ open: true, listingId: listing.id })}
-                                  disabled={processing}
-                                  className="text-destructive"
-                                >
-                                  <XCircle className="w-4 h-4 mr-1" />
-                                  Cancel
-                                </Button>
-                              </>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+            <AdminMarketplaceTab
+              listings={marketplaceListings}
+              getUserEmail={getUserEmail}
+              getPixelCoords={getPixelCoords}
+              onRefresh={handleRefresh}
+            />
           </TabsContent>
 
-          {/* Audit Logs Tab Content */}
           <TabsContent value="audit">
-            <Card>
-              <CardHeader>
-                <CardTitle>Admin Activity Logs</CardTitle>
-                <CardDescription>
-                  Track all administrative actions performed on the system
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {auditLogs.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-16">
-                    <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
-                      <Activity className="w-8 h-8 text-muted-foreground/50" />
-                    </div>
-                    <p className="text-sm font-medium">No audit logs yet</p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Admin actions will appear here
-                    </p>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {auditLogs.map((log) => (
-                      <div key={log.id} className="flex items-start gap-4 p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors">
-                        <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                          <Activity className="w-5 h-5 text-primary" />
-                        </div>
-                        <div className="flex-1 min-w-0 space-y-2">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <Badge variant="secondary" className="font-mono text-xs">
-                              {log.action}
-                            </Badge>
-                            <span className="text-sm text-muted-foreground truncate">
-                              by {log.admin_email}
-                            </span>
-                          </div>
-                          <p className="text-sm">
-                            <span className="text-muted-foreground">Target:</span> {log.target_type}{' '}
-                            <span className="font-mono text-xs text-muted-foreground">
-                              ({log.target_id.slice(0, 8)}...)
-                            </span>
-                          </p>
-                          {log.details && Object.keys(log.details).length > 0 && (
-                            <details className="text-xs">
-                              <summary className="cursor-pointer text-muted-foreground hover:text-foreground transition-colors">
-                                View details
-                              </summary>
-                              <pre className="mt-2 p-3 bg-muted rounded-md text-xs overflow-x-auto">
-                                {JSON.stringify(log.details, null, 2)}
-                              </pre>
-                            </details>
-                          )}
-                          <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-                            <Eye className="w-3 h-3" />
-                            {format(new Date(log.created_at), 'MMM dd, yyyy · HH:mm:ss')}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            <AdminAuditTab auditLogs={auditLogs} />
           </TabsContent>
 
-          {/* Blog Management Tab Content */}
+          <TabsContent value="pixels" className="space-y-4">
+            <AdminPixelsTab
+              pixels={pixels}
+              setPixels={setPixels}
+              getUserEmail={getUserEmail}
+              getUserName={getUserName}
+            />
+          </TabsContent>
+
+          <TabsContent value="broadcast">
+            <AdminBroadcastTab
+              broadcastMessage={broadcastMessage}
+              isBroadcastActive={isBroadcastActive}
+              broadcastId={broadcastId}
+              processing={processing}
+              onMessageChange={setBroadcastMessage}
+              onActiveChange={setIsBroadcastActive}
+              onSave={handleSaveBroadcast}
+              onReset={handleRefresh}
+            />
+          </TabsContent>
+
           <TabsContent value="blog">
             <Card>
               <CardHeader>
-                <CardTitle>Blog Management</CardTitle>
-                <CardDescription>
-                  Create and manage blog posts for your platform
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
                 <div className="flex items-center gap-4 p-6 rounded-lg border bg-gradient-to-br from-muted/50 to-muted/30 hover:shadow-md transition-shadow">
                   <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
                     <FileText className="w-6 h-6 text-primary" />
@@ -2403,331 +612,22 @@ const AdminDashboard = () => {
                     Manage Blog
                   </Button>
                 </div>
-              </CardContent>
+              </CardHeader>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="access" className="space-y-6">
+            <AdminAccessTab
+              admins={admins}
+              newAdminEmail={newAdminEmail}
+              onNewAdminEmailChange={setNewAdminEmail}
+              onGrantAccess={handleGrantAccess}
+              onRevokeAccess={handleRevokeAccess}
+              processing={processing}
+            />
           </TabsContent>
         </Tabs>
       </div>
-
-      {/* --- Dialogs --- */}
-
-      {/* Block User Dialog */}
-      <Dialog open={blockDialog?.open || false} onOpenChange={(open) => !open && setBlockDialog(null)}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <div className="w-10 h-10 rounded-full bg-destructive/10 flex items-center justify-center">
-                <Ban className="w-5 h-5 text-destructive" />
-              </div>
-              Block User Account
-            </DialogTitle>
-            <DialogDescription asChild>
-              <div>
-                <p className="mb-2">
-                  Blocking <strong>{blockDialog?.email}</strong> will prevent them from:
-                </p>
-                <ul className="list-disc list-inside space-y-1 text-sm">
-                  <li>Signing in to their account</li>
-                  <li>Accessing any platform features</li>
-                  <li>Making new purchases</li>
-                </ul>
-              </div>
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="block-reason" className="text-sm font-medium">
-                Reason for blocking <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                id="block-reason"
-                value={blockReason}
-                onChange={(e) => setBlockReason(e.target.value)}
-                placeholder="e.g., Violated terms of service"
-                className="w-full"
-                autoFocus
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="block-notes" className="text-sm font-medium">
-                Additional notes (optional)
-              </Label>
-              <Textarea
-                id="block-notes"
-                value={blockNotes}
-                onChange={(e) => setBlockNotes(e.target.value)}
-                placeholder="Internal notes about this action..."
-                rows={3}
-                className="resize-none"
-              />
-            </div>
-          </div>
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button
-              variant="outline"
-              onClick={() => setBlockDialog(null)}
-              disabled={processing}
-              className="w-full sm:w-auto"
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={handleBlockUser}
-              disabled={processing || !blockReason.trim()}
-              className="gap-2 w-full sm:w-auto"
-            >
-              {processing && <Loader2 className="w-4 h-4 animate-spin" />}
-              Block User
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Delete User Dialog */}
-      <AlertDialog open={deleteDialog?.open || false} onOpenChange={(open) => !open && setDeleteDialog(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2 text-destructive">
-              <AlertTriangle className="w-5 h-5" />
-              Permanent Account Deletion
-            </AlertDialogTitle>
-            <AlertDialogDescription asChild>
-              <div className="space-y-3">
-                <p>
-                  This will permanently delete <strong className="text-foreground">{deleteDialog?.email}</strong> and all associated data:
-                </p>
-                <ul className="list-disc list-inside space-y-1 text-sm">
-                  <li>All owned pixels (will become available again)</li>
-                  <li>User profile and preferences</li>
-                  <li>Purchase and transaction history</li>
-                  <li>Account status and blocks</li>
-                </ul>
-                <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20">
-                  <p className="font-semibold text-destructive flex items-center gap-2 text-sm">
-                    <AlertTriangle className="w-4 h-4" />
-                    This action cannot be undone!
-                  </p>
-                </div>
-              </div>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="gap-2 sm:gap-0">
-            <AlertDialogCancel disabled={processing} className="w-full sm:w-auto">
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDeleteUser}
-              className="bg-destructive hover:bg-destructive/90 gap-2 w-full sm:w-auto"
-              disabled={processing}
-            >
-              {processing && <Loader2 className="w-4 h-4 animate-spin" />}
-              Yes, Delete Permanently
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Reset User Pixels Dialog */}
-      <AlertDialog open={!!resetUserPixelsDialog?.open} onOpenChange={(open) => !open && setResetUserPixelsDialog(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Reset All User Pixels?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will remove ownership of ALL pixels owned by <strong>{resetUserPixelsDialog?.email}</strong>.
-              The pixels will become available for purchase again. The user account will remain active.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={processing}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-destructive hover:bg-destructive/90"
-              onClick={(e) => {
-                e.preventDefault();
-                handleResetUserPixels();
-              }}
-              disabled={processing}
-            >
-              {processing ? "Resetting..." : "Reset All Pixels"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Cancel Listing Dialog */}
-      <AlertDialog open={!!cancelListingDialog} onOpenChange={(open) => !open && setCancelListingDialog(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Cancel Listing</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to cancel this marketplace listing? The pixel will be returned to the owner.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <div className="py-4">
-            <Label htmlFor="cancel-reason" className="mb-2 block">Reason for cancellation</Label>
-            <Textarea
-              id="cancel-reason"
-              placeholder="Violation of terms..."
-              value={cancelReason}
-              onChange={(e) => setCancelReason(e.target.value)}
-            />
-          </div>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={processing}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={(e) => {
-                e.preventDefault();
-                handleCancelListing();
-              }}
-              disabled={processing}
-            >
-              {processing && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              Cancel Listing
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Reset Pixel Dialog */}
-      <AlertDialog open={!!resetPixelDialog?.open} onOpenChange={(open) => !open && setResetPixelDialog(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Reset Pixel Ownership?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will remove the current owner and make the pixel available for purchase again.
-              This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={processing}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={(e) => {
-                e.preventDefault();
-                handleResetPixelOwnership();
-              }}
-              disabled={processing}
-            >
-              {processing ? "Resetting..." : "Reset Ownership"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Clear Content Dialog */}
-      <AlertDialog open={!!clearContentDialog?.open} onOpenChange={(open) => !open && setClearContentDialog(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Clear Pixel Content?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will remove the image, link, and alt text from the pixel, but the user will retain ownership.
-              Useful for moderation.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={processing}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-amber-600 text-white hover:bg-amber-700"
-              onClick={(e) => {
-                e.preventDefault();
-                handleClearPixelContent();
-              }}
-              disabled={processing}
-            >
-              {processing ? "Clearing..." : "Clear Content"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Clear Database Dialog */}
-      <Dialog
-        open={clearDbDialog?.open || false}
-        onOpenChange={(open) => {
-          if (!open) {
-            setClearDbDialog(null);
-            setConfirmPassword('');
-            setPasswordError('');
-          }
-        }}
-      >
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-destructive">
-              <div className="w-10 h-10 rounded-full bg-destructive/10 flex items-center justify-center">
-                <Database className="w-5 h-5 text-destructive" />
-              </div>
-              Clear All Database Content
-            </DialogTitle>
-            <DialogDescription asChild>
-              <div className="space-y-3">
-                <p>This action will permanently delete:</p>
-                <ul className="list-disc list-inside space-y-1 text-sm">
-                  <li>All pixel ownership and content (images, links)</li>
-                  <li>All marketplace listings</li>
-                  <li>All announcements</li>
-                </ul>
-                <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20">
-                  <p className="font-semibold text-destructive flex items-center gap-2 text-sm">
-                    <AlertTriangle className="w-4 h-4" />
-                    This action cannot be undone!
-                  </p>
-                </div>
-              </div>
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="confirm-password" className="text-sm font-medium flex items-center gap-2">
-                <KeyRound className="w-4 h-4" />
-                Enter your password to confirm
-              </Label>
-              <Input
-                id="confirm-password"
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => {
-                  setConfirmPassword(e.target.value);
-                  setPasswordError('');
-                }}
-                placeholder="Enter your password"
-                className={passwordError ? 'border-destructive' : ''}
-                autoFocus
-              />
-              {passwordError && (
-                <p className="text-sm text-destructive flex items-center gap-1">
-                  <XCircle className="w-3 h-3" />
-                  {passwordError}
-                </p>
-              )}
-            </div>
-          </div>
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button
-              variant="outline"
-              onClick={() => {
-                setClearDbDialog(null);
-                setConfirmPassword('');
-                setPasswordError('');
-              }}
-              disabled={clearingDb}
-              className="w-full sm:w-auto"
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={handleClearDatabase}
-              disabled={clearingDb || !confirmPassword.trim()}
-              className="gap-2 w-full sm:w-auto"
-            >
-              {clearingDb && <Loader2 className="w-4 h-4 animate-spin" />}
-              {clearingDb ? 'Clearing...' : 'Clear Database'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* MFA Verification Dialog */}
       <Dialog open={mfaDialog?.open || false} onOpenChange={(open) => !open && setMfaDialog(null)}>
@@ -2753,9 +653,7 @@ const AdminDashboard = () => {
             />
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setMfaDialog(null)}>
-              Cancel
-            </Button>
+            <Button variant="outline" onClick={() => setMfaDialog(null)}>Cancel</Button>
             <Button
               onClick={async () => {
                 if (!mfaDialog) return;
@@ -2779,7 +677,7 @@ const AdminDashboard = () => {
   );
 };
 
-// Wrapped Export — uses the shared ErrorBoundary
+// Wrapped Export
 export default function AdminDashboardWrapper() {
   return (
     <ErrorBoundary pageName="Admin Dashboard">

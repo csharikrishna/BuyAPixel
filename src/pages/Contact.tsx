@@ -22,7 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import {
   Loader2,
   Mail,
@@ -90,9 +90,9 @@ const CONTACT_INFO = [
   {
     icon: Phone,
     title: 'Phone',
-    value: '+91 XXX XXX XXXX',
+    value: 'Email preferred',
     description: 'Mon-Fri, 9 AM - 6 PM IST',
-    href: 'tel:+91XXXXXXXXXX',
+    href: 'mailto:support@buyapixel.in',
     color: 'secondary',
   },
   {
@@ -160,7 +160,6 @@ function calculateFormCompleteness(formData: FormData): number {
 // ======================
 
 const Contact = () => {
-  const { toast } = useToast();
 
   // Refs
   const isMountedRef = useRef(true);
@@ -217,35 +216,29 @@ const Contact = () => {
         const draftAge = Date.now() - draft.timestamp;
 
         if (draftAge < DRAFT_EXPIRY_TIME) {
-          toast({
-            title: 'Draft Found',
+          toast('Draft Found', {
             description: 'Would you like to restore your previous message?',
-            action: (
-              <Button
-                size="sm"
-                onClick={() => {
-                  const { timestamp, ...draftData } = draft;
-                  setFormData(draftData);
-                  toast({
-                    title: 'Draft Restored',
-                    description: 'Your previous message has been restored.',
-                  });
-                }}
-              >
-                Restore
-              </Button>
-            ),
+            action: {
+              label: 'Restore',
+              onClick: () => {
+                const { timestamp, ...draftData } = draft;
+                setFormData(draftData);
+                toast.success('Draft Restored', {
+                  description: 'Your previous message has been restored.',
+                });
+              },
+            },
             duration: 10000,
           });
         } else {
           localStorage.removeItem('contact_form_draft');
         }
-      } catch (error) {
+      } catch (error: unknown) {
         console.error('Failed to parse draft:', error);
         localStorage.removeItem('contact_form_draft');
       }
     }
-  }, [toast]);
+  }, []);
 
   // Auto-save draft
   useEffect(() => {
@@ -326,10 +319,8 @@ const Contact = () => {
     // Check honeypot for bots
     if (formData.honeypot) {
       console.warn('Bot detected via honeypot');
-      toast({
-        title: 'Error',
+      toast.error('Error', {
         description: 'Invalid form submission detected.',
-        variant: 'destructive',
       });
       return;
     }
@@ -340,10 +331,8 @@ const Contact = () => {
       const secondsRemaining = Math.ceil((RATE_LIMIT_DURATION - timeSinceLastSubmit) / 1000);
 
       if (secondsRemaining > 0) {
-        toast({
-          title: 'Please Wait',
+        toast.error('Please Wait', {
           description: `You can submit another message in ${secondsRemaining} seconds.`,
-          variant: 'destructive',
         });
         return;
       }
@@ -368,10 +357,8 @@ const Contact = () => {
       });
       setTouched(allTouched);
 
-      toast({
-        title: 'Validation Error',
+      toast.error('Validation Error', {
         description: validation.error.errors[0].message,
-        variant: 'destructive',
       });
       return;
     }
@@ -411,8 +398,7 @@ const Contact = () => {
       // Clear draft
       localStorage.removeItem('contact_form_draft');
 
-      toast({
-        title: 'Message Sent Successfully! 🎉',
+      toast.success('Message Sent Successfully! 🎉', {
         description: "Thank you for contacting us. We'll get back to you within 24 hours.",
       });
 
@@ -444,10 +430,8 @@ const Contact = () => {
         errorMessage = 'Too many requests. Please wait a moment and try again.';
       }
 
-      toast({
-        title: 'Error',
+      toast.error('Error', {
         description: errorMessage,
-        variant: 'destructive',
       });
     } finally {
       if (isMountedRef.current) {
@@ -468,11 +452,10 @@ const Contact = () => {
     setErrors({});
     setTouched({});
     localStorage.removeItem('contact_form_draft');
-    toast({
-      title: 'Form Cleared',
+    toast('Form Cleared', {
       description: 'All fields have been reset.',
     });
-  }, [toast]);
+  }, []);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -498,7 +481,8 @@ const Contact = () => {
       url: 'https://buyapixel.in/contact',
       contactPoint: {
         '@type': 'ContactPoint',
-        telephone: '+91-XXX-XXX-XXXX',
+        telephone: '',
+        email: 'support@buyapixel.in',
         contactType: 'Customer Service',
         areaServed: 'IN',
         availableLanguage: ['English', 'Hindi'],

@@ -4,7 +4,7 @@
  */
 
 import { useEffect, useState, useRef, useCallback } from 'react';
-import { Html5QrcodeScanner, Html5QrcodeSupportedFormats } from 'html5-qrcode';
+import type { Html5QrcodeScanner as Html5QrcodeScannerType } from 'html5-qrcode';
 
 export interface UseQRScannerOptions {
    /** Whether the scanner should be active */
@@ -46,7 +46,7 @@ export const useQRScanner = ({
    const [error, setError] = useState<string | null>(null);
    const [isScanning, setIsScanning] = useState(false);
 
-   const scannerRef = useRef<Html5QrcodeScanner | null>(null);
+   const scannerRef = useRef<Html5QrcodeScannerType | null>(null);
    const timerRef = useRef<ReturnType<typeof setTimeout>>();
 
    const resetScan = useCallback(() => {
@@ -75,16 +75,16 @@ export const useQRScanner = ({
          onScanFailure?.(err);
       };
 
-      const config = {
-         fps,
-         qrbox: { width: qrboxSize, height: qrboxSize },
-         formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
-         rememberLastUsedCamera: true,
-      };
-
-      const initScanner = () => {
+      const initScanner = async () => {
          const element = document.getElementById(elementId);
          if (element) {
+            const { Html5QrcodeScanner, Html5QrcodeSupportedFormats } = await import('html5-qrcode');
+            const config = {
+               fps,
+               qrbox: { width: qrboxSize, height: qrboxSize },
+               formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
+               rememberLastUsedCamera: true,
+            };
             const scanner = new Html5QrcodeScanner(elementId, config, /* verbose= */ false);
             scannerRef.current = scanner;
             scanner.render(handleScanSuccess, handleScanFailure);

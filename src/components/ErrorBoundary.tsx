@@ -77,7 +77,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
                               ? `An error occurred while loading ${this.props.pageName}.`
                               : 'An unexpected error occurred.'}
                         </p>
-                        {process.env.NODE_ENV === 'development' && this.state.error && (
+                        {import.meta.env.DEV && this.state.error && (
                            <details className="mt-4 text-left">
                               <summary className="cursor-pointer text-xs text-muted-foreground hover:text-foreground">
                                  Show error details

@@ -46,7 +46,7 @@ export const downloadQrCode = async (
       document.body.removeChild(link);
       window.URL.revokeObjectURL(blobUrl);
       toast.success('QR saved to downloads');
-   } catch (err) {
+   } catch (err: unknown) {
       console.error('QR download failed:', err);
       toast.error('Download failed');
    }

@@ -126,7 +126,7 @@ const compressImage = async (
               quality
             );
           }
-        } catch (error) {
+        } catch (error: unknown) {
           reject(error);
         }
       };
@@ -300,7 +300,7 @@ export const ImageUpload = ({
           // Direct upload if no cropping needed
           await uploadImage(processedFile);
         }
-      } catch (error) {
+      } catch (error: unknown) {
         console.error('Processing error:', error);
         const errorMsg = error instanceof Error ? error.message : 'Failed to process image';
         setError(errorMsg);

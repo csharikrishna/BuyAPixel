@@ -2,13 +2,12 @@ import React, { useState, useEffect, useRef, useCallback, useMemo, CSSProperties
 import { Pause, Play, Eye, ChevronUp, Maximize2, GripVertical } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import { useLayout } from '@/contexts/LayoutContext';
+import { supabase } from '@/integrations/supabase/client';
 
 
 // Constants
 const ANIMATION_DURATION = 50; // seconds
 const MAX_MESSAGES = 20;
-const MESSAGE_INTERVAL_MIN = 7000;
-const MESSAGE_INTERVAL_MAX = 12000;
 const VIEWER_UPDATE_MIN = 2000;
 const VIEWER_UPDATE_MAX = 7000;
 const RESIZE_DEBOUNCE_MS = 150;
@@ -37,7 +36,7 @@ const safeJsonParse = <T,>(value: string | null, fallback: T): T => {
   if (!value) return fallback;
   try {
     return JSON.parse(value);
-  } catch (e) {
+  } catch (e: unknown) {
     console.warn("Failed to parse localStorage value:", e);
     return fallback;
   }
@@ -62,13 +61,44 @@ const LiveTicker: React.FC<LiveTickerProps> = ({ isPurchaseOpen = false }) => {
     });
   });
 
-  const [messages, setMessages] = useState<TickerMessage[]>([
-    { id: 1, message: "TechCorp purchased 25 pixels for ₹2,475", emoji: "🔥", type: 'buy' },
-    { id: 2, message: "StartupHub listed 10 pixels on marketplace", emoji: "🚀", type: 'resale' },
-    { id: 3, message: "DigitalBrand secured premium spot for ₹4,950", emoji: "💎", type: 'premium' },
-    { id: 4, message: "CreativeStudio just claimed 15 pixels", emoji: "✨", type: 'buy' },
-    { id: 5, message: "MarketingPro bought premium pixels for ₹1,980", emoji: "🎯", type: 'premium' }
-  ]);
+  const [messages, setMessages] = useState<TickerMessage[]>([]);
+
+  // Load recent real purchases on mount
+  useEffect(() => {
+    const loadRecentActivity = async () => {
+      try {
+        const { data } = await supabase
+          .from('pixel_blocks')
+          .select('id, pixel_count, total_price, created_at')
+          .order('created_at', { ascending: false })
+          .limit(10);
+
+        if (data && data.length > 0) {
+          const realMessages: TickerMessage[] = data.map((block: any, i: number) => {
+            const count = block.pixel_count || 1;
+            const price = Math.round(block.total_price || 0);
+            return {
+              id: Date.now() + i,
+              message: `Someone purchased ${count} pixel${count > 1 ? 's' : ''} for ₹${price.toLocaleString('en-IN')}`,
+              emoji: count >= 20 ? '💎' : count >= 10 ? '🚀' : '🔥',
+              type: (count >= 20 ? 'premium' : 'buy') as TickerMessage['type'],
+            };
+          });
+          setMessages(realMessages);
+        } else {
+          setMessages([
+            { id: 1, message: 'Welcome to BuyAPixel.in — own your piece of the internet!', emoji: '✨', type: 'buy' },
+            { id: 2, message: 'Pixels starting at just ₹99 — grab yours today', emoji: '🎯', type: 'premium' },
+          ]);
+        }
+      } catch {
+        setMessages([
+          { id: 1, message: 'Welcome to BuyAPixel.in — own your piece of the internet!', emoji: '✨', type: 'buy' },
+        ]);
+      }
+    };
+    loadRecentActivity();
+  }, []);
 
 
   const [isPaused, setIsPaused] = useState(false);
@@ -84,16 +114,42 @@ const LiveTicker: React.FC<LiveTickerProps> = ({ isPurchaseOpen = false }) => {
   const elementStartPos = useRef<Position>({ x: 0, y: 0 });
 
 
-  const newMessagesPool = useMemo(() => [
-    { message: "Anonymous bought 8 pixels for ₹792", emoji: "🔥", type: 'buy' as const },
-    { message: "BrandX listed 20 pixels for resale", emoji: "🚀", type: 'resale' as const },
-    { message: "TechStartup secured premium position", emoji: "💎", type: 'premium' as const },
-    { message: "Designer_Pro claimed 5 pixels", emoji: "✨", type: 'buy' as const },
-    { message: "CryptoWhale invested in 50 pixels", emoji: "💰", type: 'premium' as const },
-    { message: "Marketing_Guru purchased 12 pixels", emoji: "🎯", type: 'buy' as const },
-    { message: "StartupFounder bought premium spot", emoji: "⭐", type: 'premium' as const },
-    { message: "DigitalAgency claimed 30 pixels", emoji: "🚀", type: 'buy' as const },
-  ], []);
+  // Subscribe to realtime pixel purchases for live updates
+  useEffect(() => {
+    if (isPaused) return;
+
+    const channel = supabase
+      .channel('ticker-purchases')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'pixel_blocks' }, async (payload) => {
+        const block = payload.new as { owner_id?: string; pixel_count?: number; total_price?: number };
+        let name = 'Someone';
+        if (block.owner_id) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('full_name')
+            .eq('user_id', block.owner_id)
+            .maybeSingle();
+          if (profile?.full_name) name = profile.full_name;
+        }
+        const count = block.pixel_count || 1;
+        const price = Math.round(block.total_price || 0);
+        const newMsg: TickerMessage = {
+          id: Date.now(),
+          message: `${name} just purchased ${count} pixel${count > 1 ? 's' : ''} for ₹${price.toLocaleString('en-IN')}`,
+          emoji: count >= 20 ? '💎' : count >= 10 ? '🚀' : '🔥',
+          type: count >= 20 ? 'premium' : 'buy',
+        };
+        setMessages(prev => {
+          const newArr = [...prev, newMsg];
+          return newArr.length > MAX_MESSAGES ? newArr.slice(-MAX_MESSAGES) : newArr;
+        });
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [isPaused]);
 
 
   // --- DRAG HANDLERS ---
@@ -303,7 +359,7 @@ const LiveTicker: React.FC<LiveTickerProps> = ({ isPurchaseOpen = false }) => {
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth <= MOBILE_BREAKPOINT);
 
-    let timeout: NodeJS.Timeout;
+    let timeout: ReturnType<typeof setTimeout>;
     const debouncedResize = () => {
       clearTimeout(timeout);
       timeout = setTimeout(checkMobile, RESIZE_DEBOUNCE_MS);
@@ -385,27 +441,6 @@ const LiveTicker: React.FC<LiveTickerProps> = ({ isPurchaseOpen = false }) => {
 
     return () => clearTimeout(timer);
   }, [viewerCount, getViewerRangeByHour]);
-
-
-  // Add new messages periodically
-  useEffect(() => {
-    if (isPaused) return;
-
-
-    const addMessage = () => {
-      const randomMsg = newMessagesPool[Math.floor(Math.random() * newMessagesPool.length)];
-      setMessages(prev => {
-        const newArr = [...prev, { id: Date.now(), ...randomMsg }];
-        return newArr.length > MAX_MESSAGES ? newArr.slice(-MAX_MESSAGES) : newArr;
-      });
-    };
-
-
-    const interval = Math.floor(Math.random() * (MESSAGE_INTERVAL_MAX - MESSAGE_INTERVAL_MIN)) + MESSAGE_INTERVAL_MIN;
-    const timer = setInterval(addMessage, interval);
-
-    return () => clearInterval(timer);
-  }, [isPaused, newMessagesPool]);
 
 
   // Update announcement for screen readers

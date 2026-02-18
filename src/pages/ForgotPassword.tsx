@@ -1,9 +1,9 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import {
   Loader2,
   Mail,
@@ -33,7 +33,7 @@ const ForgotPassword = () => {
   const [emailError, setEmailError] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [lastSentTime, setLastSentTime] = useState<number | null>(null);
-  const { toast } = useToast();
+  const emailDebounceRef = useRef<NodeJS.Timeout>();
 
   // Real-time email validation
   const validateEmail = useCallback((value: string) => {
@@ -55,8 +55,11 @@ const ForgotPassword = () => {
     setIsTyping(true);
     setEmailSent(false); // Reset sent state when email changes
 
-    // Debounced validation
-    setTimeout(() => {
+    // Debounced validation — clear previous timer
+    if (emailDebounceRef.current) {
+      clearTimeout(emailDebounceRef.current);
+    }
+    emailDebounceRef.current = setTimeout(() => {
       validateEmail(value);
       setIsTyping(false);
     }, 500);
@@ -71,10 +74,8 @@ const ForgotPassword = () => {
       const secondsRemaining = Math.ceil((60000 - timeSinceLastSent) / 1000);
 
       if (secondsRemaining > 0) {
-        toast({
-          title: 'Please Wait',
+        toast.error('Please Wait', {
           description: `You can request another link in ${secondsRemaining} seconds.`,
-          variant: 'destructive',
         });
         return;
       }
@@ -86,10 +87,8 @@ const ForgotPassword = () => {
     if (!validation.success) {
       const firstError = validation.error.errors[0];
       setEmailError(firstError.message);
-      toast({
-        title: 'Validation Error',
+      toast.error('Validation Error', {
         description: firstError.message,
-        variant: 'destructive',
       });
       return;
     }
@@ -97,14 +96,8 @@ const ForgotPassword = () => {
     setLoading(true);
 
     try {
-      console.log(
-        '🔐 Sending password reset email to:',
-        validation.data.email
-      );
-
-      // IMPROVED: Add type=recovery parameter for better callback handling
+      // Add type=recovery parameter for better callback handling
       const redirectUrl = `${window.location.origin}/auth/callback?type=recovery`;
-      console.log('📍 Redirect URL:', redirectUrl);
 
       const { data, error } = await supabase.auth.resetPasswordForEmail(
         validation.data.email,
@@ -113,13 +106,7 @@ const ForgotPassword = () => {
         }
       );
 
-      console.log('📧 Reset password response:', { data, error });
-
       if (error) {
-        console.error('❌ Password reset error:', error);
-        console.error('Error code:', error.code);
-        console.error('Error message:', error.message);
-        console.error('Error status:', error.status);
 
         let errorMessage = error.message;
         let errorTitle = 'Password Reset Failed';
@@ -162,14 +149,11 @@ const ForgotPassword = () => {
           errorTitle = 'Rate Limit';
         }
 
-        toast({
-          title: errorTitle,
-          description: errorMessage,
-          variant: error.message.includes('User not found')
-            ? 'default'
-            : 'destructive',
-          duration: 8000,
-        });
+        if (error.message.includes('User not found')) {
+          toast.info(errorTitle, { description: errorMessage, duration: 8000 });
+        } else {
+          toast.error(errorTitle, { description: errorMessage, duration: 8000 });
+        }
 
         // Set email sent to true even if user not found (security)
         if (error.message.includes('User not found')) {
@@ -177,27 +161,19 @@ const ForgotPassword = () => {
           setLastSentTime(Date.now());
         }
       } else {
-        console.log('✅ Password reset email sent successfully');
-        console.log('📨 Response data:', data);
         setEmailSent(true);
         setLastSentTime(Date.now());
 
-        toast({
-          title: 'Email Sent! 📧',
+        toast.success('Email Sent! 📧', {
           description: `Please check ${email} for the password reset link.`,
           duration: 8000,
         });
       }
     } catch (error: unknown) {
-      console.error('❌ Unexpected error during password reset:', error);
-      console.error('Error type:', typeof error);
-
-      toast({
-        title: 'Unexpected Error',
+      toast.error('Unexpected Error', {
         description:
           getErrorMessage(error) ||
           'An unexpected error occurred. Please try again or contact support.',
-        variant: 'destructive',
         duration: 8000,
       });
     } finally {
@@ -212,16 +188,13 @@ const ForgotPassword = () => {
       const secondsRemaining = Math.ceil((60000 - timeSinceLastSent) / 1000);
 
       if (secondsRemaining > 0) {
-        toast({
-          title: 'Please Wait',
+        toast.error('Please Wait', {
           description: `You can resend in ${secondsRemaining} seconds.`,
-          variant: 'destructive',
         });
         return;
       }
     }
 
-    console.log('🔄 Resending password reset email...');
     setEmailSent(false);
     // Wait a moment for state to update, then resend
     setTimeout(() => {

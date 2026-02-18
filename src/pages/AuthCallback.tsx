@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2, CheckCircle2, AlertCircle, Mail, RefreshCw } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { getErrorMessage } from '@/lib/utils';
 
@@ -15,7 +15,6 @@ type AuthStatus =
 
 const AuthCallback = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();
   const [searchParams] = useSearchParams();
   const [status, setStatus] = useState<AuthStatus>('loading');
   const [errorMessage, setErrorMessage] = useState('');
@@ -73,10 +72,8 @@ const AuthCallback = () => {
       console.warn('⚠️ No authentication data found');
       setStatus('error');
       setErrorMessage('No authentication data found. Please try signing in again.');
-      toast({
-        title: 'Session Not Found',
+      toast.error('Session Not Found', {
         description: 'Please try signing in again.',
-        variant: 'destructive',
       });
       setTimeout(() => navigate('/signin', { replace: true }), 3000);
 
@@ -123,8 +120,7 @@ const AuthCallback = () => {
       if (type === 'recovery') {
         setAuthType('recovery');
         setStatus('success');
-        toast({
-          title: 'Link Verified',
+        toast.success('Link Verified', {
           description: 'Please enter your new password.',
         });
         setTimeout(() => navigate('/reset-password', { replace: true }), 500);
@@ -154,8 +150,7 @@ const AuthCallback = () => {
 
       const message = messages[type as keyof typeof messages] || messages.signin;
 
-      toast({
-        title: message.title,
+      toast.success(message.title, {
         description: message.description,
       });
 
@@ -163,7 +158,7 @@ const AuthCallback = () => {
       const redirectTo = searchParams.get('redirect') || '/';
       setTimeout(() => navigate(redirectTo, { replace: true }), 1500);
 
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('❌ Error completing authentication:', err);
       handleAuthError('Failed to complete sign in');
     }
@@ -172,20 +167,16 @@ const AuthCallback = () => {
   const handleExpiredLink = () => {
     setStatus('expired');
     setErrorMessage('Your email link has expired or is invalid. Email links expire after 24 hours for security.');
-    toast({
-      title: 'Link Expired',
+    toast.error('Link Expired', {
       description: 'Please request a new link to continue.',
-      variant: 'destructive',
     });
   };
 
   const handleAuthError = (message: string) => {
     setStatus('error');
     setErrorMessage(message);
-    toast({
-      title: 'Authentication Error',
+    toast.error('Authentication Error', {
       description: message,
-      variant: 'destructive',
     });
     setTimeout(() => navigate('/signin', { replace: true }), 5000);
   };
@@ -235,7 +226,7 @@ const AuthCallback = () => {
       );
 
       console.log('✅ Profile created successfully');
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('Error handling profile:', err);
     }
   };

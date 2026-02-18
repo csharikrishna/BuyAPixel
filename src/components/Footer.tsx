@@ -1,14 +1,12 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
-import { Mail, Phone, MapPin, Twitter, Instagram, Linkedin, MessageCircle, Heart } from "lucide-react";
+import { Mail, MapPin, Instagram, MessageCircle, Heart } from "lucide-react";
 
 const Footer = () => {
   const socialLinks = [
-    { name: "Twitter", url: "https://twitter.com", icon: Twitter },
-    { name: "Instagram", url: "https://instagram.com", icon: Instagram },
-    { name: "LinkedIn", url: "https://linkedin.com", icon: Linkedin },
-    { name: "Discord", url: "https://discord.com", icon: MessageCircle },
+    { name: "Instagram", url: "https://instagram.com/buyapixel.in", icon: Instagram },
+    { name: "Discord", url: "https://discord.gg/buyapixel", icon: MessageCircle },
   ];
 
   const footerLinks = [
@@ -32,7 +30,7 @@ const Footer = () => {
     {
       title: "Community",
       links: [
-        { name: "Discord Server", href: "https://discord.com" },
+        { name: "Discord Server", href: "https://discord.gg/buyapixel" },
         { name: "Blog", href: "/blog" },
       ]
     }
@@ -72,13 +70,6 @@ const Footer = () => {
                   >
                     <Mail className="w-4 h-4 flex-shrink-0 group-hover:text-primary transition-colors" />
                     support@buyapixel.in
-                  </a>
-                  <a
-                    href="tel:+919876543210"
-                    className="flex items-center gap-2 hover:text-foreground transition-colors group"
-                  >
-                    <Phone className="w-4 h-4 flex-shrink-0 group-hover:text-primary transition-colors" />
-                    +91 98765 43210
                   </a>
                   <div className="flex items-center gap-2">
                     <MapPin className="w-4 h-4 flex-shrink-0" />

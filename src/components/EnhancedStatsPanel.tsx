@@ -38,7 +38,7 @@ export const EnhancedStatsPanel = memo(function EnhancedStatsPanel({ selectedPix
   const getStats = async () => {
     try {
       // Try using RPC function for better performance (uses materialized view)
-      const { data: gridStats, error: rpcError } = await (supabase as any).rpc('get_grid_stats');
+      const { data: gridStats, error: rpcError } = await supabase.rpc('get_grid_stats');
 
       if (!rpcError && gridStats) {
         // Get user pixels separately if logged in
@@ -100,7 +100,7 @@ export const EnhancedStatsPanel = memo(function EnhancedStatsPanel({ selectedPix
         userPixels,
         averagePrice: avg,
       });
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error fetching stats:', error);
     }
   };

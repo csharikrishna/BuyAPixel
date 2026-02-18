@@ -64,14 +64,13 @@ export default defineConfig(({ mode }) => ({
          'react-router-dom',
          '@supabase/supabase-js',
          '@tanstack/react-query',
-         'lodash',
-         'lodash/get',
-         'lodash/set',
-         'lodash/debounce',
-         'lodash/throttle',
-         'lodash/isNaN',
       ],
-      // Exclude large optional deps from pre-bundling
       exclude: [],
+   },
+
+   esbuild: {
+      // Strip console.log/warn in production builds (keep console.error for monitoring)
+      drop: mode === 'production' ? ['debugger'] : [],
+      pure: mode === 'production' ? ['console.log', 'console.warn', 'console.info', 'console.debug'] : [],
    },
 }));

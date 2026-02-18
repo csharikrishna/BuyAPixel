@@ -1,4 +1,3 @@
-import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner, toast } from "sonner";
 import { useState, useEffect, lazy, Suspense } from "react";
 import { useNetworkStatus } from "@/hooks/useNetworkStatus";
@@ -90,8 +89,7 @@ const App = () => (
     <HelmetProvider>
       <TooltipProvider>
         <LayoutProvider>
-          <Toaster />
-          <Sonner />
+          <Sonner position="top-right" richColors closeButton />
           <BrowserRouter>
             <AppContent />
           </BrowserRouter>
@@ -133,34 +131,34 @@ const AppContent = () => {
             {/* Admin Page */}
             <Route path="/admin" element={<ErrorBoundary pageName="Admin Dashboard"><AdminDashboard /></ErrorBoundary>} />
 
-            {/* Main Pages (BuyPixels is static for fast first load) */}
+            {/* Main Pages */}
             <Route path="/" element={<ErrorBoundary pageName="BuyPixels"><BuyPixels /></ErrorBoundary>} />
-            <Route path="/about" element={<Index />} />
-            <Route path="/canvas" element={<Canvas />} />
-            <Route path="/scan" element={<ScanPixel />} />
+            <Route path="/about" element={<ErrorBoundary pageName="About"><Index /></ErrorBoundary>} />
+            <Route path="/canvas" element={<ErrorBoundary pageName="Canvas"><Canvas /></ErrorBoundary>} />
+            <Route path="/scan" element={<ErrorBoundary pageName="Scan Pixel"><ScanPixel /></ErrorBoundary>} />
 
-            {/* Authentication (SignIn/SignUp static for fast access) */}
-            <Route path="/signin" element={<SignIn />} />
-            <Route path="/signup" element={<SignUp />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/auth/callback" element={<AuthCallback />} />
+            {/* Authentication */}
+            <Route path="/signin" element={<ErrorBoundary pageName="Sign In"><SignIn /></ErrorBoundary>} />
+            <Route path="/signup" element={<ErrorBoundary pageName="Sign Up"><SignUp /></ErrorBoundary>} />
+            <Route path="/forgot-password" element={<ErrorBoundary pageName="Forgot Password"><ForgotPassword /></ErrorBoundary>} />
+            <Route path="/reset-password" element={<ErrorBoundary pageName="Reset Password"><ResetPassword /></ErrorBoundary>} />
+            <Route path="/auth/callback" element={<ErrorBoundary pageName="Auth Callback"><AuthCallback /></ErrorBoundary>} />
 
             {/* User Pages */}
             <Route path="/profile" element={<ErrorBoundary pageName="Profile"><Profile /></ErrorBoundary>} />
-            <Route path="/leaderboard" element={<Leaderboard />} />
-            <Route path="/marketplace" element={<MarketplacePage />} />
-            <Route path="/contact" element={<Contact />} />
-            <Route path="/help" element={<Help />} />
+            <Route path="/leaderboard" element={<ErrorBoundary pageName="Leaderboard"><Leaderboard /></ErrorBoundary>} />
+            <Route path="/marketplace" element={<ErrorBoundary pageName="Marketplace"><MarketplacePage /></ErrorBoundary>} />
+            <Route path="/contact" element={<ErrorBoundary pageName="Contact"><Contact /></ErrorBoundary>} />
+            <Route path="/help" element={<ErrorBoundary pageName="Help"><Help /></ErrorBoundary>} />
 
             {/* Blog Routes */}
             <Route path="/blog" element={<ErrorBoundary pageName="Blog"><Blog /></ErrorBoundary>} />
-            <Route path="/blog/admin" element={<BlogAdmin />} />
-            <Route path="/blog/:slug" element={<BlogPost />} />
+            <Route path="/blog/admin" element={<ErrorBoundary pageName="Blog Admin"><BlogAdmin /></ErrorBoundary>} />
+            <Route path="/blog/:slug" element={<ErrorBoundary pageName="Blog Post"><BlogPost /></ErrorBoundary>} />
 
             {/* Legal Pages */}
-            <Route path="/terms" element={<TermsOfService />} />
-            <Route path="/privacy" element={<PrivacyPolicy />} />
+            <Route path="/terms" element={<ErrorBoundary pageName="Terms"><TermsOfService /></ErrorBoundary>} />
+            <Route path="/privacy" element={<ErrorBoundary pageName="Privacy"><PrivacyPolicy /></ErrorBoundary>} />
 
             {/* Catch-all 404 - MUST BE LAST */}
             <Route path="*" element={<NotFound />} />

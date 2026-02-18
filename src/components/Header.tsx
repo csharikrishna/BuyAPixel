@@ -92,11 +92,13 @@ const Header = () => {
     setMobileMenuOpen(false);
   }, [location.pathname]);
 
-  // Scroll detection for header shadow (using Intersection Observer for performance)
+  // Scroll detection for header shadow — uses ref to avoid listener re-registration
+  const isScrolledRef = useRef(false);
   useEffect(() => {
     const handleScroll = () => {
       const scrolled = window.scrollY > SCROLL_THRESHOLD;
-      if (scrolled !== isScrolled) {
+      if (scrolled !== isScrolledRef.current) {
+        isScrolledRef.current = scrolled;
         setIsScrolled(scrolled);
       }
     };
@@ -108,7 +110,7 @@ const Header = () => {
     handleScroll();
 
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [isScrolled]);
+  }, []);
 
   // Lock body scroll when mobile menu is open
   useEffect(() => {
@@ -230,7 +232,7 @@ const Header = () => {
       navigate('/');
       setMobileMenuOpen(false);
       setDropdownOpen(false);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Sign out error:', error);
       toast.error('Failed to sign out');
     }
@@ -284,17 +286,17 @@ const Header = () => {
     <header
       ref={headerRef}
       className={cn(
-        'sticky top-0 z-50 w-full border-b backdrop-blur-lg transition-all duration-200',
-        'bg-background/80 supports-[backdrop-filter]:bg-background/60',
-        isScrolled && 'shadow-md'
+        'sticky top-0 z-50 w-full border-b border-border/40 backdrop-blur-xl transition-all duration-300',
+        'bg-background/85 supports-[backdrop-filter]:bg-background/70',
+        isScrolled && 'shadow-lg shadow-black/[0.04]'
       )}
       role="banner"
     >
-      <div className="container flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+      <div className="flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8 xl:px-10 w-full">
         {/* LOGO */}
         <Link
           to="/"
-          className="flex items-center gap-2 shrink-0 group focus:outline-none focus:ring-2 focus:ring-primary/20 rounded-md"
+          className="flex items-center gap-2.5 shrink-0 group focus:outline-none focus:ring-2 focus:ring-primary/20 rounded-md"
           aria-label="BuyAPixel home"
           onMouseEnter={createPrefetchHandler('home', () => {
             // Prefetch home page data if needed
@@ -309,7 +311,7 @@ const Header = () => {
         </Link>
 
         {/* DESKTOP NAV */}
-        <nav className="hidden lg:flex items-center space-x-1" role="navigation" aria-label="Main navigation">
+        <nav className="hidden lg:flex items-center space-x-0.5" role="navigation" aria-label="Main navigation">
           {navItems.map(({ label, to, icon: Icon, onPrefetch }) => {
             const active = isActiveRoute(to);
             return (

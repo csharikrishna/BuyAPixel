@@ -4,7 +4,7 @@ import { Helmet } from 'react-helmet-async';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { Progress } from '@/components/ui/progress';
 import {
   Tooltip,
@@ -141,7 +141,6 @@ type FormErrors = Partial<Record<keyof FormData, string>>;
 // ======================
 
 const SignUp = () => {
-  const { toast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
   const { isAuthenticated } = useAuth();
@@ -340,22 +339,14 @@ const SignUp = () => {
           }
         }
 
-        toast({
-          title: 'Sign Up Failed',
-          description: errorMessage,
-          variant: 'destructive',
-        });
+        toast.error('Sign Up Failed', { description: errorMessage });
         setOauthLoading(false);
       }
 
       setTimeout(() => setOauthLoading(false), 10000);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Unexpected Google OAuth error:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to initiate Google sign up. Please try again.',
-        variant: 'destructive',
-      });
+      toast.error('Error', { description: 'Failed to initiate Google sign up. Please try again.' });
       setOauthLoading(false);
     }
   };
@@ -377,30 +368,19 @@ const SignUp = () => {
 
     if (!validation.success) {
       const firstError = validation.error.errors[0];
-      toast({
-        title: 'Validation Error',
-        description: firstError.message,
-        variant: 'destructive',
-      });
+      toast.error('Validation Error', { description: firstError.message });
       return;
     }
 
     if (Object.keys(fieldErrors).length > 0) {
-      toast({
-        title: 'Please fix errors',
-        description: 'Please correct the errors in the form before submitting.',
-        variant: 'destructive',
-      });
+      toast.error('Please fix errors', { description: 'Please correct the errors in the form before submitting.' });
       return;
     }
 
     // Enforce minimum password strength [web:95]
     if (passwordStrength.score < 4) {
-      toast({
-        title: 'Weak Password',
-        description:
-          'Your password is too weak. Please use uppercase, lowercase, numbers, and special characters.',
-        variant: 'destructive',
+      toast.error('Weak Password', {
+        description: 'Your password is too weak. Please use uppercase, lowercase, numbers, and special characters.',
       });
       return;
     }
@@ -466,37 +446,26 @@ const SignUp = () => {
           }
         }
 
-        toast({
-          title: errorTitle,
-          description: errorMessage,
-          variant: 'destructive',
-        });
+        toast.error(errorTitle, { description: errorMessage });
       } else {
         const needsEmailConfirmation = data.user && !data.session;
 
         if (needsEmailConfirmation) {
           setEmailSent(true);
-          toast({
-            title: 'Account Created! 🎉',
-            description:
-              'Please check your email for a confirmation link to activate your account.',
+          toast.success('Account Created! 🎉', {
+            description: 'Please check your email for a confirmation link to activate your account.',
             duration: 8000,
           });
         } else {
-          toast({
-            title: 'Welcome to BuyAPixel! 🎉',
+          toast.success('Welcome to BuyAPixel! 🎉', {
             description: 'Your account has been created successfully. Setting up your profile...',
             duration: 5000,
           });
         }
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Sign up error:', error);
-      toast({
-        title: 'Error',
-        description: 'An unexpected error occurred during sign up. Please try again.',
-        variant: 'destructive',
-      });
+      toast.error('Error', { description: 'An unexpected error occurred during sign up. Please try again.' });
     } finally {
       if (isMountedRef.current) {
         setLoading(false);

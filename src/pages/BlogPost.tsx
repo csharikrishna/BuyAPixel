@@ -46,7 +46,7 @@ interface BlogPost {
   published_at: string;
   reading_time: number;
   tags: string[];
-  views: number;
+  view_count: number | null;
   seo_title: string | null;
   seo_description: string | null;
   author_id: string;
@@ -196,12 +196,12 @@ const BlogPost = () => {
 
       try {
         await supabase
-          .from('blog_posts' as any)
-          .update({ views: (post.views || 0) + 1 })
+          .from('blog_posts')
+          .update({ view_count: (post.view_count || 0) + 1 })
           .eq('id', post.id);
 
         viewIncrementedRef.current = true;
-      } catch (error) {
+      } catch (error: unknown) {
         console.error('Failed to increment view count:', error);
       }
     }, VIEW_INCREMENT_DELAY);
@@ -215,7 +215,7 @@ const BlogPost = () => {
       setError(null);
 
       const { data: postData, error: postError } = await supabase
-        .from('blog_posts' as any)
+        .from('blog_posts')
         .select('*')
         .eq('slug', slug)
         .eq('status', 'published')
@@ -231,7 +231,7 @@ const BlogPost = () => {
       // Load related posts
       if (typedPost.tags && typedPost.tags.length > 0) {
         const { data: relatedData } = await supabase
-          .from('blog_posts' as any)
+          .from('blog_posts')
           .select('id, slug, title, excerpt, featured_image, published_at, reading_time')
           .eq('status', 'published')
           .neq('id', typedPost.id)
@@ -242,7 +242,7 @@ const BlogPost = () => {
           setRelatedPosts(relatedData as unknown as RelatedPost[]);
         }
       }
-    } catch (error) {
+    } catch (error: unknown) {
       if (!isMountedRef.current) return;
 
       console.error('Error loading blog post:', error);
@@ -261,10 +261,28 @@ const BlogPost = () => {
     if (!post?.content) return '';
     const withIds = addHeadingIds(post.content);
     return DOMPurify.sanitize(withIds, {
-      ADD_ATTR: ['target', 'rel'],
+      ADD_ATTR: ['target', 'rel', 'allowfullscreen'],
       ADD_TAGS: ['iframe'],
+      ALLOW_UNKNOWN_PROTOCOLS: false,
+      ALLOWED_URI_REGEXP: /^(?:(?:https?|mailto):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i,
+      WHOLE_DOCUMENT: false,
     });
   }, [post?.content]);
+
+  // Sandbox iframes after DOMPurify sanitization
+  const safeContent = useMemo(() => {
+    if (!processedContent) return '';
+    const div = document.createElement('div');
+    div.innerHTML = processedContent;
+    div.querySelectorAll('iframe').forEach((iframe) => {
+      iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-popups');
+      iframe.setAttribute('loading', 'lazy');
+      if (!iframe.getAttribute('referrerpolicy')) {
+        iframe.setAttribute('referrerpolicy', 'no-referrer');
+      }
+    });
+    return div.innerHTML;
+  }, [processedContent]);
 
   // Extract table of contents
   const tableOfContents = useMemo(() => {
@@ -291,8 +309,8 @@ const BlogPost = () => {
         try {
           await navigator.share({ title, text, url });
           toast.success('Shared successfully!');
-        } catch (err) {
-          if ((err as Error).name !== 'AbortError') {
+        } catch (err: unknown) {
+          if (err instanceof DOMException && err.name !== 'AbortError') {
             console.error('Share error:', err);
           }
         }
@@ -325,7 +343,7 @@ const BlogPost = () => {
         queryKey: ['blog-post', postSlug],
         queryFn: async () => {
           const { data } = await supabase
-            .from('blog_posts' as any)
+            .from('blog_posts')
             .select('*')
             .eq('slug', postSlug)
             .eq('status', 'published')
@@ -527,7 +545,7 @@ const BlogPost = () => {
               <span aria-hidden="true">•</span>
               <span className="flex items-center gap-1">
                 <Eye className="w-4 h-4" aria-hidden="true" />
-                {post.views} views
+                {post.view_count ?? 0} views
               </span>
             </div>
 
@@ -642,7 +660,7 @@ const BlogPost = () => {
                        prose-blockquote:border-l-primary prose-blockquote:bg-muted/50 prose-blockquote:py-1
                        prose-ul:list-disc prose-ol:list-decimal
                        prose-li:marker:text-primary"
-            dangerouslySetInnerHTML={{ __html: processedContent }}
+            dangerouslySetInnerHTML={{ __html: safeContent }}
           />
 
           <Separator className="my-8" />
