@@ -588,9 +588,9 @@ const BuyPixels = () => {
       {/* MAIN LAYOUT */}
       <main className="flex-1 w-full overflow-hidden flex flex-col lg:grid lg:grid-cols-12 lg:gap-0">
         {/* LEFT COLUMN: CANVAS */}
-        <div className="lg:col-span-9 order-1 flex flex-col gap-4 min-h-[400px] h-[60vh] lg:h-[calc(100vh-64px)] lg:border-r border-border/40">
+        <div className="lg:col-span-9 order-1 flex flex-col gap-1 lg:gap-4 lg:h-[calc(100vh-64px)] lg:border-r border-border/40">
           {/* Canvas Wrapper with Overlay Controls */}
-          <div className="w-full h-full relative flex-1">
+          <div className="w-full relative aspect-square lg:aspect-auto lg:flex-1">
             {/* Desktop Toolbar */}
             {mode === "buying" && (
               <div

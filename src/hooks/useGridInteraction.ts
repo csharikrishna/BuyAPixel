@@ -182,6 +182,17 @@ export function useGridInteraction({
             GRID_CONFIG.MIN_ZOOM,
             Math.min(GRID_CONFIG.MAX_ZOOM, newZoom)
          );
+
+         // Zoom toward the cursor position
+         const rect = container.getBoundingClientRect();
+         const cursorX = event.clientX - rect.left;
+         const cursorY = event.clientY - rect.top;
+         const scale = safeZoom / zoom;
+         const newOffX = cursorX - (cursorX - viewportOffset.x) * scale;
+         const newOffY = cursorY - (cursorY - viewportOffset.y) * scale;
+         const clamped = clampOffset(newOffX, newOffY, safeZoom);
+         setViewportOffset(clamped);
+
          onZoomChange(safeZoom);
       };
 
