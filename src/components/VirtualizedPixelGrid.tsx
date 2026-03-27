@@ -125,7 +125,7 @@ export const VirtualizedPixelGrid = forwardRef<
           const fitZoomY = (clientHeight - padding * 2) / gridPixelHeight;
           const fitZoom = Math.min(fitZoomX, fitZoomY);
           const clampedZoom = Math.min(
-            Math.max(fitZoom, GRID_CONFIG.MIN_ZOOM),
+            Math.max(fitZoom * (GRID_CONFIG.INITIAL_ZOOM_MULTIPLIER || 1), GRID_CONFIG.MIN_ZOOM),
             GRID_CONFIG.MAX_INITIAL_ZOOM
           );
 
@@ -332,7 +332,7 @@ export const VirtualizedPixelGrid = forwardRef<
       const fitZoomY = (clientHeight - padding * 2) / gridPixelHeight;
       const fitZoom = Math.min(fitZoomX, fitZoomY);
       const clampedZoom = Math.min(
-        Math.max(fitZoom, GRID_CONFIG.MIN_ZOOM),
+        Math.max(fitZoom * (GRID_CONFIG.INITIAL_ZOOM_MULTIPLIER || 1), GRID_CONFIG.MIN_ZOOM),
         GRID_CONFIG.MAX_INITIAL_ZOOM
       );
 
@@ -450,10 +450,10 @@ export const VirtualizedPixelGrid = forwardRef<
     const cursor = !enableInteraction
       ? "default"
       : isDragging
-      ? "grabbing"
-      : isSelecting
-      ? "crosshair"
-      : "grab";
+        ? "grabbing"
+        : isSelecting
+          ? "crosshair"
+          : "grab";
 
     // ── Render ────────────────────────────────────────────────
 
@@ -702,8 +702,8 @@ export const VirtualizedPixelGrid = forwardRef<
                     backgroundColor: image_url
                       ? "transparent"
                       : isOwner
-                      ? "#10b981"
-                      : "#ef4444",
+                        ? "#10b981"
+                        : "#ef4444",
                     backgroundImage: image_url
                       ? `url(${getGridImageUrl(image_url, zoom)})`
                       : "none",
