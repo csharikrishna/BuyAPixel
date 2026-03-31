@@ -107,6 +107,41 @@ export const VirtualizedPixelGrid = forwardRef<
       enableInteraction,
     });
 
+    const calculateFittedViewport = useCallback(
+      (clientWidth: number, clientHeight: number) => {
+        const gridPixelWidth = gridWidth * pixelSize;
+        const gridPixelHeight = gridHeight * pixelSize;
+        const isMobileDevice = clientWidth < 768;
+        const padding = isMobileDevice ? 8 : 40;
+        const fitZoomX = (clientWidth - padding * 2) / gridPixelWidth;
+        const fitZoomY = (clientHeight - padding * 2) / gridPixelHeight;
+        const fitZoom = Math.min(fitZoomX, fitZoomY);
+        const zoomMultiplier = isMobileDevice
+          ? 1.12
+          : GRID_CONFIG.INITIAL_ZOOM_MULTIPLIER || 1;
+        const mobileMaxZoom = fitZoom * 1.2;
+        const clampedZoom = Math.min(
+          Math.max(fitZoom * zoomMultiplier, GRID_CONFIG.MIN_ZOOM),
+          isMobileDevice
+            ? Math.min(mobileMaxZoom, GRID_CONFIG.MAX_INITIAL_ZOOM)
+            : GRID_CONFIG.MAX_INITIAL_ZOOM
+        );
+
+        const fittedPixelSize = Math.max(1, Math.floor(pixelSize * clampedZoom));
+        const renderedGridWidth = gridWidth * fittedPixelSize;
+        const renderedGridHeight = gridHeight * fittedPixelSize;
+
+        return {
+          zoom: clampedZoom,
+          offset: {
+            x: (clientWidth - renderedGridWidth) / 2,
+            y: (clientHeight - renderedGridHeight) / 2,
+          },
+        };
+      },
+      [gridWidth, gridHeight, pixelSize]
+    );
+
     // ── Imperative Handle ─────────────────────────────────────
     useImperativeHandle(
       ref,
@@ -116,27 +151,12 @@ export const VirtualizedPixelGrid = forwardRef<
           const { clientWidth, clientHeight } = containerRef.current;
           if (!clientWidth || !clientHeight) return;
 
-          // Re-calculate fit zoom (same logic as initial mount)
-          const gridPixelWidth = gridWidth * pixelSize;
-          const gridPixelHeight = gridHeight * pixelSize;
-          const isMobileDevice = clientWidth < 768;
-          const padding = isMobileDevice ? 4 : 40;
-          const fitZoomX = (clientWidth - padding * 2) / gridPixelWidth;
-          const fitZoomY = (clientHeight - padding * 2) / gridPixelHeight;
-          const fitZoom = Math.min(fitZoomX, fitZoomY);
-          const clampedZoom = Math.min(
-            Math.max(fitZoom * (GRID_CONFIG.INITIAL_ZOOM_MULTIPLIER || 1), GRID_CONFIG.MIN_ZOOM),
-            GRID_CONFIG.MAX_INITIAL_ZOOM
-          );
-
-          onZoomChange(clampedZoom);
-          setViewportOffset({
-            x: (clientWidth - gridPixelWidth * clampedZoom) / 2,
-            y: (clientHeight - gridPixelHeight * clampedZoom) / 2,
-          });
+          const fitted = calculateFittedViewport(clientWidth, clientHeight);
+          onZoomChange(fitted.zoom);
+          setViewportOffset(fitted.offset);
         },
       }),
-      [gridWidth, gridHeight, pixelSize, onZoomChange, setViewportOffset]
+      [calculateFittedViewport, onZoomChange, setViewportOffset]
     );
 
     // ── Concurrency ───────────────────────────────────────────
@@ -150,8 +170,14 @@ export const VirtualizedPixelGrid = forwardRef<
     // ── Memoized Derivations ──────────────────────────────────
 
     const scaledPixelSize = useMemo(
-      () => Math.floor(pixelSize * zoom),
+      () => Math.max(1, Math.floor(pixelSize * zoom)),
       [pixelSize, zoom]
+    );
+
+    const getCenteredOffset = useCallback(
+      (containerUnits: number, itemUnits: number) =>
+        ((containerUnits - itemUnits) * scaledPixelSize) / 2,
+      [scaledPixelSize]
     );
 
     const billboardConfig = useMemo(() => {
@@ -323,26 +349,29 @@ export const VirtualizedPixelGrid = forwardRef<
       const { clientWidth, clientHeight } = containerRef.current;
       if (!clientWidth || !clientHeight) return;
 
-      // Calculate zoom to fit grid snugly into the container
-      const gridPixelWidth = gridWidth * pixelSize;
-      const gridPixelHeight = gridHeight * pixelSize;
-      const isMobileDevice = clientWidth < 768;
-      const padding = isMobileDevice ? 4 : 40;
-      const fitZoomX = (clientWidth - padding * 2) / gridPixelWidth;
-      const fitZoomY = (clientHeight - padding * 2) / gridPixelHeight;
-      const fitZoom = Math.min(fitZoomX, fitZoomY);
-      const clampedZoom = Math.min(
-        Math.max(fitZoom * (GRID_CONFIG.INITIAL_ZOOM_MULTIPLIER || 1), GRID_CONFIG.MIN_ZOOM),
-        GRID_CONFIG.MAX_INITIAL_ZOOM
-      );
-
-      onZoomChange(clampedZoom);
-      setViewportOffset({
-        x: (clientWidth - gridPixelWidth * clampedZoom) / 2,
-        y: (clientHeight - gridPixelHeight * clampedZoom) / 2,
-      });
+      const fitted = calculateFittedViewport(clientWidth, clientHeight);
+      onZoomChange(fitted.zoom);
+      setViewportOffset(fitted.offset);
       hasInitializedRef.current = true;
-    }, [gridWidth, gridHeight, pixelSize, onZoomChange, setViewportOffset]);
+    }, [calculateFittedViewport, onZoomChange, setViewportOffset]);
+
+    useEffect(() => {
+      if (!containerRef.current || !containerSize.width || !containerSize.height) return;
+
+      // Keep the preview centered in non-interactive mode where users cannot pan/zoom manually.
+      if (!enableInteraction) {
+        const fitted = calculateFittedViewport(containerSize.width, containerSize.height);
+        onZoomChange(fitted.zoom);
+        setViewportOffset(fitted.offset);
+      }
+    }, [
+      containerSize.width,
+      containerSize.height,
+      enableInteraction,
+      calculateFittedViewport,
+      onZoomChange,
+      setViewportOffset,
+    ]);
 
     useEffect(() => {
       if (!featuredPixelsList.length) return;
@@ -505,7 +534,7 @@ export const VirtualizedPixelGrid = forwardRef<
           {/* Grid Canvas */}
           <div
             style={{
-              transform: `translate3d(${Math.floor(viewportOffset.x)}px, ${Math.floor(viewportOffset.y)}px, 0)`,
+              transform: `translate3d(${viewportOffset.x}px, ${viewportOffset.y}px, 0)`,
               willChange: isDragging ? "transform" : "auto",
               transformOrigin: "0 0",
             }}
@@ -540,8 +569,8 @@ export const VirtualizedPixelGrid = forwardRef<
               <div
                 className="absolute rounded-md"
                 style={{
-                  left: Math.floor((gridWidth / 2 - GRID_CONFIG.PREMIUM_ZONE_SIZE / 2) * scaledPixelSize),
-                  top: Math.floor((gridHeight / 2 - GRID_CONFIG.PREMIUM_ZONE_SIZE / 2) * scaledPixelSize),
+                  left: getCenteredOffset(gridWidth, GRID_CONFIG.PREMIUM_ZONE_SIZE),
+                  top: getCenteredOffset(gridHeight, GRID_CONFIG.PREMIUM_ZONE_SIZE),
                   width: GRID_CONFIG.PREMIUM_ZONE_SIZE * scaledPixelSize,
                   height: GRID_CONFIG.PREMIUM_ZONE_SIZE * scaledPixelSize,
                   border: "2px solid rgba(59, 130, 246, 0.5)",
@@ -551,8 +580,8 @@ export const VirtualizedPixelGrid = forwardRef<
               <div
                 className="absolute rounded-md"
                 style={{
-                  left: Math.floor((gridWidth / 2 - GRID_CONFIG.GOLD_ZONE_SIZE / 2) * scaledPixelSize),
-                  top: Math.floor((gridHeight / 2 - GRID_CONFIG.GOLD_ZONE_SIZE / 2) * scaledPixelSize),
+                  left: getCenteredOffset(gridWidth, GRID_CONFIG.GOLD_ZONE_SIZE),
+                  top: getCenteredOffset(gridHeight, GRID_CONFIG.GOLD_ZONE_SIZE),
                   width: GRID_CONFIG.GOLD_ZONE_SIZE * scaledPixelSize,
                   height: GRID_CONFIG.GOLD_ZONE_SIZE * scaledPixelSize,
                   border: "2px solid rgba(234, 179, 8, 0.7)",
@@ -565,8 +594,8 @@ export const VirtualizedPixelGrid = forwardRef<
             <div
               className="absolute z-30 overflow-hidden flex flex-col items-center justify-center group rounded-md"
               style={{
-                left: Math.floor(billboardConfig.x * scaledPixelSize),
-                top: Math.floor(billboardConfig.y * scaledPixelSize),
+                left: getCenteredOffset(gridWidth, billboardConfig.width),
+                top: getCenteredOffset(gridHeight, billboardConfig.height),
                 width: billboardConfig.width * scaledPixelSize,
                 height: billboardConfig.height * scaledPixelSize,
                 pointerEvents: "auto",
