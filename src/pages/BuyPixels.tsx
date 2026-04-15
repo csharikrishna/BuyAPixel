@@ -45,7 +45,7 @@ import { useNetworkStatus } from "@/hooks/useNetworkStatus";
 import confetti from "canvas-confetti";
 import debounce from "lodash/debounce";
 import { SelectedPixel } from "@/types/grid";
-import { GRID_CONFIG, PIXEL_PRICING, calculatePixelPrice } from "@/utils/gridConstants";
+import { GRID_CONFIG, PIXEL_PRICING, AD_TIER_CONFIG, calculatePixelPrice } from "@/utils/gridConstants";
 
 // --- Constants ---
 const CANVAS_WIDTH = GRID_CONFIG.CANVAS_WIDTH;
@@ -57,6 +57,8 @@ const SELECTION_HISTORY_LIMIT = 10;
 const PURCHASE_BATCH_SIZE = 10;
 const DRAFT_STORAGE_KEY = "pixelDraft";
 const AUTOSAVE_DEBOUNCE_MS = 500;
+
+
 
 // --- Interfaces ---
 
@@ -154,11 +156,11 @@ const BuyPixels = () => {
   }, [selectedPixels]);
 
   const priceBreakdown = useMemo(() => {
-    const premium = selectedPixels.filter((p) => p.price === PIXEL_PRICING.GOLD_PRICE).length;
-    const standard = selectedPixels.filter((p) => p.price === PIXEL_PRICING.PREMIUM_PRICE).length;
+    const gold = selectedPixels.filter((p) => p.price === PIXEL_PRICING.GOLD_PRICE).length;
+    const premium = selectedPixels.filter((p) => p.price === PIXEL_PRICING.PREMIUM_PRICE).length;
     const economy = selectedPixels.filter((p) => p.price === PIXEL_PRICING.ECONOMY_PRICE).length;
 
-    return { premium, standard, economy };
+    return { gold, premium, economy };
   }, [selectedPixels]);
 
   // --- Auto-save to localStorage with debouncing ---
@@ -232,7 +234,8 @@ const BuyPixels = () => {
   const handleRestoreDraft = useCallback(() => {
     if (!draftToRestore) return;
 
-    setSelectedPixels(draftToRestore.pixels);
+    const normalizedDraftPixels = draftToRestore.pixels;
+    setSelectedPixels(normalizedDraftPixels);
     setMode("buying");
     setIsSelecting(true);
 
@@ -841,77 +844,91 @@ const BuyPixels = () => {
               )}
             </div>
 
-            {/* Zone Pricing Guide (Idle Mode) */}
+            {/* Zone Pricing Guide (Idle Mode) - Enhanced with Color Borders */}
             {mode === "idle" && (
-              <div className="hidden lg:block rounded-2xl border border-border/50 bg-card/80 backdrop-blur-sm p-6 shadow-sm">
+              <div className="hidden lg:block rounded-2xl border border-border/50 bg-card/80 backdrop-blur-sm p-6 shadow-sm overflow-hidden">
                 <h3 className="text-sm font-semibold mb-4 text-foreground/80">Pricing Zones</h3>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-3 h-3 rounded-full bg-amber-400 shadow-sm shadow-amber-400/30" />
-                      <span className="text-sm text-muted-foreground">Gold Center</span>
+                <div className="space-y-2.5">
+                  {/* Gold Tier */}
+                  <div className="flex items-center justify-between rounded-lg border-l-4 border-l-amber-400 bg-amber-50/5 dark:bg-amber-950/10 px-4 py-3 transition-all hover:bg-amber-50/10 dark:hover:bg-amber-950/20">
+                    <div className="flex items-center gap-3">
+                      <div className="w-3 h-3 rounded-full bg-amber-400 shadow-md shadow-amber-400/40" />
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-sm font-semibold text-amber-700 dark:text-amber-300">Gold Center</span>
+                        <span className="text-xs text-muted-foreground">Central premium area</span>
+                      </div>
                     </div>
-                    <span className="text-sm font-bold text-foreground">₹299</span>
+                    <span className="text-base font-bold text-amber-600 dark:text-amber-400 tabular-nums">₹499</span>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-3 h-3 rounded-full bg-violet-400 shadow-sm shadow-violet-400/30" />
-                      <span className="text-sm text-muted-foreground">Premium</span>
+                  
+                  {/* Premium Tier */}
+                  <div className="flex items-center justify-between rounded-lg border-l-4 border-l-violet-400 bg-violet-50/5 dark:bg-violet-950/10 px-4 py-3 transition-all hover:bg-violet-50/10 dark:hover:bg-violet-950/20">
+                    <div className="flex items-center gap-3">
+                      <div className="w-3 h-3 rounded-full bg-violet-400 shadow-md shadow-violet-400/40" />
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-sm font-semibold text-violet-700 dark:text-violet-300">Premium</span>
+                        <span className="text-xs text-muted-foreground">Featured position</span>
+                      </div>
                     </div>
-                    <span className="text-sm font-bold text-foreground">₹199</span>
+                    <span className="text-base font-bold text-violet-600 dark:text-violet-400 tabular-nums">₹299</span>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-3 h-3 rounded-full bg-emerald-400 shadow-sm shadow-emerald-400/30" />
-                      <span className="text-sm text-muted-foreground">Economy</span>
+                  
+                  {/* Economy Tier */}
+                  <div className="flex items-center justify-between rounded-lg border-l-4 border-l-emerald-400 bg-emerald-50/5 dark:bg-emerald-950/10 px-4 py-3 transition-all hover:bg-emerald-50/10 dark:hover:bg-emerald-950/20">
+                    <div className="flex items-center gap-3">
+                      <div className="w-3 h-3 rounded-full bg-emerald-400 shadow-md shadow-emerald-400/40" />
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">Economy</span>
+                        <span className="text-xs text-muted-foreground">Standard placement</span>
+                      </div>
                     </div>
-                    <span className="text-sm font-bold text-foreground">₹99</span>
+                    <span className="text-base font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">₹99</span>
                   </div>
                 </div>
               </div>
             )}
 
-            {/* Price Breakdown Card */}
+            {/* Price Breakdown Card - Enhanced with Color Borders */}
             {mode === "buying" && selectedPixels.length > 0 && (
-              <div className="hidden lg:block rounded-2xl border border-border/50 bg-card/80 backdrop-blur-sm p-6 shadow-sm">
+              <div className="hidden lg:block rounded-2xl border border-border/50 bg-card/80 backdrop-blur-sm p-6 shadow-sm overflow-hidden">
                 <h3 className="text-sm font-semibold mb-4 text-foreground/80">Price Breakdown</h3>
-                <div className="space-y-3 text-sm">
-                  {priceBreakdown.premium > 0 && (
-                    <div className="flex justify-between items-center">
-                      <span className="text-muted-foreground flex items-center gap-2">
+                <div className="space-y-2.5 text-sm">
+                  {priceBreakdown.gold > 0 && (
+                    <div className="flex justify-between items-center rounded-lg border-l-4 border-l-amber-400 bg-amber-50/5 dark:bg-amber-950/10 px-3 py-2 transition-all hover:bg-amber-50/10 dark:hover:bg-amber-950/20">
+                      <span className="text-muted-foreground flex items-center gap-2.5">
                         <div className="w-2 h-2 rounded-full bg-amber-400" />
-                        Gold (₹299)
+                        <span className="font-semibold text-amber-700 dark:text-amber-300">Gold (₹499)</span>
                       </span>
-                      <span className="font-medium tabular-nums">
+                      <span className="font-bold text-amber-600 dark:text-amber-400 tabular-nums">
+                        {priceBreakdown.gold} × ₹499
+                      </span>
+                    </div>
+                  )}
+                  {priceBreakdown.premium > 0 && (
+                    <div className="flex justify-between items-center rounded-lg border-l-4 border-l-violet-400 bg-violet-50/5 dark:bg-violet-950/10 px-3 py-2 transition-all hover:bg-violet-50/10 dark:hover:bg-violet-950/20">
+                      <span className="text-muted-foreground flex items-center gap-2.5">
+                        <div className="w-2 h-2 rounded-full bg-violet-400" />
+                        <span className="font-semibold text-violet-700 dark:text-violet-300">Premium (₹299)</span>
+                      </span>
+                      <span className="font-bold text-violet-600 dark:text-violet-400 tabular-nums">
                         {priceBreakdown.premium} × ₹299
                       </span>
                     </div>
                   )}
-                  {priceBreakdown.standard > 0 && (
-                    <div className="flex justify-between items-center">
-                      <span className="text-muted-foreground flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-violet-400" />
-                        Premium (₹199)
-                      </span>
-                      <span className="font-medium tabular-nums">
-                        {priceBreakdown.standard} × ₹199
-                      </span>
-                    </div>
-                  )}
                   {priceBreakdown.economy > 0 && (
-                    <div className="flex justify-between items-center">
-                      <span className="text-muted-foreground flex items-center gap-2">
+                    <div className="flex justify-between items-center rounded-lg border-l-4 border-l-emerald-400 bg-emerald-50/5 dark:bg-emerald-950/10 px-3 py-2 transition-all hover:bg-emerald-50/10 dark:hover:bg-emerald-950/20">
+                      <span className="text-muted-foreground flex items-center gap-2.5">
                         <div className="w-2 h-2 rounded-full bg-emerald-400" />
-                        Economy (₹99)
+                        <span className="font-semibold text-emerald-700 dark:text-emerald-300">Economy (₹99)</span>
                       </span>
-                      <span className="font-medium tabular-nums">
+                      <span className="font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
                         {priceBreakdown.economy} × ₹99
                       </span>
                     </div>
                   )}
-                  <div className="pt-3 mt-1 border-t border-border/50 flex justify-between items-center font-bold">
-                    <span>Total</span>
-                    <span className="text-primary text-base">₹{totalCost.toLocaleString()}</span>
+                  <div className="pt-3 mt-2.5 border-t border-border/50 flex justify-between items-center font-bold">
+                    <span className="text-foreground">Total</span>
+                    <span className="text-lg text-primary tabular-nums">₹{totalCost.toLocaleString()}</span>
                   </div>
                 </div>
               </div>

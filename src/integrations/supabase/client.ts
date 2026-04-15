@@ -2,11 +2,17 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "https://qbwnwsaktoctqufipgab.supabase.co";
-const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFid253c2FrdG9jdHF1ZmlwZ2FiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ0MDk5MzksImV4cCI6MjA2OTk4NTkzOX0.5xrdhsGkVhVhFNkMVSyUkZe7hph0IMqlXQl9TdvvRM0";
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-if (import.meta.env.DEV && !import.meta.env.VITE_SUPABASE_URL) {
-  console.warn('[Supabase] Using fallback credentials. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in .env for production.');
+if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
+  if (import.meta.env.PROD) {
+    throw new Error(
+      '[Supabase] FATAL: VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY must be set in production. ' +
+      'Check your environment variables or .env file.'
+    );
+  }
+  console.warn('[Supabase] Missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY — app will not function correctly.');
 }
 
 // Import the supabase client like this:

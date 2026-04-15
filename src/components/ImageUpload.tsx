@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { cn, getErrorMessage } from '@/lib/utils';
 import { ImageCropper } from '@/components/ImageCropper';
+import { validateFile as validateFileUtil, compressImage as compressImageUtil, formatFileSize, MAX_FILE_SIZE_BYTES } from '@/utils/fileUploadUtils';
 
 interface ImageUploadProps {
   onImageUploaded: (url: string) => void;
@@ -43,138 +44,13 @@ const DEFAULT_MAX_SIZE_MB = 5;
 const DEFAULT_MAX_WIDTH = 2048;
 const DEFAULT_MAX_HEIGHT = 2048;
 const DEFAULT_COMPRESSION_QUALITY = 0.85;
+// Removed SVG for security: user-uploaded SVGs can contain XSS payloads
 const ALLOWED_MIME_TYPES = [
   'image/jpeg',
   'image/png',
   'image/webp',
   'image/gif',
-  'image/svg+xml',
 ];
-
-/**
- * Compress image using Canvas API
- */
-const compressImage = async (
-  file: File,
-  maxWidth: number,
-  maxHeight: number,
-  quality: number
-): Promise<Blob> => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-
-    reader.onload = (e) => {
-      const img = new Image();
-
-      img.onload = () => {
-        try {
-          // Calculate new dimensions while maintaining aspect ratio
-          let { width, height } = img;
-          
-          if (width > maxWidth || height > maxHeight) {
-            const ratio = Math.min(maxWidth / width, maxHeight / height);
-            width = Math.floor(width * ratio);
-            height = Math.floor(height * ratio);
-          }
-
-          // Use OffscreenCanvas if available (better performance in 2026)
-          const supportsOffscreenCanvas = typeof OffscreenCanvas !== 'undefined';
-          
-          let canvas: HTMLCanvasElement | OffscreenCanvas;
-          let ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D | null;
-
-          if (supportsOffscreenCanvas) {
-            canvas = new OffscreenCanvas(width, height);
-            ctx = canvas.getContext('2d', { alpha: true });
-          } else {
-            canvas = document.createElement('canvas');
-            canvas.width = width;
-            canvas.height = height;
-            ctx = canvas.getContext('2d', { alpha: true });
-          }
-
-          if (!ctx) {
-            reject(new Error('Failed to get canvas context'));
-            return;
-          }
-
-          // Enable image smoothing for better quality
-          ctx.imageSmoothingEnabled = true;
-          ctx.imageSmoothingQuality = 'high';
-
-          // Draw image
-          ctx.drawImage(img, 0, 0, width, height);
-
-          // Convert to blob
-          const outputFormat = file.type === 'image/png' ? 'image/png' : 'image/jpeg';
-          
-          if (canvas instanceof OffscreenCanvas) {
-            canvas
-              .convertToBlob({ type: outputFormat, quality })
-              .then(resolve)
-              .catch(reject);
-          } else {
-            canvas.toBlob(
-              (blob) => {
-                if (blob) {
-                  resolve(blob);
-                } else {
-                  reject(new Error('Failed to compress image'));
-                }
-              },
-              outputFormat,
-              quality
-            );
-          }
-        } catch (error: unknown) {
-          reject(error);
-        }
-      };
-
-      img.onerror = () => reject(new Error('Failed to load image'));
-      img.src = e.target?.result as string;
-    };
-
-    reader.onerror = () => reject(new Error('Failed to read file'));
-    reader.readAsDataURL(file);
-  });
-};
-
-/**
- * Validate file before processing
- */
-const validateFile = (
-  file: File,
-  maxSizeMB: number,
-  accept: string
-): { valid: boolean; error?: string } => {
-  // Check file size
-  if (file.size > maxSizeMB * 1024 * 1024) {
-    return {
-      valid: false,
-      error: `File size exceeds ${maxSizeMB}MB limit. Current size: ${(file.size / 1024 / 1024).toFixed(2)}MB`,
-    };
-  }
-
-  // Check file type
-  if (!file.type.startsWith('image/')) {
-    return {
-      valid: false,
-      error: 'Please upload an image file',
-    };
-  }
-
-  // Check if MIME type is in allowed list
-  const acceptedTypes = accept.split(',').map((t) => t.trim());
-  if (!acceptedTypes.includes(file.type) && !acceptedTypes.includes('image/*')) {
-    return {
-      valid: false,
-      error: `File type ${file.type} is not supported. Allowed types: ${accept}`,
-    };
-  }
-
-  return { valid: true };
-};
 
 export const ImageUpload = ({
   onImageUploaded,
@@ -257,38 +133,38 @@ export const ImageUpload = ({
       setError(null);
       setOriginalFile(file);
 
-      // Validate file
-      const validation = validateFile(file, maxSizeMB, accept);
+      // Validate file using fileUploadUtils
+      const validation = validateFileUtil(file);
       if (!validation.valid) {
-        setError(validation.error || 'Invalid file');
-        toast.error(validation.error || 'Invalid file');
+        const errorMsg = validation.error || 'Invalid file';
+        setError(errorMsg);
+        toast.error(errorMsg);
         return;
       }
 
       try {
         let processedFile: File | Blob = file;
 
-        // Compress image if enabled
-        if (compressBeforeUpload && file.type !== 'image/gif' && file.type !== 'image/svg+xml') {
-          toast.info('Compressing image...', { duration: 2000 });
+        // Compress image if enabled and file is under 500KB limit
+        if (compressBeforeUpload && file.type !== 'image/gif' && file.size > MAX_FILE_SIZE_BYTES) {
+          toast.info('Compressing image to meet size requirements...', { duration: 2000 });
           
-          const compressed = await compressImage(
-            file,
-            maxWidth,
-            maxHeight,
-            compressionQuality
-          );
+          const compressed = await compressImageUtil(file);
 
-          // Only use compressed version if it's smaller
           if (compressed.size < file.size) {
             processedFile = compressed;
             setCompressedSize(compressed.size);
             
+            const originalKB = (file.size / 1024).toFixed(2);
+            const compressedKB = (compressed.size / 1024).toFixed(2);
             const savedKB = ((file.size - compressed.size) / 1024).toFixed(2);
-            toast.success(`Compressed! Saved ${savedKB} KB`, { duration: 3000 });
+            
+            toast.success(`Compressed! ${originalKB}KB → ${compressedKB}KB (${savedKB}KB saved)`, { duration: 3000 });
           } else {
             toast.info('Original size is optimal', { duration: 2000 });
           }
+        } else if (compressBeforeUpload && file.type !== 'image/gif') {
+          toast.success(`Image ready! Size: ${formatFileSize(file.size)}`, { duration: 2000 });
         }
 
         if (cropAspectRatio) {
@@ -308,12 +184,7 @@ export const ImageUpload = ({
       }
     },
     [
-      maxSizeMB,
-      accept,
       compressBeforeUpload,
-      maxWidth,
-      maxHeight,
-      compressionQuality,
       cropAspectRatio,
       createObjectUrl,
     ]

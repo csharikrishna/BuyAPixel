@@ -5,7 +5,7 @@ import { format } from 'date-fns';
 
 interface AuditLog {
   id: string;
-  admin_email: string;
+  admin_user_id: string;
   action: string;
   target_type: string;
   target_id: string;
@@ -50,7 +50,7 @@ export function AdminAuditTab({ auditLogs }: AdminAuditTabProps) {
                       {log.action}
                     </Badge>
                     <span className="text-sm text-muted-foreground truncate">
-                      by {log.admin_email}
+                      by admin {log.admin_user_id?.slice(0, 8)}...
                     </span>
                   </div>
                   <p className="text-sm">

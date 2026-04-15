@@ -38,7 +38,8 @@ export function useGridInteraction({
    const lastWarningRef = useRef<number>(0);
 
    // -- Memoized Calculations --
-   const scaledPixelSize = pixelSize * zoom;
+   // Must match render-time pixel sizing in VirtualizedPixelGrid to avoid hover offset drift.
+   const scaledPixelSize = Math.max(1, Math.floor(pixelSize * zoom));
 
    const clampOffset = useCallback(
       (x: number, y: number, currentScale: number) => {

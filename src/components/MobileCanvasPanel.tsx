@@ -35,12 +35,12 @@ export const MobileCanvasPanel = ({
 
   const getPriceTierInfo = (price: number) => {
     switch (price) {
+      case 499:
+        return { name: 'Gold', color: 'text-amber-500' };
       case 299:
-        return { name: 'Premium', color: 'text-yellow-500' };
-      case 199:
-        return { name: 'Standard', color: 'text-gray-500' };
+        return { name: 'Premium', color: 'text-violet-400' };
       case 99:
-        return { name: 'Basic', color: 'text-amber-600' };
+        return { name: 'Economy', color: 'text-emerald-500' };
       default:
         return { name: 'Unknown', color: 'text-muted-foreground' };
     }

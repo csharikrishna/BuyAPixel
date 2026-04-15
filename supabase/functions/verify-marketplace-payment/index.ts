@@ -297,8 +297,10 @@ serve(async (req: Request) => {
       }
 
       // Complete the marketplace purchase using the RPC function
+      // NOTE: Uses `complete_marketplace_purchase` (migration 031) which accepts
+      // a payment_order_id and handles the full ownership transfer atomically.
       const { data: purchaseResult, error: purchaseError } = await supabaseAdmin
-         .rpc('purchase_from_marketplace_verified', {
+         .rpc('complete_marketplace_purchase', {
             p_payment_order_id: body.payment_order_id,
             p_razorpay_payment_id: body.razorpay_payment_id,
             p_razorpay_signature: body.razorpay_signature,

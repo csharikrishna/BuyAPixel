@@ -108,7 +108,7 @@ const PATTERNS = {
 
   square3x3: Array.from({ length: 9 }, (_, i) => [i % 3 - 1, Math.floor(i / 3) - 1]),
   square5x5: Array.from({ length: 25 }, (_, i) => [i % 5 - 2, Math.floor(i / 5) - 2]),
-  square10x10: Array.from({ length: 100 }, (_, i) => [i % 10 - 4.5, Math.floor(i / 10) - 4.5])
+  square10x10: Array.from({ length: 100 }, (_, i) => [i % 10 - 5, Math.floor(i / 10) - 5])
 };
 
 const PRESET_PACKS = [

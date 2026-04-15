@@ -12,6 +12,33 @@ const corsHeaders = {
    'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
+// Rate limiting configuration
+interface RateLimitEntry {
+   count: number
+   resetTime: number
+}
+
+const rateLimitMap = new Map<string, RateLimitEntry>()
+const RATE_LIMIT_REQUESTS = 5 // Max 5 marketplace orders per window
+const RATE_LIMIT_WINDOW = 60 * 1000 // 1 minute window
+
+function checkRateLimit(userId: string): { allowed: boolean; remaining: number } {
+   const now = Date.now()
+   const entry = rateLimitMap.get(userId)
+
+   if (!entry || now > entry.resetTime) {
+      rateLimitMap.set(userId, { count: 1, resetTime: now + RATE_LIMIT_WINDOW })
+      return { allowed: true, remaining: RATE_LIMIT_REQUESTS - 1 }
+   }
+
+   if (entry.count >= RATE_LIMIT_REQUESTS) {
+      return { allowed: false, remaining: 0 }
+   }
+
+   entry.count++
+   return { allowed: true, remaining: RATE_LIMIT_REQUESTS - entry.count }
+}
+
 interface CreateMarketplaceOrderRequest {
    listing_id: string
 }
@@ -55,6 +82,29 @@ serve(async (req: Request) => {
 
       if (userError || !user) {
          throw new Error('Invalid or expired token')
+      }
+
+      // Rate limiting by user_id
+      const { allowed, remaining } = checkRateLimit(user.id)
+      if (!allowed) {
+         console.warn(`⚠️ Rate limit exceeded for user: ${user.id}`)
+         return new Response(
+            JSON.stringify({
+               success: false,
+               error: 'Too many order requests. Please wait before creating another order.',
+               retryAfter: Math.ceil(RATE_LIMIT_WINDOW / 1000) + ' seconds'
+            }),
+            {
+               status: 429,
+               headers: {
+                  ...corsHeaders,
+                  'Content-Type': 'application/json',
+                  'Retry-After': Math.ceil(RATE_LIMIT_WINDOW / 1000).toString(),
+                  'X-RateLimit-Limit': RATE_LIMIT_REQUESTS.toString(),
+                  'X-RateLimit-Remaining': '0',
+               },
+            }
+         )
       }
 
       // Parse request body

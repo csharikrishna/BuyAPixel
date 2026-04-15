@@ -50,9 +50,9 @@ export const PixelTooltip = ({ x, y, price, status }: PixelTooltipProps) => {
   };
 
   const getPriceTier = () => {
-    if (price === 299) return { text: 'Premium', icon: Crown, color: 'text-yellow-500' };
-    if (price === 199) return { text: 'Standard', icon: Target, color: 'text-gray-500' };
-    return { text: 'Basic', icon: Sparkles, color: 'text-amber-600' };
+    if (price === 499) return { text: 'Gold', icon: Crown, color: 'text-amber-500' };
+    if (price === 299) return { text: 'Premium', icon: Target, color: 'text-violet-400' };
+    return { text: 'Economy', icon: Sparkles, color: 'text-emerald-500' };
   };
 
   const statusInfo = getStatusInfo();

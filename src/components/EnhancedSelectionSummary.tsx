@@ -20,15 +20,15 @@ export const EnhancedSelectionSummary = ({
   const hasSelection = selectedPixels.length > 0;
 
   const getPriceTierInfo = (price: number) => {
-    if (price === 299) return { name: "Premium", icon: Crown, color: "text-yellow-500", bg: "bg-yellow-500/10", border: "border-yellow-500/20" };
-    if (price === 199) return { name: "Standard", icon: Target, color: "text-blue-400", bg: "bg-blue-400/10", border: "border-blue-400/20" };
-    return { name: "Basic", icon: Sparkles, color: "text-orange-400", bg: "bg-orange-400/10", border: "border-orange-400/20" };
+    if (price === 499) return { name: "Gold", icon: Crown, color: "text-amber-500", bg: "bg-amber-500/10", border: "border-amber-500/20" };
+    if (price === 299) return { name: "Premium", icon: Target, color: "text-violet-400", bg: "bg-violet-400/10", border: "border-violet-400/20" };
+    return { name: "Economy", icon: Sparkles, color: "text-emerald-500", bg: "bg-emerald-500/10", border: "border-emerald-500/20" };
   };
 
   const pixelCounts = {
+    gold: selectedPixels.filter(p => p.price === 499).length,
     premium: selectedPixels.filter(p => p.price === 299).length,
-    standard: selectedPixels.filter(p => p.price === 199).length,
-    basic: selectedPixels.filter(p => p.price === 99).length,
+    economy: selectedPixels.filter(p => p.price === 99).length,
   };
 
   return (
@@ -82,31 +82,31 @@ export const EnhancedSelectionSummary = ({
           <>
             {/* Price Breakdown */}
             <div className="space-y-2">
+              {pixelCounts.gold > 0 && (
+                <div className={`flex justify-between items-center p-2 sm:p-3 rounded-lg ${getPriceTierInfo(499).bg} border ${getPriceTierInfo(499).border} transition-all hover:scale-[1.02]`}>
+                  <span className="text-xs sm:text-sm font-medium flex items-center gap-2">
+                    <Crown className="h-3 w-3 sm:h-4 sm:w-4 text-amber-500" />
+                    <span className={getPriceTierInfo(499).color}>Gold ({pixelCounts.gold})</span>
+                  </span>
+                  <span className="text-xs sm:text-sm font-bold">₹{(pixelCounts.gold * 499).toLocaleString()}</span>
+                </div>
+              )}
               {pixelCounts.premium > 0 && (
                 <div className={`flex justify-between items-center p-2 sm:p-3 rounded-lg ${getPriceTierInfo(299).bg} border ${getPriceTierInfo(299).border} transition-all hover:scale-[1.02]`}>
                   <span className="text-xs sm:text-sm font-medium flex items-center gap-2">
-                    <Crown className="h-3 w-3 sm:h-4 sm:w-4 text-yellow-500" />
+                    <Target className="h-3 w-3 sm:h-4 sm:w-4 text-violet-400" />
                     <span className={getPriceTierInfo(299).color}>Premium ({pixelCounts.premium})</span>
                   </span>
                   <span className="text-xs sm:text-sm font-bold">₹{(pixelCounts.premium * 299).toLocaleString()}</span>
                 </div>
               )}
-              {pixelCounts.standard > 0 && (
-                <div className={`flex justify-between items-center p-2 sm:p-3 rounded-lg ${getPriceTierInfo(199).bg} border ${getPriceTierInfo(199).border} transition-all hover:scale-[1.02]`}>
-                  <span className="text-xs sm:text-sm font-medium flex items-center gap-2">
-                    <Target className="h-3 w-3 sm:h-4 sm:w-4 text-blue-400" />
-                    <span className={getPriceTierInfo(199).color}>Standard ({pixelCounts.standard})</span>
-                  </span>
-                  <span className="text-xs sm:text-sm font-bold">₹{(pixelCounts.standard * 199).toLocaleString()}</span>
-                </div>
-              )}
-              {pixelCounts.basic > 0 && (
+              {pixelCounts.economy > 0 && (
                 <div className={`flex justify-between items-center p-2 sm:p-3 rounded-lg ${getPriceTierInfo(99).bg} border ${getPriceTierInfo(99).border} transition-all hover:scale-[1.02]`}>
                   <span className="text-xs sm:text-sm font-medium flex items-center gap-2">
-                    <Sparkles className="h-3 w-3 sm:h-4 sm:w-4 text-orange-400" />
-                    <span className={getPriceTierInfo(99).color}>Basic ({pixelCounts.basic})</span>
+                    <Sparkles className="h-3 w-3 sm:h-4 sm:w-4 text-emerald-500" />
+                    <span className={getPriceTierInfo(99).color}>Economy ({pixelCounts.economy})</span>
                   </span>
-                  <span className="text-xs sm:text-sm font-bold">₹{(pixelCounts.basic * 99).toLocaleString()}</span>
+                  <span className="text-xs sm:text-sm font-bold">₹{(pixelCounts.economy * 99).toLocaleString()}</span>
                 </div>
               )}
             </div>

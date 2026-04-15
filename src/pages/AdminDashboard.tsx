@@ -54,7 +54,7 @@ interface User {
 
 interface AuditLog {
   id: string;
-  admin_email: string;
+  admin_user_id: string;
   action: string;
   target_type: string;
   target_id: string;
@@ -164,10 +164,7 @@ const AdminDashboard = () => {
         user_id: user?.id,
       });
       if (error) {
-        if (import.meta.env.DEV) {
-          console.warn('[DEV] MFA RPC unavailable, using dev bypass', error);
-          return code === '123456';
-        }
+        console.error('MFA verification RPC error:', error);
         return false;
       }
       return data?.valid === true;
@@ -638,7 +635,7 @@ const AdminDashboard = () => {
               Confirmation Required
             </DialogTitle>
             <DialogDescription>
-              This is a sensitive action. Please enter your sudo confirmation code (or developer override code '123456').
+              This is a sensitive action. Please enter your confirmation code to proceed.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">

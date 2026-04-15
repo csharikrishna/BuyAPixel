@@ -27,6 +27,8 @@ import {
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { ImageUpload } from "@/components/ImageUpload";
+import { AdTierPreview } from "@/components/AdTierPreview";
+import { PaymentNotification } from "@/components/PaymentNotification";
 import { Helmet } from "react-helmet-async";
 import { SelectedPixel } from "@/types/grid";
 
@@ -106,6 +108,8 @@ export const PurchasePreview = ({
   const isMobile = useIsMobile();
   const [isProcessing, setIsProcessing] = useState(false);
   const [currentStep, setCurrentStep] = useState<CheckoutStep>('details');
+  const [paymentStatus, setPaymentStatus] = useState<'idle' | 'processing' | 'success' | 'error'>('idle');
+  const [paymentError, setPaymentError] = useState<string | null>(null);
 
   // Form fields with validation states [web:145][web:148]
   const [linkUrl, setLinkUrl] = useState("");
@@ -167,6 +171,14 @@ export const PurchasePreview = ({
       return;
     }
 
+    // Guard against duplicate script tags on remount
+    const existingScript = document.querySelector('script[src*="checkout.razorpay.com"]');
+    if (existingScript) {
+      // Script already in DOM — wait for it to load
+      existingScript.addEventListener('load', () => setRazorpayLoaded(true));
+      return;
+    }
+
     let retries = 0;
     const maxRetries = 3;
 
@@ -176,7 +188,6 @@ export const PurchasePreview = ({
       script.async = true;
       script.onload = () => {
         setRazorpayLoaded(true);
-        toast.success('Payment gateway loaded', { duration: 2000 });
       };
       script.onerror = () => {
         retries++;
@@ -199,6 +210,13 @@ export const PurchasePreview = ({
     acc[pixel.price] = (acc[pixel.price] || 0) + 1;
     return acc;
   }, {} as Record<number, number>);
+
+  // Build price breakdown — canonical tier names
+  const priceBreakdown = {
+    economy: pixelCounts[99] || 0,
+    premium: pixelCounts[299] || 0,
+    gold: pixelCounts[499] || 0
+  };
 
   const getSelectionInfo = () => {
     if (selectedPixels.length === 0) return null;
@@ -350,6 +368,8 @@ export const PurchasePreview = ({
 
     setIsProcessing(true);
     setCurrentStep('payment');
+    setPaymentStatus('processing');
+    setPaymentError(null);
 
     try {
       // Get current session for auth
@@ -358,6 +378,8 @@ export const PurchasePreview = ({
         toast.error("Please sign in to continue");
         setIsProcessing(false);
         setCurrentStep('details');
+        setPaymentStatus('error');
+        setPaymentError('Please sign in to continue');
         return;
       }
 
@@ -376,7 +398,8 @@ export const PurchasePreview = ({
       );
 
       if (orderError || !orderData?.success) {
-        throw new Error(orderData?.error || 'Failed to create payment order');
+        const errorMsg = orderData?.error || 'Failed to create payment order';
+        throw new Error(errorMsg);
       }
 
       // Step 2: Open Razorpay checkout with enhanced options [web:144]
@@ -389,6 +412,7 @@ export const PurchasePreview = ({
         order_id: orderData.order.razorpay_order_id,
         handler: async (response: RazorpayResponse) => {
           setCurrentStep('confirmation');
+          setPaymentStatus('processing');
 
           // Step 3: Verify payment [web:147]
           try {
@@ -414,25 +438,33 @@ export const PurchasePreview = ({
             // Success! Call the original onConfirmPurchase
             await onConfirmPurchase(pixelName.trim(), linkUrl.trim(), imagePreview);
 
+            // Update payment status to success
+            setPaymentStatus('success');
+
             toast.success("🎉 Payment successful!", {
               description: "Your pixels are now live on the canvas",
               duration: 5000
             });
 
-            // Clear form and localStorage
-            setPixelName("");
-            setLinkUrl("");
-            setLinkUrlError(null);
-            setPixelNameError(null);
-            setImagePreview(null);
-            setPixelNameTouched(false);
-            setLinkUrlTouched(false);
-            localStorage.removeItem('checkout-draft');
-
-            onClose();
+            // Clear form and localStorage after a delay to let notification show
+            setTimeout(() => {
+              setPixelName("");
+              setLinkUrl("");
+              setLinkUrlError(null);
+              setPixelNameError(null);
+              setImagePreview(null);
+              setPixelNameTouched(false);
+              setLinkUrlTouched(false);
+              localStorage.removeItem('checkout-draft');
+              setPaymentStatus('idle');
+              onClose();
+            }, 2000);
 
           } catch (verifyErr: unknown) {
             console.error('Payment verification error:', verifyErr);
+            const errorMsg = verifyErr instanceof Error ? verifyErr.message : 'Payment verification failed';
+            setPaymentStatus('error');
+            setPaymentError(errorMsg);
             toast.error("Payment verification failed", {
               description: "Please contact support with your order ID"
             });
@@ -475,8 +507,11 @@ export const PurchasePreview = ({
       // Handle payment failures [web:144]
       (razorpay as any).on('payment.failed', function (response: any) {
         console.error('Payment failed:', response.error);
+        const errorMsg = response.error.description || "Please try again";
+        setPaymentStatus('error');
+        setPaymentError(errorMsg);
         toast.error("Payment failed", {
-          description: response.error.description || "Please try again"
+          description: errorMsg
         });
         setIsProcessing(false);
         setCurrentStep('details');
@@ -486,7 +521,10 @@ export const PurchasePreview = ({
 
     } catch (error: unknown) {
       console.error('Purchase error:', error);
-      toast.error(error instanceof Error ? error.message : "Failed to initiate payment");
+      const errorMsg = error instanceof Error ? error.message : "Failed to initiate payment";
+      setPaymentStatus('error');
+      setPaymentError(errorMsg);
+      toast.error(errorMsg);
       setIsProcessing(false);
       setCurrentStep('details');
     }
@@ -494,12 +532,12 @@ export const PurchasePreview = ({
 
   const getPriceTierInfo = (price: number) => {
     switch (price) {
+      case 499:
+        return { name: 'Gold', color: 'bg-amber-500', textColor: 'text-amber-700', badge: '👑' };
       case 299:
-        return { name: 'Premium', color: 'bg-yellow-500', textColor: 'text-yellow-700', badge: '⭐' };
-      case 199:
-        return { name: 'Standard', color: 'bg-blue-500', textColor: 'text-blue-700', badge: '🔵' };
+        return { name: 'Premium', color: 'bg-violet-500', textColor: 'text-violet-700', badge: '✨' };
       case 99:
-        return { name: 'Basic', color: 'bg-green-500', textColor: 'text-green-700', badge: '🟢' };
+        return { name: 'Economy', color: 'bg-emerald-500', textColor: 'text-emerald-700', badge: '⚡' };
       default:
         return { name: 'Unknown', color: 'bg-muted', textColor: 'text-muted-foreground', badge: '⚪' };
     }
@@ -512,6 +550,25 @@ export const PurchasePreview = ({
         <title>Checkout - BuyAPixel.in</title>
         <meta name="robots" content="noindex, nofollow" />
       </Helmet>
+
+      {/* Payment Notification - Shows during/after payment */}
+      {paymentStatus !== 'idle' && (
+        <PaymentNotification
+          status={paymentStatus === 'success' ? 'success' : paymentStatus === 'processing' ? 'processing' : 'error'}
+          pixelCount={selectedPixels.length}
+          pixelName={pixelName}
+          totalAmount={totalCost}
+          errorMessage={paymentError || undefined}
+          onClose={() => {
+            setPaymentStatus('idle');
+            setPaymentError(null);
+            setCurrentStep('details');
+          }}
+          onViewProfile={() => {
+            window.location.href = '/profile';
+          }}
+        />
+      )}
 
       {/* Progress Indicator [web:140] */}
       {formProgress > 0 && formProgress < 100 && (
@@ -581,54 +638,105 @@ export const PurchasePreview = ({
         </CardContent>
       </Card>
 
-      {/* Pricing Breakdown */}
-      <Card className="card-premium">
+      {/* Pricing Breakdown - 4 Tier Borders */}
+      <Card className="card-premium overflow-hidden">
         <CardHeader>
           <CardTitle className="text-base md:text-lg flex items-center gap-2">
             <TrendingUp className="w-4 h-4 md:w-5 md:h-5 text-primary" aria-hidden="true" />
             Pricing Breakdown
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3">
-          {Object.entries(pixelCounts)
-            .sort(([a], [b]) => Number(b) - Number(a))
-            .map(([price, count]) => {
-              const tierInfo = getPriceTierInfo(Number(price));
-              const subtotal = Number(price) * count;
-
-              return (
-                <div
-                  key={price}
-                  className="flex items-center justify-between p-2 md:p-3 rounded-lg border bg-card"
-                  role="row"
-                >
-                  <div className="flex items-center gap-2 md:gap-3">
-                    <span className="text-lg" aria-hidden="true">{tierInfo.badge}</span>
-                    <div>
-                      <div className="text-sm md:text-base font-medium">{tierInfo.name}</div>
-                      <div className="text-xs md:text-sm text-muted-foreground">
-                        ₹{price} × {count}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-sm md:text-base font-bold">₹{subtotal}</div>
-                  </div>
+        <CardContent className="space-y-2.5">
+          {/* ₹499 - Gold Tier */}
+          <div className="flex items-center justify-between rounded-lg border-l-4 border-l-amber-400 bg-amber-50/5 dark:bg-amber-950/10 px-3 py-3 md:px-4 md:py-3 transition-all hover:bg-amber-50/10 dark:hover:bg-amber-950/20">
+            <div className="flex items-center gap-2 md:gap-3">
+              <span className="text-lg md:text-xl" aria-hidden="true">👑</span>
+              <div>
+                <div className="text-sm md:text-base font-semibold text-amber-600 dark:text-amber-400">Gold (₹499)</div>
+                <div className="text-xs md:text-sm text-muted-foreground">
+                  {priceBreakdown.gold || 0} pixels selected
                 </div>
-              );
-            })}
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="text-sm md:text-base font-bold text-amber-600 dark:text-amber-400 tabular-nums">
+                {priceBreakdown.gold ? `₹${(priceBreakdown.gold * 499).toLocaleString()}` : '₹0'}
+              </div>
+            </div>
+          </div>
+
+          {/* ₹299 - Premium Tier */}
+          <div className="flex items-center justify-between rounded-lg border-l-4 border-l-violet-400 bg-violet-50/5 dark:bg-violet-950/10 px-3 py-3 md:px-4 md:py-3 transition-all hover:bg-violet-50/10 dark:hover:bg-violet-950/20">
+            <div className="flex items-center gap-2 md:gap-3">
+              <span className="text-lg md:text-xl" aria-hidden="true">✨</span>
+              <div>
+                <div className="text-sm md:text-base font-semibold text-violet-600 dark:text-violet-400">Premium (₹299)</div>
+                <div className="text-xs md:text-sm text-muted-foreground">
+                  {priceBreakdown.premium || 0} pixels selected
+                </div>
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="text-sm md:text-base font-bold text-violet-600 dark:text-violet-400 tabular-nums">
+                {priceBreakdown.premium ? `₹${(priceBreakdown.premium * 299).toLocaleString()}` : '₹0'}
+              </div>
+            </div>
+          </div>
+
+          {/* ₹99 - Economy Tier */}
+          <div className="flex items-center justify-between rounded-lg border-l-4 border-l-emerald-400 bg-emerald-50/5 dark:bg-emerald-950/10 px-3 py-3 md:px-4 md:py-3 transition-all hover:bg-emerald-50/10 dark:hover:bg-emerald-950/20">
+            <div className="flex items-center gap-2 md:gap-3">
+              <span className="text-lg md:text-xl" aria-hidden="true">⚡</span>
+              <div>
+                <div className="text-sm md:text-base font-semibold text-emerald-600 dark:text-emerald-400">Economy (₹99)</div>
+                <div className="text-xs md:text-sm text-muted-foreground">
+                  {priceBreakdown.economy || 0} pixels selected
+                </div>
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="text-sm md:text-base font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
+                {priceBreakdown.economy ? `₹${(priceBreakdown.economy * 99).toLocaleString()}` : '₹0'}
+              </div>
+            </div>
+          </div>
+
+          {/* Billboard / Featured Section - Bonus */}
+          <div className="flex items-center justify-between rounded-lg border-l-4 border-l-rose-400 bg-rose-50/5 dark:bg-rose-950/10 px-3 py-3 md:px-4 md:py-3 transition-all hover:bg-rose-50/10 dark:hover:bg-rose-950/20">
+            <div className="flex items-center gap-2 md:gap-3">
+              <span className="text-lg md:text-xl" aria-hidden="true">🎬</span>
+              <div>
+                <div className="text-sm md:text-base font-semibold text-rose-600 dark:text-rose-400">Billboard Boost</div>
+                <div className="text-xs md:text-sm text-muted-foreground">
+                  Premium visibility option
+                </div>
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="text-sm md:text-base font-bold text-rose-600 dark:text-rose-400 tabular-nums">
+                —
+              </div>
+            </div>
+          </div>
 
           <Separator />
 
           <div
-            className="flex items-center justify-between p-2 md:p-3 rounded-lg bg-primary/10 border border-primary/20"
+            className="flex items-center justify-between p-3 md:p-4 rounded-lg bg-primary/10 border border-primary/20 font-bold"
             role="row"
           >
-            <div className="font-semibold text-base md:text-lg">Total</div>
-            <div className="text-xl md:text-2xl font-bold text-primary">₹{totalCost}</div>
+            <span className="text-base md:text-lg">Total Cost</span>
+            <span className="text-lg md:text-2xl text-primary tabular-nums">₹{totalCost.toLocaleString()}</span>
           </div>
         </CardContent>
       </Card>
+
+      {/* Ad Tier Preview - Shows tier benefits and ad visualization */}
+      <AdTierPreview 
+        totalPrice={totalCost}
+        pixelCount={selectedPixels.length}
+        showAnimation={true}
+      />
 
       {/* Pixel Information Form with Accessibility [web:145][web:148] */}
       <Card className="card-premium">

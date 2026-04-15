@@ -4,20 +4,16 @@ import { PurchasedPixel } from "@/types/grid";
 import { SpatialIndex } from "@/utils/SpatialIndex";
 import { toast } from "sonner";
 
-// Batch size for loading pixels in chunks
-const BATCH_SIZE = 5000;
-
 export function usePixelGridData() {
    const [purchasedPixels, setPurchasedPixels] = useState<PurchasedPixel[]>([]);
    const [isLoading, setIsLoading] = useState(true);
    const [error, setError] = useState<string | null>(null);
-   const [loadProgress, setLoadProgress] = useState(0);
 
    const spatialIndex = useRef(new SpatialIndex());
    const loadedRef = useRef(false);
    const isMountedRef = useRef(true);
 
-   // Optimized loader using pagination
+   // Optimized single-query loader (no batching)
    const loadPurchased = useCallback(async (silent = false) => {
       // Create controller for timeout
       const controller = new AbortController();
@@ -26,69 +22,35 @@ export function usePixelGridData() {
       try {
          if (!silent) {
             setIsLoading(true);
-            setLoadProgress(0);
          }
          setError(null);
 
-         // First, get count of owned pixels for progress tracking
-         const { count, error: countError } = await supabase
+         // Single query: Load all purchased pixels efficiently
+         // Ordered by y, x for better spatial locality
+         const { data, error: fetchError } = await supabase
             .from("pixels")
-            .select("id", { count: 'exact', head: true })
+            .select("id, x, y, owner_id, image_url, link_url, alt_text, block_id")
             .not("owner_id", "is", null)
+            .order("y", { ascending: true })
+            .order("x", { ascending: true })
             .abortSignal(controller.signal);
 
-         if (countError) {
-            throw countError;
-         }
-
-         const totalPixels = count || 0;
-
-         // If no pixels, early return
-         if (totalPixels === 0) {
-            spatialIndex.current.clear();
-            setPurchasedPixels([]);
-            setIsLoading(false);
-            loadedRef.current = true;
-            return;
-         }
-
-         // Load in batches for better performance
-         const allPixels: PurchasedPixel[] = [];
-         const batches = Math.ceil(totalPixels / BATCH_SIZE);
-
-         for (let i = 0; i < batches; i++) {
-            if (!isMountedRef.current) return;
-
-            const { data, error: fetchError } = await supabase
-               .from("pixels")
-               .select("id, x, y, owner_id, image_url, link_url, alt_text, block_id")
-               .not("owner_id", "is", null)
-               .range(i * BATCH_SIZE, (i + 1) * BATCH_SIZE - 1)
-               .abortSignal(controller.signal);
-
-            if (fetchError) {
-               throw fetchError;
-            }
-
-            const batchPixels = (data || []).map((row) => ({
-               id: row.id,
-               x: row.x,
-               y: row.y,
-               owner_id: row.owner_id,
-               image_url: row.image_url,
-               link_url: row.link_url,
-               alt_text: row.alt_text,
-               block_id: row.block_id ?? null,
-            }));
-
-            allPixels.push(...batchPixels);
-
-            // Update progress
-            const progress = Math.round(((i + 1) / batches) * 100);
-            setLoadProgress(progress);
+         if (fetchError) {
+            throw fetchError;
          }
 
          if (!isMountedRef.current) return;
+
+         const allPixels: PurchasedPixel[] = (data || []).map((row) => ({
+            id: row.id,
+            x: row.x,
+            y: row.y,
+            owner_id: row.owner_id,
+            image_url: row.image_url,
+            link_url: row.link_url,
+            alt_text: row.alt_text,
+            block_id: row.block_id ?? null,
+         }));
 
          // Rebuild spatial index
          spatialIndex.current.clear();
@@ -186,7 +148,6 @@ export function usePixelGridData() {
       purchasedPixels,
       isLoading,
       error,
-      loadProgress,
       spatialIndex: spatialIndex.current,
       refetch: () => loadPurchased(true),
    };

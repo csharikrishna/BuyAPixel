@@ -13,6 +13,33 @@ const corsHeaders = {
    'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
+// Rate limiting configuration
+interface RateLimitEntry {
+   count: number
+   resetTime: number
+}
+
+const rateLimitMap = new Map<string, RateLimitEntry>()
+const RATE_LIMIT_REQUESTS = 5 // Max 5 verification attempts per window
+const RATE_LIMIT_WINDOW = 60 * 1000 // 1 minute window
+
+function checkRateLimit(userId: string): { allowed: boolean; remaining: number } {
+   const now = Date.now()
+   const entry = rateLimitMap.get(userId)
+
+   if (!entry || now > entry.resetTime) {
+      rateLimitMap.set(userId, { count: 1, resetTime: now + RATE_LIMIT_WINDOW })
+      return { allowed: true, remaining: RATE_LIMIT_REQUESTS - 1 }
+   }
+
+   if (entry.count >= RATE_LIMIT_REQUESTS) {
+      return { allowed: false, remaining: 0 }
+   }
+
+   entry.count++
+   return { allowed: true, remaining: RATE_LIMIT_REQUESTS - entry.count }
+}
+
 interface VerifyPaymentRequest {
    razorpay_order_id: string
    razorpay_payment_id: string
@@ -23,7 +50,21 @@ interface VerifyPaymentRequest {
    alt_text?: string
 }
 
-// Verify Razorpay signature using HMAC SHA256
+// Constant-time string comparison to prevent timing attacks
+function timingSafeEqual(actual: string, received: string): boolean {
+   // First check length (length leaks, but unavoidable in HTTP)
+   if (actual.length !== received.length) return false
+   
+   // Compare all bytes regardless of mismatch to use constant time
+   let result = 0
+   for (let i = 0; i < actual.length; i++) {
+      // XOR each character - result stays 0 only if all match
+      result |= actual.charCodeAt(i) ^ received.charCodeAt(i)
+   }
+   return result === 0
+}
+
+// Verify Razorpay signature using HMAC SHA256 with constant-time comparison
 function verifySignature(
    orderId: string,
    paymentId: string,
@@ -34,7 +75,8 @@ function verifySignature(
    const hmac = createHmac('sha256', secret)
    hmac.update(message)
    const generatedSignature = hmac.digest('hex')
-   return generatedSignature === signature
+   // ✅ FIXED: Use constant-time comparison to prevent timing attacks
+   return timingSafeEqual(generatedSignature, signature)
 }
 
 // Send confirmation email
@@ -181,6 +223,29 @@ serve(async (req: Request) => {
          throw new Error('Invalid or expired token')
       }
 
+      // Rate limiting by user_id
+      const { allowed, remaining } = checkRateLimit(user.id)
+      if (!allowed) {
+         console.warn(`⚠️ Rate limit exceeded for user: ${user.id}`)
+         return new Response(
+            JSON.stringify({
+               success: false,
+               error: 'Too many verification attempts. Please wait before trying again.',
+               retryAfter: Math.ceil(RATE_LIMIT_WINDOW / 1000) + ' seconds'
+            }),
+            {
+               status: 429,
+               headers: {
+                  ...corsHeaders,
+                  'Content-Type': 'application/json',
+                  'Retry-After': Math.ceil(RATE_LIMIT_WINDOW / 1000).toString(),
+                  'X-RateLimit-Limit': RATE_LIMIT_REQUESTS.toString(),
+                  'X-RateLimit-Remaining': '0',
+               },
+            }
+         )
+      }
+
       // Parse request body
       const body: VerifyPaymentRequest = await req.json()
 
@@ -212,7 +277,44 @@ serve(async (req: Request) => {
          throw new Error('Payment verification failed - invalid signature')
       }
 
-      // Get the payment order to verify ownership and get metadata
+      // ✅ FIXED C6: Re-validate payment amount from Razorpay API
+      // Prevents underpayment attacks by verifying with authoritative source
+      const RAZORPAY_KEY_ID = Deno.env.get('RAZORPAY_KEY_ID')
+      if (!RAZORPAY_KEY_ID) throw new Error('Razorpay key ID not configured')
+      
+      const razorpayAuth = btoa(`${RAZORPAY_KEY_ID}:${RAZORPAY_KEY_SECRET}`)
+      
+      let razorpayPaymentDetails
+      try {
+         const controller = new AbortController()
+         const timeoutId = setTimeout(() => controller.abort(), 5000) // 5 second timeout
+         
+         try {
+            const paymentDetailsResponse = await fetch(
+               `https://api.razorpay.com/v1/payments/${body.razorpay_payment_id}`,
+               {
+                  method: 'GET',
+                  signal: controller.signal,
+                  headers: {
+                     'Authorization': `Basic ${razorpayAuth}`,
+                  }
+               }
+            )
+            
+            if (!paymentDetailsResponse.ok) {
+               throw new Error(`Razorpay API error: ${paymentDetailsResponse.status}`)
+            }
+            
+            razorpayPaymentDetails = await paymentDetailsResponse.json()
+         } finally {
+            clearTimeout(timeoutId)
+         }
+      } catch (err) {
+         console.error('Failed to fetch payment details from Razorpay:', err)
+         throw new Error('Could not verify payment amount. Please try again.')
+      }
+
+      // Get the payment order to check expected amount
       const { data: paymentOrder, error: orderError } = await supabaseAdmin
          .from('payment_orders')
          .select('*')
@@ -224,9 +326,39 @@ serve(async (req: Request) => {
          throw new Error('Payment order not found or unauthorized')
       }
 
-      if (paymentOrder.status !== 'created') {
-         throw new Error('Payment order already processed')
+      // Verify amounts match
+      const expectedAmount = paymentOrder.amount // in paise
+      const actualAmount = razorpayPaymentDetails.amount // in paise (Razorpay uses paise)
+      const paymentStatus = razorpayPaymentDetails.status // 'captured', 'authorized', etc.
+
+      if (actualAmount !== expectedAmount) {
+         console.error(
+            `Amount mismatch for payment ${body.razorpay_payment_id}: expected ${expectedAmount}, got ${actualAmount}`
+         )
+
+         // Mark payment as failed
+         await supabaseAdmin
+            .from('payment_orders')
+            .update({ status: 'failed', updated_at: new Date().toISOString() })
+            .eq('id', body.payment_order_id)
+
+         throw new Error('Payment amount does not match order amount')
       }
+
+      // Verify payment is captured or authorized
+      if (!['captured', 'authorized'].includes(paymentStatus)) {
+         console.error(`Payment status is ${paymentStatus}, expected 'captured' or 'authorized'`)
+
+         await supabaseAdmin
+            .from('payment_orders')
+            .update({ status: 'failed', updated_at: new Date().toISOString() })
+            .eq('id', body.payment_order_id)
+
+         throw new Error(`Payment status is ${paymentStatus}`)
+      }
+
+      // Get the payment order to verify ownership and get metadata
+      // Note: Already fetched above for amount verification
 
       // Complete the purchase using the RPC function
       const { data: purchaseResult, error: purchaseError } = await supabaseAdmin
@@ -237,6 +369,7 @@ serve(async (req: Request) => {
             p_image_url: body.image_url || paymentOrder.purchase_metadata?.image_url,
             p_link_url: body.link_url || paymentOrder.purchase_metadata?.link_url,
             p_alt_text: body.alt_text || paymentOrder.purchase_metadata?.alt_text,
+            p_idempotency_key: `verify-${body.razorpay_payment_id}-${user.id}`,
          })
 
       if (purchaseError) {

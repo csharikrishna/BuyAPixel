@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, useTransition, useMemo } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Helmet } from 'react-helmet-async';
 import { Button } from '@/components/ui/button';
@@ -133,11 +133,7 @@ const SignIn = () => {
   const { isAuthenticated } = useAuth();
 
   // Refs
-  const typingTimerRef = useRef<NodeJS.Timeout>();
   const isMountedRef = useRef(true);
-
-  // React 19 hooks
-  const [isPending, startTransition] = useTransition();
 
   // State
   const [email, setEmail] = useState('');
@@ -166,9 +162,6 @@ const SignIn = () => {
   useEffect(() => {
     return () => {
       isMountedRef.current = false;
-      if (typingTimerRef.current) {
-        clearTimeout(typingTimerRef.current);
-      }
     };
   }, []);
 
@@ -310,18 +303,20 @@ const SignIn = () => {
       setEmail(value);
       setIsTyping(true);
       setMagicLinkSent(false);
+      setFormErrors((prev) => ({ ...prev, email: '' })); // Clear error while typing
+    },
+    []
+  );
 
-      if (typingTimerRef.current) {
-        clearTimeout(typingTimerRef.current);
+  // Validate email on blur only (not during typing)
+  const handleEmailBlur = useCallback(
+    (e: React.FocusEvent<HTMLInputElement>) => {
+      const value = e.target.value;
+      if (value) {
+        const error = validateEmail(value);
+        setFormErrors((prev) => ({ ...prev, email: error }));
       }
-
-      startTransition(() => {
-        typingTimerRef.current = setTimeout(() => {
-          const error = validateEmail(value);
-          setFormErrors((prev) => ({ ...prev, email: error }));
-          setIsTyping(false);
-        }, 500);
-      });
+      setIsTyping(false);
     },
     [validateEmail]
   );
@@ -531,7 +526,7 @@ const SignIn = () => {
         email: email.trim().toLowerCase(),
         options: {
           emailRedirectTo: redirectUrl,
-          shouldCreateUser: false,
+          shouldCreateUser: true, // Allow new user creation via magic link
         },
       });
 
@@ -551,6 +546,14 @@ const SignIn = () => {
           'For security purposes': {
             title: 'Rate Limit',
             message: 'Please wait 60 seconds before requesting another link.',
+          },
+          'Error sending magic link email': {
+            title: 'Email Service Issue',
+            message: 'We\'re having trouble sending the magic link. Please try again in a moment or use password sign in instead.',
+          },
+          'Internal Server Error': {
+            title: 'Server Error',
+            message: 'Something went wrong on our end. Please try again in a moment.',
           },
         };
 
@@ -911,25 +914,28 @@ const SignIn = () => {
                           placeholder="you@example.com"
                           value={email}
                           onChange={handleEmailChange}
+                          onBlur={handleEmailBlur}
                           required
                           autoComplete="email"
-                          disabled={!!isAccountLocked || isPending}
+                          disabled={!!isAccountLocked || loading}
                           className={cn('h-11 pr-8', formErrors.email && 'border-destructive')}
                           aria-invalid={!!formErrors.email}
                           aria-describedby={formErrors.email ? 'email-error' : undefined}
                         />
-                        {!isTyping && email && !formErrors.email && (
-                          <CheckCircle2
-                            className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-green-500"
-                            aria-hidden="true"
-                          />
-                        )}
-                        {formErrors.email && (
-                          <AlertCircle
-                            className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-destructive"
-                            aria-hidden="true"
-                          />
-                        )}
+                        <CheckCircle2
+                          className={cn(
+                            'absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-green-500 transition-opacity',
+                            isTyping || !email || formErrors.email ? 'opacity-0 pointer-events-none' : 'opacity-100'
+                          )}
+                          aria-hidden="true"
+                        />
+                        <AlertCircle
+                          className={cn(
+                            'absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-destructive transition-opacity',
+                            formErrors.email ? 'opacity-100' : 'opacity-0 pointer-events-none'
+                          )}
+                          aria-hidden="true"
+                        />
                       </div>
                     </div>
                     {formErrors.email && (
@@ -996,17 +1002,15 @@ const SignIn = () => {
                       </div>
 
                       {/* Password Strength [web:95] */}
-                      {password && (
-                        <div className="space-y-1">
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="text-muted-foreground">Password strength:</span>
-                            <span className={cn('font-medium', strengthInfo.textColor)}>
-                              {strengthInfo.text}
-                            </span>
-                          </div>
-                          <Progress value={strengthInfo.width} className="h-1.5" />
+                      <div className={cn('space-y-1 transition-opacity', password ? 'opacity-100' : 'opacity-0 h-0 overflow-hidden')}>
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-muted-foreground">Password strength:</span>
+                          <span className={cn('font-medium', strengthInfo.textColor)}>
+                            {strengthInfo.text}
+                          </span>
                         </div>
-                      )}
+                        <Progress value={strengthInfo.width} className="h-1.5" />
+                      </div>
 
                       {formErrors.password && (
                         <p

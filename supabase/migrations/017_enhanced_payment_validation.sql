@@ -12,6 +12,7 @@ CREATE OR REPLACE FUNCTION public.complete_pixel_purchase(
   p_payment_order_id UUID,
   p_razorpay_payment_id TEXT,
   p_razorpay_signature TEXT,
+  p_idempotency_key TEXT DEFAULT NULL, -- ✅ FIXED C5: Add idempotency key
   p_image_url TEXT DEFAULT NULL,
   p_link_url TEXT DEFAULT NULL,
   p_alt_text TEXT DEFAULT NULL
@@ -37,7 +38,21 @@ DECLARE
   v_available_count INTEGER := 0;
   v_pixels JSONB;
   v_updated_count INTEGER := 0;
+  v_cached_response JSONB; -- ✅ FIXED C5: For idempotency caching
 BEGIN
+  -- ✅ FIXED C5: Check idempotency cache FIRST
+  IF p_idempotency_key IS NOT NULL THEN
+    SELECT response INTO v_cached_response
+    FROM idempotency_log
+    WHERE key = p_idempotency_key
+    AND expires_at > NOW();
+
+    IF v_cached_response IS NOT NULL THEN
+      -- Return cached result - no duplicate execution
+      RETURN v_cached_response;
+    END IF;
+  END IF;
+
   -- Get the payment order
   SELECT * INTO v_order FROM payment_orders WHERE id = p_payment_order_id;
   
@@ -58,7 +73,18 @@ BEGIN
   
   v_pixel_count := jsonb_array_length(v_pixels);
   
-  -- PRE-VALIDATION: Check all pixels are still available
+  -- ✅ FIXED C4: LOCK PIXELS FIRST using SELECT FOR UPDATE
+  -- This prevents concurrent transactions from buying the same pixels
+  PERFORM 1
+  FROM pixels p
+  WHERE EXISTS (
+    SELECT 1 FROM jsonb_array_elements(v_pixels) elem
+    WHERE (elem->>'x')::INTEGER = p.x 
+      AND (elem->>'y')::INTEGER = p.y
+  )
+  FOR UPDATE; -- ✅ CRITICAL: Lock all pixels before checking availability
+
+  -- PRE-VALIDATION: Check all pixels are still available (now atomic due to lock)
   SELECT COUNT(*) INTO v_available_count
   FROM pixels p
   WHERE EXISTS (
@@ -178,8 +204,9 @@ BEGIN
       'razorpay_order_id', v_order.razorpay_order_id,
       'block_id', v_block_id
     ));
-  
-  RETURN jsonb_build_object(
+
+  -- Build response
+  v_cached_response := jsonb_build_object(
     'success', true,
     'block_id', v_block_id,
     'pixel_count', v_updated_count,
@@ -187,6 +214,19 @@ BEGIN
     'payment_order_id', p_payment_order_id,
     'razorpay_payment_id', p_razorpay_payment_id
   );
+
+  -- ✅ FIXED C5: Cache the result for idempotency
+  IF p_idempotency_key IS NOT NULL THEN
+    INSERT INTO idempotency_log (key, response, expires_at)
+    VALUES (
+      p_idempotency_key,
+      v_cached_response,
+      NOW() + INTERVAL '24 hours'
+    )
+    ON CONFLICT (key) DO NOTHING; -- Ignore if already cached
+  END IF;
+  
+  RETURN v_cached_response;
 END;
 $$;
 

@@ -15,7 +15,7 @@ import { toast } from "sonner";
 import { Star, ExternalLink, Loader2 } from "lucide-react";
 import { usePixelGridData } from "@/hooks/usePixelGridData";
 import { useGridInteraction } from "@/hooks/useGridInteraction";
-import { GRID_CONFIG, calculatePixelPrice } from "@/utils/gridConstants";
+import { GRID_CONFIG, ZONE_SIZES, AD_TIER_CONFIG, getAdTierByPrice, calculatePixelPrice } from "@/utils/gridConstants";
 import { SelectedPixel, PurchasedPixel } from "@/types/grid";
 import { getGridImageUrl, getBillboardImageUrl } from "@/utils/imageOptimization";
 
@@ -84,7 +84,7 @@ export const VirtualizedPixelGrid = forwardRef<
     const imageUrlsRef = useRef<Set<string>>(new Set());
 
     // ── Data & Interaction Hooks ──────────────────────────────
-    const { purchasedPixels, isLoading, error, loadProgress, spatialIndex } =
+    const { purchasedPixels, isLoading, error, spatialIndex } =
       usePixelGridData();
 
     const {
@@ -375,12 +375,19 @@ export const VirtualizedPixelGrid = forwardRef<
 
     useEffect(() => {
       if (!featuredPixelsList.length) return;
-      const id = setInterval(
+      // Use per-tier ad duration: Gold = 6s, Premium = 3s, Economy = 1s
+      const currentPixel = featuredPixelsList[currentFeaturedIndex];
+      const tier = currentPixel?.price_paid
+        ? getAdTierByPrice(currentPixel.price_paid)
+        : "ECONOMY";
+      const durationMs = AD_TIER_CONFIG[tier].adDuration * 1000;
+
+      const id = setTimeout(
         () => setCurrentFeaturedIndex((i) => (i + 1) % featuredPixelsList.length),
-        GRID_CONFIG.BILLBOARD_ROTATION_MS
+        durationMs
       );
-      return () => clearInterval(id);
-    }, [featuredPixelsList.length]);
+      return () => clearTimeout(id);
+    }, [featuredPixelsList, currentFeaturedIndex]);
 
     useEffect(() => {
       return () => {
@@ -516,11 +523,7 @@ export const VirtualizedPixelGrid = forwardRef<
           {isLoading && (
             <div className="absolute inset-0 bg-white/90 backdrop-blur-sm flex flex-col items-center justify-center z-50 gap-3">
               <Loader2 className="h-12 w-12 animate-spin text-indigo-600" />
-              {loadProgress > 0 && loadProgress < 100 && (
-                <p className="text-sm font-medium text-indigo-600">
-                  Loading pixels... {loadProgress}%
-                </p>
-              )}
+              <p className="text-sm font-medium text-indigo-600">Loading the grid...</p>
             </div>
           )}
 
@@ -564,28 +567,30 @@ export const VirtualizedPixelGrid = forwardRef<
               />
             )}
 
-            {/* Price Zones */}
+            {/* Price Zone Boundaries — 3 distinct colors per spec */}
             <div className="absolute pointer-events-none">
+              {/* Economy / Premium boundary (outermost 3 rows end here) — emerald */}
               <div
                 className="absolute rounded-md"
                 style={{
-                  left: getCenteredOffset(gridWidth, GRID_CONFIG.PREMIUM_ZONE_SIZE),
-                  top: getCenteredOffset(gridHeight, GRID_CONFIG.PREMIUM_ZONE_SIZE),
-                  width: GRID_CONFIG.PREMIUM_ZONE_SIZE * scaledPixelSize,
-                  height: GRID_CONFIG.PREMIUM_ZONE_SIZE * scaledPixelSize,
-                  border: "2px solid rgba(59, 130, 246, 0.5)",
-                  boxShadow: "inset 0 0 30px rgba(59,130,246,0.08)",
+                  left: getCenteredOffset(gridWidth, ZONE_SIZES.PREMIUM_ZONE_SIZE),
+                  top: getCenteredOffset(gridHeight, ZONE_SIZES.PREMIUM_ZONE_SIZE),
+                  width: ZONE_SIZES.PREMIUM_ZONE_SIZE * scaledPixelSize,
+                  height: ZONE_SIZES.PREMIUM_ZONE_SIZE * scaledPixelSize,
+                  border: "2px solid rgba(16, 185, 129, 0.6)",
+                  boxShadow: "inset 0 0 30px rgba(16,185,129,0.06)",
                 }}
               />
+              {/* Premium / Gold boundary (next 5 rows end here) — violet */}
               <div
                 className="absolute rounded-md"
                 style={{
-                  left: getCenteredOffset(gridWidth, GRID_CONFIG.GOLD_ZONE_SIZE),
-                  top: getCenteredOffset(gridHeight, GRID_CONFIG.GOLD_ZONE_SIZE),
-                  width: GRID_CONFIG.GOLD_ZONE_SIZE * scaledPixelSize,
-                  height: GRID_CONFIG.GOLD_ZONE_SIZE * scaledPixelSize,
-                  border: "2px solid rgba(234, 179, 8, 0.7)",
-                  boxShadow: "inset 0 0 25px rgba(234,179,8,0.1)",
+                  left: getCenteredOffset(gridWidth, ZONE_SIZES.GOLD_ZONE_SIZE),
+                  top: getCenteredOffset(gridHeight, ZONE_SIZES.GOLD_ZONE_SIZE),
+                  width: ZONE_SIZES.GOLD_ZONE_SIZE * scaledPixelSize,
+                  height: ZONE_SIZES.GOLD_ZONE_SIZE * scaledPixelSize,
+                  border: "2px solid rgba(139, 92, 246, 0.6)",
+                  boxShadow: "inset 0 0 25px rgba(139,92,246,0.08)",
                 }}
               />
             </div>

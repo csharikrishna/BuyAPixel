@@ -2,8 +2,6 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 
-const SUPER_ADMIN_EMAIL = import.meta.env.VITE_SUPER_ADMIN_EMAIL || 'notbot4444@gmail.com';
-
 export const useIsAdmin = () => {
   const { user } = useAuth();
   const [isAdmin, setIsAdmin] = useState(false);
@@ -22,11 +20,9 @@ export const useIsAdmin = () => {
       return;
     }
 
-    // Super admin is always an admin (env-based fallback for bootstrapping)
-    const emailIsSuperAdmin = user.email === SUPER_ADMIN_EMAIL;
-
     try {
-      // Check database for admin status via profile
+      // ✅ FIXED C9: Check admin status ONLY from database
+      // Never use client-side email-based checks
       const { data, error } = await supabase
         .from('profiles')
         .select('is_admin')
@@ -35,17 +31,20 @@ export const useIsAdmin = () => {
 
       if (!error && data) {
         const dbIsAdmin = data.is_admin === true;
-        setIsAdmin(dbIsAdmin || emailIsSuperAdmin);
-        setIsSuperAdmin(emailIsSuperAdmin);
+        setIsAdmin(dbIsAdmin);
+        // Note: Super admin distinction requires backend-only verification
+        // Do NOT use environment variables for privilege elevation
+        setIsSuperAdmin(false); // Client cannot verify super admin status
       } else {
-        // Fallback to email-only check if DB query fails
-        setIsAdmin(emailIsSuperAdmin);
-        setIsSuperAdmin(emailIsSuperAdmin);
+        // Database query failed - default to non-admin
+        // This is safer than falling back to email check
+        setIsAdmin(false);
+        setIsSuperAdmin(false);
       }
     } catch {
-      // Fallback to email check on error
-      setIsAdmin(emailIsSuperAdmin);
-      setIsSuperAdmin(emailIsSuperAdmin);
+      // Error on exception - default to non-admin
+      setIsAdmin(false);
+      setIsSuperAdmin(false);
     } finally {
       setIsLoading(false);
     }
