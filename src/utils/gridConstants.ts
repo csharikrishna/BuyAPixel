@@ -3,7 +3,7 @@ export const GRID_CONFIG = {
    MAX_INITIAL_ZOOM: 3.5,
    MIN_ZOOM: 0.1,
    MAX_ZOOM: 8,
-   INITIAL_ZOOM_MULTIPLIER: 1.25, // 👈 Change this to make the grid start larger or smaller! (e.g., 1 for fit-to-screen, 3 for very zoomed in)
+   INITIAL_ZOOM_MULTIPLIER: 1.45, // 👈 Change this to make the grid start larger or smaller! (e.g., 1 for fit-to-screen, 3 for very zoomed in)
    BILLBOARD_WIDTH: 40,
    BILLBOARD_HEIGHT: 24,
    ZOOM_FACTOR: 1.05,

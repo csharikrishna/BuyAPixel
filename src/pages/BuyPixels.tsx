@@ -589,11 +589,11 @@ const BuyPixels = () => {
       </AlertDialog>
 
       {/* MAIN LAYOUT */}
-      <main className="flex-1 w-full overflow-hidden flex flex-col lg:grid lg:grid-cols-12 lg:gap-0">
+      <main className="flex-1 w-full overflow-hidden flex flex-col lg:grid lg:grid-cols-[1fr_280px] lg:gap-0">
         {/* LEFT COLUMN: CANVAS */}
-        <div className="lg:col-span-9 order-1 flex flex-col gap-1 lg:gap-4 lg:h-[calc(100vh-64px)] lg:border-r border-border/40">
+        <div className="order-1 flex flex-col gap-1 lg:gap-4 lg:h-[calc(100vh-64px)] lg:border-r border-border/40">
           {/* Canvas Wrapper with Overlay Controls */}
-          <div className="w-full relative aspect-square lg:aspect-auto lg:flex-1">
+          <div className="w-full relative h-[56vh] sm:h-[60vh] lg:h-auto lg:flex-1">
             {/* Desktop Toolbar */}
             {mode === "buying" && (
               <div
@@ -745,7 +745,7 @@ const BuyPixels = () => {
         </div>
 
         {/* RIGHT COLUMN: SIDEBAR */}
-        <div className="hidden lg:flex lg:flex-col lg:col-span-3 order-2 bg-gradient-to-b from-muted/20 to-background overflow-y-auto lg:h-[calc(100vh-64px)]">
+        <div className="hidden lg:flex lg:flex-col order-2 bg-gradient-to-b from-muted/20 to-background overflow-y-auto lg:h-[calc(100vh-64px)]">
           <div className="p-6 xl:p-8 space-y-6 flex-1">
             {/* Action Buttons - Idle Mode */}
             {mode === "idle" && (
@@ -965,7 +965,10 @@ const BuyPixels = () => {
         </div>
       </main>
 
-      <Footer />
+      {/* Footer hidden on desktop — full-viewport canvas experience */}
+      <div className="lg:hidden">
+        <Footer />
+      </div>
 
       {/* --- MODALS & DIALOGS --- */}
 

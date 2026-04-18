@@ -112,14 +112,14 @@ export const VirtualizedPixelGrid = forwardRef<
         const gridPixelWidth = gridWidth * pixelSize;
         const gridPixelHeight = gridHeight * pixelSize;
         const isMobileDevice = clientWidth < 768;
-        const padding = isMobileDevice ? 8 : 40;
+        const padding = isMobileDevice ? 4 : 16;
         const fitZoomX = (clientWidth - padding * 2) / gridPixelWidth;
         const fitZoomY = (clientHeight - padding * 2) / gridPixelHeight;
         const fitZoom = Math.min(fitZoomX, fitZoomY);
         const zoomMultiplier = isMobileDevice
-          ? 1.12
+          ? 1.30
           : GRID_CONFIG.INITIAL_ZOOM_MULTIPLIER || 1;
-        const mobileMaxZoom = fitZoom * 1.2;
+        const mobileMaxZoom = fitZoom * 1.4;
         const clampedZoom = Math.min(
           Math.max(fitZoom * zoomMultiplier, GRID_CONFIG.MIN_ZOOM),
           isMobileDevice
@@ -135,7 +135,10 @@ export const VirtualizedPixelGrid = forwardRef<
           zoom: clampedZoom,
           offset: {
             x: (clientWidth - renderedGridWidth) / 2,
-            y: (clientHeight - renderedGridHeight) / 2,
+            // Top-align when grid overflows, center when it fits
+            y: renderedGridHeight > clientHeight
+              ? padding
+              : (clientHeight - renderedGridHeight) / 2,
           },
         };
       },
