@@ -7,8 +7,8 @@ const CONTACT_EMAIL = Deno.env.get('CONTACT_EMAIL') || 'notbot4444@gmail.com'
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 const ALLOWED_ORIGINS = [
-  'https://buyapixel.in',
   'https://buyapixel.onrender.com',
+  'https://buyapixel.in',
   'http://localhost:5173',
   'http://localhost:8080'
 ]

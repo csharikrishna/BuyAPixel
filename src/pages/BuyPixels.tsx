@@ -16,12 +16,11 @@ import { EnhancedStatsPanel } from "@/components/EnhancedStatsPanel";
 import { MobileCanvasPanel } from "@/components/MobileCanvasPanel";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { ShoppingCart, Store, Loader2, WifiOff, Undo2, X, AlertTriangle } from "lucide-react";
+import { ShoppingCart, Store, Loader2, WifiOff, Undo2, X, GripVertical, PanelRightClose, PanelRightOpen } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -45,7 +44,7 @@ import { useNetworkStatus } from "@/hooks/useNetworkStatus";
 import confetti from "canvas-confetti";
 import debounce from "lodash/debounce";
 import { SelectedPixel } from "@/types/grid";
-import { GRID_CONFIG, PIXEL_PRICING, AD_TIER_CONFIG, calculatePixelPrice } from "@/utils/gridConstants";
+import { GRID_CONFIG, PIXEL_PRICING, calculatePixelPrice } from "@/utils/gridConstants";
 
 // --- Constants ---
 const CANVAS_WIDTH = GRID_CONFIG.CANVAS_WIDTH;
@@ -54,9 +53,14 @@ const PIXEL_SIZE = 4;
 const MAX_PIXELS_PER_PURCHASE = 1000;
 const DRAFT_EXPIRY_HOURS = 1;
 const SELECTION_HISTORY_LIMIT = 10;
-const PURCHASE_BATCH_SIZE = 10;
 const DRAFT_STORAGE_KEY = "pixelDraft";
 const AUTOSAVE_DEBOUNCE_MS = 500;
+
+// Sidebar constants
+const SIDEBAR_MIN_WIDTH = 260;
+const SIDEBAR_MAX_WIDTH = 480;
+const SIDEBAR_DEFAULT_WIDTH = 320;
+const SIDEBAR_STORAGE_KEY = "sidebarWidth";
 
 
 
@@ -136,6 +140,73 @@ const BuyPixels = () => {
   const [sharePixel, setSharePixel] = useState<{ x: number; y: number } | null>(null);
   const [showDraftRestorePrompt, setShowDraftRestorePrompt] = useState(false);
   const [draftToRestore, setDraftToRestore] = useState<PixelDraft | null>(null);
+  // --- Resizable Sidebar State ---
+  const [sidebarWidth, setSidebarWidth] = useState(() => {
+    const saved = localStorage.getItem(SIDEBAR_STORAGE_KEY);
+    if (saved) {
+      const w = parseInt(saved, 10);
+      if (w === 0 || (w >= SIDEBAR_MIN_WIDTH && w <= SIDEBAR_MAX_WIDTH)) return w;
+    }
+    return SIDEBAR_DEFAULT_WIDTH;
+  });
+  const [isResizing, setIsResizing] = useState(false);
+  const sidebarRef = useRef<HTMLDivElement>(null);
+  const resizeStartX = useRef(0);
+  const resizeStartWidth = useRef(0);
+  const latestWidthRef = useRef(sidebarWidth);
+
+  // Keep ref in sync for mouseUp handler
+  useEffect(() => {
+    latestWidthRef.current = sidebarWidth;
+  }, [sidebarWidth]);
+
+  const sidebarCollapsed = sidebarWidth === 0;
+
+  const handleSidebarToggle = useCallback(() => {
+    const newWidth = sidebarCollapsed ? SIDEBAR_DEFAULT_WIDTH : 0;
+    setSidebarWidth(newWidth);
+    localStorage.setItem(SIDEBAR_STORAGE_KEY, String(newWidth));
+  }, [sidebarCollapsed]);
+
+  // Drag-to-resize handlers
+  const handleResizeStart = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizing(true);
+    resizeStartX.current = e.clientX;
+    resizeStartWidth.current = sidebarWidth;
+  }, [sidebarWidth]);
+
+  useEffect(() => {
+    if (!isResizing) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const delta = resizeStartX.current - e.clientX;
+      let newWidth = resizeStartWidth.current + delta;
+      if (newWidth < SIDEBAR_MIN_WIDTH - 40) {
+        newWidth = 0;
+      } else {
+        newWidth = Math.max(SIDEBAR_MIN_WIDTH, Math.min(SIDEBAR_MAX_WIDTH, newWidth));
+      }
+      setSidebarWidth(newWidth);
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+      localStorage.setItem(SIDEBAR_STORAGE_KEY, String(latestWidthRef.current));
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+    document.body.style.userSelect = 'none';
+    document.body.style.cursor = 'col-resize';
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.body.style.userSelect = '';
+      document.body.style.cursor = '';
+    };
+  }, [isResizing]);
 
   // --- Cleanup on unmount ---
   useEffect(() => {
@@ -589,11 +660,11 @@ const BuyPixels = () => {
       </AlertDialog>
 
       {/* MAIN LAYOUT */}
-      <main className="flex-1 w-full overflow-hidden flex flex-col lg:grid lg:grid-cols-[1fr_280px] lg:gap-0">
+      <main className="flex-1 w-full flex flex-col lg:flex-row lg:overflow-hidden">
         {/* LEFT COLUMN: CANVAS */}
-        <div className="order-1 flex flex-col gap-1 lg:gap-4 lg:h-[calc(100vh-64px)] lg:border-r border-border/40">
+        <div className="order-1 flex-1 min-w-0 flex flex-col gap-1 lg:gap-0 lg:overflow-hidden transition-all duration-300">
           {/* Canvas Wrapper with Overlay Controls */}
-          <div className="w-full relative h-[56vh] sm:h-[60vh] lg:h-auto lg:flex-1">
+          <div className="w-full relative h-[56vh] sm:h-[60vh] lg:flex-1 lg:overflow-hidden">
             {/* Desktop Toolbar */}
             {mode === "buying" && (
               <div
@@ -629,7 +700,7 @@ const BuyPixels = () => {
                 onZoomChange={setZoom}
                 showGrid={showGrid}
                 showMyPixels={showMyPixels}
-                enableInteraction={mode === "buying"}
+                enableInteraction={true}
               />
             </div>
           </div>
@@ -744,9 +815,52 @@ const BuyPixels = () => {
           )}
         </div>
 
+        {/* SIDEBAR TOGGLE BUTTON — lives at main level, never clipped */}
+        <div className="hidden lg:flex items-center order-2 flex-shrink-0 relative z-20">
+          <button
+            onClick={handleSidebarToggle}
+            className="h-9 w-7 -mr-px rounded-l-lg bg-card text-muted-foreground shadow-sm border border-r-0 border-border/60 hover:bg-accent hover:text-accent-foreground transition-all duration-200 flex items-center justify-center active:scale-95"
+            aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            {sidebarCollapsed ? <PanelRightOpen className="h-3.5 w-3.5" /> : <PanelRightClose className="h-3.5 w-3.5" />}
+          </button>
+        </div>
+
         {/* RIGHT COLUMN: SIDEBAR */}
-        <div className="hidden lg:flex lg:flex-col order-2 bg-gradient-to-b from-muted/20 to-background overflow-y-auto lg:h-[calc(100vh-64px)]">
-          <div className="p-6 xl:p-8 space-y-6 flex-1">
+        <div
+          className={`hidden lg:block order-3 flex-shrink-0 relative ${
+            isResizing ? '' : 'transition-[width] duration-300 ease-in-out'
+          }`}
+          style={{ width: sidebarCollapsed ? 0 : sidebarWidth }}
+        >
+          {/* Drag Handle - on left edge */}
+          {!sidebarCollapsed && (
+            <div
+              onMouseDown={handleResizeStart}
+              className={`absolute left-0 top-0 bottom-0 w-1.5 z-30 cursor-col-resize group/handle ${
+                isResizing ? 'bg-primary/50' : 'hover:bg-primary/30'
+              }`}
+              title="Drag to resize"
+            >
+              <div className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 transition-opacity ${
+                isResizing ? 'opacity-100' : 'opacity-0 group-hover/handle:opacity-100'
+              }`}>
+                <GripVertical className="h-5 w-5 text-muted-foreground" />
+              </div>
+            </div>
+          )}
+
+          {/* Sidebar Content Container */}
+          <div
+            ref={sidebarRef}
+            className="flex flex-col bg-gradient-to-b from-muted/20 to-background h-[calc(100vh-64px)] border-l border-border/40 w-full overflow-hidden"
+          >
+          {/* Scrollable Content */}
+          <div className={`overflow-y-auto w-full h-full ${
+            sidebarCollapsed ? 'opacity-0 pointer-events-none' : 'opacity-100'
+          } ${isResizing ? '' : 'transition-opacity duration-200'}`}>
+            <div className="p-4 space-y-5 pb-10">
             {/* Action Buttons - Idle Mode */}
             {mode === "idle" && (
               <TooltipProvider>
@@ -809,35 +923,35 @@ const BuyPixels = () => {
             )}
 
             {/* Desktop Intro Box */}
-            <div className="hidden lg:block rounded-2xl border border-border/50 bg-card/80 backdrop-blur-sm p-7 text-center shadow-sm">
-              <h1 className="text-2xl xl:text-3xl font-bold mb-3 bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent leading-tight">
+            <div className="hidden lg:block rounded-2xl border border-border/50 bg-card/80 backdrop-blur-sm p-5 text-center shadow-sm">
+              <h1 className="text-xl font-bold mb-3 bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent leading-tight">
                 Select Pixels &<br />Make History
               </h1>
-              <p className="text-sm text-muted-foreground mb-5 leading-relaxed">
+              <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
                 Choose from {(CANVAS_WIDTH * CANVAS_HEIGHT).toLocaleString()} pixels to showcase
                 your brand forever.
               </p>
-              <div className="flex justify-center gap-3 text-xs font-semibold">
+              <div className="flex justify-center gap-2 text-xs font-semibold">
                 <span className="bg-primary/10 text-primary px-3 py-1.5 rounded-full border border-primary/20">₹99+</span>
                 <span className="bg-accent/10 text-accent px-3 py-1.5 rounded-full border border-accent/20">Permanent</span>
               </div>
 
               {/* Keyboard Shortcuts Hint */}
               {mode === "buying" && (
-                <div className="mt-5 pt-5 border-t border-border/50 text-left">
-                  <p className="text-xs font-semibold text-muted-foreground mb-3">⌨️ Shortcuts:</p>
-                  <div className="space-y-2 text-xs text-muted-foreground">
+                <div className="mt-5 pt-4 border-t border-border/50 text-left">
+                  <p className="text-xs font-bold text-muted-foreground mb-4 uppercase tracking-wide">⌨️ Shortcuts</p>
+                  <div className="space-y-3 text-sm text-muted-foreground">
                     <div className="flex justify-between items-center">
                       <span>Undo</span>
-                      <kbd className="px-2.5 py-1 bg-muted rounded-md text-xs font-mono border border-border/50">Ctrl+Z</kbd>
+                      <kbd className="px-3 py-1.5 bg-muted rounded-md text-xs font-mono border border-border/50">Ctrl+Z</kbd>
                     </div>
                     <div className="flex justify-between items-center">
                       <span>Cancel</span>
-                      <kbd className="px-2.5 py-1 bg-muted rounded-md text-xs font-mono border border-border/50">ESC</kbd>
+                      <kbd className="px-3 py-1.5 bg-muted rounded-md text-xs font-mono border border-border/50">ESC</kbd>
                     </div>
                     <div className="flex justify-between items-center">
                       <span>Clear</span>
-                      <kbd className="px-2.5 py-1 bg-muted rounded-md text-xs font-mono border border-border/50">Del</kbd>
+                      <kbd className="px-3 py-1.5 bg-muted rounded-md text-xs font-mono border border-border/50">Del</kbd>
                     </div>
                   </div>
                 </div>
@@ -846,43 +960,43 @@ const BuyPixels = () => {
 
             {/* Zone Pricing Guide (Idle Mode) - Enhanced with Color Borders */}
             {mode === "idle" && (
-              <div className="hidden lg:block rounded-2xl border border-border/50 bg-card/80 backdrop-blur-sm p-6 shadow-sm overflow-hidden">
-                <h3 className="text-sm font-semibold mb-4 text-foreground/80">Pricing Zones</h3>
+              <div className="hidden lg:block rounded-2xl border border-border/50 bg-card/80 backdrop-blur-sm p-4 shadow-sm overflow-hidden">
+                <h3 className="text-sm font-bold mb-4 text-foreground">Pricing Zones</h3>
                 <div className="space-y-2.5">
                   {/* Gold Tier */}
-                  <div className="flex items-center justify-between rounded-lg border-l-4 border-l-amber-400 bg-amber-50/5 dark:bg-amber-950/10 px-4 py-3 transition-all hover:bg-amber-50/10 dark:hover:bg-amber-950/20">
-                    <div className="flex items-center gap-3">
-                      <div className="w-3 h-3 rounded-full bg-amber-400 shadow-md shadow-amber-400/40" />
-                      <div className="flex flex-col gap-0.5">
-                        <span className="text-sm font-semibold text-amber-700 dark:text-amber-300">Gold Center</span>
-                        <span className="text-xs text-muted-foreground">Central premium area</span>
+                  <div className="flex items-center justify-between rounded-xl border-l-4 border-l-amber-400 bg-amber-50/5 dark:bg-amber-950/10 px-3 py-3 transition-all hover:bg-amber-50/10 dark:hover:bg-amber-950/20">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="w-3 h-3 rounded-full bg-amber-400 shadow-md shadow-amber-400/40 flex-shrink-0" />
+                      <div className="flex flex-col gap-0.5 min-w-0">
+                        <span className="text-sm font-semibold text-amber-700 dark:text-amber-300 truncate">Gold Center</span>
+                        <span className="text-xs text-muted-foreground truncate">Central premium area</span>
                       </div>
                     </div>
-                    <span className="text-base font-bold text-amber-600 dark:text-amber-400 tabular-nums">₹499</span>
+                    <span className="text-sm font-bold text-amber-600 dark:text-amber-400 tabular-nums flex-shrink-0 ml-2">₹499</span>
                   </div>
                   
                   {/* Premium Tier */}
-                  <div className="flex items-center justify-between rounded-lg border-l-4 border-l-violet-400 bg-violet-50/5 dark:bg-violet-950/10 px-4 py-3 transition-all hover:bg-violet-50/10 dark:hover:bg-violet-950/20">
-                    <div className="flex items-center gap-3">
-                      <div className="w-3 h-3 rounded-full bg-violet-400 shadow-md shadow-violet-400/40" />
-                      <div className="flex flex-col gap-0.5">
-                        <span className="text-sm font-semibold text-violet-700 dark:text-violet-300">Premium</span>
-                        <span className="text-xs text-muted-foreground">Featured position</span>
+                  <div className="flex items-center justify-between rounded-xl border-l-4 border-l-violet-400 bg-violet-50/5 dark:bg-violet-950/10 px-3 py-3 transition-all hover:bg-violet-50/10 dark:hover:bg-violet-950/20">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="w-3 h-3 rounded-full bg-violet-400 shadow-md shadow-violet-400/40 flex-shrink-0" />
+                      <div className="flex flex-col gap-0.5 min-w-0">
+                        <span className="text-sm font-semibold text-violet-700 dark:text-violet-300 truncate">Premium</span>
+                        <span className="text-xs text-muted-foreground truncate">Featured position</span>
                       </div>
                     </div>
-                    <span className="text-base font-bold text-violet-600 dark:text-violet-400 tabular-nums">₹299</span>
+                    <span className="text-sm font-bold text-violet-600 dark:text-violet-400 tabular-nums flex-shrink-0 ml-2">₹299</span>
                   </div>
                   
                   {/* Economy Tier */}
-                  <div className="flex items-center justify-between rounded-lg border-l-4 border-l-emerald-400 bg-emerald-50/5 dark:bg-emerald-950/10 px-4 py-3 transition-all hover:bg-emerald-50/10 dark:hover:bg-emerald-950/20">
-                    <div className="flex items-center gap-3">
-                      <div className="w-3 h-3 rounded-full bg-emerald-400 shadow-md shadow-emerald-400/40" />
-                      <div className="flex flex-col gap-0.5">
-                        <span className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">Economy</span>
-                        <span className="text-xs text-muted-foreground">Standard placement</span>
+                  <div className="flex items-center justify-between rounded-xl border-l-4 border-l-emerald-400 bg-emerald-50/5 dark:bg-emerald-950/10 px-3 py-3 transition-all hover:bg-emerald-50/10 dark:hover:bg-emerald-950/20">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="w-3 h-3 rounded-full bg-emerald-400 shadow-md shadow-emerald-400/40 flex-shrink-0" />
+                      <div className="flex flex-col gap-0.5 min-w-0">
+                        <span className="text-sm font-semibold text-emerald-700 dark:text-emerald-300 truncate">Economy</span>
+                        <span className="text-xs text-muted-foreground truncate">Standard placement</span>
                       </div>
                     </div>
-                    <span className="text-base font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">₹99</span>
+                    <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400 tabular-nums flex-shrink-0 ml-2">₹99</span>
                   </div>
                 </div>
               </div>
@@ -890,45 +1004,45 @@ const BuyPixels = () => {
 
             {/* Price Breakdown Card - Enhanced with Color Borders */}
             {mode === "buying" && selectedPixels.length > 0 && (
-              <div className="hidden lg:block rounded-2xl border border-border/50 bg-card/80 backdrop-blur-sm p-6 shadow-sm overflow-hidden">
-                <h3 className="text-sm font-semibold mb-4 text-foreground/80">Price Breakdown</h3>
+              <div className="hidden lg:block rounded-2xl border border-border/50 bg-card/80 backdrop-blur-sm p-4 shadow-sm overflow-hidden">
+                <h3 className="text-sm font-bold mb-4 text-foreground">Price Breakdown</h3>
                 <div className="space-y-2.5 text-sm">
                   {priceBreakdown.gold > 0 && (
-                    <div className="flex justify-between items-center rounded-lg border-l-4 border-l-amber-400 bg-amber-50/5 dark:bg-amber-950/10 px-3 py-2 transition-all hover:bg-amber-50/10 dark:hover:bg-amber-950/20">
-                      <span className="text-muted-foreground flex items-center gap-2.5">
-                        <div className="w-2 h-2 rounded-full bg-amber-400" />
-                        <span className="font-semibold text-amber-700 dark:text-amber-300">Gold (₹499)</span>
+                    <div className="flex justify-between items-center rounded-xl border-l-4 border-l-amber-400 bg-amber-50/5 dark:bg-amber-950/10 px-3 py-2.5 transition-all hover:bg-amber-50/10 dark:hover:bg-amber-950/20">
+                      <span className="text-muted-foreground flex items-center gap-2 min-w-0">
+                        <div className="w-2 h-2 rounded-full bg-amber-400 flex-shrink-0" />
+                        <span className="font-semibold text-amber-700 dark:text-amber-300 truncate">Gold (₹499)</span>
                       </span>
-                      <span className="font-bold text-amber-600 dark:text-amber-400 tabular-nums">
+                      <span className="font-bold text-amber-600 dark:text-amber-400 tabular-nums flex-shrink-0 ml-2">
                         {priceBreakdown.gold} × ₹499
                       </span>
                     </div>
                   )}
                   {priceBreakdown.premium > 0 && (
-                    <div className="flex justify-between items-center rounded-lg border-l-4 border-l-violet-400 bg-violet-50/5 dark:bg-violet-950/10 px-3 py-2 transition-all hover:bg-violet-50/10 dark:hover:bg-violet-950/20">
-                      <span className="text-muted-foreground flex items-center gap-2.5">
-                        <div className="w-2 h-2 rounded-full bg-violet-400" />
-                        <span className="font-semibold text-violet-700 dark:text-violet-300">Premium (₹299)</span>
+                    <div className="flex justify-between items-center rounded-xl border-l-4 border-l-violet-400 bg-violet-50/5 dark:bg-violet-950/10 px-3 py-2.5 transition-all hover:bg-violet-50/10 dark:hover:bg-violet-950/20">
+                      <span className="text-muted-foreground flex items-center gap-2 min-w-0">
+                        <div className="w-2 h-2 rounded-full bg-violet-400 flex-shrink-0" />
+                        <span className="font-semibold text-violet-700 dark:text-violet-300 truncate">Premium (₹299)</span>
                       </span>
-                      <span className="font-bold text-violet-600 dark:text-violet-400 tabular-nums">
+                      <span className="font-bold text-violet-600 dark:text-violet-400 tabular-nums flex-shrink-0 ml-2">
                         {priceBreakdown.premium} × ₹299
                       </span>
                     </div>
                   )}
                   {priceBreakdown.economy > 0 && (
-                    <div className="flex justify-between items-center rounded-lg border-l-4 border-l-emerald-400 bg-emerald-50/5 dark:bg-emerald-950/10 px-3 py-2 transition-all hover:bg-emerald-50/10 dark:hover:bg-emerald-950/20">
-                      <span className="text-muted-foreground flex items-center gap-2.5">
-                        <div className="w-2 h-2 rounded-full bg-emerald-400" />
-                        <span className="font-semibold text-emerald-700 dark:text-emerald-300">Economy (₹99)</span>
+                    <div className="flex justify-between items-center rounded-xl border-l-4 border-l-emerald-400 bg-emerald-50/5 dark:bg-emerald-950/10 px-3 py-2.5 transition-all hover:bg-emerald-50/10 dark:hover:bg-emerald-950/20">
+                      <span className="text-muted-foreground flex items-center gap-2 min-w-0">
+                        <div className="w-2 h-2 rounded-full bg-emerald-400 flex-shrink-0" />
+                        <span className="font-semibold text-emerald-700 dark:text-emerald-300 truncate">Economy (₹99)</span>
                       </span>
-                      <span className="font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
+                      <span className="font-bold text-emerald-600 dark:text-emerald-400 tabular-nums flex-shrink-0 ml-2">
                         {priceBreakdown.economy} × ₹99
                       </span>
                     </div>
                   )}
-                  <div className="pt-3 mt-2.5 border-t border-border/50 flex justify-between items-center font-bold">
+                  <div className="pt-3 mt-2 border-t border-border/50 flex justify-between items-center font-bold">
                     <span className="text-foreground">Total</span>
-                    <span className="text-lg text-primary tabular-nums">₹{totalCost.toLocaleString()}</span>
+                    <span className="text-base text-primary tabular-nums">₹{totalCost.toLocaleString()}</span>
                   </div>
                 </div>
               </div>
@@ -936,7 +1050,7 @@ const BuyPixels = () => {
 
             {/* Sticky Stats & Tools */}
             {mode === "buying" && (
-              <div className="sticky top-4 space-y-5">
+              <div className="sticky top-4 space-y-6">
                 <EnhancedSelectionSummary
                   selectedPixels={selectedPixels}
                   onClearSelection={handleClearSelection}
@@ -961,6 +1075,8 @@ const BuyPixels = () => {
                 <EnhancedStatsPanel selectedPixelsCount={selectedPixels.length} />
               </div>
             )}
+            </div>
+          </div>
           </div>
         </div>
       </main>

@@ -8,7 +8,7 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
 
 const corsHeaders = {
-   'Access-Control-Allow-Origin': Deno.env.get('ALLOWED_ORIGIN') || 'https://buyapixel.in',
+   'Access-Control-Allow-Origin': Deno.env.get('ALLOWED_ORIGIN') || 'https://buyapixel.onrender.com',
    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
    'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
@@ -65,7 +65,7 @@ async function sendBuyerConfirmationEmail(
          body: JSON.stringify({
             from: 'BuyAPixel <onboarding@resend.dev>',
             to: [email],
-            reply_to: 'support@buyapixel.in',
+            reply_to: 'support@buyapixel.onrender.com',
             subject: '🎉 Marketplace Purchase Confirmed!',
             html: `
 <!DOCTYPE html>
@@ -98,7 +98,7 @@ async function sendBuyerConfirmationEmail(
         <div class="row"><span>Transaction ID</span><span style="font-family: monospace; font-size: 12px;">${transactionId.substring(0, 8)}...</span></div>
         <div class="row total"><span>Total Paid</span><span>${formatINR(salePrice)}</span></div>
       </div>
-      <a href="https://buyapixel.in/profile" class="button">View Your Pixels</a>
+      <a href="https://buyapixel.onrender.com/profile" class="button">View Your Pixels</a>
     </div>
     <div class="footer">
       <p>BuyAPixel — The Modern Million Dollar Homepage</p>
@@ -152,7 +152,7 @@ async function sendSellerNotificationEmail(
          body: JSON.stringify({
             from: 'BuyAPixel <onboarding@resend.dev>',
             to: [email],
-            reply_to: 'support@buyapixel.in',
+            reply_to: 'support@buyapixel.onrender.com',
             subject: '💰 Your Pixel Has Been Sold!',
             html: `
 <!DOCTYPE html>
@@ -186,7 +186,7 @@ async function sendSellerNotificationEmail(
         <div class="row"><span>Platform Fee (5%)</span><span>-${formatINR(platformFee)}</span></div>
         <div class="row total"><span>Your Earnings</span><span>${formatINR(sellerNet)}</span></div>
       </div>
-      <a href="https://buyapixel.in/marketplace" class="button">View Marketplace</a>
+      <a href="https://buyapixel.onrender.com/marketplace" class="button">View Marketplace</a>
     </div>
     <div class="footer">
       <p>BuyAPixel — The Modern Million Dollar Homepage</p>

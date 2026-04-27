@@ -134,7 +134,7 @@ export const ImageUpload = ({
       setOriginalFile(file);
 
       // Validate file using fileUploadUtils
-      const validation = validateFileUtil(file);
+      const validation = await validateFileUtil(file);
       if (!validation.valid) {
         const errorMsg = validation.error || 'Invalid file';
         setError(errorMsg);

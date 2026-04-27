@@ -10,7 +10,7 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 // Rate limiting is now checked via database
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': Deno.env.get('ALLOWED_ORIGIN') || 'https://buyapixel.in',
+  'Access-Control-Allow-Origin': Deno.env.get('ALLOWED_ORIGIN') || 'https://buyapixel.onrender.com',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
@@ -208,6 +208,7 @@ serve(async (req: Request) => {
     const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 second timeout
 
     let razorpayResponse
+    const razorpayAuth = btoa(`${RAZORPAY_KEY_ID}:${RAZORPAY_KEY_SECRET}`)
     try {
       razorpayResponse = await fetch('https://api.razorpay.com/v1/orders', {
         method: 'POST',

@@ -7,23 +7,20 @@
 export const MAX_FILE_SIZE_BYTES = 500 * 1024; // 500KB hard limit per requirements
 export const MAX_FILE_SIZE_MB = 0.5;
 
-// Allowed file types for pixel uploads
-export const ALLOWED_FILE_TYPES = {
+// Allowed file types for pixel uploads (must be renderable as images)
+export const ALLOWED_FILE_TYPES: Record<string, string[]> = {
   'image/jpeg': ['jpg', 'jpeg'],
   'image/png': ['png'],
-  'image/heic': ['heic'],
-  'image/heif': ['heif'], // HEIC can also be HEIF
-  'application/pdf': ['pdf'],
-  'application/msword': ['doc'],
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['docx'],
+  'image/webp': ['webp'],
+  'image/gif': ['gif'],
 };
 
 // Magic bytes for file validation (prevent spoofed files)
 const MAGIC_BYTES = {
   jpeg: [0xFF, 0xD8, 0xFF],
   png: [0x89, 0x50, 0x4E, 0x47],
-  pdf: [0x25, 0x50, 0x44, 0x46], // %PDF
-  heic: [0x00, 0x00, 0x00, 0x18, 0x66, 0x74, 0x79, 0x70], // ftyp at offset 4
+  webp: [0x52, 0x49, 0x46, 0x46], // RIFF header (WebP starts with RIFF....WEBP)
+  gif: [0x47, 0x49, 0x46],        // GIF87a or GIF89a
 } as const;
 
 /**
@@ -42,13 +39,13 @@ export async function validateMagicBytes(file: File, mimeType: string): Promise<
     case 'image/png':
       return bytes.slice(0, 4).every((byte, i) => byte === MAGIC_BYTES.png[i]);
     
-    case 'application/pdf':
-      return bytes.slice(0, 4).every((byte, i) => byte === MAGIC_BYTES.pdf[i]);
+    case 'image/webp':
+      // WebP: RIFF....WEBP
+      return bytes.slice(0, 4).every((byte, i) => byte === MAGIC_BYTES.webp[i]) &&
+             bytes[8] === 0x57 && bytes[9] === 0x45 && bytes[10] === 0x42 && bytes[11] === 0x50;
     
-    case 'image/heic':
-    case 'image/heif':
-      // HEIC has ftyp at offset 4
-      return bytes.slice(4, 8).every((byte, i) => byte === MAGIC_BYTES.heic[i]);
+    case 'image/gif':
+      return bytes.slice(0, 3).every((byte, i) => byte === MAGIC_BYTES.gif[i]);
     
     default:
       return true; // For unsupported checks, assume valid
@@ -223,11 +220,8 @@ export function getFileTypeDescription(mimeType: string): string {
   const descriptions: Record<string, string> = {
     'image/jpeg': 'JPG Image',
     'image/png': 'PNG Image',
-    'image/heic': 'HEIC Image',
-    'image/heif': 'HEIF Image',
-    'application/pdf': 'PDF Document',
-    'application/msword': 'Word Document',
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'Word Document (.docx)',
+    'image/webp': 'WebP Image',
+    'image/gif': 'GIF Image',
   };
 
   return descriptions[mimeType] || 'File';

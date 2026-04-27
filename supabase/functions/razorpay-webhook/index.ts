@@ -3,9 +3,13 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { createHmac } from 'https://deno.land/std@0.168.0/node/crypto.ts'
 
 const RAZORPAY_KEY_ID = Deno.env.get('RAZORPAY_KEY_ID')
+const RAZORPAY_KEY_SECRET = Deno.env.get('RAZORPAY_KEY_SECRET')
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': Deno.env.get('ALLOWED_ORIGIN') || 'https://buyapixel.in',
+  'Access-Control-Allow-Origin': Deno.env.get('ALLOWED_ORIGIN') || 'https://buyapixel.onrender.com',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-razorpay-signature',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
@@ -110,7 +114,7 @@ async function sendReconciliationEmail(
       body: JSON.stringify({
         from: 'BuyAPixel Support <onboarding@resend.dev>',
         to: [email],
-        reply_to: 'support@buyapixel.in',
+        reply_to: 'support@buyapixel.onrender.com',
         subject: `${statusBadge} Payment Notification - ${paymentId.slice(-8)}`,
         html: `
 <!DOCTYPE html>

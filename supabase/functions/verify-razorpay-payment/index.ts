@@ -8,7 +8,7 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
 
 const corsHeaders = {
-   'Access-Control-Allow-Origin': Deno.env.get('ALLOWED_ORIGIN') || 'https://buyapixel.in',
+   'Access-Control-Allow-Origin': Deno.env.get('ALLOWED_ORIGIN') || 'https://buyapixel.onrender.com',
    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
    'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
@@ -102,7 +102,7 @@ async function sendConfirmationEmail(
          body: JSON.stringify({
             from: 'BuyAPixel <onboarding@resend.dev>',
             to: [email],
-            reply_to: 'support@buyapixel.in',
+            reply_to: 'support@buyapixel.onrender.com',
             subject: '🎉 Your BuyAPixel Purchase Is Confirmed',
             html: buildEmailHtml(email, pixelCount, totalAmount, pixelName, linkUrl),
          }),
@@ -163,7 +163,7 @@ function buildEmailHtml(
         ${linkUrl ? `<div class="row"><span>Link</span><span><a href="${linkUrl}" style="color:#10b981">${linkUrl}</a></span></div>` : ''}
         <div class="row total"><span>Total Paid</span><span>${formatINR(totalAmount)}</span></div>
       </div>
-      <a href="https://buyapixel.in/profile" class="button">View Your Pixels</a>
+      <a href="https://buyapixel.onrender.com/profile" class="button">View Your Pixels</a>
     </div>
     <div class="footer">
       <p>BuyAPixel — The Modern Million Dollar Homepage</p>

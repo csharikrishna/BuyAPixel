@@ -142,11 +142,11 @@ const Canvas = () => {
   }
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden bg-slate-100">
+    <div className="flex flex-col min-h-screen bg-slate-100">
       <Header />
 
-      {/* Main Canvas Container - Full remaining height */}
-      <div className="flex-1 relative overflow-hidden">
+      {/* Main Canvas Container - Scrollable page */}
+      <div className="flex-1 relative w-full">
         {/* Desktop Controls - Left Side */}
         <TooltipProvider delayDuration={200}>
           <div className="absolute top-4 left-4 z-20 hidden md:flex flex-col gap-2">
@@ -305,7 +305,7 @@ const Canvas = () => {
         </div>
 
         {/* The Pixel Grid */}
-        <div className="w-full h-full">
+        <div className="w-full h-[600px]">
           <VirtualizedPixelGrid
             selectedPixels={[]}
             onSelectionChange={() => {}}

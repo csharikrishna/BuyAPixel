@@ -3,7 +3,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': Deno.env.get('ALLOWED_ORIGIN') || 'https://buyapixel.in',
+  'Access-Control-Allow-Origin': Deno.env.get('ALLOWED_ORIGIN') || 'https://buyapixel.onrender.com',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
@@ -162,7 +162,7 @@ function buildEmailHtml(data: PurchaseEmailData) {
         </div>
       </div>
 
-      <a href="https://buyapixel.in/profile" class="button">View Your Pixels</a>
+      <a href="https://buyapixel.onrender.com/profile" class="button">View Your Pixels</a>
     </div>
 
     <div class="footer">
@@ -223,7 +223,7 @@ serve(async (req: Request) => {
       body: JSON.stringify({
         from: 'BuyAPixel <onboarding@resend.dev>',
         to: [body.email],
-        reply_to: 'support@buyapixel.in',
+        reply_to: 'support@buyapixel.onrender.com',
         subject: '🎉 Your BuyAPixel Purchase Is Confirmed',
         html: buildEmailHtml(body),
       }),
