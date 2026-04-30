@@ -1,7 +1,7 @@
 ---
 name: project-audit
 description: 'Comprehensive, production-grade audit of projects, features, or working items. Analyzes code quality, architecture, scalability, security, error handling, and deployment readiness using a multi-agent pipeline (Generator → Reviewer → Validator). Use when: auditing MVP readiness, evaluating code quality, assessing security posture, planning architecture improvements, preparing for production deployment, reviewing feature completeness.'
-argument-hint: 'Provide project/feature name and scope (e.g., "BuyAPixel main MVP" or "Payment checkout flow")'
+argument-hint: 'Provide project/feature name and scope (e.g., "BuyASpot main MVP" or "Payment checkout flow")'
 user-invocable: true
 ---
 
@@ -104,7 +104,7 @@ The skill systematically evaluates:
 Type `/project-audit` in chat and specify the scope:
 ```
 /project-audit
-Scope: BuyAPixel main MVP
+Scope: BuyASpot main MVP
 Focus Areas: Payment flow, canvas feature, scalability
 ```
 
@@ -213,7 +213,7 @@ Recommendations with high confidence: 18/22
 **Full MVP Audit:**
 ```
 /project-audit
-Scope: BuyAPixel main MVP
+Scope: BuyASpot main MVP
 Focus: All areas - production readiness evaluation
 ```
 

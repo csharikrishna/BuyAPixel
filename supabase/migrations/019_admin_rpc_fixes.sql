@@ -1,6 +1,6 @@
 -- ============================================================================
 -- 019: ADMIN RPC FIXES
--- BuyAPixel - Consolidated fixes for admin RPC functions
+-- BuyASpot - Consolidated fixes for admin RPC functions
 -- Includes: Marketplace analytics, Clear All Content with proper FK order
 -- ============================================================================
 

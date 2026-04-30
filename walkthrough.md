@@ -7,7 +7,7 @@ Implemented Razorpay payment gateway integration for marketplace purchases. Prev
 ## Key Changes
 
 ### 1. Database Migration
-**File:** [018_marketplace_payment.sql](file:///c:/Users/cshar/Desktop/BuyAPixel/supabase/migrations/018_marketplace_payment.sql)
+**File:** [018_marketplace_payment.sql](file:///c:/Users/cshar/Desktop/BuyASpot/supabase/migrations/018_marketplace_payment.sql)
 
 - Added `purchase_from_marketplace_verified` RPC function
 - Implements **5% platform fee** on all marketplace sales
@@ -18,11 +18,11 @@ Implemented Razorpay payment gateway integration for marketplace purchases. Prev
 
 | Function | Purpose |
 |----------|---------|
-| [create-marketplace-order](file:///c:/Users/cshar/Desktop/BuyAPixel/supabase/functions/create-marketplace-order/index.ts) | Creates Razorpay order for marketplace listing |
-| [verify-marketplace-payment](file:///c:/Users/cshar/Desktop/BuyAPixel/supabase/functions/verify-marketplace-payment/index.ts) | Verifies payment, completes purchase, sends emails |
+| [create-marketplace-order](file:///c:/Users/cshar/Desktop/BuyASpot/supabase/functions/create-marketplace-order/index.ts) | Creates Razorpay order for marketplace listing |
+| [verify-marketplace-payment](file:///c:/Users/cshar/Desktop/BuyASpot/supabase/functions/verify-marketplace-payment/index.ts) | Verifies payment, completes purchase, sends emails |
 
 ### 3. Frontend Updates
-**File:** [MarketplacePage.tsx](file:///c:/Users/cshar/Desktop/BuyAPixel/src/pages/MarketplacePage.tsx)
+**File:** [MarketplacePage.tsx](file:///c:/Users/cshar/Desktop/BuyASpot/src/pages/MarketplacePage.tsx)
 
 - Added Razorpay SDK loading
 - Updated purchase flow with payment modal
@@ -74,7 +74,7 @@ sequenceDiagram
 
 ```bash
 # Deploy database migration
-cd c:\Users\cshar\Desktop\BuyAPixel
+cd c:\Users\cshar\Desktop\BuyASpot
 npx supabase db push
 
 # Deploy edge functions

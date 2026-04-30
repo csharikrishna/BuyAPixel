@@ -1,6 +1,6 @@
 -- ============================================================================
 -- 015: RAZORPAY PAYMENT INTEGRATION
--- BuyAPixel - Payment Orders, Verification, and Transaction Tracking
+-- BuyASpot - Payment Orders, Verification, and Transaction Tracking
 -- ============================================================================
 
 -- ============================================================================

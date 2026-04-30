@@ -1,6 +1,6 @@
 -- ============================================================================
 -- 026: UNLOCK BLOCK PIXEL MARKETPLACE LISTINGS
--- BuyAPixel - Allow selling individual pixels from blocks on marketplace
+-- BuyASpot - Allow selling individual pixels from blocks on marketplace
 -- ============================================================================
 
 -- ============================================================================

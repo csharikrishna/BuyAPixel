@@ -136,7 +136,7 @@ const AuthCallback = () => {
       const messages = {
         email_confirmation: {
           title: 'Email Verified! 🎉',
-          description: 'Your account is now active. Welcome to BuyAPixel!'
+          description: 'Your account is now active. Welcome to BuyASpot!'
         },
         oauth: {
           title: 'Success! 🎉',

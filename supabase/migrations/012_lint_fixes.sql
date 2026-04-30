@@ -1,6 +1,6 @@
 -- ============================================================================
 -- 012: COMPREHENSIVE LINT FIXES (FINAL CORRECTED VERSION)
--- BuyAPixel - All Performance and Security Fixes
+-- BuyASpot - All Performance and Security Fixes
 -- ============================================================================
 
 -- ============================================================================

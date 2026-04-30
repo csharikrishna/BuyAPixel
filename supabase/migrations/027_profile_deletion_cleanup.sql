@@ -1,6 +1,6 @@
 -- ============================================================================
 -- 027: PROFILE DELETION CLEANUP JOB
--- BuyAPixel - GDPR-compliant profile deletion with data cleanup
+-- BuyASpot - GDPR-compliant profile deletion with data cleanup
 -- ============================================================================
 
 -- ============================================================================

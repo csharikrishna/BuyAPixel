@@ -521,7 +521,7 @@ const Leaderboard = () => {
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `buyapixel-leaderboard-${activeTab}-${new Date().toISOString().split('T')[0]}.csv`;
+    link.download = `BuyASpot-leaderboard-${activeTab}-${new Date().toISOString().split('T')[0]}.csv`;
     link.click();
     window.URL.revokeObjectURL(url);
 
@@ -550,8 +550,8 @@ const Leaderboard = () => {
     () => ({
       '@context': 'https://schema.org',
       '@type': 'ItemList',
-      name: 'BuyAPixel Leaderboard',
-      description: 'Top pixel owners and spenders on BuyAPixel',
+      name: 'BuyASpot Leaderboard',
+      description: 'Top pixel owners and spenders on BuyASpot',
       numberOfItems: topByPixels.length,
       itemListElement: topByPixels.slice(0, 10).map((user, index) => ({
         '@type': 'ListItem',
@@ -570,7 +570,7 @@ const Leaderboard = () => {
     return (
       <>
         <Helmet>
-          <title>Error - Leaderboard | BuyAPixel</title>
+          <title>Error - Leaderboard | BuyASpot</title>
         </Helmet>
         <div className="min-h-screen flex flex-col bg-background">
           <Header />
@@ -606,15 +606,15 @@ const Leaderboard = () => {
   return (
     <>
       <Helmet>
-        <title>Leaderboard - Top Pixel Owners | BuyAPixel</title>
+        <title>Leaderboard - Top Pixel Owners | BuyASpot</title>
         <meta
           name="description"
-          content="View the BuyAPixel leaderboard featuring top pixel owners, highest spenders, and recent purchases. Compete for the top spot!"
+          content="View the BuyASpot leaderboard featuring top pixel owners, highest spenders, and recent purchases. Compete for the top spot!"
         />
-        <meta property="og:title" content="Leaderboard - BuyAPixel" />
+        <meta property="og:title" content="Leaderboard - BuyASpot" />
         <meta property="og:type" content="website" />
-        <meta property="og:description" content="Top pixel owners and spenders on BuyAPixel" />
-        <link rel="canonical" href="https://buyapixel.in/leaderboard" />
+        <meta property="og:description" content="Top pixel owners and spenders on BuyASpot" />
+        <link rel="canonical" href="https://buyaspot.in/leaderboard" />
         <script type="application/ld+json">{JSON.stringify(structuredData)}</script>
       </Helmet>
 

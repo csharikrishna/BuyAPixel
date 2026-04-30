@@ -185,14 +185,14 @@ const PrivacyPolicy: React.FC = () => {
     () => ({
       '@context': 'https://schema.org',
       '@type': 'WebPage',
-      name: 'Privacy Policy - BuyAPixel',
-      description: 'Privacy Policy for BuyAPixel - How we collect, use, and protect your data',
-      url: 'https://buyapixel.in/privacy',
+      name: 'Privacy Policy - BuyASpot',
+      description: 'Privacy Policy for BuyASpot - How we collect, use, and protect your data',
+      url: 'https://buyaspot.in/privacy',
       dateModified: LAST_UPDATED,
       publisher: {
         '@type': 'Organization',
-        name: 'BuyAPixel',
-        url: 'https://buyapixel.in',
+        name: 'BuyASpot',
+        url: 'https://buyaspot.in',
       },
     }),
     []
@@ -201,15 +201,15 @@ const PrivacyPolicy: React.FC = () => {
   return (
     <>
       <Helmet>
-        <title>Privacy Policy - BuyAPixel.in | Data Protection & Privacy</title>
+        <title>Privacy Policy - buyaspot.in | Data Protection & Privacy</title>
         <meta
           name="description"
-          content="Read BuyAPixel's Privacy Policy to understand how we collect, use, protect, and share your personal information. Last updated December 10, 2025."
+          content="Read BuyASpot's Privacy Policy to understand how we collect, use, protect, and share your personal information. Last updated December 10, 2025."
         />
-        <meta property="og:title" content="Privacy Policy - BuyAPixel.in" />
+        <meta property="og:title" content="Privacy Policy - buyaspot.in" />
         <meta property="og:type" content="website" />
         <meta property="og:description" content="Our commitment to protecting your privacy and data" />
-        <link rel="canonical" href="https://buyapixel.in/privacy" />
+        <link rel="canonical" href="https://buyaspot.in/privacy" />
         <script type="application/ld+json">{JSON.stringify(structuredData)}</script>
       </Helmet>
 
@@ -382,9 +382,9 @@ const PrivacyPolicy: React.FC = () => {
                   1. Introduction
                 </h2>
                 <p className="text-slate-700 dark:text-slate-300 leading-relaxed">
-                  This Privacy Policy explains how BuyAPixel ("we", "us", or "our") collects, uses,
+                  This Privacy Policy explains how BuyASpot ("we", "us", or "our") collects, uses,
                   discloses, and protects your personal information when you access or use our
-                  website and services. By using BuyAPixel, you agree to the collection and use of
+                  website and services. By using BuyASpot, you agree to the collection and use of
                   information in accordance with this Privacy Policy.
                 </p>
               </section>
@@ -605,7 +605,7 @@ const PrivacyPolicy: React.FC = () => {
                   11. Children's Privacy
                 </h2>
                 <p className="text-slate-700 dark:text-slate-300 leading-relaxed mb-3">
-                  BuyAPixel is not directed to children under the age of 13 (or a higher age as
+                  BuyASpot is not directed to children under the age of 13 (or a higher age as
                   required by applicable law), and we do not knowingly collect personal information
                   from children.
                 </p>
@@ -626,7 +626,7 @@ const PrivacyPolicy: React.FC = () => {
                 </p>
                 <p className="text-slate-700 dark:text-slate-300 leading-relaxed">
                   When we make changes, we will revise the "Last Updated" date at the top of this
-                  page. Your continued use of BuyAPixel after any changes takes effect means you
+                  page. Your continued use of BuyASpot after any changes takes effect means you
                   accept the updated policy.
                 </p>
               </section>
@@ -644,24 +644,24 @@ const PrivacyPolicy: React.FC = () => {
                   <CardContent className="pt-6 space-y-3">
                     <div className="flex items-center gap-2">
                       <Shield className="w-4 h-4 text-primary" />
-                      <strong className="text-slate-800 dark:text-slate-100">BuyAPixel</strong>
+                      <strong className="text-slate-800 dark:text-slate-100">BuyASpot</strong>
                     </div>
                     <div className="flex items-center gap-2">
                       <Mail className="w-4 h-4 text-muted-foreground" />
                       <a
-                        href="mailto:privacy@buyapixel.in"
+                        href="mailto:privacy@buyaspot.in"
                         className="text-primary hover:underline"
                       >
-                        privacy@buyapixel.in
+                        privacy@buyaspot.in
                       </a>
                     </div>
                     <div className="flex items-center gap-2">
                       <Mail className="w-4 h-4 text-muted-foreground" />
                       <a
-                        href="mailto:support@buyapixel.in"
+                        href="mailto:support@buyaspot.in"
                         className="text-primary hover:underline"
                       >
-                        support@buyapixel.in
+                        support@buyaspot.in
                       </a>
                     </div>
                   </CardContent>
@@ -674,7 +674,7 @@ const PrivacyPolicy: React.FC = () => {
                   <Check className="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
                   <p className="text-green-800 dark:text-green-100">
                     <strong>
-                      By using BuyAPixel, you acknowledge that you have read, understood, and agree
+                      By using BuyASpot, you acknowledge that you have read, understood, and agree
                       to this Privacy Policy.
                     </strong>
                   </p>

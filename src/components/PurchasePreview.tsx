@@ -407,7 +407,7 @@ export const PurchasePreview = ({
         key: orderData.order.key_id,
         amount: orderData.order.amount,
         currency: orderData.order.currency,
-        name: 'BuyAPixel.in',
+        name: 'buyaspot.in',
         description: `${selectedPixels.length} pixel${selectedPixels.length > 1 ? 's' : ''} - ${pixelName.trim()}`,
         order_id: orderData.order.razorpay_order_id,
         handler: async (response: RazorpayResponse) => {
@@ -547,7 +547,7 @@ export const PurchasePreview = ({
     <div className="space-y-6">
       {/* SEO and Metadata */}
       <Helmet>
-        <title>Checkout - BuyAPixel.in</title>
+        <title>Checkout - buyaspot.in</title>
         <meta name="robots" content="noindex, nofollow" />
       </Helmet>
 

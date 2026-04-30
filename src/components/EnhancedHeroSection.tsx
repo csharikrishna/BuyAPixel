@@ -24,7 +24,7 @@ const EnhancedHeroSection = () => {
         <div className="animate-slide-up delay-200 mb-8">
           <h1 className="text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold mb-6 leading-tight tracking-tight">
             <span className="bg-gradient-primary bg-clip-text text-transparent">
-              Buy A Pixel
+              Buy A Spot
             </span>
           </h1>
 

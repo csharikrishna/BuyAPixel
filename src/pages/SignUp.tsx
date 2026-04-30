@@ -457,7 +457,7 @@ const SignUp = () => {
             duration: 8000,
           });
         } else {
-          toast.success('Welcome to BuyAPixel! 🎉', {
+          toast.success('Welcome to BuyASpot! 🎉', {
             description: 'Your account has been created successfully. Setting up your profile...',
             duration: 5000,
           });
@@ -478,9 +478,9 @@ const SignUp = () => {
     () => ({
       '@context': 'https://schema.org',
       '@type': 'WebPage',
-      name: 'Sign Up - BuyAPixel',
-      description: 'Create your BuyAPixel account and start your pixel journey',
-      url: 'https://buyapixel.in/signup',
+      name: 'Sign Up - BuyASpot',
+      description: 'Create your BuyASpot account and start your pixel journey',
+      url: 'https://buyaspot.in/signup',
     }),
     []
   );
@@ -490,10 +490,10 @@ const SignUp = () => {
     return (
       <>
         <Helmet>
-          <title>Check Your Email - BuyAPixel</title>
+          <title>Check Your Email - BuyASpot</title>
           <meta
             name="description"
-            content="Confirm your email to complete your BuyAPixel registration"
+            content="Confirm your email to complete your BuyASpot registration"
           />
         </Helmet>
 
@@ -519,7 +519,7 @@ const SignUp = () => {
                   <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold">
                     1
                   </span>
-                  <span>Check your inbox for an email from BuyAPixel</span>
+                  <span>Check your inbox for an email from BuyASpot</span>
                 </li>
                 <li className="flex gap-3">
                   <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold">
@@ -559,15 +559,15 @@ const SignUp = () => {
   return (
     <>
       <Helmet>
-        <title>Sign Up - BuyAPixel | Create Your Account</title>
+        <title>Sign Up - BuyASpot | Create Your Account</title>
         <meta
           name="description"
-          content="Join India's first pixel marketplace. Create your BuyAPixel account and start building your digital presence today."
+          content="Join India's first pixel marketplace. Create your BuyASpot account and start building your digital presence today."
         />
-        <meta property="og:title" content="Sign Up - BuyAPixel" />
+        <meta property="og:title" content="Sign Up - BuyASpot" />
         <meta property="og:type" content="website" />
-        <meta property="og:description" content="Create your BuyAPixel account" />
-        <link rel="canonical" href="https://buyapixel.in/signup" />
+        <meta property="og:description" content="Create your BuyASpot account" />
+        <link rel="canonical" href="https://buyaspot.in/signup" />
         <script type="application/ld+json">{JSON.stringify(structuredData)}</script>
       </Helmet>
 

@@ -1,6 +1,6 @@
 -- ============================================================================
 -- 000: DATABASE RESET
--- BuyAPixel - Complete Schema Reset
+-- BuyASpot - Complete Schema Reset
 -- WARNING: This drops ALL existing tables, functions, and data
 -- ============================================================================
 

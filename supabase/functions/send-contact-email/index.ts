@@ -7,8 +7,7 @@ const CONTACT_EMAIL = Deno.env.get('CONTACT_EMAIL') || 'notbot4444@gmail.com'
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 const ALLOWED_ORIGINS = [
-  'https://buyapixel.onrender.com',
-  'https://buyapixel.in',
+  'https://buyaspot.in',
   'http://localhost:5173',
   'http://localhost:8080'
 ]
@@ -276,7 +275,7 @@ serve(async (req: Request) => {
         'Authorization': `Bearer ${RESEND_API_KEY}`,
       },
       body: JSON.stringify({
-        from: 'BuyAPixel Contact <onboarding@resend.dev>',
+        from: 'BuyASpot Contact <onboarding@resend.dev>',
         to: [CONTACT_EMAIL],
         reply_to: email,
         subject: `[Contact Form] ${subject}`,
@@ -399,7 +398,7 @@ serve(async (req: Request) => {
               <div class="container">
                 <div class="header">
                   <h1>📬 New Contact Form Submission</h1>
-                  <p>BuyAPixel.in</p>
+                  <p>buyaspot.in</p>
                 </div>
                 <div class="content">
                   <div class="field">
@@ -441,7 +440,7 @@ serve(async (req: Request) => {
                   </div>
                   
                   <div class="footer">
-                    <p>This email was sent from the BuyAPixel.in contact form</p>
+                    <p>This email was sent from the buyaspot.in contact form</p>
                     <p>🔒 Authenticated and verified submission</p>
                   </div>
                 </div>

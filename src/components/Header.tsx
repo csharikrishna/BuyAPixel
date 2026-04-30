@@ -297,13 +297,13 @@ const Header = () => {
         <Link
           to="/"
           className="flex items-center gap-2.5 shrink-0 group focus:outline-none focus:ring-2 focus:ring-primary/20 rounded-md"
-          aria-label="BuyAPixel home"
+          aria-label="BuyASpot home"
           onMouseEnter={createPrefetchHandler('home', () => {
             // Prefetch home page data if needed
           })}
         >
           <div className="text-xl md:text-2xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent tracking-tight transition-all group-hover:scale-105">
-            BuyAPixel
+            BuyASpot
           </div>
           <Badge variant="secondary" className="hidden sm:flex text-xs font-semibold">
             ₹99+
@@ -517,7 +517,7 @@ const Header = () => {
               <SheetHeader>
                 <SheetTitle className="text-left">
                   <span className="bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
-                    BuyAPixel
+                    BuyASpot
                   </span>
                 </SheetTitle>
                 <SheetDescription className="text-left text-sm text-muted-foreground">

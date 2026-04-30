@@ -1,6 +1,6 @@
 -- ============================================================================
 -- 010: SEED DATA
--- BuyAPixel - Grid Initialization and Default Data
+-- BuyASpot - Grid Initialization and Default Data
 -- ============================================================================
 
 -- ============================================================================
@@ -62,7 +62,7 @@ ON CONFLICT (slug) DO NOTHING;
 -- ============================================================================
 
 INSERT INTO public.announcements (title, message, type, is_active, priority) VALUES
-  ('Welcome to BuyAPixel!', 'Start building your digital real estate today. Each pixel is a piece of history.', 'info', true, 10)
+  ('Welcome to BuyASpot!', 'Start building your digital real estate today. Each pixel is a piece of history.', 'info', true, 10)
 ON CONFLICT DO NOTHING;
 
 -- ============================================================================

@@ -1,4 +1,4 @@
-# BuyAPixel Database - Migration Walkthrough
+# BuyASpot Database - Migration Walkthrough
 
 > **Version**: 3.0.0 (Edge-Distance Pricing Fix)
 > **Last Updated**: 2026-04-10  

@@ -5,8 +5,8 @@ import { Mail, MapPin, Instagram, MessageCircle, Heart } from "lucide-react";
 
 const Footer = () => {
   const socialLinks = [
-    { name: "Instagram", url: "https://instagram.com/buyapixel.in", icon: Instagram },
-    { name: "Discord", url: "https://discord.gg/buyapixel", icon: MessageCircle },
+    { name: "Instagram", url: "https://instagram.com/buyaspot.in", icon: Instagram },
+    { name: "Discord", url: "https://discord.gg/BuyASpot", icon: MessageCircle },
   ];
 
   const footerLinks = [
@@ -30,7 +30,7 @@ const Footer = () => {
     {
       title: "Community",
       links: [
-        { name: "Discord Server", href: "https://discord.gg/buyapixel" },
+        { name: "Discord Server", href: "https://discord.gg/BuyASpot" },
         { name: "Blog", href: "/blog" },
       ]
     }
@@ -48,7 +48,7 @@ const Footer = () => {
             <div className="flex items-center space-x-2 mb-4">
               <Link to="/" className="group">
                 <div className="text-2xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent transition-all group-hover:scale-105">
-                  BuyAPixel.in
+                  buyaspot.in
                 </div>
               </Link>
               <Badge variant="outline" className="text-xs font-semibold border-primary/20">
@@ -65,11 +65,11 @@ const Footer = () => {
                 <h4 className="font-semibold mb-3 text-sm">Contact Information</h4>
                 <div className="space-y-2 text-sm text-muted-foreground">
                   <a
-                    href="mailto:support@buyapixel.in"
+                    href="mailto:support@buyaspot.in"
                     className="flex items-center gap-2 hover:text-foreground transition-colors group"
                   >
                     <Mail className="w-4 h-4 flex-shrink-0 group-hover:text-primary transition-colors" />
-                    support@buyapixel.in
+                    support@buyaspot.in
                   </a>
                   <div className="flex items-center gap-2">
                     <MapPin className="w-4 h-4 flex-shrink-0" />
@@ -144,7 +144,7 @@ const Footer = () => {
         <div className="border-t border-border/50 mt-12 pt-8">
           <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0 text-sm text-muted-foreground">
             <div className="flex flex-col sm:flex-row items-center gap-1 text-center sm:text-left">
-              <span>© {currentYear} BuyAPixel.in. All rights reserved.</span>
+              <span>© {currentYear} buyaspot.in. All rights reserved.</span>
               <span className="hidden sm:inline">•</span>
               <span className="flex items-center gap-1">
                 Made with <Heart className="w-3 h-3 text-red-500 fill-red-500 inline-block" /> in India

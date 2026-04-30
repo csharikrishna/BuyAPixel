@@ -1,6 +1,6 @@
 -- ============================================================================
 -- 030: FIX PRICING ZONES
--- BuyAPixel - Align database pricing with frontend edge-distance algorithm
+-- BuyASpot - Align database pricing with frontend edge-distance algorithm
 -- ============================================================================
 --
 -- PROBLEM: The database `calculate_pixel_price` function still uses center-based

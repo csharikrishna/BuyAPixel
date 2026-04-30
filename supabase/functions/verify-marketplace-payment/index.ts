@@ -8,7 +8,7 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
 
 const corsHeaders = {
-   'Access-Control-Allow-Origin': Deno.env.get('ALLOWED_ORIGIN') || 'https://buyapixel.onrender.com',
+   'Access-Control-Allow-Origin': Deno.env.get('ALLOWED_ORIGIN') || 'https://buyaspot.in',
    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
    'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
@@ -20,7 +20,17 @@ interface VerifyMarketplacePaymentRequest {
    payment_order_id: string
 }
 
-// Verify Razorpay signature using HMAC SHA256
+// Constant-time string comparison to prevent timing attacks
+function timingSafeEqual(actual: string, received: string): boolean {
+   if (actual.length !== received.length) return false
+   let result = 0
+   for (let i = 0; i < actual.length; i++) {
+      result |= actual.charCodeAt(i) ^ received.charCodeAt(i)
+   }
+   return result === 0
+}
+
+// Verify Razorpay signature using HMAC SHA256 with constant-time comparison
 function verifySignature(
    orderId: string,
    paymentId: string,
@@ -31,7 +41,7 @@ function verifySignature(
    const hmac = createHmac('sha256', secret)
    hmac.update(message)
    const generatedSignature = hmac.digest('hex')
-   return generatedSignature === signature
+   return timingSafeEqual(generatedSignature, signature)
 }
 
 // Send confirmation email to buyer
@@ -63,9 +73,9 @@ async function sendBuyerConfirmationEmail(
             'Content-Type': 'application/json',
          },
          body: JSON.stringify({
-            from: 'BuyAPixel <onboarding@resend.dev>',
+            from: 'BuyASpot <onboarding@resend.dev>',
             to: [email],
-            reply_to: 'support@buyapixel.onrender.com',
+            reply_to: 'support@buyaspot.in',
             subject: '🎉 Marketplace Purchase Confirmed!',
             html: `
 <!DOCTYPE html>
@@ -89,7 +99,7 @@ async function sendBuyerConfirmationEmail(
 </head>
 <body>
   <div class="container">
-    <div class="header">BuyAPixel</div>
+    <div class="header">BuyASpot</div>
     <div class="content">
       <h1>Marketplace Purchase Complete 🛒</h1>
       <p>Congratulations! You've acquired a pixel from the marketplace.</p>
@@ -98,10 +108,10 @@ async function sendBuyerConfirmationEmail(
         <div class="row"><span>Transaction ID</span><span style="font-family: monospace; font-size: 12px;">${transactionId.substring(0, 8)}...</span></div>
         <div class="row total"><span>Total Paid</span><span>${formatINR(salePrice)}</span></div>
       </div>
-      <a href="https://buyapixel.onrender.com/profile" class="button">View Your Pixels</a>
+      <a href="https://buyaspot.in/profile" class="button">View Your Pixels</a>
     </div>
     <div class="footer">
-      <p>BuyAPixel — The Modern Million Dollar Homepage</p>
+      <p>BuyASpot — The Modern Million Dollar Homepage</p>
       <p>Reply to this email if you need help.</p>
     </div>
   </div>
@@ -150,9 +160,9 @@ async function sendSellerNotificationEmail(
             'Content-Type': 'application/json',
          },
          body: JSON.stringify({
-            from: 'BuyAPixel <onboarding@resend.dev>',
+            from: 'BuyASpot <onboarding@resend.dev>',
             to: [email],
-            reply_to: 'support@buyapixel.onrender.com',
+            reply_to: 'support@buyaspot.in',
             subject: '💰 Your Pixel Has Been Sold!',
             html: `
 <!DOCTYPE html>
@@ -176,7 +186,7 @@ async function sendSellerNotificationEmail(
 </head>
 <body>
   <div class="container">
-    <div class="header">BuyAPixel</div>
+    <div class="header">BuyASpot</div>
     <div class="content">
       <h1>Your Pixel Sold! 💰</h1>
       <p>Great news! Someone just purchased your pixel from the marketplace.</p>
@@ -186,10 +196,10 @@ async function sendSellerNotificationEmail(
         <div class="row"><span>Platform Fee (5%)</span><span>-${formatINR(platformFee)}</span></div>
         <div class="row total"><span>Your Earnings</span><span>${formatINR(sellerNet)}</span></div>
       </div>
-      <a href="https://buyapixel.onrender.com/marketplace" class="button">View Marketplace</a>
+      <a href="https://buyaspot.in/marketplace" class="button">View Marketplace</a>
     </div>
     <div class="footer">
-      <p>BuyAPixel — The Modern Million Dollar Homepage</p>
+      <p>BuyASpot — The Modern Million Dollar Homepage</p>
       <p>Reply to this email if you need help.</p>
     </div>
   </div>

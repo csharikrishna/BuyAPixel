@@ -48,8 +48,8 @@ export const SharePixelDialog = ({ isOpen, onClose, pixel }: SharePixelDialogPro
       }
       return {
          url: `${window.location.origin}?pixel=${pixel.x},${pixel.y}`,
-         text: `I just bought a pixel at (${pixel.x}, ${pixel.y}) on #BuyAPixel! Own a piece of internet history forever. 🚀`,
-         title: `My Pixel at (${pixel.x}, ${pixel.y}) | BuyAPixel`
+         text: `I just bought a pixel at (${pixel.x}, ${pixel.y}) on #BuyASpot! Own a piece of internet history forever. 🚀`,
+         title: `My Pixel at (${pixel.x}, ${pixel.y}) | BuyASpot`
       };
    }, [pixel]);
 

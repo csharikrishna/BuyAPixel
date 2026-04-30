@@ -1,6 +1,6 @@
 -- ============================================================================
 -- 031: FIX MARKETPLACE PURCHASE RPC
--- BuyAPixel — Reconcile the parameter mismatch between edge function and DB.
+-- BuyASpot — Reconcile the parameter mismatch between edge function and DB.
 --
 -- Problem:
 --   Migration 026 changed `purchase_from_marketplace_verified` to accept

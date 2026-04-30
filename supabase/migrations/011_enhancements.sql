@@ -1,6 +1,6 @@
 -- ============================================================================
 -- 011: ENHANCED FEATURES
--- BuyAPixel - Pixel History, Achievements, Moderation, Analytics
+-- BuyASpot - Pixel History, Achievements, Moderation, Analytics
 -- ============================================================================
 
 -- ============================================================================

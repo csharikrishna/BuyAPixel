@@ -127,7 +127,7 @@ const FAQS: FAQ[] = [
   {
     id: 'payment',
     question: 'Is this a one-time payment?',
-    answer: 'Yes! When you buy pixels on BuyAPixel, you pay once and own them forever. There are no monthly fees or renewal costs.',
+    answer: 'Yes! When you buy pixels on BuyASpot, you pay once and own them forever. There are no monthly fees or renewal costs.',
     category: 'billing',
   },
   {
@@ -145,7 +145,7 @@ const FAQS: FAQ[] = [
   {
     id: 'restrictions',
     question: 'Are there content restrictions?',
-    answer: 'Yes. We want to keep BuyAPixel fun and safe for everyone. Using pixels for hate speech, illegal content, or explicit material will result in a ban and removal of content without refund.',
+    answer: 'Yes. We want to keep BuyASpot fun and safe for everyone. Using pixels for hate speech, illegal content, or explicit material will result in a ban and removal of content without refund.',
     category: 'policy',
   },
   {
@@ -255,15 +255,15 @@ const Help = () => {
   return (
     <>
       <Helmet>
-        <title>Help Center - BuyAPixel.in | FAQs & Support</title>
+        <title>Help Center - buyaspot.in | FAQs & Support</title>
         <meta
           name="description"
-          content="Everything you need to know about buying pixels, managing your space, and joining the BuyAPixel community. Get answers to frequently asked questions."
+          content="Everything you need to know about buying pixels, managing your space, and joining the BuyASpot community. Get answers to frequently asked questions."
         />
-        <meta property="og:title" content="Help Center - BuyAPixel.in" />
+        <meta property="og:title" content="Help Center - buyaspot.in" />
         <meta property="og:type" content="website" />
-        <meta property="og:description" content="FAQs and support for BuyAPixel" />
-        <link rel="canonical" href="https://buyapixel.in/help" />
+        <meta property="og:description" content="FAQs and support for BuyASpot" />
+        <link rel="canonical" href="https://buyaspot.in/help" />
         <script type="application/ld+json">{JSON.stringify(structuredData)}</script>
       </Helmet>
 
@@ -296,7 +296,7 @@ const Help = () => {
             </h1>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
               Everything you need to know about buying pixels, managing your space, and joining the
-              BuyAPixel community.
+              BuyASpot community.
             </p>
 
             {/* Quick Actions */}

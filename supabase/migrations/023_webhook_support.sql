@@ -1,6 +1,6 @@
 -- ============================================================================
 -- 023: WEBHOOK SUPPORT & PAYMENT RECONCILIATION
--- BuyAPixel - Event logging and webhook reconciliation infrastructure
+-- BuyASpot - Event logging and webhook reconciliation infrastructure
 -- ============================================================================
 
 -- ============================================================================

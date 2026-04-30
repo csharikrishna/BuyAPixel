@@ -670,9 +670,9 @@ const SignIn = () => {
     () => ({
       '@context': 'https://schema.org',
       '@type': 'WebPage',
-      name: 'Sign In - BuyAPixel',
-      description: 'Sign in to your BuyAPixel account',
-      url: 'https://buyapixel.in/signin',
+      name: 'Sign In - BuyASpot',
+      description: 'Sign in to your BuyASpot account',
+      url: 'https://buyaspot.in/signin',
     }),
     []
   );
@@ -680,15 +680,15 @@ const SignIn = () => {
   return (
     <>
       <Helmet>
-        <title>Sign In - BuyAPixel | Access Your Pixel Portfolio</title>
+        <title>Sign In - BuyASpot | Access Your Pixel Portfolio</title>
         <meta
           name="description"
-          content="Sign in to BuyAPixel to manage your digital pixels, track your portfolio, and connect with the community. Secure authentication with multiple options."
+          content="Sign in to BuyASpot to manage your digital pixels, track your portfolio, and connect with the community. Secure authentication with multiple options."
         />
-        <meta property="og:title" content="Sign In - BuyAPixel" />
+        <meta property="og:title" content="Sign In - BuyASpot" />
         <meta property="og:type" content="website" />
-        <meta property="og:description" content="Sign in to your BuyAPixel account" />
-        <link rel="canonical" href="https://buyapixel.in/signin" />
+        <meta property="og:description" content="Sign in to your BuyASpot account" />
+        <link rel="canonical" href="https://buyaspot.in/signin" />
         <script type="application/ld+json">{JSON.stringify(structuredData)}</script>
       </Helmet>
 
@@ -723,7 +723,7 @@ const SignIn = () => {
             <h1 className="text-4xl md:text-5xl font-bold mb-6 leading-tight">
               Welcome Back to <br />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-white/80">
-                BuyAPixel
+                BuyASpot
               </span>
             </h1>
 

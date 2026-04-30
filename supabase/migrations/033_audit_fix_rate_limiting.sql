@@ -1,6 +1,6 @@
 -- ============================================================================
 -- 033: AUDIT FIX - Database-Backed Rate Limiting
--- BuyAPixel - Move rate limiting from in-memory to persistent storage
+-- BuyASpot - Move rate limiting from in-memory to persistent storage
 -- ============================================================================
 
 -- ============================================================================

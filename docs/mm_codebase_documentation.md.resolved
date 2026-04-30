@@ -1,12 +1,12 @@
-# BuyAPixel - Complete Codebase Documentation
+# BuyASpot - Complete Codebase Documentation
 
-A comprehensive documentation of every file in the BuyAPixel project, explaining responsibilities, usage, and importance within the system.
+A comprehensive documentation of every file in the BuyASpot project, explaining responsibilities, usage, and importance within the system.
 
 ---
 
 ## Project Overview
 
-**BuyAPixel** is a React 18 + TypeScript web application that enables users to purchase, manage, and trade virtual pixels on a 100x100 grid canvas. Users can buy pixels, upload images, list pixels on a marketplace, and interact with other users through a gamified leaderboard system.
+**BuyASpot** is a React 18 + TypeScript web application that enables users to purchase, manage, and trade virtual pixels on a 100x100 grid canvas. Users can buy pixels, upload images, list pixels on a marketplace, and interact with other users through a gamified leaderboard system.
 
 ### Tech Stack
 | Category | Technology |
@@ -23,7 +23,7 @@ A comprehensive documentation of every file in the BuyAPixel project, explaining
 
 ## Root Configuration Files
 
-### [package.json](file:///c:/Users/cshar/Desktop/BuyAPixel/package.json)
+### [package.json](file:///c:/Users/cshar/Desktop/BuyASpot/package.json)
 **Responsibility:** Defines project dependencies, scripts, and metadata.
 
 | Script | Purpose |
@@ -43,7 +43,7 @@ A comprehensive documentation of every file in the BuyAPixel project, explaining
 
 ---
 
-### [vite.config.ts](file:///c:/Users/cshar/Desktop/BuyAPixel/vite.config.ts)
+### [vite.config.ts](file:///c:/Users/cshar/Desktop/BuyASpot/vite.config.ts)
 **Responsibility:** Vite build configuration with code splitting optimization.
 
 **Key Features:**
@@ -60,7 +60,7 @@ A comprehensive documentation of every file in the BuyAPixel project, explaining
 
 ---
 
-### [tailwind.config.ts](file:///c:/Users/cshar/Desktop/BuyAPixel/tailwind.config.ts)
+### [tailwind.config.ts](file:///c:/Users/cshar/Desktop/BuyASpot/tailwind.config.ts)
 **Responsibility:** Tailwind CSS configuration with custom design system.
 
 **Custom Extensions:**
@@ -73,7 +73,7 @@ A comprehensive documentation of every file in the BuyAPixel project, explaining
 
 ---
 
-### [tsconfig.json](file:///c:/Users/cshar/Desktop/BuyAPixel/tsconfig.json) / [tsconfig.app.json](file:///c:/Users/cshar/Desktop/BuyAPixel/tsconfig.app.json) / [tsconfig.node.json](file:///c:/Users/cshar/Desktop/BuyAPixel/tsconfig.node.json)
+### [tsconfig.json](file:///c:/Users/cshar/Desktop/BuyASpot/tsconfig.json) / [tsconfig.app.json](file:///c:/Users/cshar/Desktop/BuyASpot/tsconfig.app.json) / [tsconfig.node.json](file:///c:/Users/cshar/Desktop/BuyASpot/tsconfig.node.json)
 **Responsibility:** TypeScript compiler configuration.
 - Strict type checking enabled
 - Path aliasing for `@/*` imports
@@ -81,26 +81,26 @@ A comprehensive documentation of every file in the BuyAPixel project, explaining
 
 ---
 
-### [index.html](file:///c:/Users/cshar/Desktop/BuyAPixel/index.html)
+### [index.html](file:///c:/Users/cshar/Desktop/BuyASpot/index.html)
 **Responsibility:** Single HTML entry point for the SPA.
 - Contains root `<div id="root">` for React mounting
 - SEO meta tags and favicon references
 
 ---
 
-### [eslint.config.js](file:///c:/Users/cshar/Desktop/BuyAPixel/eslint.config.js)
+### [eslint.config.js](file:///c:/Users/cshar/Desktop/BuyASpot/eslint.config.js)
 **Responsibility:** ESLint configuration for code quality.
 - React hooks rules
 - React refresh plugin for HMR
 
 ---
 
-### [postcss.config.js](file:///c:/Users/cshar/Desktop/BuyAPixel/postcss.config.js)
+### [postcss.config.js](file:///c:/Users/cshar/Desktop/BuyASpot/postcss.config.js)
 **Responsibility:** PostCSS configuration for Tailwind CSS processing.
 
 ---
 
-### [components.json](file:///c:/Users/cshar/Desktop/BuyAPixel/components.json)
+### [components.json](file:///c:/Users/cshar/Desktop/BuyASpot/components.json)
 **Responsibility:** shadcn/ui component library configuration.
 - Defines component installation paths and styling preferences
 
@@ -110,7 +110,7 @@ A comprehensive documentation of every file in the BuyAPixel project, explaining
 
 ### Entry Points
 
-#### [main.tsx](file:///c:/Users/cshar/Desktop/BuyAPixel/src/main.tsx)
+#### [main.tsx](file:///c:/Users/cshar/Desktop/BuyASpot/src/main.tsx)
 **Responsibility:** Application bootstrap entry point.
 
 ```tsx
@@ -121,18 +121,18 @@ createRoot(document.getElementById("root")!).render(<App />);
 
 ---
 
-#### [App.tsx](file:///c:/Users/cshar/Desktop/BuyAPixel/src/App.tsx)
+#### [App.tsx](file:///c:/Users/cshar/Desktop/BuyASpot/src/App.tsx)
 **Responsibility:** Root application component with providers and routing.
 
 **Provider Hierarchy:**
 1. `QueryClientProvider` - React Query for server state
 2. `HelmetProvider` - SEO meta tag management
 3. `TooltipProvider` - Global tooltip accessibility
-4. [LayoutProvider](file:///c:/Users/cshar/Desktop/BuyAPixel/src/contexts/LayoutContext.tsx#10-19) - Ticker visibility context
+4. [LayoutProvider](file:///c:/Users/cshar/Desktop/BuyASpot/src/contexts/LayoutContext.tsx#10-19) - Ticker visibility context
 5. `BrowserRouter` - Client-side routing
 
 **Lazy Loading Strategy:**
-- **Static imports** (critical path): [BuyPixels](file:///c:/Users/cshar/Desktop/BuyAPixel/src/pages/BuyPixels.tsx#63-730), `SignIn`, `SignUp`, `NotFound`
+- **Static imports** (critical path): [BuyPixels](file:///c:/Users/cshar/Desktop/BuyASpot/src/pages/BuyPixels.tsx#63-730), `SignIn`, `SignUp`, `NotFound`
 - **Lazy imports** (on demand): Admin, Profile, Marketplace, Blog, etc.
 
 **Routes:**
@@ -153,7 +153,7 @@ createRoot(document.getElementById("root")!).render(<App />);
 
 ---
 
-#### [index.css](file:///c:/Users/cshar/Desktop/BuyAPixel/src/index.css)
+#### [index.css](file:///c:/Users/cshar/Desktop/BuyASpot/src/index.css)
 **Responsibility:** Global CSS with CSS variable definitions.
 - Theme color variables (light/dark mode)
 - Base Tailwind directives
@@ -161,19 +161,19 @@ createRoot(document.getElementById("root")!).render(<App />);
 
 ---
 
-#### [App.css](file:///c:/Users/cshar/Desktop/BuyAPixel/src/App.css)
+#### [App.css](file:///c:/Users/cshar/Desktop/BuyASpot/src/App.css)
 **Responsibility:** Application-specific global styles.
 
 ---
 
-#### [vite-env.d.ts](file:///c:/Users/cshar/Desktop/BuyAPixel/src/vite-env.d.ts)
+#### [vite-env.d.ts](file:///c:/Users/cshar/Desktop/BuyASpot/src/vite-env.d.ts)
 **Responsibility:** TypeScript declarations for Vite environment types.
 
 ---
 
 ## Types (`src/types/`)
 
-### [grid.ts](file:///c:/Users/cshar/Desktop/BuyAPixel/src/types/grid.ts)
+### [grid.ts](file:///c:/Users/cshar/Desktop/BuyASpot/src/types/grid.ts)
 **Responsibility:** Core pixel grid type definitions.
 
 | Type | Purpose |
@@ -186,7 +186,7 @@ createRoot(document.getElementById("root")!).render(<App />);
 
 ---
 
-### [profile.ts](file:///c:/Users/cshar/Desktop/BuyAPixel/src/types/profile.ts)
+### [profile.ts](file:///c:/Users/cshar/Desktop/BuyASpot/src/types/profile.ts)
 **Responsibility:** User profile and stats type definitions.
 
 | Type | Purpose |
@@ -198,7 +198,7 @@ createRoot(document.getElementById("root")!).render(<App />);
 
 ---
 
-### [marketplace.ts](file:///c:/Users/cshar/Desktop/BuyAPixel/src/types/marketplace.ts)
+### [marketplace.ts](file:///c:/Users/cshar/Desktop/BuyASpot/src/types/marketplace.ts)
 **Responsibility:** Marketplace trading type definitions.
 
 | Type | Purpose |
@@ -211,7 +211,7 @@ createRoot(document.getElementById("root")!).render(<App />);
 
 ## Hooks (`src/hooks/`)
 
-### [useAuth.ts](file:///c:/Users/cshar/Desktop/BuyAPixel/src/hooks/useAuth.ts)
+### [useAuth.ts](file:///c:/Users/cshar/Desktop/BuyASpot/src/hooks/useAuth.ts)
 **Responsibility:** Authentication state management.
 
 **Returns:**
@@ -225,7 +225,7 @@ createRoot(document.getElementById("root")!).render(<App />);
 
 ---
 
-### [usePixelGridData.ts](file:///c:/Users/cshar/Desktop/BuyAPixel/src/hooks/usePixelGridData.ts)
+### [usePixelGridData.ts](file:///c:/Users/cshar/Desktop/BuyASpot/src/hooks/usePixelGridData.ts)
 **Responsibility:** Fetches and manages all purchased pixels with real-time updates.
 
 **Features:**
@@ -243,7 +243,7 @@ createRoot(document.getElementById("root")!).render(<App />);
 
 ---
 
-### [useGridInteraction.ts](file:///c:/Users/cshar/Desktop/BuyAPixel/src/hooks/useGridInteraction.ts)
+### [useGridInteraction.ts](file:///c:/Users/cshar/Desktop/BuyASpot/src/hooks/useGridInteraction.ts)
 **Responsibility:** Handles grid pan, zoom, and touch interactions.
 
 **Features:**
@@ -259,17 +259,17 @@ createRoot(document.getElementById("root")!).render(<App />);
 
 ---
 
-### [useProfile.ts](file:///c:/Users/cshar/Desktop/BuyAPixel/src/hooks/useProfile.ts)
+### [useProfile.ts](file:///c:/Users/cshar/Desktop/BuyASpot/src/hooks/useProfile.ts)
 **Responsibility:** Fetches and caches user profile data.
 
 ---
 
-### [useIsAdmin.ts](file:///c:/Users/cshar/Desktop/BuyAPixel/src/hooks/useIsAdmin.ts)
+### [useIsAdmin.ts](file:///c:/Users/cshar/Desktop/BuyASpot/src/hooks/useIsAdmin.ts)
 **Responsibility:** Checks if current user has admin privileges.
 
 ---
 
-### [useNetworkStatus.ts](file:///c:/Users/cshar/Desktop/BuyAPixel/src/hooks/useNetworkStatus.ts)
+### [useNetworkStatus.ts](file:///c:/Users/cshar/Desktop/BuyASpot/src/hooks/useNetworkStatus.ts)
 **Responsibility:** Monitors network connectivity and quality.
 
 **Returns:**
@@ -278,24 +278,24 @@ createRoot(document.getElementById("root")!).render(<App />);
 
 ---
 
-### [useQRScanner.ts](file:///c:/Users/cshar/Desktop/BuyAPixel/src/hooks/useQRScanner.ts)
+### [useQRScanner.ts](file:///c:/Users/cshar/Desktop/BuyASpot/src/hooks/useQRScanner.ts)
 **Responsibility:** Camera-based QR code scanning functionality.
 
 ---
 
-### [use-mobile.tsx](file:///c:/Users/cshar/Desktop/BuyAPixel/src/hooks/use-mobile.tsx)
+### [use-mobile.tsx](file:///c:/Users/cshar/Desktop/BuyASpot/src/hooks/use-mobile.tsx)
 **Responsibility:** Detects mobile viewport for responsive layouts.
 
 ---
 
-### [use-toast.ts](file:///c:/Users/cshar/Desktop/BuyAPixel/src/hooks/use-toast.ts)
+### [use-toast.ts](file:///c:/Users/cshar/Desktop/BuyASpot/src/hooks/use-toast.ts)
 **Responsibility:** Toast notification system (shadcn/ui).
 
 ---
 
 ## Utilities (`src/utils/`)
 
-### [SpatialIndex.ts](file:///c:/Users/cshar/Desktop/BuyAPixel/src/utils/SpatialIndex.ts)
+### [SpatialIndex.ts](file:///c:/Users/cshar/Desktop/BuyASpot/src/utils/SpatialIndex.ts)
 **Responsibility:** High-performance spatial data structure for pixel lookups.
 
 **Methods:**
@@ -310,7 +310,7 @@ createRoot(document.getElementById("root")!).render(<App />);
 
 ---
 
-### [gridConstants.ts](file:///c:/Users/cshar/Desktop/BuyAPixel/src/utils/gridConstants.ts)
+### [gridConstants.ts](file:///c:/Users/cshar/Desktop/BuyASpot/src/utils/gridConstants.ts)
 **Responsibility:** Grid configuration constants.
 
 ```ts
@@ -324,7 +324,7 @@ GRID_CONFIG = {
 
 ---
 
-### [imageOptimization.ts](file:///c:/Users/cshar/Desktop/BuyAPixel/src/utils/imageOptimization.ts)
+### [imageOptimization.ts](file:///c:/Users/cshar/Desktop/BuyASpot/src/utils/imageOptimization.ts)
 **Responsibility:** Image URL transformation for CDN optimization.
 
 **Functions:**
@@ -333,29 +333,29 @@ GRID_CONFIG = {
 
 ---
 
-### [qrUtils.ts](file:///c:/Users/cshar/Desktop/BuyAPixel/src/utils/qrUtils.ts)
+### [qrUtils.ts](file:///c:/Users/cshar/Desktop/BuyASpot/src/utils/qrUtils.ts)
 **Responsibility:** QR code generation and parsing utilities.
 
 ---
 
-### [vcardUtils.ts](file:///c:/Users/cshar/Desktop/BuyAPixel/src/utils/vcardUtils.ts)
+### [vcardUtils.ts](file:///c:/Users/cshar/Desktop/BuyASpot/src/utils/vcardUtils.ts)
 **Responsibility:** vCard contact file generation for pixel sharing.
 
 ---
 
-### [dateUtils.ts](file:///c:/Users/cshar/Desktop/BuyAPixel/src/utils/dateUtils.ts)
+### [dateUtils.ts](file:///c:/Users/cshar/Desktop/BuyASpot/src/utils/dateUtils.ts)
 **Responsibility:** Date formatting helpers.
 
 ---
 
-### [stringUtils.ts](file:///c:/Users/cshar/Desktop/BuyAPixel/src/utils/stringUtils.ts)
+### [stringUtils.ts](file:///c:/Users/cshar/Desktop/BuyASpot/src/utils/stringUtils.ts)
 **Responsibility:** String manipulation utilities.
 
 ---
 
 ## Contexts (`src/contexts/`)
 
-### [LayoutContext.tsx](file:///c:/Users/cshar/Desktop/BuyAPixel/src/contexts/LayoutContext.tsx)
+### [LayoutContext.tsx](file:///c:/Users/cshar/Desktop/BuyASpot/src/contexts/LayoutContext.tsx)
 **Responsibility:** Manages layout state across the application.
 
 **State:**
@@ -367,7 +367,7 @@ GRID_CONFIG = {
 
 ## Integrations (`src/integrations/`)
 
-### [supabase/client.ts](file:///c:/Users/cshar/Desktop/BuyAPixel/src/integrations/supabase/client.ts)
+### [supabase/client.ts](file:///c:/Users/cshar/Desktop/BuyASpot/src/integrations/supabase/client.ts)
 **Responsibility:** Supabase client initialization and configuration.
 
 **Features:**
@@ -379,7 +379,7 @@ GRID_CONFIG = {
 
 ---
 
-### [supabase/types.ts](file:///c:/Users/cshar/Desktop/BuyAPixel/src/integrations/supabase/types.ts)
+### [supabase/types.ts](file:///c:/Users/cshar/Desktop/BuyASpot/src/integrations/supabase/types.ts)
 **Responsibility:** Auto-generated TypeScript types from Supabase schema.
 
 **Contains:**
@@ -391,7 +391,7 @@ GRID_CONFIG = {
 
 ## Library (`src/lib/`)
 
-### [utils.ts](file:///c:/Users/cshar/Desktop/BuyAPixel/src/lib/utils.ts)
+### [utils.ts](file:///c:/Users/cshar/Desktop/BuyASpot/src/lib/utils.ts)
 **Responsibility:** Generic utility functions.
 
 **Functions:**
@@ -402,7 +402,7 @@ GRID_CONFIG = {
 
 ## Pages (`src/pages/`)
 
-### [BuyPixels.tsx](file:///c:/Users/cshar/Desktop/BuyAPixel/src/pages/BuyPixels.tsx)
+### [BuyPixels.tsx](file:///c:/Users/cshar/Desktop/BuyASpot/src/pages/BuyPixels.tsx)
 **Responsibility:** Main pixel purchasing page - the core experience.
 
 **Features:**
@@ -422,7 +422,7 @@ GRID_CONFIG = {
 
 ---
 
-### [Canvas.tsx](file:///c:/Users/cshar/Desktop/BuyAPixel/src/pages/Canvas.tsx)
+### [Canvas.tsx](file:///c:/Users/cshar/Desktop/BuyASpot/src/pages/Canvas.tsx)
 **Responsibility:** Read-only view of the pixel canvas.
 
 **Features:**
@@ -432,7 +432,7 @@ GRID_CONFIG = {
 
 ---
 
-### [AdminDashboard.tsx](file:///c:/Users/cshar/Desktop/BuyAPixel/src/pages/AdminDashboard.tsx)
+### [AdminDashboard.tsx](file:///c:/Users/cshar/Desktop/BuyASpot/src/pages/AdminDashboard.tsx)
 **Responsibility:** Comprehensive admin control panel (~2400 lines).
 
 **Tabs:**
@@ -449,7 +449,7 @@ GRID_CONFIG = {
 
 ---
 
-### [Profile.tsx](file:///c:/Users/cshar/Desktop/BuyAPixel/src/pages/Profile.tsx)
+### [Profile.tsx](file:///c:/Users/cshar/Desktop/BuyASpot/src/pages/Profile.tsx)
 **Responsibility:** User profile page.
 
 **Sections:**
@@ -461,7 +461,7 @@ GRID_CONFIG = {
 
 ---
 
-### [MarketplacePage.tsx](file:///c:/Users/cshar/Desktop/BuyAPixel/src/pages/MarketplacePage.tsx)
+### [MarketplacePage.tsx](file:///c:/Users/cshar/Desktop/BuyASpot/src/pages/MarketplacePage.tsx)
 **Responsibility:** Pixel trading marketplace.
 
 **Features:**
@@ -472,7 +472,7 @@ GRID_CONFIG = {
 
 ---
 
-### [Leaderboard.tsx](file:///c:/Users/cshar/Desktop/BuyAPixel/src/pages/Leaderboard.tsx)
+### [Leaderboard.tsx](file:///c:/Users/cshar/Desktop/BuyASpot/src/pages/Leaderboard.tsx)
 **Responsibility:** User rankings and gamification.
 
 **Rankings:**
@@ -483,7 +483,7 @@ GRID_CONFIG = {
 
 ---
 
-### [SignIn.tsx](file:///c:/Users/cshar/Desktop/BuyAPixel/src/pages/SignIn.tsx) / [SignUp.tsx](file:///c:/Users/cshar/Desktop/BuyAPixel/src/pages/SignUp.tsx)
+### [SignIn.tsx](file:///c:/Users/cshar/Desktop/BuyASpot/src/pages/SignIn.tsx) / [SignUp.tsx](file:///c:/Users/cshar/Desktop/BuyASpot/src/pages/SignUp.tsx)
 **Responsibility:** Authentication pages.
 
 **Features:**
@@ -493,17 +493,17 @@ GRID_CONFIG = {
 
 ---
 
-### [ForgotPassword.tsx](file:///c:/Users/cshar/Desktop/BuyAPixel/src/pages/ForgotPassword.tsx) / [ResetPassword.tsx](file:///c:/Users/cshar/Desktop/BuyAPixel/src/pages/ResetPassword.tsx)
+### [ForgotPassword.tsx](file:///c:/Users/cshar/Desktop/BuyASpot/src/pages/ForgotPassword.tsx) / [ResetPassword.tsx](file:///c:/Users/cshar/Desktop/BuyASpot/src/pages/ResetPassword.tsx)
 **Responsibility:** Password recovery flow.
 
 ---
 
-### [AuthCallback.tsx](file:///c:/Users/cshar/Desktop/BuyAPixel/src/pages/AuthCallback.tsx)
+### [AuthCallback.tsx](file:///c:/Users/cshar/Desktop/BuyASpot/src/pages/AuthCallback.tsx)
 **Responsibility:** OAuth callback handler for social logins.
 
 ---
 
-### [Blog.tsx](file:///c:/Users/cshar/Desktop/BuyAPixel/src/pages/Blog.tsx) / [BlogPost.tsx](file:///c:/Users/cshar/Desktop/BuyAPixel/src/pages/BlogPost.tsx) / [BlogAdmin.tsx](file:///c:/Users/cshar/Desktop/BuyAPixel/src/pages/BlogAdmin.tsx)
+### [Blog.tsx](file:///c:/Users/cshar/Desktop/BuyASpot/src/pages/Blog.tsx) / [BlogPost.tsx](file:///c:/Users/cshar/Desktop/BuyASpot/src/pages/BlogPost.tsx) / [BlogAdmin.tsx](file:///c:/Users/cshar/Desktop/BuyASpot/src/pages/BlogAdmin.tsx)
 **Responsibility:** Blog system.
 
 - `Blog.tsx` - Blog listing page
@@ -512,7 +512,7 @@ GRID_CONFIG = {
 
 ---
 
-### [ScanPixel.tsx](file:///c:/Users/cshar/Desktop/BuyAPixel/src/pages/ScanPixel.tsx)
+### [ScanPixel.tsx](file:///c:/Users/cshar/Desktop/BuyASpot/src/pages/ScanPixel.tsx)
 **Responsibility:** QR code scanner for pixel discovery.
 
 **Features:**
@@ -522,28 +522,28 @@ GRID_CONFIG = {
 
 ---
 
-### [Contact.tsx](file:///c:/Users/cshar/Desktop/BuyAPixel/src/pages/Contact.tsx)
+### [Contact.tsx](file:///c:/Users/cshar/Desktop/BuyASpot/src/pages/Contact.tsx)
 **Responsibility:** Contact form page.
 - Sends emails via Supabase Edge Function
 
 ---
 
-### [Help.tsx](file:///c:/Users/cshar/Desktop/BuyAPixel/src/pages/Help.tsx)
+### [Help.tsx](file:///c:/Users/cshar/Desktop/BuyASpot/src/pages/Help.tsx)
 **Responsibility:** FAQ and help documentation.
 
 ---
 
-### [Index.tsx](file:///c:/Users/cshar/Desktop/BuyAPixel/src/pages/Index.tsx)
+### [Index.tsx](file:///c:/Users/cshar/Desktop/BuyASpot/src/pages/Index.tsx)
 **Responsibility:** About page with project information.
 
 ---
 
-### [NotFound.tsx](file:///c:/Users/cshar/Desktop/BuyAPixel/src/pages/NotFound.tsx)
+### [NotFound.tsx](file:///c:/Users/cshar/Desktop/BuyASpot/src/pages/NotFound.tsx)
 **Responsibility:** 404 error page.
 
 ---
 
-### [TermsOfService.tsx](file:///c:/Users/cshar/Desktop/BuyAPixel/src/pages/TermsOfService.tsx) / [PrivacyPolicy.tsx](file:///c:/Users/cshar/Desktop/BuyAPixel/src/pages/PrivacyPolicy.tsx)
+### [TermsOfService.tsx](file:///c:/Users/cshar/Desktop/BuyASpot/src/pages/TermsOfService.tsx) / [PrivacyPolicy.tsx](file:///c:/Users/cshar/Desktop/BuyASpot/src/pages/PrivacyPolicy.tsx)
 **Responsibility:** Legal pages.
 
 ---
@@ -552,7 +552,7 @@ GRID_CONFIG = {
 
 ### Core Grid Components
 
-#### [VirtualizedPixelGrid.tsx](file:///c:/Users/cshar/Desktop/BuyAPixel/src/components/VirtualizedPixelGrid.tsx)
+#### [VirtualizedPixelGrid.tsx](file:///c:/Users/cshar/Desktop/BuyASpot/src/components/VirtualizedPixelGrid.tsx)
 **Responsibility:** The heart of the application - renders the 100x100 pixel grid.
 
 **Features:**
@@ -572,7 +572,7 @@ GRID_CONFIG = {
 
 ---
 
-#### [MiniMap.tsx](file:///c:/Users/cshar/Desktop/BuyAPixel/src/components/MiniMap.tsx)
+#### [MiniMap.tsx](file:///c:/Users/cshar/Desktop/BuyASpot/src/components/MiniMap.tsx)
 **Responsibility:** Navigation mini-map for the pixel grid.
 
 **Features:**
@@ -582,19 +582,19 @@ GRID_CONFIG = {
 
 ---
 
-#### [PixelTooltip.tsx](file:///c:/Users/cshar/Desktop/BuyAPixel/src/components/PixelTooltip.tsx)
+#### [PixelTooltip.tsx](file:///c:/Users/cshar/Desktop/BuyASpot/src/components/PixelTooltip.tsx)
 **Responsibility:** Displays pixel information on hover.
 
 ---
 
 ### Selection & Purchase Components
 
-#### [EnhancedSelectionSummary.tsx](file:///c:/Users/cshar/Desktop/BuyAPixel/src/components/EnhancedSelectionSummary.tsx)
+#### [EnhancedSelectionSummary.tsx](file:///c:/Users/cshar/Desktop/BuyASpot/src/components/EnhancedSelectionSummary.tsx)
 **Responsibility:** Shows current pixel selection with pricing.
 
 ---
 
-#### [PurchasePreview.tsx](file:///c:/Users/cshar/Desktop/BuyAPixel/src/components/PurchasePreview.tsx)
+#### [PurchasePreview.tsx](file:///c:/Users/cshar/Desktop/BuyASpot/src/components/PurchasePreview.tsx)
 **Responsibility:** Purchase confirmation dialog with image upload.
 
 **Features:**
@@ -604,7 +604,7 @@ GRID_CONFIG = {
 
 ---
 
-#### [QuickSelectTools.tsx](file:///c:/Users/cshar/Desktop/BuyAPixel/src/components/QuickSelectTools.tsx)
+#### [QuickSelectTools.tsx](file:///c:/Users/cshar/Desktop/BuyASpot/src/components/QuickSelectTools.tsx)
 **Responsibility:** Selection helper tools.
 
 **Tools:**
@@ -617,7 +617,7 @@ GRID_CONFIG = {
 
 ### Layout Components
 
-#### [Header.tsx](file:///c:/Users/cshar/Desktop/BuyAPixel/src/components/Header.tsx)
+#### [Header.tsx](file:///c:/Users/cshar/Desktop/BuyASpot/src/components/Header.tsx)
 **Responsibility:** Main navigation header.
 
 **Features:**
@@ -627,12 +627,12 @@ GRID_CONFIG = {
 
 ---
 
-#### [Footer.tsx](file:///c:/Users/cshar/Desktop/BuyAPixel/src/components/Footer.tsx)
+#### [Footer.tsx](file:///c:/Users/cshar/Desktop/BuyASpot/src/components/Footer.tsx)
 **Responsibility:** Site footer with links and social media.
 
 ---
 
-#### [LiveTicker.tsx](file:///c:/Users/cshar/Desktop/BuyAPixel/src/components/LiveTicker.tsx)
+#### [LiveTicker.tsx](file:///c:/Users/cshar/Desktop/BuyASpot/src/components/LiveTicker.tsx)
 **Responsibility:** Real-time activity ticker.
 
 **Features:**
@@ -642,24 +642,24 @@ GRID_CONFIG = {
 
 ---
 
-#### [MobileBottomNav.tsx](file:///c:/Users/cshar/Desktop/BuyAPixel/src/components/MobileBottomNav.tsx)
+#### [MobileBottomNav.tsx](file:///c:/Users/cshar/Desktop/BuyASpot/src/components/MobileBottomNav.tsx)
 **Responsibility:** Mobile bottom navigation bar.
 
 ---
 
-#### [MobileCanvasPanel.tsx](file:///c:/Users/cshar/Desktop/BuyAPixel/src/components/MobileCanvasPanel.tsx)
+#### [MobileCanvasPanel.tsx](file:///c:/Users/cshar/Desktop/BuyASpot/src/components/MobileCanvasPanel.tsx)
 **Responsibility:** Mobile-optimized canvas controls.
 
 ---
 
 ### Image Handling
 
-#### [ImageUpload.tsx](file:///c:/Users/cshar/Desktop/BuyAPixel/src/components/ImageUpload.tsx)
+#### [ImageUpload.tsx](file:///c:/Users/cshar/Desktop/BuyASpot/src/components/ImageUpload.tsx)
 **Responsibility:** Image file upload with validation.
 
 ---
 
-#### [ImageCropper.tsx](file:///c:/Users/cshar/Desktop/BuyAPixel/src/components/ImageCropper.tsx)
+#### [ImageCropper.tsx](file:///c:/Users/cshar/Desktop/BuyASpot/src/components/ImageCropper.tsx)
 **Responsibility:** Image cropping interface.
 
 **Features:**
@@ -669,93 +669,93 @@ GRID_CONFIG = {
 
 ---
 
-#### [ContentImageManager.tsx](file:///c:/Users/cshar/Desktop/BuyAPixel/src/components/ContentImageManager.tsx)
+#### [ContentImageManager.tsx](file:///c:/Users/cshar/Desktop/BuyASpot/src/components/ContentImageManager.tsx)
 **Responsibility:** Manages uploaded content images.
 
 ---
 
 ### User Components
 
-#### [ProfileEditModal.tsx](file:///c:/Users/cshar/Desktop/BuyAPixel/src/components/ProfileEditModal.tsx)
+#### [ProfileEditModal.tsx](file:///c:/Users/cshar/Desktop/BuyASpot/src/components/ProfileEditModal.tsx)
 **Responsibility:** Profile editing dialog.
 
 ---
 
-#### [EnhancedStatsPanel.tsx](file:///c:/Users/cshar/Desktop/BuyAPixel/src/components/EnhancedStatsPanel.tsx)
+#### [EnhancedStatsPanel.tsx](file:///c:/Users/cshar/Desktop/BuyASpot/src/components/EnhancedStatsPanel.tsx)
 **Responsibility:** User statistics dashboard.
 
 ---
 
-#### [TrophyCase.tsx](file:///c:/Users/cshar/Desktop/BuyAPixel/src/components/TrophyCase.tsx)
+#### [TrophyCase.tsx](file:///c:/Users/cshar/Desktop/BuyASpot/src/components/TrophyCase.tsx)
 **Responsibility:** Achievement display component.
 
 ---
 
 ### Marketplace Components
 
-#### [Marketplace.tsx](file:///c:/Users/cshar/Desktop/BuyAPixel/src/components/Marketplace.tsx)
+#### [Marketplace.tsx](file:///c:/Users/cshar/Desktop/BuyASpot/src/components/Marketplace.tsx)
 **Responsibility:** Marketplace listing grid.
 
 ---
 
-#### [SharePixelDialog.tsx](file:///c:/Users/cshar/Desktop/BuyAPixel/src/components/SharePixelDialog.tsx)
+#### [SharePixelDialog.tsx](file:///c:/Users/cshar/Desktop/BuyASpot/src/components/SharePixelDialog.tsx)
 **Responsibility:** Share pixel via QR code or link.
 
 ---
 
-#### [EditPixelDialog.tsx](file:///c:/Users/cshar/Desktop/BuyAPixel/src/components/EditPixelDialog.tsx)
+#### [EditPixelDialog.tsx](file:///c:/Users/cshar/Desktop/BuyASpot/src/components/EditPixelDialog.tsx)
 **Responsibility:** Edit owned pixel properties.
 
 ---
 
 ### Utility Components
 
-#### [ErrorBoundary.tsx](file:///c:/Users/cshar/Desktop/BuyAPixel/src/components/ErrorBoundary.tsx)
+#### [ErrorBoundary.tsx](file:///c:/Users/cshar/Desktop/BuyASpot/src/components/ErrorBoundary.tsx)
 **Responsibility:** Catches and displays React errors gracefully.
 
 ---
 
-#### [OfflineBanner.tsx](file:///c:/Users/cshar/Desktop/BuyAPixel/src/components/OfflineBanner.tsx)
+#### [OfflineBanner.tsx](file:///c:/Users/cshar/Desktop/BuyASpot/src/components/OfflineBanner.tsx)
 **Responsibility:** Offline status notification.
 
 ---
 
-#### [OnboardingTutorial.tsx](file:///c:/Users/cshar/Desktop/BuyAPixel/src/components/OnboardingTutorial.tsx)
+#### [OnboardingTutorial.tsx](file:///c:/Users/cshar/Desktop/BuyASpot/src/components/OnboardingTutorial.tsx)
 **Responsibility:** First-time user tutorial.
 
 ---
 
-#### [FloatingActionButton.tsx](file:///c:/Users/cshar/Desktop/BuyAPixel/src/components/FloatingActionButton.tsx)
+#### [FloatingActionButton.tsx](file:///c:/Users/cshar/Desktop/BuyASpot/src/components/FloatingActionButton.tsx)
 **Responsibility:** Mobile floating action button.
 
 ---
 
-#### [EnhancedCanvasControls.tsx](file:///c:/Users/cshar/Desktop/BuyAPixel/src/components/EnhancedCanvasControls.tsx)
+#### [EnhancedCanvasControls.tsx](file:///c:/Users/cshar/Desktop/BuyASpot/src/components/EnhancedCanvasControls.tsx)
 **Responsibility:** Zoom and pan controls for the grid.
 
 ---
 
-#### [EnhancedHeroSection.tsx](file:///c:/Users/cshar/Desktop/BuyAPixel/src/components/EnhancedHeroSection.tsx)
+#### [EnhancedHeroSection.tsx](file:///c:/Users/cshar/Desktop/BuyASpot/src/components/EnhancedHeroSection.tsx)
 **Responsibility:** Homepage hero section.
 
 ---
 
-#### [HowItWorks.tsx](file:///c:/Users/cshar/Desktop/BuyAPixel/src/components/HowItWorks.tsx)
+#### [HowItWorks.tsx](file:///c:/Users/cshar/Desktop/BuyASpot/src/components/HowItWorks.tsx)
 **Responsibility:** Feature explanation section.
 
 ---
 
-#### [StaticPixelPreview.tsx](file:///c:/Users/cshar/Desktop/BuyAPixel/src/components/StaticPixelPreview.tsx)
+#### [StaticPixelPreview.tsx](file:///c:/Users/cshar/Desktop/BuyASpot/src/components/StaticPixelPreview.tsx)
 **Responsibility:** Static pixel grid preview image.
 
 ---
 
-#### [mode-toggle.tsx](file:///c:/Users/cshar/Desktop/BuyAPixel/src/components/mode-toggle.tsx)
+#### [mode-toggle.tsx](file:///c:/Users/cshar/Desktop/BuyASpot/src/components/mode-toggle.tsx)
 **Responsibility:** Dark/light mode toggle.
 
 ---
 
-#### [theme-provider.tsx](file:///c:/Users/cshar/Desktop/BuyAPixel/src/components/theme-provider.tsx)
+#### [theme-provider.tsx](file:///c:/Users/cshar/Desktop/BuyASpot/src/components/theme-provider.tsx)
 **Responsibility:** Theme context provider.
 
 ---
@@ -806,37 +806,37 @@ Dedicated profile-related components for better code organization.
 
 ### Edge Functions (`supabase/functions/`)
 
-#### [create-razorpay-order](file:///c:/Users/cshar/Desktop/BuyAPixel/supabase/functions/create-razorpay-order)
+#### [create-razorpay-order](file:///c:/Users/cshar/Desktop/BuyASpot/supabase/functions/create-razorpay-order)
 **Responsibility:** Creates Razorpay payment orders.
 
 ---
 
-#### [verify-razorpay-payment](file:///c:/Users/cshar/Desktop/BuyAPixel/supabase/functions/verify-razorpay-payment)
+#### [verify-razorpay-payment](file:///c:/Users/cshar/Desktop/BuyASpot/supabase/functions/verify-razorpay-payment)
 **Responsibility:** Verifies Razorpay payment signatures.
 
 ---
 
-#### [create-marketplace-order](file:///c:/Users/cshar/Desktop/BuyAPixel/supabase/functions/create-marketplace-order)
+#### [create-marketplace-order](file:///c:/Users/cshar/Desktop/BuyASpot/supabase/functions/create-marketplace-order)
 **Responsibility:** Creates marketplace pixel purchase orders.
 
 ---
 
-#### [verify-marketplace-payment](file:///c:/Users/cshar/Desktop/BuyAPixel/supabase/functions/verify-marketplace-payment)
+#### [verify-marketplace-payment](file:///c:/Users/cshar/Desktop/BuyASpot/supabase/functions/verify-marketplace-payment)
 **Responsibility:** Verifies and completes marketplace transactions.
 
 ---
 
-#### [send-purchase-confirmation](file:///c:/Users/cshar/Desktop/BuyAPixel/supabase/functions/send-purchase-confirmation)
+#### [send-purchase-confirmation](file:///c:/Users/cshar/Desktop/BuyASpot/supabase/functions/send-purchase-confirmation)
 **Responsibility:** Sends email confirmations after purchases.
 
 ---
 
-#### [send-contact-email](file:///c:/Users/cshar/Desktop/BuyAPixel/supabase/functions/send-contact-email)
+#### [send-contact-email](file:///c:/Users/cshar/Desktop/BuyASpot/supabase/functions/send-contact-email)
 **Responsibility:** Handles contact form submissions.
 
 ---
 
-#### [get_marketplace_stats](file:///c:/Users/cshar/Desktop/BuyAPixel/supabase/functions/get_marketplace_stats)
+#### [get_marketplace_stats](file:///c:/Users/cshar/Desktop/BuyASpot/supabase/functions/get_marketplace_stats)
 **Responsibility:** Returns marketplace analytics.
 
 ---
@@ -959,4 +959,4 @@ graph TB
 
 ---
 
-*Documentation generated for BuyAPixel codebase*
+*Documentation generated for BuyASpot codebase*

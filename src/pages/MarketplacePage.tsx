@@ -353,7 +353,7 @@ const MarketplacePage = () => {
         key: order.key_id,
         amount: order.amount,
         currency: order.currency,
-        name: 'BuyAPixel',
+        name: 'BuyASpot',
         description: `Marketplace: Pixel (${listing.pixel_coords?.x}, ${listing.pixel_coords?.y})`,
         order_id: order.razorpay_order_id,
         handler: async (response: RazorpayResponse) => {

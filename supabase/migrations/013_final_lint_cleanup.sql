@@ -1,6 +1,6 @@
 -- ============================================================================
 -- 013: FINAL LINT CLEANUP
--- BuyAPixel - Resolves ALL remaining Supabase linter warnings
+-- BuyASpot - Resolves ALL remaining Supabase linter warnings
 -- Run this in Supabase SQL Editor after 012_lint_fixes.sql
 -- ============================================================================
 

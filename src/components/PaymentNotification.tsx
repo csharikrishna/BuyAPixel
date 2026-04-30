@@ -96,7 +96,7 @@ export const PaymentNotification: React.FC<PaymentNotificationProps> = ({
                   Congratulations!
                 </div>
                 <p className="text-sm text-amber-800 dark:text-amber-200">
-                  You're now part of the BuyAPixel community. Your pixels will be displayed until the permanent duration expires.
+                  You're now part of the BuyASpot community. Your pixels will be displayed until the permanent duration expires.
                 </p>
               </div>
             </div>

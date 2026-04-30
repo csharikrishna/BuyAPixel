@@ -268,20 +268,20 @@ const Blog = () => {
     () => ({
       '@context': 'https://schema.org',
       '@type': 'Blog',
-      name: 'BuyAPixel Blog',
+      name: 'BuyASpot Blog',
       description: 'Insights on pixel marketing and digital advertising',
-      url: 'https://buyapixel.in/blog',
+      url: 'https://buyaspot.in/blog',
       publisher: {
         '@type': 'Organization',
-        name: 'BuyAPixel',
-        logo: 'https://buyapixel.in/logo.png',
+        name: 'BuyASpot',
+        logo: 'https://buyaspot.in/logo.png',
       },
       blogPost: filteredPosts.slice(0, 10).map((post) => ({
         '@type': 'BlogPosting',
         headline: post.title,
         description: post.excerpt,
         datePublished: post.published_at,
-        url: `https://buyapixel.in/blog/${post.slug}`,
+        url: `https://buyaspot.in/blog/${post.slug}`,
         image: post.featured_image,
       })),
     }),
@@ -291,19 +291,19 @@ const Blog = () => {
   return (
     <>
       <Helmet>
-        <title>Blog - BuyAPixel.in | Insights on Pixel Marketing</title>
+        <title>Blog - buyaspot.in | Insights on Pixel Marketing</title>
         <meta
           name="description"
           content="Read our blog for insights on pixel marketing, digital advertising, and success stories from our community."
         />
-        <meta property="og:title" content="Blog - BuyAPixel.in" />
+        <meta property="og:title" content="Blog - buyaspot.in" />
         <meta property="og:type" content="website" />
         <meta
           property="og:description"
           content="Insights on pixel marketing and digital advertising"
         />
-        <meta property="og:url" content="https://buyapixel.in/blog" />
-        <link rel="canonical" href="https://buyapixel.in/blog" />
+        <meta property="og:url" content="https://buyaspot.in/blog" />
+        <link rel="canonical" href="https://buyaspot.in/blog" />
         <script type="application/ld+json">{JSON.stringify(structuredData)}</script>
       </Helmet>
 

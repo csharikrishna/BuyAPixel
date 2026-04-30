@@ -1,6 +1,6 @@
 -- ============================================================================
 -- 020: LINT FIXES - FOREIGN KEYS
--- BuyAPixel - Performance optimizations
+-- BuyASpot - Performance optimizations
 -- ============================================================================
 
 -- Fix: Unindexed foreign key in marketplace_transactions

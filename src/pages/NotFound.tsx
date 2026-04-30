@@ -30,9 +30,9 @@ const NotFound = () => {
   return (
     <>
       <Helmet>
-        <title>404 - Page Not Found | BuyAPixel.in</title>
+        <title>404 - Page Not Found | buyaspot.in</title>
         <meta name="robots" content="noindex, follow" />
-        <meta name="description" content="The page you're looking for doesn't exist. Navigate back to BuyAPixel.in to find what you need." />
+        <meta name="description" content="The page you're looking for doesn't exist. Navigate back to buyaspot.in to find what you need." />
         <meta name="prerender-status-code" content="404" />
       </Helmet>
 

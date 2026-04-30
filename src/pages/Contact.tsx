@@ -82,9 +82,9 @@ const CONTACT_INFO = [
   {
     icon: Mail,
     title: 'Email',
-    value: 'support@buyapixel.in',
+    value: 'support@buyaspot.in',
     description: 'We respond within 24 hours',
-    href: 'mailto:support@buyapixel.in',
+    href: 'mailto:support@buyaspot.in',
     color: 'primary',
   },
   {
@@ -92,7 +92,7 @@ const CONTACT_INFO = [
     title: 'Phone',
     value: 'Email preferred',
     description: 'Mon-Fri, 9 AM - 6 PM IST',
-    href: 'mailto:support@buyapixel.in',
+    href: 'mailto:support@buyaspot.in',
     color: 'secondary',
   },
   {
@@ -476,13 +476,13 @@ const Contact = () => {
     () => ({
       '@context': 'https://schema.org',
       '@type': 'ContactPage',
-      name: 'Contact BuyAPixel',
-      description: 'Get in touch with BuyAPixel support team',
-      url: 'https://buyapixel.in/contact',
+      name: 'Contact BuyASpot',
+      description: 'Get in touch with BuyASpot support team',
+      url: 'https://buyaspot.in/contact',
       contactPoint: {
         '@type': 'ContactPoint',
         telephone: '',
-        email: 'support@buyapixel.in',
+        email: 'support@buyaspot.in',
         contactType: 'Customer Service',
         areaServed: 'IN',
         availableLanguage: ['English', 'Hindi'],
@@ -494,15 +494,15 @@ const Contact = () => {
   return (
     <>
       <Helmet>
-        <title>Contact Us - BuyAPixel.in | Get Support & Assistance</title>
+        <title>Contact Us - buyaspot.in | Get Support & Assistance</title>
         <meta
           name="description"
-          content="Have questions about BuyAPixel? Need support? Contact our team via email, phone, or our contact form. We respond within 24 hours."
+          content="Have questions about BuyASpot? Need support? Contact our team via email, phone, or our contact form. We respond within 24 hours."
         />
-        <meta property="og:title" content="Contact Us - BuyAPixel.in" />
+        <meta property="og:title" content="Contact Us - buyaspot.in" />
         <meta property="og:type" content="website" />
-        <meta property="og:description" content="Get in touch with BuyAPixel support team" />
-        <link rel="canonical" href="https://buyapixel.in/contact" />
+        <meta property="og:description" content="Get in touch with BuyASpot support team" />
+        <link rel="canonical" href="https://buyaspot.in/contact" />
         <script type="application/ld+json">{JSON.stringify(structuredData)}</script>
       </Helmet>
 
@@ -534,7 +534,7 @@ const Contact = () => {
               Get In Touch
             </h1>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Have questions about BuyAPixel.in? Need support? We'd love to hear from you.
+              Have questions about buyaspot.in? Need support? We'd love to hear from you.
             </p>
             {lastSaved && (
               <p className="text-xs text-muted-foreground mt-2 flex items-center justify-center gap-1">

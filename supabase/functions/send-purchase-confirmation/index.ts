@@ -3,7 +3,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': Deno.env.get('ALLOWED_ORIGIN') || 'https://buyapixel.onrender.com',
+  'Access-Control-Allow-Origin': Deno.env.get('ALLOWED_ORIGIN') || 'https://buyaspot.in',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
@@ -125,7 +125,7 @@ function buildEmailHtml(data: PurchaseEmailData) {
 </head>
 <body>
   <div class="container">
-    <div class="header">BuyAPixel</div>
+    <div class="header">BuyASpot</div>
 
     <div class="content">
       <h1>Payment Successful 🎉</h1>
@@ -162,11 +162,11 @@ function buildEmailHtml(data: PurchaseEmailData) {
         </div>
       </div>
 
-      <a href="https://buyapixel.onrender.com/profile" class="button">View Your Pixels</a>
+      <a href="https://buyaspot.in/profile" class="button">View Your Pixels</a>
     </div>
 
     <div class="footer">
-      <p>BuyAPixel — The Modern Million Dollar Homepage</p>
+      <p>BuyASpot — The Modern Million Dollar Homepage</p>
       <p>Just reply to this email if you need help.</p>
     </div>
   </div>
@@ -221,10 +221,10 @@ serve(async (req: Request) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'BuyAPixel <onboarding@resend.dev>',
+        from: 'BuyASpot <onboarding@resend.dev>',
         to: [body.email],
-        reply_to: 'support@buyapixel.onrender.com',
-        subject: '🎉 Your BuyAPixel Purchase Is Confirmed',
+        reply_to: 'support@buyaspot.in',
+        subject: '🎉 Your BuyASpot Purchase Is Confirmed',
         html: buildEmailHtml(body),
       }),
     })

@@ -9,7 +9,7 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': Deno.env.get('ALLOWED_ORIGIN') || 'https://buyapixel.onrender.com',
+  'Access-Control-Allow-Origin': Deno.env.get('ALLOWED_ORIGIN') || 'https://buyaspot.in',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-razorpay-signature',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
@@ -112,9 +112,9 @@ async function sendReconciliationEmail(
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'BuyAPixel Support <onboarding@resend.dev>',
+        from: 'BuyASpot Support <onboarding@resend.dev>',
         to: [email],
-        reply_to: 'support@buyapixel.onrender.com',
+        reply_to: 'support@buyaspot.in',
         subject: `${statusBadge} Payment Notification - ${paymentId.slice(-8)}`,
         html: `
 <!DOCTYPE html>
@@ -135,7 +135,7 @@ async function sendReconciliationEmail(
 </head>
 <body>
   <div class="container">
-    <div class="header">BuyAPixel</div>
+    <div class="header">BuyASpot</div>
     <div class="content">
       <h1>Payment Notification</h1>
       <div class="receipt">
@@ -147,7 +147,7 @@ async function sendReconciliationEmail(
       ${status === 'failed' ? '<p style="color: #dc2626;">If your payment was deducted but not reflected, please contact support immediately.</p>' : ''}
     </div>
     <div class="footer">
-      <p>BuyAPixel — The Modern Million Dollar Homepage</p>
+      <p>BuyASpot — The Modern Million Dollar Homepage</p>
       <p>Reply to this email if you need help.</p>
     </div>
   </div>

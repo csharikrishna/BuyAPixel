@@ -1,6 +1,6 @@
 -- ============================================================================
 -- 018: MARKETPLACE PAYMENT INTEGRATION
--- BuyAPixel - Razorpay integration for marketplace purchases with platform fee
+-- BuyASpot - Razorpay integration for marketplace purchases with platform fee
 -- ============================================================================
 
 -- ============================================================================

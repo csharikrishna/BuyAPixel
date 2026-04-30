@@ -87,13 +87,13 @@ const LiveTicker: React.FC<LiveTickerProps> = ({ isPurchaseOpen = false }) => {
           setMessages(realMessages);
         } else {
           setMessages([
-            { id: 1, message: 'Welcome to BuyAPixel.in — own your piece of the internet!', emoji: '✨', type: 'buy' },
+            { id: 1, message: 'Welcome to buyaspot.in — own your piece of the internet!', emoji: '✨', type: 'buy' },
             { id: 2, message: 'Pixels starting at just ₹99 — grab yours today', emoji: '🎯', type: 'premium' },
           ]);
         }
       } catch {
         setMessages([
-          { id: 1, message: 'Welcome to BuyAPixel.in — own your piece of the internet!', emoji: '✨', type: 'buy' },
+          { id: 1, message: 'Welcome to buyaspot.in — own your piece of the internet!', emoji: '✨', type: 'buy' },
         ]);
       }
     };

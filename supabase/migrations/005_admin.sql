@@ -1,6 +1,6 @@
 -- ============================================================================
 -- 005: ADMIN SYSTEM
--- BuyAPixel - Admin Functions, User Management, Permissions
+-- BuyASpot - Admin Functions, User Management, Permissions
 -- Super Admin Email: notbot4444@gmail.com
 -- ============================================================================
 

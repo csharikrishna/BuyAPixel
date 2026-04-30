@@ -1,6 +1,6 @@
 -- ============================================================================
 -- 017: ENHANCED PAYMENT VALIDATION
--- BuyAPixel - Additional validation for payment flow reliability
+-- BuyASpot - Additional validation for payment flow reliability
 -- ============================================================================
 
 -- ============================================================================

@@ -325,7 +325,7 @@ const ScanPixel = () => {
           addToHistory({
             type: 'external',
             value: urlObj.pathname + urlObj.search,
-            label: 'BuyAPixel Page',
+            label: 'BuyASpot Page',
           });
           navigate(urlObj.pathname + urlObj.search);
         } else {
@@ -464,8 +464,8 @@ const ScanPixel = () => {
     () => ({
       '@context': 'https://schema.org',
       '@type': 'WebApplication',
-      name: 'BuyAPixel QR Scanner',
-      description: 'Scan QR codes to view pixels and profiles on BuyAPixel',
+      name: 'BuyASpot QR Scanner',
+      description: 'Scan QR codes to view pixels and profiles on BuyASpot',
       applicationCategory: 'UtilitiesApplication',
       operatingSystem: 'Any',
     }),
@@ -475,15 +475,15 @@ const ScanPixel = () => {
   return (
     <>
       <Helmet>
-        <title>QR Scanner - Scan Pixels & Profiles | BuyAPixel</title>
+        <title>QR Scanner - Scan Pixels & Profiles | BuyASpot</title>
         <meta
           name="description"
-          content="Scan QR codes to instantly view pixels on the BuyAPixel board. Share your profile and pixel QR codes with others."
+          content="Scan QR codes to instantly view pixels on the BuyASpot board. Share your profile and pixel QR codes with others."
         />
-        <meta property="og:title" content="QR Scanner - BuyAPixel" />
+        <meta property="og:title" content="QR Scanner - BuyASpot" />
         <meta property="og:type" content="website" />
         <meta property="og:description" content="Scan and share QR codes for pixels and profiles" />
-        <link rel="canonical" href="https://buyapixel.in/scan" />
+        <link rel="canonical" href="https://buyaspot.in/scan" />
         <script type="application/ld+json">{JSON.stringify(structuredData)}</script>
       </Helmet>
 
@@ -577,7 +577,7 @@ const ScanPixel = () => {
               >
                 <div className="text-center space-y-2">
                   <p className="text-muted-foreground text-sm">
-                    Point your camera at a BuyAPixel QR code to instantly visit that pixel on the
+                    Point your camera at a BuyASpot QR code to instantly visit that pixel on the
                     board. [web:81][web:82]
                   </p>
                 </div>
@@ -765,16 +765,16 @@ const ScanPixel = () => {
                     <div className="p-6 bg-white dark:bg-gray-800 rounded-xl shadow-sm border inline-block">
                       <img
                         src={getQrCodeUrl(window.location.origin)}
-                        alt="BuyAPixel App QR Code"
+                        alt="BuyASpot App QR Code"
                         className="w-48 h-48 rounded-lg"
                       />
-                      <p className="mt-4 text-sm font-medium">BuyAPixel</p>
+                      <p className="mt-4 text-sm font-medium">BuyASpot</p>
                       <Button
                         variant="outline"
                         size="sm"
                         className="mt-2 w-full gap-2"
                         onClick={() =>
-                          handleDownloadQr(window.location.origin, 'buyapixel-app.png')
+                          handleDownloadQr(window.location.origin, 'BuyASpot-app.png')
                         }
                       >
                         <Download className="w-3 h-3" /> Save
@@ -899,8 +899,8 @@ const ScanPixel = () => {
                                 );
                               } else {
                                 handleShare(
-                                  'My BuyAPixel Profile',
-                                  'Check out my profile on BuyAPixel!',
+                                  'My BuyASpot Profile',
+                                  'Check out my profile on BuyASpot!',
                                   `${window.location.origin}/profile?id=${user?.id}`
                                 );
                               }
@@ -985,7 +985,7 @@ const ScanPixel = () => {
                                       onClick={() =>
                                         handleShare(
                                           `My Pixel (${pixel.x},${pixel.y})`,
-                                          `Check out my pixel at (${pixel.x},${pixel.y}) on BuyAPixel!`,
+                                          `Check out my pixel at (${pixel.x},${pixel.y}) on BuyASpot!`,
                                           `${window.location.origin}/?pixel=${pixel.x},${pixel.y}`
                                         )
                                       }

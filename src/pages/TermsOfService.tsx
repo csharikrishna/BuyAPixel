@@ -187,14 +187,14 @@ const TermsOfService: React.FC = () => {
     () => ({
       '@context': 'https://schema.org',
       '@type': 'WebPage',
-      name: 'Terms of Service - BuyAPixel',
-      description: 'Terms and conditions for using BuyAPixel pixel advertising platform',
-      url: 'https://buyapixel.in/terms',
+      name: 'Terms of Service - BuyASpot',
+      description: 'Terms and conditions for using BuyASpot pixel advertising platform',
+      url: 'https://buyaspot.in/terms',
       dateModified: LAST_UPDATED,
       publisher: {
         '@type': 'Organization',
-        name: 'BuyAPixel',
-        url: 'https://buyapixel.in',
+        name: 'BuyASpot',
+        url: 'https://buyaspot.in',
       },
     }),
     []
@@ -203,15 +203,15 @@ const TermsOfService: React.FC = () => {
   return (
     <>
       <Helmet>
-        <title>Terms of Service - BuyAPixel.in | Legal Terms & Conditions</title>
+        <title>Terms of Service - buyaspot.in | Legal Terms & Conditions</title>
         <meta
           name="description"
-          content="Read BuyAPixel's Terms of Service. Understand the rules, obligations, and agreements for using our pixel advertising platform. Last updated December 10, 2025."
+          content="Read BuyASpot's Terms of Service. Understand the rules, obligations, and agreements for using our pixel advertising platform. Last updated December 10, 2025."
         />
-        <meta property="og:title" content="Terms of Service - BuyAPixel.in" />
+        <meta property="og:title" content="Terms of Service - buyaspot.in" />
         <meta property="og:type" content="website" />
-        <meta property="og:description" content="Legal terms and conditions for BuyAPixel" />
-        <link rel="canonical" href="https://buyapixel.in/terms" />
+        <meta property="og:description" content="Legal terms and conditions for BuyASpot" />
+        <link rel="canonical" href="https://buyaspot.in/terms" />
         <script type="application/ld+json">{JSON.stringify(structuredData)}</script>
       </Helmet>
 
@@ -261,7 +261,7 @@ const TermsOfService: React.FC = () => {
                   Terms of Service
                 </h1>
                 <p className="text-muted-foreground mt-2">
-                  Legal terms and conditions for using BuyAPixel
+                  Legal terms and conditions for using BuyASpot
                 </p>
               </div>
               <Button variant="outline" onClick={handleBack} className="shrink-0">
@@ -384,8 +384,8 @@ const TermsOfService: React.FC = () => {
                   1. Agreement to Terms
                 </h2>
                 <p className="text-slate-700 dark:text-slate-300 leading-relaxed">
-                  By accessing and using BuyAPixel ("the Website"), you agree to be bound by these
-                  Terms of Service. BuyAPixel is a pixel advertising platform where users can
+                  By accessing and using BuyASpot ("the Website"), you agree to be bound by these
+                  Terms of Service. BuyASpot is a pixel advertising platform where users can
                   purchase pixel blocks to display their advertisements permanently on our homepage.
                   If you do not agree to these terms, please do not use our service.
                 </p>
@@ -397,7 +397,7 @@ const TermsOfService: React.FC = () => {
                   2. Service Description
                 </h2>
                 <p className="text-slate-700 dark:text-slate-300 leading-relaxed mb-3">
-                  BuyAPixel operates as a digital advertising platform offering a pixel grid for
+                  BuyASpot operates as a digital advertising platform offering a pixel grid for
                   purchase. Users can buy pixel blocks (minimum 10×10 pixels) at the rate of ₹99 per
                   pixel to display their logos, images, or advertisements with clickable links to
                   their websites.
@@ -416,7 +416,7 @@ const TermsOfService: React.FC = () => {
                   3. User Obligations and Acceptable Use
                 </h2>
                 <p className="text-slate-700 dark:text-slate-300 leading-relaxed mb-3">
-                  When using BuyAPixel, you agree to:
+                  When using BuyASpot, you agree to:
                 </p>
                 <ul className="list-disc pl-6 text-slate-700 dark:text-slate-300 leading-relaxed space-y-2">
                   <li>Provide accurate and complete information during purchase.</li>
@@ -461,12 +461,12 @@ const TermsOfService: React.FC = () => {
                 </h2>
                 <p className="text-slate-700 dark:text-slate-300 leading-relaxed mb-3">
                   You retain all rights to the content you submit. By uploading your advertisement,
-                  you grant BuyAPixel a non-exclusive, worldwide, royalty-free license to display your
+                  you grant BuyASpot a non-exclusive, worldwide, royalty-free license to display your
                   content on our platform. You represent and warrant that you own or have the
                   necessary rights to all content you submit.
                 </p>
                 <p className="text-slate-700 dark:text-slate-300 leading-relaxed">
-                  The BuyAPixel website design, layout, and branding are protected by copyright and
+                  The BuyASpot website design, layout, and branding are protected by copyright and
                   trademark laws. Unauthorized use is prohibited.
                 </p>
               </section>
@@ -477,7 +477,7 @@ const TermsOfService: React.FC = () => {
                   6. Content Review and Removal
                 </h2>
                 <p className="text-slate-700 dark:text-slate-300 leading-relaxed">
-                  BuyAPixel reserves the right to review all submitted content before publication. We
+                  BuyASpot reserves the right to review all submitted content before publication. We
                   may reject or remove any advertisement that violates these Terms of Service,
                   contains prohibited content, or is deemed inappropriate at our sole discretion. In
                   cases of content removal for policy violations, no refund will be issued.
@@ -490,7 +490,7 @@ const TermsOfService: React.FC = () => {
                   7. Limitation of Liability
                 </h2>
                 <p className="text-slate-700 dark:text-slate-300 leading-relaxed mb-3">
-                  BuyAPixel is provided "as is" without warranties of any kind. We are not liable for
+                  BuyASpot is provided "as is" without warranties of any kind. We are not liable for
                   any damages arising from your use of the Website, including but not limited to
                   direct, indirect, incidental, or consequential damages. This includes loss of
                   profits, data, or business opportunities.
@@ -508,7 +508,7 @@ const TermsOfService: React.FC = () => {
                   8. Privacy and Data Collection
                 </h2>
                 <p className="text-slate-700 dark:text-slate-300 leading-relaxed">
-                  Your use of BuyAPixel is also governed by our{' '}
+                  Your use of BuyASpot is also governed by our{' '}
                   <Link to="/privacy" className="text-primary hover:underline">
                     Privacy Policy
                   </Link>
@@ -524,7 +524,7 @@ const TermsOfService: React.FC = () => {
                   9. Termination and Account Suspension
                 </h2>
                 <p className="text-slate-700 dark:text-slate-300 leading-relaxed">
-                  BuyAPixel reserves the right to suspend or terminate access to our services for any
+                  BuyASpot reserves the right to suspend or terminate access to our services for any
                   user who violates these Terms of Service. We may also terminate or modify our
                   services at any time with reasonable notice. Upon termination, your right to use the
                   Website ceases immediately.
@@ -537,7 +537,7 @@ const TermsOfService: React.FC = () => {
                   10. Dispute Resolution and Governing Law
                 </h2>
                 <p className="text-slate-700 dark:text-slate-300 leading-relaxed mb-3">
-                  Any disputes arising from these Terms of Service or your use of BuyAPixel shall be
+                  Any disputes arising from these Terms of Service or your use of BuyASpot shall be
                   resolved through arbitration in accordance with Indian law. These terms are governed
                   by the laws of India, without regard to conflict of law principles.
                 </p>
@@ -554,7 +554,7 @@ const TermsOfService: React.FC = () => {
                 </h2>
                 <p className="text-slate-700 dark:text-slate-300 leading-relaxed">
                   We reserve the right to modify these Terms of Service at any time. Changes will be
-                  effective immediately upon posting to the Website. Your continued use of BuyAPixel
+                  effective immediately upon posting to the Website. Your continued use of BuyASpot
                   after changes constitutes acceptance of the modified terms. We encourage you to
                   review these terms periodically.
                 </p>
@@ -572,21 +572,21 @@ const TermsOfService: React.FC = () => {
                   <CardContent className="pt-6 space-y-3">
                     <div className="flex items-center gap-2">
                       <Shield className="w-4 h-4 text-primary" />
-                      <strong className="text-slate-800 dark:text-slate-100">BuyAPixel</strong>
+                      <strong className="text-slate-800 dark:text-slate-100">BuyASpot</strong>
                     </div>
                     <div className="flex items-center gap-2">
                       <Mail className="w-4 h-4 text-muted-foreground" />
-                      <a href="mailto:legal@buyapixel.in" className="text-primary hover:underline">
-                        legal@buyapixel.in
+                      <a href="mailto:legal@buyaspot.in" className="text-primary hover:underline">
+                        legal@buyaspot.in
                       </a>
                     </div>
                     <div className="flex items-center gap-2">
                       <Mail className="w-4 h-4 text-muted-foreground" />
                       <a
-                        href="mailto:support@buyapixel.in"
+                        href="mailto:support@buyaspot.in"
                         className="text-primary hover:underline"
                       >
-                        support@buyapixel.in
+                        support@buyaspot.in
                       </a>
                     </div>
                   </CardContent>
@@ -599,7 +599,7 @@ const TermsOfService: React.FC = () => {
                   <Check className="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
                   <p className="text-green-800 dark:text-green-100">
                     <strong>
-                      By using BuyAPixel, you acknowledge that you have read, understood, and agree to
+                      By using BuyASpot, you acknowledge that you have read, understood, and agree to
                       be bound by these Terms of Service.
                     </strong>
                   </p>

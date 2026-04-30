@@ -370,14 +370,14 @@ const BlogPost = () => {
       dateModified: post.published_at,
       author: {
         '@type': 'Person',
-        name: 'BuyAPixel Team',
+        name: 'BuyASpot Team',
       },
       publisher: {
         '@type': 'Organization',
-        name: 'BuyAPixel',
+        name: 'BuyASpot',
         logo: {
           '@type': 'ImageObject',
-          url: 'https://buyapixel.in/logo.png',
+          url: 'https://buyaspot.in/logo.png',
         },
       },
       mainEntityOfPage: {
@@ -453,7 +453,7 @@ const BlogPost = () => {
   return (
     <>
       <Helmet>
-        <title>{post.seo_title || post.title} - BuyAPixel.in</title>
+        <title>{post.seo_title || post.title} - buyaspot.in</title>
         <meta
           name="description"
           content={

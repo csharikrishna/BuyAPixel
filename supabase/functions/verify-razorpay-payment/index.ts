@@ -8,7 +8,7 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
 
 const corsHeaders = {
-   'Access-Control-Allow-Origin': Deno.env.get('ALLOWED_ORIGIN') || 'https://buyapixel.onrender.com',
+   'Access-Control-Allow-Origin': Deno.env.get('ALLOWED_ORIGIN') || 'https://buyaspot.in',
    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
    'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
@@ -100,10 +100,10 @@ async function sendConfirmationEmail(
             'Content-Type': 'application/json',
          },
          body: JSON.stringify({
-            from: 'BuyAPixel <onboarding@resend.dev>',
+            from: 'BuyASpot <onboarding@resend.dev>',
             to: [email],
-            reply_to: 'support@buyapixel.onrender.com',
-            subject: '🎉 Your BuyAPixel Purchase Is Confirmed',
+            reply_to: 'support@buyaspot.in',
+            subject: '🎉 Your BuyASpot Purchase Is Confirmed',
             html: buildEmailHtml(email, pixelCount, totalAmount, pixelName, linkUrl),
          }),
       })
@@ -153,7 +153,7 @@ function buildEmailHtml(
 </head>
 <body>
   <div class="container">
-    <div class="header">BuyAPixel</div>
+    <div class="header">BuyASpot</div>
     <div class="content">
       <h1>Payment Successful 🎉</h1>
       <p>You now officially own a piece of the Million Dollar Canvas. Your pixels are secured forever.</p>
@@ -163,10 +163,10 @@ function buildEmailHtml(
         ${linkUrl ? `<div class="row"><span>Link</span><span><a href="${linkUrl}" style="color:#10b981">${linkUrl}</a></span></div>` : ''}
         <div class="row total"><span>Total Paid</span><span>${formatINR(totalAmount)}</span></div>
       </div>
-      <a href="https://buyapixel.onrender.com/profile" class="button">View Your Pixels</a>
+      <a href="https://buyaspot.in/profile" class="button">View Your Pixels</a>
     </div>
     <div class="footer">
-      <p>BuyAPixel — The Modern Million Dollar Homepage</p>
+      <p>BuyASpot — The Modern Million Dollar Homepage</p>
       <p>Reply to this email if you need help.</p>
     </div>
   </div>

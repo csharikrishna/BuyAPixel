@@ -1,11 +1,11 @@
 export const generateWebsiteSchema = () => ({
    '@context': 'https://schema.org',
    '@type': 'WebSite',
-   name: 'BuyAPixel',
-   url: 'https://buyapixel.in',
+   name: 'BuyASpot',
+   url: 'https://buyaspot.in',
    potentialAction: {
       '@type': 'SearchAction',
-      target: 'https://buyapixel.in/search?q={search_term_string}',
+      target: 'https://buyaspot.in/search?q={search_term_string}',
       'query-input': 'required name=search_term_string',
    },
 });
@@ -13,13 +13,13 @@ export const generateWebsiteSchema = () => ({
 export const generateOrganizationSchema = () => ({
    '@context': 'https://schema.org',
    '@type': 'Organization',
-   name: 'BuyAPixel',
-   url: 'https://buyapixel.in',
-   logo: 'https://buyapixel.in/logo.png', // Replace with actual logo URL
+   name: 'BuyASpot',
+   url: 'https://buyaspot.in',
+   logo: 'https://buyaspot.in/logo.png', // Replace with actual logo URL
    sameAs: [
-      'https://twitter.com/buyapixel', // Replace with actual social links
-      'https://facebook.com/buyapixel',
-      'https://instagram.com/buyapixel',
+      'https://twitter.com/BuyASpot', // Replace with actual social links
+      'https://facebook.com/BuyASpot',
+      'https://instagram.com/BuyASpot',
    ],
 });
 
@@ -54,10 +54,10 @@ export const generateArticleSchema = (article: {
    },
    publisher: {
       '@type': 'Organization',
-      name: 'BuyAPixel',
+      name: 'BuyASpot',
       logo: {
          '@type': 'ImageObject',
-         url: 'https://buyapixel.in/logo.png',
+         url: 'https://buyaspot.in/logo.png',
       },
    },
    datePublished: article.publishedAt,

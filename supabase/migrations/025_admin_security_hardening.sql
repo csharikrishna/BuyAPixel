@@ -1,6 +1,6 @@
 -- ============================================================================
 -- 025: ADMIN SECURITY HARDENING
--- BuyAPixel - Remove hardcoded admin emails, strengthen permission checks
+-- BuyASpot - Remove hardcoded admin emails, strengthen permission checks
 -- ============================================================================
 
 -- ============================================================================

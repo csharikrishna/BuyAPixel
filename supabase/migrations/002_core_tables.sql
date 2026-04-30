@@ -1,6 +1,6 @@
 -- ============================================================================
 -- 002: CORE TABLES
--- BuyAPixel - Profiles, Pixels, and Pixel Blocks
+-- BuyASpot - Profiles, Pixels, and Pixel Blocks
 -- Grid: 100x100 = 10,000 pixels
 -- ============================================================================
 

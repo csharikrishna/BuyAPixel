@@ -14,12 +14,12 @@ const SEO = ({
    title,
    description = 'Own a piece of internet history. Buy pixels, upload your image, and leave your mark forever on the global digital canvas.',
    canonical,
-   image = 'https://buyapixel.in/og-image.jpg', // Default OG image
+   image = 'https://buyaspot.in/og-image.jpg', // Default OG image
    type = 'website',
    structuredData,
    noindex = false,
 }: SEOProps) => {
-   const siteUrl = 'https://buyapixel.in';
+   const siteUrl = 'https://buyaspot.in';
    const fullUrl = canonical || (typeof window !== 'undefined' ? window.location.href : siteUrl);
 
    const jsonLd = Array.isArray(structuredData) ? structuredData : [structuredData];
@@ -27,7 +27,7 @@ const SEO = ({
    return (
       <Helmet>
          {/* Standard Metadata */}
-         <title>{title} | BuyAPixel</title>
+         <title>{title} | BuyASpot</title>
          <meta name="description" content={description} />
          {canonical && <link rel="canonical" href={canonical} />}
          {noindex && <meta name="robots" content="noindex, nofollow" />}
@@ -38,7 +38,7 @@ const SEO = ({
          <meta property="og:title" content={title} />
          <meta property="og:description" content={description} />
          <meta property="og:image" content={image} />
-         <meta property="og:site_name" content="BuyAPixel" />
+         <meta property="og:site_name" content="BuyASpot" />
 
          {/* Twitter */}
          <meta name="twitter:card" content="summary_large_image" />

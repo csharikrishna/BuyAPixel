@@ -1,4 +1,4 @@
-# BuyAPixel Payment Flow Analysis
+# BuyASpot Payment Flow Analysis
 
 ## 1. RAZORPAY PAYMENT VERIFICATION LOGIC
 

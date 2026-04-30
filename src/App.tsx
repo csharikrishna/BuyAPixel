@@ -125,7 +125,7 @@ const AppContent = () => {
 
       {!isOnline && <OfflineBanner />}
 
-      <ErrorBoundary pageName="BuyAPixel">
+      <ErrorBoundary pageName="BuyASpot">
         <Suspense fallback={<PageLoader />}>
           <Routes>
             {/* Admin Page */}

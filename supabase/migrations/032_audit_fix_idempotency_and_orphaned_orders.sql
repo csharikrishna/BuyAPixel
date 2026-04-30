@@ -1,6 +1,6 @@
 -- ============================================================================
 -- 032: AUDIT FIX - Idempotency Log and Orphaned Orders Recovery
--- BuyAPixel - Add tables for C5 (Idempotency) and C3 (Orphaned Orders)
+-- BuyASpot - Add tables for C5 (Idempotency) and C3 (Orphaned Orders)
 -- ============================================================================
 
 -- ============================================================================

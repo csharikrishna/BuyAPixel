@@ -24,7 +24,7 @@ export const generateVCard = (
    const lines = [
       'BEGIN:VCARD',
       'VERSION:3.0',
-      `FN:${profile.full_name || 'BuyAPixel User'}`,
+      `FN:${profile.full_name || 'BuyASpot User'}`,
    ];
 
    if (profile.email) {
@@ -36,7 +36,7 @@ export const generateVCard = (
    }
 
    lines.push(`URL:${origin}/profile?id=${userId}`);
-   lines.push('NOTE:Scanned via BuyAPixel');
+   lines.push('NOTE:Scanned via BuyASpot');
    lines.push('END:VCARD');
 
    return lines.join('\n');

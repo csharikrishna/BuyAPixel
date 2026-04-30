@@ -1,6 +1,6 @@
 -- ============================================================================
 -- 001: EXTENSIONS
--- BuyAPixel - Required PostgreSQL Extensions
+-- BuyASpot - Required PostgreSQL Extensions
 -- ============================================================================
 
 -- Enable UUID generation
