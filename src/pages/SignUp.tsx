@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, useTransition, useMemo } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Helmet } from 'react-helmet-async';
 import { Button } from '@/components/ui/button';
@@ -149,8 +149,7 @@ const SignUp = () => {
   const isMountedRef = useRef(true);
   const formRef = useRef<HTMLFormElement>(null);
 
-  // React 19 hooks [web:107]
-  const [isPending, startTransition] = useTransition();
+
 
   // State
   const [formData, setFormData] = useState<FormData>({
@@ -255,16 +254,14 @@ const SignUp = () => {
           break;
       }
 
-      startTransition(() => {
-        setFieldErrors((prev) => {
-          const newErrors = { ...prev };
-          if (errors[name]) {
-            newErrors[name] = errors[name];
-          } else {
-            delete newErrors[name];
-          }
-          return newErrors;
-        });
+      setFieldErrors((prev) => {
+        const newErrors = { ...prev };
+        if (errors[name]) {
+          newErrors[name] = errors[name];
+        } else {
+          delete newErrors[name];
+        }
+        return newErrors;
       });
     },
     [formData.password]
@@ -654,7 +651,7 @@ const SignUp = () => {
                       required
                       autoComplete="name"
                       autoFocus
-                      disabled={isPending}
+                      disabled={loading}
                       className={cn(
                         'h-11 pr-8',
                         fieldErrors.fullName && touchedFields.fullName && 'border-destructive'
@@ -699,7 +696,7 @@ const SignUp = () => {
                       onBlur={handleBlur}
                       required
                       autoComplete="email"
-                      disabled={isPending}
+                      disabled={loading}
                       className={cn(
                         'h-11 pr-8',
                         fieldErrors.email && touchedFields.email && 'border-destructive'

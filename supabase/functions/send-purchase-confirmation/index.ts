@@ -221,7 +221,7 @@ serve(async (req: Request) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'BuyASpot <noreply@buyaspot.in>',
+        from: 'BuyASpot <support@buyaspot.in>',
         to: [body.email],
         reply_to: 'support@buyaspot.in',
         subject: '🎉 Your BuyASpot Purchase Is Confirmed',

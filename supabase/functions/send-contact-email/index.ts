@@ -275,7 +275,7 @@ serve(async (req: Request) => {
         'Authorization': `Bearer ${RESEND_API_KEY}`,
       },
       body: JSON.stringify({
-        from: 'BuyASpot Contact <noreply@buyaspot.in>',
+        from: 'BuyASpot Contact <support@buyaspot.in>',
         to: [CONTACT_EMAIL],
         reply_to: email,
         subject: `[Contact Form] ${subject}`,

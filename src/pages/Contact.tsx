@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef, useMemo, useTransition } from 'react';
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { z } from 'zod';
@@ -167,8 +167,6 @@ const Contact = () => {
   const lastSubmitTimeRef = useRef<number | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
 
-  // React 19 hooks
-  const [isPending, startTransition] = useTransition();
 
   // State
   const [formData, setFormData] = useState<FormData>({
@@ -267,12 +265,10 @@ const Contact = () => {
     (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
       const { name, value } = e.target;
 
-      startTransition(() => {
-        setFormData((prev) => ({
-          ...prev,
-          [name]: value,
-        }));
-      });
+      setFormData((prev) => ({
+        ...prev,
+        [name]: value,
+      }));
 
       // Clear error for this field
       if (errors[name]) {
@@ -288,12 +284,10 @@ const Contact = () => {
 
   const handleCategoryChange = useCallback(
     (value: string) => {
-      startTransition(() => {
-        setFormData((prev) => ({
-          ...prev,
-          category: value,
-        }));
-      });
+      setFormData((prev) => ({
+        ...prev,
+        category: value,
+      }));
 
       if (errors.category) {
         setErrors((prev) => {
@@ -640,7 +634,7 @@ const Contact = () => {
                               onChange={handleInputChange}
                               onBlur={() => handleBlur('name')}
                               required
-                              disabled={loading || isPending}
+                              disabled={loading}
                               className={cn(
                                 'h-11',
                                 touched.name && errors.name && 'border-destructive'
@@ -682,7 +676,7 @@ const Contact = () => {
                               onChange={handleInputChange}
                               onBlur={() => handleBlur('email')}
                               required
-                              disabled={loading || isPending}
+                              disabled={loading}
                               className={cn(
                                 'h-11',
                                 touched.email && errors.email && 'border-destructive'
