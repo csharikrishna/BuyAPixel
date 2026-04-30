@@ -1,4 +1,4 @@
-import { MapPin, Shield, User, Crown, Target, Sparkles } from "lucide-react";
+import { MapPin, Shield, User, Crown, Target, Sparkles, DollarSign } from "lucide-react";
 
 interface PixelTooltipProps {
   x: number;
