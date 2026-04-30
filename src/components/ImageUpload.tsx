@@ -133,7 +133,7 @@ export const ImageUpload = ({
       setError(null);
       setOriginalFile(file);
 
-      // Validate file using fileUploadUtils
+      // Validate file type and integrity (NOT size — compression handles that)
       const validation = await validateFileUtil(file);
       if (!validation.valid) {
         const errorMsg = validation.error || 'Invalid file';
@@ -145,26 +145,30 @@ export const ImageUpload = ({
       try {
         let processedFile: File | Blob = file;
 
-        // Compress image if enabled and file is under 500KB limit
-        if (compressBeforeUpload && file.type !== 'image/gif' && file.size > MAX_FILE_SIZE_BYTES) {
-          toast.info('Compressing image to meet size requirements...', { duration: 2000 });
-          
+        // Always compress images (except GIFs — can't canvas-compress animated frames)
+        if (compressBeforeUpload && file.type !== 'image/gif') {
+          const needsCompression = file.size > MAX_FILE_SIZE_BYTES;
+
+          if (needsCompression) {
+            const originalMB = (file.size / 1024 / 1024).toFixed(1);
+            toast.info(`Compressing ${originalMB}MB image...`, { duration: 3000 });
+          }
+
           const compressed = await compressImageUtil(file);
 
           if (compressed.size < file.size) {
             processedFile = compressed;
             setCompressedSize(compressed.size);
-            
-            const originalKB = (file.size / 1024).toFixed(2);
-            const compressedKB = (compressed.size / 1024).toFixed(2);
-            const savedKB = ((file.size - compressed.size) / 1024).toFixed(2);
-            
-            toast.success(`Compressed! ${originalKB}KB → ${compressedKB}KB (${savedKB}KB saved)`, { duration: 3000 });
+
+            if (needsCompression) {
+              const originalKB = (file.size / 1024).toFixed(0);
+              const compressedKB = (compressed.size / 1024).toFixed(0);
+              const percent = Math.round((1 - compressed.size / file.size) * 100);
+              toast.success(`Compressed! ${originalKB}KB → ${compressedKB}KB (${percent}% smaller)`, { duration: 3000 });
+            }
           } else {
-            toast.info('Original size is optimal', { duration: 2000 });
+            toast.success(`Image ready! Size: ${formatFileSize(file.size)}`, { duration: 2000 });
           }
-        } else if (compressBeforeUpload && file.type !== 'image/gif') {
-          toast.success(`Image ready! Size: ${formatFileSize(file.size)}`, { duration: 2000 });
         }
 
         if (cropAspectRatio) {
@@ -489,7 +493,7 @@ export const ImageUpload = ({
                 <div className="space-y-2">
                   <p className="font-semibold text-lg">{placeholder}</p>
                   <p className="text-sm text-muted-foreground max-w-xs mx-auto">
-                    Supports PNG, JPG, GIF or WebP (max. {maxSizeMB}MB)
+                    Supports PNG, JPG, GIF or WebP — auto-compressed for you
                   </p>
                   <p className="text-xs text-muted-foreground">
                     Or press <kbd className="px-1.5 py-0.5 bg-muted rounded text-xs">Ctrl+V</kbd>{' '}

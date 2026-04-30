@@ -1,5 +1,4 @@
-import { Badge } from "@/components/ui/badge";
-import { MapPin, DollarSign, Shield, User, Crown, Target, Sparkles } from "lucide-react";
+import { MapPin, Shield, User, Crown, Target, Sparkles } from "lucide-react";
 
 interface PixelTooltipProps {
   x: number;
@@ -56,9 +55,6 @@ export const PixelTooltip = ({ x, y, price, status }: PixelTooltipProps) => {
   };
 
   const statusInfo = getStatusInfo();
-  const tierInfo = getPriceTier();
-  const StatusIcon = statusInfo.icon;
-  const TierIcon = tierInfo.icon;
 
   return (
     <div 

@@ -846,7 +846,7 @@ export const PurchasePreview = ({
               className="w-full"
             />
             <p className="text-xs text-muted-foreground mt-1">
-              Recommended: Square image, minimum 500×500px
+              Any size accepted — auto-compressed. Square images work best.
             </p>
           </div>
         </CardContent>

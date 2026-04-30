@@ -935,27 +935,6 @@ const BuyPixels = () => {
                 <span className="bg-primary/10 text-primary px-3 py-1.5 rounded-full border border-primary/20">₹99+</span>
                 <span className="bg-accent/10 text-accent px-3 py-1.5 rounded-full border border-accent/20">Permanent</span>
               </div>
-
-              {/* Keyboard Shortcuts Hint */}
-              {mode === "buying" && (
-                <div className="mt-5 pt-4 border-t border-border/50 text-left">
-                  <p className="text-xs font-bold text-muted-foreground mb-4 uppercase tracking-wide">⌨️ Shortcuts</p>
-                  <div className="space-y-3 text-sm text-muted-foreground">
-                    <div className="flex justify-between items-center">
-                      <span>Undo</span>
-                      <kbd className="px-3 py-1.5 bg-muted rounded-md text-xs font-mono border border-border/50">Ctrl+Z</kbd>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span>Cancel</span>
-                      <kbd className="px-3 py-1.5 bg-muted rounded-md text-xs font-mono border border-border/50">ESC</kbd>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span>Clear</span>
-                      <kbd className="px-3 py-1.5 bg-muted rounded-md text-xs font-mono border border-border/50">Del</kbd>
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
 
             {/* Zone Pricing Guide (Idle Mode) - Enhanced with Color Borders */}

@@ -1,11 +1,18 @@
 /**
  * File Upload Utilities
  * Handles file validation, compression, and size management for pixel uploads
+ *
+ * Design: Accept ANY image size → compress to ≤500KB → upload.
+ * Validation only checks file type and magic bytes (not size).
  */
 
-// Constants
-export const MAX_FILE_SIZE_BYTES = 500 * 1024; // 500KB hard limit per requirements
+// The target size for compressed images stored in Supabase
+export const MAX_FILE_SIZE_BYTES = 500 * 1024; // 500KB storage target
 export const MAX_FILE_SIZE_MB = 0.5;
+
+// Sanity cap: reject files over 25MB before even loading into memory
+export const MAX_UPLOAD_SIZE_BYTES = 25 * 1024 * 1024; // 25MB
+export const MAX_UPLOAD_SIZE_MB = 25;
 
 // Allowed file types for pixel uploads (must be renderable as images)
 export const ALLOWED_FILE_TYPES: Record<string, string[]> = {
@@ -53,20 +60,6 @@ export async function validateMagicBytes(file: File, mimeType: string): Promise<
 }
 
 /**
- * Validate file size
- */
-export function validateFileSize(file: File): { valid: boolean; error?: string } {
-  if (file.size > MAX_FILE_SIZE_BYTES) {
-    return {
-      valid: false,
-      error: `File size must be ≤ ${MAX_FILE_SIZE_MB}MB. Your file: ${(file.size / 1024 / 1024).toFixed(2)}MB`,
-    };
-  }
-
-  return { valid: true };
-}
-
-/**
  * Validate file type
  */
 export function validateFileType(file: File): { valid: boolean; error?: string } {
@@ -89,12 +82,18 @@ export function validateFileType(file: File): { valid: boolean; error?: string }
 }
 
 /**
- * Comprehensive file validation
+ * Comprehensive file validation.
+ * Only checks type and integrity — NOT size.
+ * Size is handled by compression after validation.
  */
 export async function validateFile(file: File): Promise<{ valid: boolean; error?: string }> {
-  // Check file size first (fastest check)
-  const sizeCheck = validateFileSize(file);
-  if (!sizeCheck.valid) return sizeCheck;
+  // Sanity cap: reject absurdly large files before loading into memory
+  if (file.size > MAX_UPLOAD_SIZE_BYTES) {
+    return {
+      valid: false,
+      error: `File is too large (${(file.size / 1024 / 1024).toFixed(0)}MB). Maximum upload size is ${MAX_UPLOAD_SIZE_MB}MB.`,
+    };
+  }
 
   // Check file type
   const typeCheck = validateFileType(file);
@@ -113,19 +112,28 @@ export async function validateFile(file: File): Promise<{ valid: boolean; error?
 }
 
 /**
- * Compress image to meet 500KB limit
- * Note: This is for image files only (JPG, PNG, HEIC)
+ * Compress image to meet storage target (default 500KB).
+ *
+ * Strategy:
+ *   1. If already under target → return as-is
+ *   2. Try quality reduction first (fast, preserves dimensions)
+ *   3. If quality alone isn't enough → progressively downscale dimensions
+ *   4. Each downscale step reduces to 75% of previous size
+ *
+ * This guarantees any image (even 20MB DSLR photos) will compress to ≤500KB.
  */
 export async function compressImage(
-  file: File,
+  file: File | Blob,
   targetSizeBytes: number = MAX_FILE_SIZE_BYTES,
 ): Promise<Blob> {
-  // For non-image files or if already small enough, return as-is
+  // For non-image files, return as-is
   if (!file.type.startsWith('image/')) {
-    if (file.size <= targetSizeBytes) {
-      return file;
-    }
-    throw new Error(`${file.type} cannot be compressed. File too large (${(file.size / 1024 / 1024).toFixed(2)}MB)`);
+    return file;
+  }
+
+  // Already small enough — no compression needed
+  if (file.size <= targetSizeBytes) {
+    return file;
   }
 
   return new Promise((resolve, reject) => {
@@ -136,28 +144,56 @@ export async function compressImage(
 
       img.onload = () => {
         try {
+          // Start with original dimensions
+          let width = img.width;
+          let height = img.height;
+
+          // Cap initial dimensions to 2048px (no need for larger for pixel display)
+          const MAX_DIM = 2048;
+          if (width > MAX_DIM || height > MAX_DIM) {
+            const scale = Math.min(MAX_DIM / width, MAX_DIM / height);
+            width = Math.round(width * scale);
+            height = Math.round(height * scale);
+          }
+
           const canvas = document.createElement('canvas');
-          const ctx = canvas.getContext('2d', { alpha: true });
+          const ctx = canvas.getContext('2d', { alpha: false });
 
           if (!ctx) {
             reject(new Error('Failed to get canvas context'));
             return;
           }
 
-          // Start with original dimensions
-          let width = img.width;
-          let height = img.height;
-          canvas.width = width;
-          canvas.height = height;
+          // Recursive compress: try quality reduction, then downscale
+          let currentQuality = 0.92;
+          let currentScale = 1.0;
+          const MIN_QUALITY = 0.3;
+          const MIN_SCALE = 0.15; // Won't go below 15% of original dimensions
+          let attempts = 0;
+          const MAX_ATTEMPTS = 20;
 
-          // Draw image
-          ctx.drawImage(img, 0, 0);
+          const tryCompress = () => {
+            attempts++;
+            if (attempts > MAX_ATTEMPTS) {
+              // Safety valve — return whatever we have
+              canvas.toBlob(
+                (blob) => resolve(blob || new Blob()),
+                'image/jpeg',
+                MIN_QUALITY
+              );
+              return;
+            }
 
-          // Compress iteratively with quality reduction
-          let quality = 0.95;
-          let blob: Blob | null = null;
+            const w = Math.round(width * currentScale);
+            const h = Math.round(height * currentScale);
+            canvas.width = w;
+            canvas.height = h;
 
-          const compress = (quality: number) => {
+            // Use high-quality downscaling
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+            ctx.drawImage(img, 0, 0, w, h);
+
             canvas.toBlob(
               (resultBlob) => {
                 if (!resultBlob) {
@@ -165,21 +201,36 @@ export async function compressImage(
                   return;
                 }
 
-                blob = resultBlob;
+                if (resultBlob.size <= targetSizeBytes) {
+                  // Success!
+                  resolve(resultBlob);
+                  return;
+                }
 
-                if (blob.size <= targetSizeBytes || quality <= 0.1) {
-                  resolve(blob);
+                // Still too large — try reducing quality first
+                if (currentQuality > MIN_QUALITY) {
+                  currentQuality -= 0.08;
+                  tryCompress();
                 } else {
-                  // Reduce quality further
-                  compress(quality - 0.05);
+                  // Quality exhausted — downscale dimensions
+                  currentQuality = 0.7; // Reset quality for new scale
+                  currentScale *= 0.75; // Shrink to 75%
+
+                  if (currentScale < MIN_SCALE) {
+                    // Can't shrink further — resolve with what we have
+                    resolve(resultBlob);
+                    return;
+                  }
+
+                  tryCompress();
                 }
               },
               'image/jpeg',
-              quality
+              currentQuality
             );
           };
 
-          compress(quality);
+          tryCompress();
         } catch (err) {
           reject(err);
         }

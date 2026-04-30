@@ -198,7 +198,7 @@ const StaticPixelPreview = () => {
               </div>
               <div className="bg-muted/50 rounded-lg p-3 md:p-4">
                 <div className="text-xl md:text-2xl font-bold text-success">
-                  {isLoading ? "..." : `₹${(pixelsSold * 99 / 100000).toFixed(2)}L`}
+                  {isLoading ? "..." : `₹${(pixelsSold * 199 / 100000).toFixed(2)}L`}
                 </div>
                 <div className="text-xs md:text-sm text-muted-foreground">Total Value</div>
               </div>

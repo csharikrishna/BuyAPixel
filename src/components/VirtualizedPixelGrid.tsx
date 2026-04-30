@@ -117,8 +117,8 @@ export const VirtualizedPixelGrid = forwardRef<
         const fitZoomY = (clientHeight - padding * 2) / gridPixelHeight;
         const fitZoom = Math.min(fitZoomX, fitZoomY);
         const zoomMultiplier = isMobileDevice
-          ? 1.30
-          : GRID_CONFIG.INITIAL_ZOOM_MULTIPLIER || 1;
+          ? GRID_CONFIG.INITIAL_ZOOM_MULTIPLIER_MOBILE || 1.30
+          : GRID_CONFIG.INITIAL_ZOOM_MULTIPLIER_DESKTOP || 2.2;
         const mobileMaxZoom = fitZoom * 1.4;
         const clampedZoom = Math.min(
           Math.max(fitZoom * zoomMultiplier, GRID_CONFIG.MIN_ZOOM),
@@ -540,7 +540,7 @@ export const VirtualizedPixelGrid = forwardRef<
           {/* Grid Canvas */}
           <div
             style={{
-              transform: `translate3d(${viewportOffset.x}px, ${viewportOffset.y}px, 0)`,
+              transform: `translate3d(${Math.round(viewportOffset.x)}px, ${Math.round(viewportOffset.y)}px, 0)`,
               willChange: isDragging ? "transform" : "auto",
               transformOrigin: "0 0",
             }}
