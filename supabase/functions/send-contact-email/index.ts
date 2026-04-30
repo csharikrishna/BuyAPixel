@@ -3,7 +3,7 @@ import * as supabaseJs2 from 'https://esm.sh/@supabase/supabase-js@2'
 
 // Environment variables
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
-const CONTACT_EMAIL = Deno.env.get('CONTACT_EMAIL') || 'notbot4444@gmail.com'
+const CONTACT_EMAIL = Deno.env.get('CONTACT_EMAIL') || 'support@buyaspot.in'
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 const ALLOWED_ORIGINS = [
@@ -275,7 +275,7 @@ serve(async (req: Request) => {
         'Authorization': `Bearer ${RESEND_API_KEY}`,
       },
       body: JSON.stringify({
-        from: 'BuyASpot Contact <onboarding@resend.dev>',
+        from: 'BuyASpot Contact <noreply@buyaspot.in>',
         to: [CONTACT_EMAIL],
         reply_to: email,
         subject: `[Contact Form] ${subject}`,

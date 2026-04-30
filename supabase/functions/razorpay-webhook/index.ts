@@ -112,7 +112,7 @@ async function sendReconciliationEmail(
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'BuyASpot Support <onboarding@resend.dev>',
+        from: 'BuyASpot Support <noreply@buyaspot.in>',
         to: [email],
         reply_to: 'support@buyaspot.in',
         subject: `${statusBadge} Payment Notification - ${paymentId.slice(-8)}`,

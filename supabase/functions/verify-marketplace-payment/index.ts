@@ -73,7 +73,7 @@ async function sendBuyerConfirmationEmail(
             'Content-Type': 'application/json',
          },
          body: JSON.stringify({
-            from: 'BuyASpot <onboarding@resend.dev>',
+            from: 'BuyASpot <noreply@buyaspot.in>',
             to: [email],
             reply_to: 'support@buyaspot.in',
             subject: '🎉 Marketplace Purchase Confirmed!',
@@ -160,7 +160,7 @@ async function sendSellerNotificationEmail(
             'Content-Type': 'application/json',
          },
          body: JSON.stringify({
-            from: 'BuyASpot <onboarding@resend.dev>',
+            from: 'BuyASpot <noreply@buyaspot.in>',
             to: [email],
             reply_to: 'support@buyaspot.in',
             subject: '💰 Your Pixel Has Been Sold!',
