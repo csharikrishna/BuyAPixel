@@ -1,7 +1,7 @@
 -- ============================================================================
 -- 005: ADMIN SYSTEM
 -- BuyASpot - Admin Functions, User Management, Permissions
--- Super Admin Email: notbot4444@gmail.com
+-- Super Admin Email: adsbuyaspot@gmail.com
 -- ============================================================================
 
 -- ============================================================================
@@ -45,7 +45,7 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
 BEGIN
-  RETURN p_email = 'notbot4444@gmail.com';
+  RETURN p_email = 'adsbuyaspot@gmail.com';
 END;
 $$;
 
@@ -60,7 +60,7 @@ AS $$
 BEGIN
   RETURN EXISTS (
     SELECT 1 FROM auth.users
-    WHERE id = auth.uid() AND email = 'notbot4444@gmail.com'
+    WHERE id = auth.uid() AND email = 'adsbuyaspot@gmail.com'
   );
 END;
 $$;
@@ -78,7 +78,7 @@ BEGIN
     SELECT 1 FROM auth.users u
     LEFT JOIN public.profiles p ON p.user_id = u.id
     WHERE u.id = auth.uid() 
-      AND (u.email = 'notbot4444@gmail.com' OR p.is_admin = true)
+      AND (u.email = 'adsbuyaspot@gmail.com' OR p.is_admin = true)
   );
 END;
 $$;

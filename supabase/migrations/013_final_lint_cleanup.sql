@@ -17,7 +17,7 @@ IMMUTABLE
 SECURITY DEFINER
 SET search_path = ''
 AS $$
-  SELECT p_email = 'notbot4444@gmail.com';
+  SELECT p_email = 'adsbuyaspot@gmail.com';
 $$;
 
 -- Drop and recreate generate_slug with explicit search_path

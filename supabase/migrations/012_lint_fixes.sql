@@ -16,7 +16,7 @@ SECURITY DEFINER
 SET search_path = pg_catalog, public
 AS $$
 BEGIN
-  RETURN p_email = 'notbot4444@gmail.com';
+  RETURN p_email = 'adsbuyaspot@gmail.com';
 END;
 $$;
 

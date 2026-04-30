@@ -132,15 +132,15 @@ BEGIN
 
   -- 3.1 User Status
   DELETE FROM public.user_status 
-  WHERE user_id != (SELECT id FROM auth.users WHERE email = 'notbot4444@gmail.com');
+  WHERE user_id != (SELECT id FROM auth.users WHERE email = 'adsbuyaspot@gmail.com');
 
   -- 3.2 Profiles
   DELETE FROM public.profiles 
-  WHERE user_id != (SELECT id FROM auth.users WHERE email = 'notbot4444@gmail.com');
+  WHERE user_id != (SELECT id FROM auth.users WHERE email = 'adsbuyaspot@gmail.com');
 
   -- 3.3 Auth Users
   DELETE FROM auth.users 
-  WHERE email != 'notbot4444@gmail.com';
+  WHERE email != 'adsbuyaspot@gmail.com';
   
   GET DIAGNOSTICS v_users = ROW_COUNT;
 
