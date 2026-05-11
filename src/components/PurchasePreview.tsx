@@ -736,6 +736,7 @@ export const PurchasePreview = ({
         totalPrice={totalCost}
         pixelCount={selectedPixels.length}
         showAnimation={true}
+        imageUrl={imagePreview}
       />
 
       {/* Pixel Information Form with Accessibility [web:145][web:148] */}

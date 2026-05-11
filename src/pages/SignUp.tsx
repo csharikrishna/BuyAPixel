@@ -741,7 +741,7 @@ const SignUp = () => {
                       onChange={handleInputChange}
                       onBlur={handleBlur}
                       autoComplete="tel"
-                      disabled={isPending}
+                      disabled={loading}
                       className={cn(
                         'h-11',
                         fieldErrors.phoneNumber &&
@@ -789,7 +789,7 @@ const SignUp = () => {
                       onBlur={handleBlur}
                       max={new Date().toISOString().split('T')[0]}
                       autoComplete="bday"
-                      disabled={isPending}
+                      disabled={loading}
                       className={cn(
                         'h-11',
                         fieldErrors.dateOfBirth &&
@@ -828,7 +828,7 @@ const SignUp = () => {
                       required
                       minLength={8}
                       autoComplete="new-password"
-                      disabled={isPending}
+                      disabled={loading}
                       className={cn(
                         'h-11 pr-9',
                         fieldErrors.password && touchedFields.password && 'border-destructive'
@@ -965,7 +965,7 @@ const SignUp = () => {
                       required
                       minLength={8}
                       autoComplete="new-password"
-                      disabled={isPending}
+                      disabled={loading}
                       className={cn(
                         'h-11 pr-9',
                         fieldErrors.confirmPassword &&
@@ -1017,7 +1017,6 @@ const SignUp = () => {
                 disabled={
                   loading ||
                   oauthLoading ||
-                  isPending ||
                   Object.keys(fieldErrors).length > 0 ||
                   passwordStrength.score < 4
                 }

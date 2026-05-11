@@ -367,23 +367,23 @@ const Contact = () => {
         subject: validation.data.subject,
       });
 
-      // Store in database
-      const { error: insertError } = await supabase.from('contact_messages').insert({
-        name: validation.data.name,
-        email: validation.data.email,
-        category: validation.data.category,
-        subject: validation.data.subject,
-        message: validation.data.message,
-        status: 'pending',
-        created_at: new Date().toISOString(),
+      // Call the Supabase Edge Function to send email and store in database
+      const response = await supabase.functions.invoke('send-contact-email', {
+        body: {
+          name: validation.data.name,
+          email: validation.data.email,
+          category: validation.data.category,
+          subject: validation.data.subject,
+          message: validation.data.message,
+        },
       });
 
-      if (insertError) {
-        console.error('❌ Database insert error:', insertError);
-        throw insertError;
+      if (response.error) {
+        console.error('❌ Email function error:', response.error);
+        throw response.error;
       }
 
-      console.log('✅ Contact message saved to database');
+      console.log('✅ Contact message sent and saved to database', response.data);
 
       // Update rate limit
       lastSubmitTimeRef.current = Date.now();
@@ -712,7 +712,7 @@ const Contact = () => {
                         <Select
                           value={formData.category}
                           onValueChange={handleCategoryChange}
-                          disabled={loading || isPending}
+                          disabled={loading}
                         >
                           <SelectTrigger
                             id="category"
@@ -763,7 +763,7 @@ const Contact = () => {
                             onChange={handleInputChange}
                             onBlur={() => handleBlur('subject')}
                             required
-                            disabled={loading || isPending}
+                            disabled={loading}
                             className={cn(
                               'h-11',
                               touched.subject && errors.subject && 'border-destructive'
@@ -799,7 +799,7 @@ const Contact = () => {
                         onChange={handleInputChange}
                         onBlur={() => handleBlur('message')}
                         required
-                        disabled={loading || isPending}
+                        disabled={loading}
                         rows={6}
                         className={cn(
                           'resize-none',
@@ -829,7 +829,7 @@ const Contact = () => {
                       <Button
                         type="submit"
                         className="flex-1 h-11"
-                        disabled={loading || isPending}
+                        disabled={loading}
                       >
                         {loading ? (
                           <>
@@ -848,7 +848,7 @@ const Contact = () => {
                           type="button"
                           variant="outline"
                           onClick={clearForm}
-                          disabled={loading || isPending}
+                          disabled={loading}
                         >
                           Clear
                         </Button>

@@ -5,7 +5,7 @@ import {
   useMemo,
   useRef,
 } from "react";
-import { VirtualizedPixelGrid } from "@/components/VirtualizedPixelGrid";
+import { VirtualizedPixelGrid, GridHandle } from "@/components/VirtualizedPixelGrid";
 import { FloatingActionButton } from "@/components/FloatingActionButton";
 import { OnboardingTutorial } from "@/components/OnboardingTutorial";
 import { QuickSelectTools } from "@/components/QuickSelectTools";
@@ -118,6 +118,7 @@ const BuyPixels = () => {
   const isMountedRef = useRef(true);
   const autosaveTimeoutRef = useRef<NodeJS.Timeout>();
   const transitionTimeoutRef = useRef<NodeJS.Timeout>();
+  const gridRef = useRef<GridHandle>(null);
 
   // Network status
   const { isOnline } = useNetworkStatus();
@@ -519,8 +520,8 @@ const BuyPixels = () => {
   }, [selectedPixels, handleExitBuyingMode]);
 
   const handleResetView = useCallback(() => {
-    setZoom(1);
-    toast.info("View reset to 100%");
+    gridRef.current?.resetViewport();
+    toast.info("View reset");
   }, []);
 
   const handlePurchase = useCallback(() => {
@@ -690,6 +691,7 @@ const BuyPixels = () => {
             {/* THE GRID */}
             <div className="flex-1 overflow-hidden h-full w-full relative z-0">
               <VirtualizedPixelGrid
+                ref={gridRef}
                 selectedPixels={selectedPixels}
                 onSelectionChange={handleSelectionChange}
                 isSelecting={isSelecting && mode === "buying"}
@@ -790,7 +792,10 @@ const BuyPixels = () => {
               </button>
 
               <button
-                onClick={() => setZoom(Math.max(0.5, zoom / 1.2))}
+                onClick={() => {
+                  const newZoom = Math.max(0.5, zoom / 1.2);
+                  setZoom(newZoom);
+                }}
                 className="bg-muted hover:bg-muted/80 rounded-md font-bold transition-colors"
                 aria-label="Zoom out"
               >
@@ -800,12 +805,16 @@ const BuyPixels = () => {
               <div
                 className="flex items-center justify-center text-xs font-mono bg-background border rounded-md"
                 aria-label={`Current zoom level: ${Math.round(zoom * 100)}%`}
+                onClick={handleResetView}
               >
                 {Math.round(zoom * 100)}%
               </div>
 
               <button
-                onClick={() => setZoom(Math.min(8, zoom * 1.2))}
+                onClick={() => {
+                  const newZoom = Math.min(8, zoom * 1.2);
+                  setZoom(newZoom);
+                }}
                 className="bg-muted hover:bg-muted/80 rounded-md font-bold transition-colors"
                 aria-label="Zoom in"
               >

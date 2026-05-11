@@ -8,13 +8,15 @@ interface AdTierPreviewProps {
   pixelCount: number;
   perPixelPrice?: number;
   showAnimation?: boolean;
+  imageUrl?: string | null;
 }
 
 export const AdTierPreview: React.FC<AdTierPreviewProps> = ({ 
   totalPrice, 
   pixelCount,
   perPixelPrice,
-  showAnimation = true 
+  showAnimation = true,
+  imageUrl
 }) => {
   // Use per-pixel price if provided, otherwise determine from average
   const effectivePrice = perPixelPrice ?? (pixelCount > 0 ? Math.round(totalPrice / pixelCount) : 99);
@@ -22,10 +24,28 @@ export const AdTierPreview: React.FC<AdTierPreviewProps> = ({
   const tierConfig = AD_TIER_CONFIG[tier];
   const [adCountdown, setAdCountdown] = useState(tierConfig.adDuration);
   const [isPlayingAd, setIsPlayingAd] = useState(false);
+  const [prePlayCountdown, setPrePlayCountdown] = useState(2);
 
   useEffect(() => {
     if (!showAnimation) return;
 
+    // Reset states
+    setPrePlayCountdown(2);
+    setIsPlayingAd(false);
+    setAdCountdown(tierConfig.adDuration);
+
+    // Pre-play countdown (ticks every 1s for 2 seconds)
+    const prePlayInterval = setInterval(() => {
+      setPrePlayCountdown(prev => {
+        if (prev <= 1) {
+          clearInterval(prePlayInterval);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    // Start ad after 2s delay
     const timer = setTimeout(() => {
       setIsPlayingAd(true);
       const interval = setInterval(() => {
@@ -33,6 +53,7 @@ export const AdTierPreview: React.FC<AdTierPreviewProps> = ({
           if (prev <= 1) {
             setIsPlayingAd(false);
             setAdCountdown(tierConfig.adDuration);
+            setPrePlayCountdown(2);
             clearInterval(interval);
             return tierConfig.adDuration;
           }
@@ -43,7 +64,10 @@ export const AdTierPreview: React.FC<AdTierPreviewProps> = ({
       return () => clearInterval(interval);
     }, 2000);
 
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      clearInterval(prePlayInterval);
+    };
   }, [showAnimation, tierConfig.adDuration]);
 
   const iconProps = { className: 'w-5 h-5' };
@@ -110,23 +134,41 @@ export const AdTierPreview: React.FC<AdTierPreviewProps> = ({
               <p className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wide">
                 Ad Preview
               </p>
-              <div className={`relative rounded-lg overflow-hidden bg-gradient-to-br ${colorClass} h-16 flex items-center justify-center transition-all duration-300 ${
-                isPlayingAd ? 'ring-4 ring-offset-2' : 'ring-0'
-              }`}>
-                <div className="text-white text-center">
-                  {isPlayingAd ? (
-                    <div className="flex flex-col items-center gap-2">
-                      <div className="text-3xl font-bold tabular-nums">
-                        {adCountdown}s
+              <div className={`relative rounded-lg overflow-hidden h-32 flex items-center justify-center transition-all duration-300 ${
+                isPlayingAd ? 'ring-4 ring-offset-2 ring-primary' : 'ring-0'
+              } ${imageUrl ? 'bg-black' : `bg-gradient-to-br ${colorClass}`}`}>
+                {imageUrl && isPlayingAd ? (
+                  <div className="relative w-full h-full">
+                    <img 
+                      src={imageUrl} 
+                      alt="Ad Preview" 
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                      <div className="text-white text-center">
+                        <div className="text-3xl font-bold tabular-nums">
+                          {adCountdown}s
+                        </div>
+                        <p className="text-xs opacity-90 font-medium">Ad Running</p>
                       </div>
-                      <p className="text-xs opacity-75 font-medium">Ad Running</p>
                     </div>
-                  ) : (
-                    <p className="text-sm font-medium opacity-75">
-                      Playing in {Math.ceil(2)}s...
-                    </p>
-                  )}
-                </div>
+                  </div>
+                ) : (
+                  <div className="text-white text-center">
+                    {isPlayingAd && !imageUrl ? (
+                      <div className="flex flex-col items-center gap-2">
+                        <div className="text-3xl font-bold tabular-nums">
+                          {adCountdown}s
+                        </div>
+                        <p className="text-xs opacity-75 font-medium">Ad Running</p>
+                      </div>
+                    ) : (
+                      <p className="text-sm font-medium opacity-75">
+                        Playing in {prePlayCountdown}s...
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           )}
