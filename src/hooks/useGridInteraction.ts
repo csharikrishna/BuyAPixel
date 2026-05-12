@@ -243,7 +243,9 @@ export function useGridInteraction({
             touchStartRef.current = { x: midX, y: midY, dist };
             initialZoomRef.current = zoomRef.current;
          } else if (e.touches.length === 1) {
-            e.preventDefault(); // Prevent page scroll while panning canvas
+            // Do not prevent default on touchstart so a pure tap can still emit click
+            // and trigger pixel selection on mobile. We prevent default in touchmove
+            // while actively panning to avoid page scroll.
             setIsDragging(true);
             isDraggingRef.current = true;
             setDragDistance(0);
