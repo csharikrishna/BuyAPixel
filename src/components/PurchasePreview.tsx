@@ -398,7 +398,23 @@ export const PurchasePreview = ({
       );
 
       if (orderError || !orderData?.success) {
-        const errorMsg = orderData?.error || 'Failed to create payment order';
+        // Extract actual error from FunctionsHttpError context
+        let errorMsg = orderData?.error || orderData?.details || 'Failed to create payment order';
+        if (orderError && !orderData?.error) {
+          // Try to get the response body from FunctionsHttpError
+          try {
+            const errorContext = (orderError as any)?.context;
+            if (errorContext?.body) {
+              const parsed = typeof errorContext.body === 'string' 
+                ? JSON.parse(errorContext.body) 
+                : errorContext.body;
+              errorMsg = parsed?.error || parsed?.message || errorMsg;
+            }
+          } catch {
+            errorMsg = orderError.message || errorMsg;
+          }
+        }
+        console.error('Create order failed:', { orderError, orderData, errorMsg });
         throw new Error(errorMsg);
       }
 
@@ -432,7 +448,21 @@ export const PurchasePreview = ({
             );
 
             if (verifyError || !verifyData?.success) {
-              throw new Error(verifyData?.error || 'Payment verification failed');
+              // Extract actual error from FunctionsHttpError context
+              let verifyErrMsg = verifyData?.error || 'Payment verification failed';
+              if (verifyError && !verifyData?.error) {
+                try {
+                  const ctx = (verifyError as any)?.context;
+                  if (ctx?.body) {
+                    const parsed = typeof ctx.body === 'string' ? JSON.parse(ctx.body) : ctx.body;
+                    verifyErrMsg = parsed?.error || parsed?.message || verifyErrMsg;
+                  }
+                } catch {
+                  verifyErrMsg = verifyError.message || verifyErrMsg;
+                }
+              }
+              console.error('Verify failed:', { verifyError, verifyData, verifyErrMsg });
+              throw new Error(verifyErrMsg);
             }
 
             // Success! Call the original onConfirmPurchase
@@ -544,7 +574,7 @@ export const PurchasePreview = ({
   };
 
   const purchaseContent = (
-    <div className="space-y-6">
+    <div className={`space-y-6 ${currentStep === 'payment' || isProcessing ? 'pointer-events-none opacity-60 transition-opacity' : ''}`}>
       {/* SEO and Metadata */}
       <Helmet>
         <title>Checkout - buyaspot.in</title>
@@ -842,12 +872,15 @@ export const PurchasePreview = ({
               currentImage={imagePreview || ''}
               folder="user-pixels"
               bucket="pixel-images"
-              cropAspectRatio={1}
+              cropAspectRatio={selectionInfo ? selectionInfo.dimensions.width / selectionInfo.dimensions.height : 1}
               placeholder="Upload Pixel Image"
               className="w-full"
             />
             <p className="text-xs text-muted-foreground mt-1">
-              Any size accepted — auto-compressed. Square images work best.
+              {selectedPixels.length > 1
+                ? `Upload ONE image — it will be displayed across all ${selectedPixels.length} pixels as a single merged ${selectionInfo?.dimensions.width}×${selectionInfo?.dimensions.height} block.`
+                : 'Any size accepted — auto-compressed. Square images work best.'
+              }
             </p>
           </div>
         </CardContent>
@@ -934,7 +967,14 @@ export const PurchasePreview = ({
   if (isMobile) {
     return (
       <Drawer open={isOpen} onOpenChange={onClose}>
-        <DrawerContent className="max-h-[95vh] flex flex-col">
+        <DrawerContent 
+          className="max-h-[95vh] flex flex-col"
+          onInteractOutside={(e) => {
+            if (isProcessing || document.querySelector('.razorpay-container')) {
+              e.preventDefault();
+            }
+          }}
+        >
           <DrawerHeader className="border-b pb-3 px-4 flex-shrink-0">
             <DrawerTitle className="flex items-center gap-2 text-lg">
               <ShoppingCart className="w-6 h-6 text-primary" aria-hidden="true" />
@@ -957,7 +997,7 @@ export const PurchasePreview = ({
           </div>
 
           {/* Sticky Action Buttons for Mobile [web:140] */}
-          <div className="sticky bottom-0 bg-background border-t p-4 flex-shrink-0 safe-area-bottom">
+          <div className={`sticky bottom-0 bg-background border-t p-4 flex-shrink-0 safe-area-bottom ${currentStep === 'payment' || isProcessing ? 'pointer-events-none' : ''}`}>
             {actionButtons}
           </div>
         </DrawerContent>
@@ -967,7 +1007,22 @@ export const PurchasePreview = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh]" role="dialog" aria-labelledby="checkout-title">
+      <DialogContent 
+        className="max-w-2xl max-h-[90vh]" 
+        role="dialog" 
+        aria-labelledby="checkout-title"
+        onInteractOutside={(e) => {
+          if (isProcessing || document.querySelector('.razorpay-container')) {
+            e.preventDefault();
+          }
+        }}
+        onOpenAutoFocus={(e) => {
+          // Prevent focus stealing when Razorpay is open
+          if (document.querySelector('.razorpay-container')) {
+            e.preventDefault();
+          }
+        }}
+      >
         <DialogHeader>
           <DialogTitle id="checkout-title" className="flex items-center gap-2">
             <ShoppingCart className="w-5 h-5 text-primary" aria-hidden="true" />
@@ -981,7 +1036,7 @@ export const PurchasePreview = ({
           {purchaseContent}
 
           {/* Action Buttons for Desktop */}
-          <div className="pt-6 border-t mt-6">
+          <div className={`pt-6 border-t mt-6 ${currentStep === 'payment' || isProcessing ? 'pointer-events-none' : ''}`}>
             {actionButtons}
           </div>
         </ScrollArea>

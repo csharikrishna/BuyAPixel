@@ -202,6 +202,13 @@ All colors MUST be HSL for consistency and theming.
   ::-webkit-scrollbar-thumb:hover {
     @apply bg-muted-foreground/50;
   }
+
+  /* Fix Razorpay modal inside Radix UI Dialog */
+  /* Radix UI sets pointer-events: none on body, which Razorpay inherits */
+  .razorpay-container {
+    pointer-events: auto !important;
+    z-index: 2147483647 !important;
+  }
 }
 
 @layer components {

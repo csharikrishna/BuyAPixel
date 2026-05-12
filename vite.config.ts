@@ -2,9 +2,20 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 
+// Custom plugin to strip modulepreload links in dev (prevents console warnings)
+function stripModulePreload(): import("vite").Plugin {
+   return {
+      name: 'strip-modulepreload',
+      transformIndexHtml(html) {
+         return html.replace(/<link[^>]*rel="modulepreload"[^>]*>/gi, '');
+      },
+   };
+}
+
 export default defineConfig(({ mode }) => ({
    plugins: [
       react(),
+      stripModulePreload(),
    ].filter(Boolean),
 
    server: {

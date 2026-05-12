@@ -128,8 +128,11 @@ serve(async (req: Request) => {
     )
 
     if (userError || !user) {
+      console.error('Auth error:', userError)
       throw new Error('Invalid or expired token')
     }
+
+    console.log(`✅ Authenticated user: ${user.id}`)
 
     // ✅ Rate limiting check (optional - requires database RPC function)
     // Skipping for now to avoid errors if RPC function doesn't exist
@@ -217,8 +220,12 @@ serve(async (req: Request) => {
 
     if (!razorpayResponse.ok) {
       const errorData = await razorpayResponse.json()
-      console.error('Razorpay error:', errorData)
-      throw new Error('Failed to create Razorpay order')
+      console.error('Razorpay API error:', {
+        status: razorpayResponse.status,
+        error: errorData?.error,
+        description: errorData?.error?.description,
+      })
+      throw new Error(`Razorpay API error (${razorpayResponse.status}): ${errorData?.error?.description || 'Unknown'}`)
     }
 
     const razorpayOrder = await razorpayResponse.json()
@@ -318,11 +325,12 @@ serve(async (req: Request) => {
 
   } catch (err) {
     console.error('Create order error:', err)
-    const statusCode = err instanceof Error && err.message.includes('Invalid or expired token') ? 401 : 500
+    const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred'
+    const statusCode = errorMessage.includes('Invalid or expired token') ? 401 : 400
     return new Response(
       JSON.stringify({
         success: false,
-        error: err instanceof Error ? err.message : 'Unknown error occurred',
+        error: errorMessage,
       }),
       {
         status: statusCode,

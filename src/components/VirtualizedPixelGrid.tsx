@@ -703,15 +703,33 @@ export const VirtualizedPixelGrid = forwardRef<
                     imageRendering: zoom < 1 ? "auto" : "pixelated",
                   }}
                   onClick={(e) => {
-                    if (!block.linkUrl) return;
                     e.stopPropagation();
-                    openUrl(block.linkUrl);
-                    toast.success(`Opening ${block.altText || "pixel block link"}...`);
+                    // Show image preview in toast
+                    if (block.imageUrl) {
+                      toast(
+                        <div className="flex flex-col gap-2">
+                          <img
+                            src={block.imageUrl}
+                            alt={block.altText || 'Pixel block'}
+                            className="w-full max-w-[200px] h-auto rounded-lg object-cover"
+                          />
+                          <div className="text-sm font-medium">{block.altText || `${block.width}×${block.height} block`}</div>
+                          {block.linkUrl && (
+                            <div className="text-xs text-muted-foreground truncate">{block.linkUrl}</div>
+                          )}
+                        </div>,
+                        { duration: 4000 }
+                      );
+                    }
+                    // Open link in new tab
+                    if (block.linkUrl) {
+                      openUrl(block.linkUrl);
+                    }
                   }}
                   onKeyDown={(e) => {
-                    if (block.linkUrl && (e.key === "Enter" || e.key === " ")) {
+                    if (e.key === "Enter" || e.key === " ") {
                       e.preventDefault();
-                      openUrl(block.linkUrl);
+                      if (block.linkUrl) openUrl(block.linkUrl);
                     }
                   }}
                   aria-label={block.altText || `Pixel block at (${block.minX}, ${block.minY})`}
@@ -727,9 +745,9 @@ export const VirtualizedPixelGrid = forwardRef<
               return (
                 <div
                   key={`sold-${id}`}
-                  role={link_url ? "button" : undefined}
-                  tabIndex={link_url ? 0 : -1}
-                  className={link_url ? "cursor-pointer" : ""}
+                  role={link_url || image_url ? "button" : undefined}
+                  tabIndex={link_url || image_url ? 0 : -1}
+                  className={link_url || image_url ? "cursor-pointer" : ""}
                   style={{
                     position: "absolute",
                     left: Math.floor(x * scaledPixelSize),
@@ -752,15 +770,33 @@ export const VirtualizedPixelGrid = forwardRef<
                     imageRendering: zoom < 1 ? "auto" : "pixelated",
                   }}
                   onClick={(e) => {
-                    if (!link_url) return;
                     e.stopPropagation();
-                    openUrl(link_url);
-                    toast.success(`Opening ${alt_text || "pixel link"}...`);
+                    // Show image preview in toast
+                    if (image_url) {
+                      toast(
+                        <div className="flex flex-col gap-2">
+                          <img
+                            src={image_url}
+                            alt={alt_text || 'Pixel'}
+                            className="w-full max-w-[200px] h-auto rounded-lg object-cover"
+                          />
+                          <div className="text-sm font-medium">{alt_text || `Pixel (${x}, ${y})`}</div>
+                          {link_url && (
+                            <div className="text-xs text-muted-foreground truncate">{link_url}</div>
+                          )}
+                        </div>,
+                        { duration: 4000 }
+                      );
+                    }
+                    // Open link in new tab
+                    if (link_url) {
+                      openUrl(link_url);
+                    }
                   }}
                   onKeyDown={(e) => {
-                    if (link_url && (e.key === "Enter" || e.key === " ")) {
+                    if ((link_url || image_url) && (e.key === "Enter" || e.key === " ")) {
                       e.preventDefault();
-                      openUrl(link_url);
+                      if (link_url) openUrl(link_url);
                     }
                   }}
                   aria-label={alt_text || `Pixel at ${x}, ${y}`}

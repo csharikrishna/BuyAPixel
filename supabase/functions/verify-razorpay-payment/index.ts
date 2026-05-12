@@ -248,6 +248,12 @@ serve(async (req: Request) => {
 
       // Parse request body
       const body: VerifyPaymentRequest = await req.json()
+      console.log('📋 Step 1: Received verify request', {
+         razorpay_order_id: body.razorpay_order_id,
+         razorpay_payment_id: body.razorpay_payment_id,
+         has_signature: !!body.razorpay_signature,
+         payment_order_id: body.payment_order_id,
+      })
 
       if (!body.razorpay_order_id || !body.razorpay_payment_id || !body.razorpay_signature) {
          throw new Error('Missing payment verification data')
@@ -258,6 +264,7 @@ serve(async (req: Request) => {
       }
 
       // Verify the signature
+      console.log('🔐 Step 2: Verifying signature...')
       const isValid = verifySignature(
          body.razorpay_order_id,
          body.razorpay_payment_id,
@@ -266,7 +273,12 @@ serve(async (req: Request) => {
       )
 
       if (!isValid) {
-         console.error('Invalid signature for order:', body.razorpay_order_id)
+         console.error('❌ Signature verification FAILED for order:', body.razorpay_order_id, {
+            order_id: body.razorpay_order_id,
+            payment_id: body.razorpay_payment_id,
+            signature_length: body.razorpay_signature?.length,
+            secret_length: RAZORPAY_KEY_SECRET?.length,
+         })
 
          // Mark payment as failed
          await supabaseAdmin
@@ -274,11 +286,13 @@ serve(async (req: Request) => {
             .update({ status: 'failed', updated_at: new Date().toISOString() })
             .eq('id', body.payment_order_id)
 
-         throw new Error('Payment verification failed - invalid signature')
+         throw new Error('Payment verification failed - invalid signature. This usually means RAZORPAY_KEY_SECRET does not match the key used to create the order.')
       }
+      console.log('✅ Step 2: Signature valid')
 
       // ✅ FIXED C6: Re-validate payment amount from Razorpay API
       // Prevents underpayment attacks by verifying with authoritative source
+      console.log('💰 Step 3: Fetching payment details from Razorpay API...')
       const RAZORPAY_KEY_ID = Deno.env.get('RAZORPAY_KEY_ID')
       if (!RAZORPAY_KEY_ID) throw new Error('Razorpay key ID not configured')
       
@@ -302,10 +316,20 @@ serve(async (req: Request) => {
             )
             
             if (!paymentDetailsResponse.ok) {
+               const errBody = await paymentDetailsResponse.text().catch(() => 'no body')
+               console.error('Razorpay payment details API error:', {
+                  status: paymentDetailsResponse.status,
+                  body: errBody,
+               })
                throw new Error(`Razorpay API error: ${paymentDetailsResponse.status}`)
             }
             
             razorpayPaymentDetails = await paymentDetailsResponse.json()
+            console.log('✅ Step 3: Payment details fetched', {
+               status: razorpayPaymentDetails.status,
+               amount: razorpayPaymentDetails.amount,
+               currency: razorpayPaymentDetails.currency,
+            })
          } finally {
             clearTimeout(timeoutId)
          }
