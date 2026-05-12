@@ -44,3 +44,6 @@ bun.lockb
 # OS files
 .DS_Store
 Thumbs.db
+
+# Documentation
+docs/

@@ -20,6 +20,7 @@ export default defineConfig(({ mode }) => ({
    },
 
    build: {
+      modulePreload: false,
       outDir: "dist",
       emptyOutDir: true,
       sourcemap: false,

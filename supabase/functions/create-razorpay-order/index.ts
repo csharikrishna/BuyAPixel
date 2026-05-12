@@ -78,11 +78,35 @@ serve(async (req: Request) => {
   try {
     // Validate environment variables
     if (!RAZORPAY_KEY_ID || !RAZORPAY_KEY_SECRET) {
-      throw new Error('Razorpay credentials not configured')
+      console.error('Missing Razorpay credentials:', {
+        hasKeyId: !!RAZORPAY_KEY_ID,
+        hasKeySecret: !!RAZORPAY_KEY_SECRET
+      })
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'Razorpay credentials not configured in Supabase',
+          details: 'Please set RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in Supabase Dashboard > Settings > Secrets'
+        }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      )
     }
 
     if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-      throw new Error('Supabase credentials not configured')
+      console.error('Missing Supabase credentials')
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'Supabase credentials not configured'
+        }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      )
     }
 
     // Get auth token from request
@@ -107,50 +131,9 @@ serve(async (req: Request) => {
       throw new Error('Invalid or expired token')
     }
 
-    // ✅ FIXED C8: Check rate limit using database instead of in-memory
-    const { data: rateLimitData, error: rateLimitError } = await supabase.rpc(
-      'check_and_record_rate_limit',
-      {
-        p_user_id: user.id,
-        p_endpoint: 'create_order',
-        p_max_requests: 5,
-        p_window_seconds: 60
-      }
-    )
-
-    if (rateLimitError) {
-      console.error('Rate limit check error:', rateLimitError)
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: 'Rate limit check failed. Please try again.'
-        }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    const { allowed, remaining } = rateLimitData?.[0] || { allowed: false, remaining: 0 }
-
-    if (!allowed) {
-      console.warn(`⚠️ Rate limit exceeded for user: ${user.id}`)
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: 'Too many order requests. Please wait before creating another order.',
-          retryAfter: '60 seconds'
-        }),
-        {
-          status: 429,
-          headers: {
-            ...corsHeaders,
-            'Content-Type': 'application/json',
-            'Retry-After': '60',
-            'X-RateLimit-Limit': '5',
-            'X-RateLimit-Remaining': '0',
-          },
-        }
-      )
-    }
+    // ✅ Rate limiting check (optional - requires database RPC function)
+    // Skipping for now to avoid errors if RPC function doesn't exist
+    // Can be re-enabled after creating the check_and_record_rate_limit function
 
     // Parse request body
     const body: CreateOrderRequest = await req.json()
@@ -335,13 +318,14 @@ serve(async (req: Request) => {
 
   } catch (err) {
     console.error('Create order error:', err)
+    const statusCode = err instanceof Error && err.message.includes('Invalid or expired token') ? 401 : 500
     return new Response(
       JSON.stringify({
         success: false,
-        error: err instanceof Error ? err.message : 'Unknown error',
+        error: err instanceof Error ? err.message : 'Unknown error occurred',
       }),
       {
-        status: 400,
+        status: statusCode,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
     )

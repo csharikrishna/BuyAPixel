@@ -252,18 +252,27 @@ serve(async (req: Request) => {
             // ✅ FIXED C11: Handle orphaned payment with automatic refund
             console.warn(`⚠️ Orphaned payment detected: ${paymentId} for order ${orderId}`)
 
-            // Record orphaned payment
-            const { data: orphanedOrder } = await supabaseAdmin
-              .from('orphaned_orders')
-              .insert({
-                razorpay_order_id: orderId,
-                user_id: null, // We don't know the user since there's no order
-                amount: payload.entity.amount || 0,
-                error_message: 'Order not found in database',
-                status: 'pending_refund'
-              })
-              .select('id')
-              .single()
+            // Extract user_id from Razorpay notes if available
+            const orphanedUserId = payload.entity.notes?.user_id as string | undefined
+
+            // Record orphaned payment (only if we have a valid user_id, since DB requires NOT NULL)
+            let orphanedOrder: { id: string } | null = null
+            if (orphanedUserId) {
+              const { data } = await supabaseAdmin
+                .from('orphaned_orders')
+                .insert({
+                  razorpay_order_id: orderId,
+                  user_id: orphanedUserId,
+                  amount: payload.entity.amount || 0,
+                  error_message: 'Order not found in database',
+                  status: 'pending_refund'
+                })
+                .select('id')
+                .single()
+              orphanedOrder = data
+            } else {
+              console.error('Cannot record orphaned order: no user_id in Razorpay notes')
+            }
 
             // Attempt automatic refund
             const refundResult = await initiateAutomaticRefund(

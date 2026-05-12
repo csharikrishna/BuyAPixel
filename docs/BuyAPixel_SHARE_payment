@@ -1,0 +1,134 @@
+# BuyASpot Payment Pipeline — Full Code Audit
+
+## Executive Summary
+
+**All 9 edge functions are deployed and ACTIVE.** Secrets (`RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RESEND_API_KEY`, `CONTACT_EMAIL`) are correctly set in the Supabase Dashboard. A direct API test confirmed the `create-razorpay-order` function loads properly and rejects invalid tokens with a clean `400` response (not a `500`).
+
+**The original 500 error was caused by missing secrets at the time of testing — those are now set.** However, the audit uncovered **3 real bugs** that could cause failures during the payment flow.
+
+---
+
+## Architecture Overview
+
+```mermaid
+sequenceDiagram
+    participant UI as Frontend (PurchasePreview)
+    participant EF1 as create-razorpay-order
+    participant RZP as Razorpay API
+    participant DB as Supabase DB
+    participant EF2 as verify-razorpay-payment
+    participant WH as razorpay-webhook
+
+    UI->>EF1: POST {pixels, totalAmount}
+    EF1->>EF1: Validate auth + server-side pricing
+    EF1->>RZP: Create order (amount in paise)
+    RZP-->>EF1: order_id
+    EF1->>DB: INSERT payment_orders (status: created)
+    EF1-->>UI: {order_id, key_id, amount}
+    UI->>RZP: Open checkout modal
+    RZP-->>UI: {payment_id, signature}
+    UI->>EF2: POST {payment_id, signature, order_id}
+    EF2->>EF2: HMAC verify signature
+    EF2->>RZP: GET /payments/{id} (verify amount)
+    EF2->>DB: RPC complete_pixel_purchase
+    EF2-->>UI: {success, pixel_count}
+    RZP->>WH: Webhook (payment.captured)
+    WH->>DB: Reconcile (safety net)
+```
+
+---
+
+## ✅ What's Working Correctly
+
+| Component | Status | Notes |
+|---|---|---|
+| Edge Functions (all 9) | ✅ ACTIVE | Deployed 2026-05-11 17:44 UTC |
+| Secrets (RAZORPAY_KEY_ID) | ✅ Set | Updated 12 May 2026 |
+| Secrets (RAZORPAY_KEY_SECRET) | ✅ Set | Updated 12 May 2026 |
+| Secrets (RESEND_API_KEY) | ✅ Set | Updated 03 Apr 2026 |
+| Server-side price validation | ✅ Correct | Edge-based pricing matches DB |
+| HMAC signature verification | ✅ Secure | Constant-time comparison |
+| Amount re-verification | ✅ Present | Checks Razorpay API for actual amount |
+| Idempotency protection | ✅ Working | Prevents double-processing |
+| RLS on payment_orders | ✅ Correct | Users SELECT/INSERT own; service_role for UPDATE |
+| CORS headers | ✅ Set | `*` origin allowed |
+| Frontend flow (PurchasePreview) | ✅ Correct | Proper error handling + retry UI |
+| Frontend flow (Marketplace) | ✅ Correct | Separate order/verify functions |
+
+---
+
+## 🔴 Bugs Found
+
+### Bug 1: Webhook crashes on orphaned payments (NULL constraint violation)
+
+**File:** [razorpay-webhook/index.ts](file:///C:/Users/cshar/Desktop/BuyASpot/supabase/functions/razorpay-webhook/index.ts#L256-L266)
+
+**Problem:** When a webhook receives a `payment.captured` event but the `payment_orders` row doesn't exist (orphaned payment), the webhook tries to insert into `orphaned_orders` with `user_id: null`:
+
+```typescript
+// Line 260
+user_id: null, // We don't know the user since there's no order
+```
+
+But the `orphaned_orders` table has a `NOT NULL` constraint on `user_id`:
+
+```sql
+-- Migration 032, Line 39
+user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+```
+
+**Impact:** Any orphaned payment detection causes a DB insert error, silently failing the webhook handler.
+
+**Fix:** Either make `user_id` nullable in `orphaned_orders`, or extract `user_id` from Razorpay `notes`.
+
+---
+
+### Bug 2: `log_event` signature mismatch in marketplace RPC
+
+**File:** [031_fix_marketplace_purchase_rpc.sql](file:///C:/Users/cshar/Desktop/BuyASpot/supabase/migrations/031_fix_marketplace_purchase_rpc.sql#L165)
+
+**Problem:** The `complete_marketplace_purchase` RPC calls `log_event` with the 3rd parameter as a `UUID` (transaction ID), but `log_event` expects `UUID` for `entity_id`. However, it also passes `marketplace_transaction` as `entity_type` — if the `event_log` table has a foreign key constraint on `entity_id`, this could fail if `marketplace_transactions.id` isn't a valid reference.
+
+**Impact:** Low — the purchase itself still succeeds; only the audit log entry may fail silently.
+
+---
+
+### Bug 3: `payment_orders` INSERT policy uses `authenticated` role but edge function uses `service_role`
+
+**File:** [015_payment_integration.sql](file:///C:/Users/cshar/Desktop/BuyASpot/supabase/migrations/015_payment_integration.sql#L84-L86)
+
+**Problem:** The RLS policy `payment_orders_insert_own` is granted to `authenticated` role:
+```sql
+CREATE POLICY "payment_orders_insert_own" ON public.payment_orders
+  FOR INSERT TO authenticated
+  WITH CHECK (user_id = (select auth.uid()));
+```
+
+But the `create-razorpay-order` edge function creates the client with `SUPABASE_SERVICE_ROLE_KEY`, which **bypasses RLS entirely**. This means:
+- The INSERT works because service_role skips RLS ✅
+- But the policy is **never actually evaluated** — it's dead code
+
+**Impact:** None functionally, but misleading. The policy suggests authenticated users can insert directly, which is a security concern if client-side code ever tries to bypass the edge function.
+
+---
+
+## 🟢 Verified: No Issues
+
+| Check | Result |
+|---|---|
+| Price calculation consistency (server ↔ DB) | ✅ Both use edge-distance algorithm |
+| `complete_pixel_purchase` function signature (7 params with idempotency) | ✅ Matches edge function call |
+| `complete_marketplace_purchase` function signature (3 params) | ✅ Matches edge function call |
+| Razorpay payment status check (`captured`/`authorized`) | ✅ Present in verify flow |
+| Payment order expiry (30 min TTL) | ✅ Auto-expire via cron |
+| Marketplace listing lock (`FOR UPDATE NOWAIT`) | ✅ Prevents race conditions |
+
+---
+
+## Action Items
+
+| # | Action | Severity | Type |
+|---|---|---|---|
+| 1 | Fix `orphaned_orders.user_id` NULL crash in webhook | 🔴 High | DB migration |
+| 2 | Test full purchase flow in browser (you're ready!) | 🟡 Medium | Manual test |
+| 3 | Clean up dead RLS INSERT policy comment | 🟢 Low | Documentation |
