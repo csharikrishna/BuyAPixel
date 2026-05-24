@@ -1,5 +1,12 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { SMTPClient } from 'https://deno.land/x/denomailer@1.6.0/mod.ts'
 
+// Email config — SMTP (primary) or Resend (fallback)
+const SMTP_HOSTNAME = Deno.env.get('SMTP_HOSTNAME')
+const SMTP_PORT = parseInt(Deno.env.get('SMTP_PORT') || '465')
+const SMTP_USERNAME = Deno.env.get('SMTP_USERNAME')
+const SMTP_PASSWORD = Deno.env.get('SMTP_PASSWORD')
+const SMTP_FROM = Deno.env.get('SMTP_FROM') || 'BuyASpot <noreply@buyaspot.in>'
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
 
 const corsHeaders = {
@@ -175,6 +182,73 @@ function buildEmailHtml(data: PurchaseEmailData) {
 `
 }
 
+/* ─── Email Sending (SMTP primary, Resend fallback) ─── */
+
+async function sendViaSmtp(to: string, subject: string, html: string): Promise<boolean> {
+   if (!SMTP_HOSTNAME || !SMTP_USERNAME || !SMTP_PASSWORD) return false
+
+   try {
+      const client = new SMTPClient({
+         connection: {
+            hostname: SMTP_HOSTNAME,
+            port: SMTP_PORT,
+            tls: SMTP_PORT === 465,
+            auth: {
+               username: SMTP_USERNAME,
+               password: SMTP_PASSWORD,
+            },
+         },
+      })
+
+      await client.send({
+         from: SMTP_FROM,
+         to: to,
+         subject,
+         content: 'auto',
+         html,
+      })
+
+      await client.close()
+      console.log('✅ Email sent via SMTP')
+      return true
+   } catch (err) {
+      console.error('SMTP send failed:', err)
+      return false
+   }
+}
+
+async function sendViaResend(to: string, subject: string, html: string): Promise<boolean> {
+   if (!RESEND_API_KEY) return false
+
+   try {
+      const res = await fetch('https://api.resend.com/emails', {
+         method: 'POST',
+         headers: {
+            Authorization: `Bearer ${RESEND_API_KEY}`,
+            'Content-Type': 'application/json',
+         },
+         body: JSON.stringify({
+            from: 'BuyASpot <support@buyaspot.in>',
+            to: [to],
+            reply_to: 'support@buyaspot.in',
+            subject,
+            html,
+         }),
+      })
+
+      if (!res.ok) {
+         const error = await res.json()
+         console.error('Resend error:', error)
+         return false
+      }
+      console.log('✅ Email sent via Resend')
+      return true
+   } catch (err) {
+      console.error('Resend send failed:', err)
+      return false
+   }
+}
+
 /* ------------------------- server ------------------------- */
 
 serve(async (req: Request) => {
@@ -199,10 +273,6 @@ serve(async (req: Request) => {
   }
 
   try {
-    if (!RESEND_API_KEY) {
-      throw new Error('RESEND_API_KEY is not set')
-    }
-
     const body = (await req.json()) as PurchaseEmailData
 
     if (
@@ -214,34 +284,37 @@ serve(async (req: Request) => {
       throw new Error('Invalid request payload')
     }
 
-    const res = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${RESEND_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        from: 'BuyASpot <support@buyaspot.in>',
-        to: [body.email],
-        reply_to: 'support@buyaspot.in',
-        subject: '🎉 Your BuyASpot Purchase Is Confirmed',
-        html: buildEmailHtml(body),
-      }),
-    })
+    const subject = '🎉 Your BuyASpot Purchase Is Confirmed'
+    const html = buildEmailHtml(body)
 
-    const data = await res.json()
-
-    if (!res.ok) {
-      console.error('Resend error:', data)
+    // Strategy 1: SMTP
+    const smtpSent = await sendViaSmtp(body.email, subject, html)
+    if (smtpSent) {
       return new Response(
-        JSON.stringify({ success: false, error: data }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ success: true, method: 'smtp' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
+    // Strategy 2: Resend
+    const resendSent = await sendViaResend(body.email, subject, html)
+    if (resendSent) {
+      return new Response(
+        JSON.stringify({ success: true, method: 'resend' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // No service configured
+    console.warn(
+      '⚠️ No email service configured. Set SMTP_* or RESEND_API_KEY env vars.'
+    )
     return new Response(
-      JSON.stringify({ success: true }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({
+        success: false,
+        error: 'No email service configured. Set SMTP_HOSTNAME or RESEND_API_KEY in Supabase secrets.'
+      }),
+      { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   } catch (err) {
     console.error('Email function error:', err)

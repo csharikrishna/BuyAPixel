@@ -1,10 +1,18 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { createHmac } from 'https://deno.land/std@0.168.0/node/crypto.ts'
+import { SMTPClient } from 'https://deno.land/x/denomailer@1.6.0/mod.ts'
 
 const RAZORPAY_KEY_SECRET = Deno.env.get('RAZORPAY_KEY_SECRET')
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+
+// Email config — SMTP (primary) or Resend (fallback)
+const SMTP_HOSTNAME = Deno.env.get('SMTP_HOSTNAME')
+const SMTP_PORT = parseInt(Deno.env.get('SMTP_PORT') || '465')
+const SMTP_USERNAME = Deno.env.get('SMTP_USERNAME')
+const SMTP_PASSWORD = Deno.env.get('SMTP_PASSWORD')
+const SMTP_FROM = Deno.env.get('SMTP_FROM') || 'BuyASpot <noreply@buyaspot.in>'
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
 
 const corsHeaders = {
@@ -44,6 +52,62 @@ function verifySignature(
    return timingSafeEqual(generatedSignature, signature)
 }
 
+// ─── Shared Email Sender (SMTP primary, Resend fallback) ────────────────────
+
+async function sendEmail(to: string, subject: string, html: string) {
+   if (!to) return
+
+   // Strategy 1: SMTP
+   if (SMTP_HOSTNAME && SMTP_USERNAME && SMTP_PASSWORD) {
+      try {
+         const client = new SMTPClient({
+            connection: {
+               hostname: SMTP_HOSTNAME,
+               port: SMTP_PORT,
+               tls: SMTP_PORT === 465,
+               auth: { username: SMTP_USERNAME, password: SMTP_PASSWORD },
+            },
+         })
+         await client.send({ from: SMTP_FROM, to, subject, content: 'auto', html })
+         await client.close()
+         console.log('✅ Email sent via SMTP to:', to)
+         return
+      } catch (err) {
+         console.error('SMTP failed, trying fallback:', err)
+      }
+   }
+
+   // Strategy 2: Resend
+   if (RESEND_API_KEY) {
+      try {
+         const res = await fetch('https://api.resend.com/emails', {
+            method: 'POST',
+            headers: {
+               Authorization: `Bearer ${RESEND_API_KEY}`,
+               'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+               from: 'BuyASpot <support@buyaspot.in>',
+               to: [to],
+               reply_to: 'support@buyaspot.in',
+               subject,
+               html,
+            }),
+         })
+         if (res.ok) {
+            console.log('✅ Email sent via Resend to:', to)
+            return
+         }
+         const error = await res.json()
+         console.error('Resend error:', error)
+      } catch (err) {
+         console.error('Resend failed:', err)
+      }
+   }
+
+   console.warn(`⚠️ No email service configured. Skipped email for: ${to}`)
+}
+
 // Send confirmation email to buyer
 async function sendBuyerConfirmationEmail(
    email: string,
@@ -51,11 +115,6 @@ async function sendBuyerConfirmationEmail(
    pixelCoords: { x: number; y: number } | null,
    transactionId: string
 ) {
-   if (!RESEND_API_KEY) {
-      console.warn('RESEND_API_KEY not set, skipping buyer email')
-      return
-   }
-
    const coordsText = pixelCoords ? `(${pixelCoords.x}, ${pixelCoords.y})` : 'Unknown'
 
    const formatINR = (amount: number) =>
@@ -65,19 +124,7 @@ async function sendBuyerConfirmationEmail(
          maximumFractionDigits: 0,
       }).format(amount)
 
-   try {
-      const res = await fetch('https://api.resend.com/emails', {
-         method: 'POST',
-         headers: {
-            Authorization: `Bearer ${RESEND_API_KEY}`,
-            'Content-Type': 'application/json',
-         },
-         body: JSON.stringify({
-            from: 'BuyASpot <support@buyaspot.in>',
-            to: [email],
-            reply_to: 'support@buyaspot.in',
-            subject: '🎉 Marketplace Purchase Confirmed!',
-            html: `
+   const html = `
 <!DOCTYPE html>
 <html>
 <head>
@@ -117,17 +164,9 @@ async function sendBuyerConfirmationEmail(
   </div>
 </body>
 </html>
-`,
-         }),
-      })
+`
 
-      if (!res.ok) {
-         const error = await res.json()
-         console.error('Resend error (buyer):', error)
-      }
-   } catch (err) {
-      console.error('Email send error (buyer):', err)
-   }
+   await sendEmail(email, '🎉 Marketplace Purchase Confirmed!', html)
 }
 
 // Send sale notification email to seller
@@ -138,11 +177,6 @@ async function sendSellerNotificationEmail(
    sellerNet: number,
    pixelCoords: { x: number; y: number } | null
 ) {
-   if (!RESEND_API_KEY) {
-      console.warn('RESEND_API_KEY not set, skipping seller email')
-      return
-   }
-
    const coordsText = pixelCoords ? `(${pixelCoords.x}, ${pixelCoords.y})` : 'Unknown'
 
    const formatINR = (amount: number) =>
@@ -152,19 +186,7 @@ async function sendSellerNotificationEmail(
          maximumFractionDigits: 0,
       }).format(amount)
 
-   try {
-      const res = await fetch('https://api.resend.com/emails', {
-         method: 'POST',
-         headers: {
-            Authorization: `Bearer ${RESEND_API_KEY}`,
-            'Content-Type': 'application/json',
-         },
-         body: JSON.stringify({
-            from: 'BuyASpot <support@buyaspot.in>',
-            to: [email],
-            reply_to: 'support@buyaspot.in',
-            subject: '💰 Your Pixel Has Been Sold!',
-            html: `
+   const html = `
 <!DOCTYPE html>
 <html>
 <head>
@@ -205,17 +227,9 @@ async function sendSellerNotificationEmail(
   </div>
 </body>
 </html>
-`,
-         }),
-      })
+`
 
-      if (!res.ok) {
-         const error = await res.json()
-         console.error('Resend error (seller):', error)
-      }
-   } catch (err) {
-      console.error('Email send error (seller):', err)
-   }
+   await sendEmail(email, '💰 Your Pixel Has Been Sold!', html)
 }
 
 serve(async (req: Request) => {

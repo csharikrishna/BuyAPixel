@@ -1,12 +1,83 @@
 /*
-  X-Frame-Options: DENY
-  X-Content-Type-Options: nosniff
-  Referrer-Policy: no-referrer-when-downgrade
-  Feature-Policy: geolocation 'none'; microphone 'none'
-  Permissions-Policy: geolocation=(), camera=(), microphone=()
-  Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
-  X-XSS-Protection: 1; mode=block
-  Content-Security-Policy: default-src 'self' data: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https://*; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://api.supabase.co https://*.google-analytics.com;
+  Strict-Transport-Security:
+  max-age=63072000; includeSubDomains; preload
+
+  X-Frame-Options:
+  DENY
+
+  X-Content-Type-Options:
+  nosniff
+
+  Referrer-Policy:
+  strict-origin-when-cross-origin
+
+  Permissions-Policy:
+  geolocation=(),
+  camera=(),
+  microphone=(),
+  payment=(self)
+
+  Cross-Origin-Opener-Policy:
+  same-origin
+
+  Cross-Origin-Resource-Policy:
+  same-origin
+
+  Content-Security-Policy:
+  default-src 'self';
+
+  script-src
+    'self'
+    'unsafe-inline'
+    https://checkout.razorpay.com
+    https://www.googletagmanager.com
+    https://www.google-analytics.com;
+
+  style-src
+    'self'
+    'unsafe-inline'
+    https://fonts.googleapis.com;
+
+  img-src
+    'self'
+    data:
+    blob:
+    https:;
+
+  font-src
+    'self'
+    https://fonts.gstatic.com;
+
+  connect-src
+    'self'
+    https://*.supabase.co
+    https://api.razorpay.com
+    https://lumberjack.razorpay.com
+    https://www.google-analytics.com
+    https://region1.google-analytics.com;
+
+  frame-src
+    https://checkout.razorpay.com;
+
+  child-src
+    https://checkout.razorpay.com;
+
+  object-src 'none';
+
+  base-uri 'self';
+
+  form-action
+    'self'
+    https://api.razorpay.com;
+
+  frame-ancestors 'none';
+
+  upgrade-insecure-requests;
 
 /*
-  Cache-Control: public, max-age=0, s-maxage=3600, stale-while-revalidate=86400
+  Cache-Control:
+  public,
+  max-age=0,
+  must-revalidate,
+  stale-while-revalidate=86400
+*/

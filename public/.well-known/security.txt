@@ -1,5 +1,11 @@
 Contact: https://buyaspot.in/contact
-Expires: 2027-05-13T00:00:00.000Z
+
+Expires: 2027-05-24T00:00:00.000Z
+
 Preferred-Languages: en
+
 Canonical: https://buyaspot.in/.well-known/security.txt
-Policy: https://buyaspot.in/privacy
+
+Policy: https://buyaspot.in/contact
+
+Contact: mailto:support@buyaspot.in

@@ -1,7 +1,13 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import * as supabaseJs2 from 'https://esm.sh/@supabase/supabase-js@2'
+import { SMTPClient } from 'https://deno.land/x/denomailer@1.6.0/mod.ts'
 
 // Environment variables
+const SMTP_HOSTNAME = Deno.env.get('SMTP_HOSTNAME')
+const SMTP_PORT = parseInt(Deno.env.get('SMTP_PORT') || '465')
+const SMTP_USERNAME = Deno.env.get('SMTP_USERNAME')
+const SMTP_PASSWORD = Deno.env.get('SMTP_PASSWORD')
+const SMTP_FROM = Deno.env.get('SMTP_FROM') || 'BuyASpot <noreply@buyaspot.in>'
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
 const CONTACT_EMAIL = Deno.env.get('CONTACT_EMAIL') || 'support@buyaspot.in'
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
@@ -13,11 +19,47 @@ const ALLOWED_ORIGINS = [
 ]
 
 // Validate required environment variables
-if (!RESEND_API_KEY) {
-  throw new Error('RESEND_API_KEY is required')
+if (!RESEND_API_KEY && (!SMTP_HOSTNAME || !SMTP_USERNAME || !SMTP_PASSWORD)) {
+  throw new Error('Either SMTP credentials or RESEND_API_KEY must be set')
 }
 if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
   throw new Error('Supabase credentials are required')
+}
+
+/* ─── Email Sending (SMTP primary, Resend fallback) ─── */
+
+async function sendViaSmtp(to: string, replyTo: string, subject: string, html: string): Promise<boolean> {
+   if (!SMTP_HOSTNAME || !SMTP_USERNAME || !SMTP_PASSWORD) return false
+
+   try {
+      const client = new SMTPClient({
+         connection: {
+            hostname: SMTP_HOSTNAME,
+            port: SMTP_PORT,
+            tls: SMTP_PORT === 465,
+            auth: {
+               username: SMTP_USERNAME,
+               password: SMTP_PASSWORD,
+            },
+         },
+      })
+
+      await client.send({
+         from: SMTP_FROM,
+         to,
+         replyTo,
+         subject,
+         content: 'auto',
+         html,
+      })
+
+      await client.close()
+      console.log('✅ Contact email sent via SMTP')
+      return true
+   } catch (err) {
+      console.error('SMTP send failed for contact form:', err)
+      return false
+   }
 }
 
 interface ContactFormData {
@@ -267,224 +309,229 @@ serve(async (req: Request) => {
     const safeSubject = sanitizeHtml(subject)
     const safeMessage = sanitizeHtml(message)
 
-    // Send email using Resend API
-    const res = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${RESEND_API_KEY}`,
-      },
-      body: JSON.stringify({
-        from: 'BuyASpot Contact <support@buyaspot.in>',
-        to: [CONTACT_EMAIL],
-        reply_to: email,
-        subject: `[Contact Form] ${subject}`,
-        html: `
-          <!DOCTYPE html>
-          <html lang="en">
-            <head>
-              <meta charset="UTF-8">
-              <meta name="viewport" content="width=device-width, initial-scale=1.0">
-              <style>
-                * {
-                  margin: 0;
-                  padding: 0;
-                  box-sizing: border-box;
-                }
-                body { 
-                  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-                  line-height: 1.6; 
-                  color: #333; 
-                  background-color: #f5f5f5;
-                }
-                .container { 
-                  max-width: 600px; 
-                  margin: 20px auto; 
-                  background: white;
-                  border-radius: 8px;
-                  overflow: hidden;
-                  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-                }
-                .header { 
-                  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-                  color: white; 
-                  padding: 30px 20px; 
-                  text-align: center;
-                }
-                .header h1 {
-                  margin: 0 0 10px 0;
-                  font-size: 24px;
-                  font-weight: 600;
-                }
-                .header p {
-                  margin: 0;
-                  opacity: 0.9;
-                  font-size: 14px;
-                }
-                .content { 
-                  padding: 30px; 
-                }
-                .field { 
-                  margin-bottom: 20px; 
-                }
-                .label { 
-                  display: block;
-                  font-weight: 600; 
-                  color: #555; 
-                  font-size: 12px;
-                  text-transform: uppercase;
-                  letter-spacing: 0.5px;
-                  margin-bottom: 8px;
-                }
-                .value { 
-                  color: #333; 
-                  font-size: 15px;
-                }
-                .message-box {
-                  white-space: pre-wrap; 
-                  background: #f9fafb; 
-                  padding: 20px; 
-                  border-radius: 6px; 
-                  border: 1px solid #e5e7eb;
-                  font-size: 15px;
-                  line-height: 1.6;
-                  word-wrap: break-word;
-                }
-                .metadata {
-                  background: #f3f4f6;
-                  padding: 15px;
-                  border-radius: 6px;
-                  font-size: 12px;
-                  color: #6b7280;
-                  margin-top: 20px;
-                }
-                .metadata strong {
-                  color: #374151;
-                }
-                .footer { 
-                  text-align: center; 
-                  margin-top: 30px; 
-                  padding-top: 20px;
-                  border-top: 1px solid #e5e7eb;
-                  font-size: 12px; 
-                  color: #888; 
-                }
-                .footer p {
-                  margin: 5px 0;
-                }
-                .email-link {
-                  color: #667eea;
-                  text-decoration: none;
-                }
-                .email-link:hover {
-                  text-decoration: underline;
-                }
-                .reply-button {
-                  display: inline-block;
-                  margin-top: 20px;
-                  padding: 12px 24px;
-                  background: #667eea;
-                  color: white;
-                  text-decoration: none;
-                  border-radius: 6px;
-                  font-weight: 600;
-                }
-                .reply-button:hover {
-                  background: #5568d3;
-                }
-              </style>
-            </head>
-            <body>
-              <div class="container">
-                <div class="header">
-                  <h1>📬 New Contact Form Submission</h1>
-                  <p>buyaspot.in</p>
-                </div>
-                <div class="content">
-                  <div class="field">
-                    <div class="label">From</div>
-                    <div class="value">${safeName}</div>
-                  </div>
-                  <div class="field">
-                    <div class="label">Email Address</div>
-                    <div class="value">
-                      <a href="mailto:${safeEmail}" class="email-link">${safeEmail}</a>
-                    </div>
-                  </div>
-                  <div class="field">
-                    <div class="label">Subject</div>
-                    <div class="value">${safeSubject}</div>
-                  </div>
-                  <div class="field">
-                    <div class="label">Message</div>
-                    <div class="value">
-                      <div class="message-box">${safeMessage}</div>
-                    </div>
-                  </div>
-                  
-                  <div class="metadata">
-                    <strong>📊 Request Metadata:</strong><br>
-                    IP Address: ${ip}<br>
-                    User Agent: ${userAgent}<br>
-                    Submitted: ${new Date().toLocaleString('en-IN', {
-          timeZone: 'Asia/Kolkata',
-          dateStyle: 'long',
-          timeStyle: 'medium'
-        })} IST
-                  </div>
-
-                  <div style="text-align: center;">
-                    <a href="mailto:${safeEmail}?subject=Re: ${encodeURIComponent(subject)}" class="reply-button">
-                      Reply to ${safeName}
-                    </a>
-                  </div>
-                  
-                  <div class="footer">
-                    <p>This email was sent from the buyaspot.in contact form</p>
-                    <p>🔒 Authenticated and verified submission</p>
-                  </div>
+    const mailSubject = `[Contact Form] ${subject}`
+    const mailHtml = `
+      <!DOCTYPE html>
+      <html lang="en">
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <style>
+            * {
+              margin: 0;
+              padding: 0;
+              box-sizing: border-box;
+            }
+            body { 
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+              line-height: 1.6; 
+              color: #333; 
+              background-color: #f5f5f5;
+            }
+            .container { 
+              max-width: 600px; 
+              margin: 20px auto; 
+              background: white;
+              border-radius: 8px;
+              overflow: hidden;
+              box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            }
+            .header { 
+              background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+              color: white; 
+              padding: 30px 20px; 
+              text-align: center;
+            }
+            .header h1 {
+              margin: 0 0 10px 0;
+              font-size: 24px;
+              font-weight: 600;
+            }
+            .header p {
+              margin: 0;
+              opacity: 0.9;
+              font-size: 14px;
+            }
+            .content { 
+              padding: 30px; 
+            }
+            .field { 
+              margin-bottom: 20px; 
+            }
+            .label { 
+              display: block;
+              font-weight: 600; 
+              color: #555; 
+              font-size: 12px;
+              text-transform: uppercase;
+              letter-spacing: 0.5px;
+              margin-bottom: 8px;
+            }
+            .value { 
+              color: #333; 
+              font-size: 15px;
+            }
+            .message-box {
+              white-space: pre-wrap; 
+              background: #f9fafb; 
+              padding: 20px; 
+              border-radius: 6px; 
+              border: 1px solid #e5e7eb;
+              font-size: 15px;
+              line-height: 1.6;
+              word-wrap: break-word;
+            }
+            .metadata {
+              background: #f3f4f6;
+              padding: 15px;
+              border-radius: 6px;
+              font-size: 12px;
+              color: #6b7280;
+              margin-top: 20px;
+            }
+            .metadata strong {
+              color: #374151;
+            }
+            .footer { 
+              text-align: center; 
+              margin-top: 30px; 
+              padding-top: 20px;
+              border-top: 1px solid #e5e7eb;
+              font-size: 12px; 
+              color: #888; 
+            }
+            .footer p {
+              margin: 5px 0;
+            }
+            .email-link {
+              color: #667eea;
+              text-decoration: none;
+            }
+            .email-link:hover {
+              text-decoration: underline;
+            }
+            .reply-button {
+              display: inline-block;
+              margin-top: 20px;
+              padding: 12px 24px;
+              background: #667eea;
+              color: white;
+              text-decoration: none;
+              border-radius: 6px;
+              font-weight: 600;
+            }
+            .reply-button:hover {
+              background: #5568d3;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>📬 New Contact Form Submission</h1>
+              <p>buyaspot.in</p>
+            </div>
+            <div class="content">
+              <div class="field">
+                <div class="label">From</div>
+                <div class="value">${safeName}</div>
+              </div>
+              <div class="field">
+                <div class="label">Email Address</div>
+                <div class="value">
+                  <a href="mailto:${safeEmail}" class="email-link">${safeEmail}</a>
                 </div>
               </div>
-            </body>
-          </html>
-        `,
-      }),
-    })
+              <div class="field">
+                <div class="label">Subject</div>
+                <div class="value">${safeSubject}</div>
+              </div>
+              <div class="field">
+                <div class="label">Message</div>
+                <div class="value">
+                  <div class="message-box">${safeMessage}</div>
+                </div>
+              </div>
+              
+              <div class="metadata">
+                <strong>📊 Request Metadata:</strong><br>
+                IP Address: ${ip}<br>
+                User Agent: ${userAgent}<br>
+                Submitted: ${new Date().toLocaleString('en-IN', {
+                  timeZone: 'Asia/Kolkata',
+                  dateStyle: 'long',
+                  timeStyle: 'medium'
+                })} IST
+              </div>
 
-    const data = await res.json()
+              <div style="text-align: center;">
+                <a href="mailto:${safeEmail}?subject=Re: ${encodeURIComponent(subject)}" class="reply-button">
+                  Reply to ${safeName}
+                </a>
+              </div>
+              
+              <div class="footer">
+                <p>This email was sent from the buyaspot.in contact form</p>
+                <p>🔒 Authenticated and verified submission</p>
+              </div>
+            </div>
+          </div>
+        </body>
+      </html>
+    `
 
-    // Handle Resend errors
-    if (!res.ok) {
-      // Handle Resend test mode gracefully
-      if (res.status === 403 && data.message?.includes('testing')) {
-        console.log('⚠️  Resend Test Mode: Email sent to verified address only')
-        console.log('✅ Email delivered to:', CONTACT_EMAIL)
+    let emailSent = false
+    let isTestMode = false
+    let emailId = 'smtp-success'
 
-        // Log to database
-        await logContactSubmission(formData, { ip, userAgent })
-
-        return new Response(
-          JSON.stringify({
-            success: true,
-            message: 'Email sent successfully',
-            note: 'Test mode - emails sent to verified address only'
-          }),
-          {
-            headers: {
-              ...corsHeaders,
-              'Content-Type': 'application/json',
-              'X-RateLimit-Remaining': remaining.toString(),
-            },
-          }
-        )
-      }
-
-      console.error('❌ Resend API error:', data)
-      throw new Error(data.message || 'Failed to send email')
+    // Try SMTP first
+    if (SMTP_HOSTNAME && SMTP_USERNAME && SMTP_PASSWORD) {
+       emailSent = await sendViaSmtp(CONTACT_EMAIL, email, mailSubject, mailHtml)
     }
 
-    console.log('✅ Email sent successfully!')
-    console.log('📨 Email ID:', data.id)
+    // Try Resend fallback if SMTP didn't work / wasn't configured
+    if (!emailSent && RESEND_API_KEY) {
+       console.log('Trying Resend API as fallback...')
+       try {
+          const res = await fetch('https://api.resend.com/emails', {
+             method: 'POST',
+             headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${RESEND_API_KEY}`,
+             },
+             body: JSON.stringify({
+                from: 'BuyASpot Contact <support@buyaspot.in>',
+                to: [CONTACT_EMAIL],
+                reply_to: email,
+                subject: mailSubject,
+                html: mailHtml,
+             }),
+          })
+
+          const data = await res.json()
+
+          if (!res.ok) {
+             if (res.status === 403 && data.message?.includes('testing')) {
+                console.log('⚠️  Resend Test Mode: Email sent to verified address only')
+                emailSent = true
+                isTestMode = true
+             } else {
+                console.error('❌ Resend API error:', data)
+                throw new Error(data.message || 'Failed to send email via Resend')
+             }
+          } else {
+             emailSent = true
+             emailId = data.id
+             console.log('✅ Email sent successfully via Resend!')
+          }
+       } catch (err) {
+          console.error('Resend fallback failed:', err)
+       }
+    }
+
+    if (!emailSent) {
+       throw new Error('All configured email methods failed')
+    }
 
     // Log to database
     await logContactSubmission(formData, { ip, userAgent })
@@ -493,7 +540,8 @@ serve(async (req: Request) => {
       JSON.stringify({
         success: true,
         message: 'Email sent successfully',
-        emailId: data.id
+        emailId,
+        ...(isTestMode ? { note: 'Test mode - emails sent to verified address only' } : {})
       }),
       {
         headers: {

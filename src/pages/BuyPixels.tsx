@@ -578,22 +578,15 @@ const BuyPixels = () => {
 
       localStorage.removeItem(DRAFT_STORAGE_KEY);
 
-      // Safety fallback: if realtime subscription doesn't update the grid
-      // within 4 seconds, force a page reload to guarantee the user sees
-      // their purchased pixels. This handles slow/stale WebSocket connections.
-      const reloadFallbackTimer = setTimeout(() => {
-        if (isMountedRef.current) {
-          console.log('[BuyPixels] Realtime fallback: reloading to sync grid state');
-          window.location.reload();
-        }
-      }, 4000);
+      // Force an immediate background refresh of the grid data
+      // so it updates before the user sees the share dialog
+      if (gridRef.current) {
+        gridRef.current.refetchData();
+      }
 
       // Delayed actions
       setTimeout(() => {
-        if (!isMountedRef.current) {
-          clearTimeout(reloadFallbackTimer);
-          return;
-        }
+        if (!isMountedRef.current) return;
 
         // Open share dialog for the first pixel
         if (purchasedPixels.length > 0) {
@@ -643,7 +636,7 @@ const BuyPixels = () => {
         title="BuyASpot - Buy & Own Pixels Forever | Digital Real Estate Marketplace"
         description="Own a piece of internet history on BuyASpot. Buy pixels from ₹1-₹299, upload your image/brand, and reach millions globally. Permanent digital real estate for startups, businesses & creators."
         canonical="https://buyaspot.in/"
-        image="https://buyaspot.in/og-image.jpg"
+        image="https://buyaspot.in/bap_logo.png"
         imageAlt="BuyASpot - Digital pixel marketplace with 100x100 grid"
         keywords={[
           'buy pixels',
@@ -1085,51 +1078,7 @@ const BuyPixels = () => {
               </div>
             )}
 
-            {/* Price Breakdown Card - Enhanced with Color Borders */}
-            {mode === "buying" && selectedPixels.length > 0 && (
-              <div className="hidden lg:block rounded-2xl border border-border/50 bg-card/80 backdrop-blur-sm p-4 shadow-sm overflow-hidden">
-                <h3 className="text-sm font-bold mb-4 text-foreground">Price Breakdown</h3>
-                <div className="space-y-2.5 text-sm">
-                  {priceBreakdown.gold > 0 && (
-                    <div className="flex justify-between items-center rounded-xl border-l-4 border-l-amber-400 bg-amber-50/5 dark:bg-amber-950/10 px-3 py-2.5 transition-all hover:bg-amber-50/10 dark:hover:bg-amber-950/20">
-                      <span className="text-muted-foreground flex items-center gap-2 min-w-0">
-                        <div className="w-2 h-2 rounded-full bg-amber-400 flex-shrink-0" />
-                        <span className="font-semibold text-amber-700 dark:text-amber-300 truncate">Gold (₹499)</span>
-                      </span>
-                      <span className="font-bold text-amber-600 dark:text-amber-400 tabular-nums flex-shrink-0 ml-2">
-                        {priceBreakdown.gold} × ₹499
-                      </span>
-                    </div>
-                  )}
-                  {priceBreakdown.premium > 0 && (
-                    <div className="flex justify-between items-center rounded-xl border-l-4 border-l-violet-400 bg-violet-50/5 dark:bg-violet-950/10 px-3 py-2.5 transition-all hover:bg-violet-50/10 dark:hover:bg-violet-950/20">
-                      <span className="text-muted-foreground flex items-center gap-2 min-w-0">
-                        <div className="w-2 h-2 rounded-full bg-violet-400 flex-shrink-0" />
-                        <span className="font-semibold text-violet-700 dark:text-violet-300 truncate">Premium (₹299)</span>
-                      </span>
-                      <span className="font-bold text-violet-600 dark:text-violet-400 tabular-nums flex-shrink-0 ml-2">
-                        {priceBreakdown.premium} × ₹299
-                      </span>
-                    </div>
-                  )}
-                  {priceBreakdown.economy > 0 && (
-                    <div className="flex justify-between items-center rounded-xl border-l-4 border-l-emerald-400 bg-emerald-50/5 dark:bg-emerald-950/10 px-3 py-2.5 transition-all hover:bg-emerald-50/10 dark:hover:bg-emerald-950/20">
-                      <span className="text-muted-foreground flex items-center gap-2 min-w-0">
-                        <div className="w-2 h-2 rounded-full bg-emerald-400 flex-shrink-0" />
-                        <span className="font-semibold text-emerald-700 dark:text-emerald-300 truncate">Economy (₹99)</span>
-                      </span>
-                      <span className="font-bold text-emerald-600 dark:text-emerald-400 tabular-nums flex-shrink-0 ml-2">
-                        {priceBreakdown.economy} × ₹99
-                      </span>
-                    </div>
-                  )}
-                  <div className="pt-3 mt-2 border-t border-border/50 flex justify-between items-center font-bold">
-                    <span className="text-foreground">Total</span>
-                    <span className="text-base text-primary tabular-nums">₹{totalCost.toLocaleString()}</span>
-                  </div>
-                </div>
-              </div>
-            )}
+
 
             {/* Sticky Stats & Tools */}
             {mode === "buying" && (

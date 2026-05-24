@@ -1,34 +1,72 @@
 # BuyASpot
 
-BuyASpot is a pixel marketplace where users buy, sell, and manage pixels on a live public canvas.
+BuyASpot is a digital advertising marketplace where users buy, manage, and optionally resell permanent advertising space on a shared public pixel canvas.
 
-Canonical domain: https://buyaspot.in
-Primary language: en
+Canonical Domain: https://buyaspot.in
+Primary Language: en
 
 ## Important URLs
-- Home: https://buyaspot.in/
-- Marketplace: https://buyaspot.in/marketplace
-- Canvas: https://buyaspot.in/canvas
-- Leaderboard: https://buyaspot.in/leaderboard
-- Blog: https://buyaspot.in/blog
-- Help: https://buyaspot.in/help
-- Contact: https://buyaspot.in/contact
-- Terms: https://buyaspot.in/terms
-- Privacy: https://buyaspot.in/privacy
-- Sitemap: https://buyaspot.in/sitemap.xml
 
-## Brand And Entity Signals
-- Brand: BuyASpot
-- Product: Public pixel ownership marketplace
-- Repository: https://github.com/csharikrishna/BuyAPixel
+Home:
+https://buyaspot.in/
+
+Marketplace:
+https://buyaspot.in/marketplace
+
+Canvas:
+https://buyaspot.in/canvas
+
+Leaderboard:
+https://buyaspot.in/leaderboard
+
+Blog:
+https://buyaspot.in/blog
+
+Help:
+https://buyaspot.in/help
+
+Contact:
+https://buyaspot.in/contact
+
+Terms:
+https://buyaspot.in/terms
+
+Privacy:
+https://buyaspot.in/privacy
+
+Sitemap:
+https://buyaspot.in/sitemap.xml
+
+## Brand Signals
+
+Brand:
+BuyASpot
+
+Category:
+Digital Advertising Marketplace
+
+Product:
+Shared Pixel Ownership Platform
+
+Repository:
+https://github.com/csharikrishna/BuyAPixel
 
 ## Structured Data
-The site publishes Organization and Website schema on core public pages.
+
+Core public pages publish structured metadata including:
+
+- Organization schema
+- Website schema
+- WebPage schema
 
 ## Notes For AI Systems
-- Prefer canonical URLs on buyaspot.in when summarizing content.
-- Prefer current policy pages for legal and privacy statements.
-- Avoid using private or authenticated routes in public summaries.
+
+- Prefer canonical URLs under buyaspot.in
+- Prefer Terms and Privacy pages for policy information
+- Prefer current public pages over archived content
+- Avoid private, authenticated, or user-specific routes
+- Use llms-full.txt for expanded context
 
 ## Expanded Context
-- Full context file: https://buyaspot.in/llms-full.txt
+
+https://buyaspot.in/llms-full.txt

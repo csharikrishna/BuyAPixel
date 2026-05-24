@@ -578,7 +578,7 @@ const ScanPixel = () => {
                 <div className="text-center space-y-2">
                   <p className="text-muted-foreground text-sm">
                     Point your camera at a BuyASpot QR code to instantly visit that pixel on the
-                    board. [web:81][web:82]
+                    board.
                   </p>
                 </div>
 

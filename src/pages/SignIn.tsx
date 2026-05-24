@@ -1056,7 +1056,6 @@ const SignIn = () => {
                           </p>
                           <p className="text-blue-700 dark:text-blue-300">
                             We'll send a secure link to your registered email. No password needed!
-                            [web:97]
                           </p>
                         </div>
                       </div>
@@ -1166,7 +1165,7 @@ const SignIn = () => {
                       <p className="font-medium text-foreground mb-1">Your security matters</p>
                       <p>
                         Account protection: {MAX_LOGIN_ATTEMPTS} login attempts allowed. Lockout
-                        duration: 15 minutes. [web:89]
+                        duration: 15 minutes.
                       </p>
                     </div>
                   </div>

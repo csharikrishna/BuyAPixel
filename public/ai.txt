@@ -1,6 +1,13 @@
-BuyASpot AI discovery
+BuyASpot AI Discovery
+
+Website: https://buyaspot.in
+
 Canonical: https://buyaspot.in/llms.txt
 Expanded: https://buyaspot.in/llms-full.txt
+
 Sitemap: https://buyaspot.in/sitemap.xml
 Robots: https://buyaspot.in/robots.txt
+
 Contact: https://buyaspot.in/contact
+
+Description: Buy digital advertising space online to promote startups, apps, businesses, portfolios, and brands.

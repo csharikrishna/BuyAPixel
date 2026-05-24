@@ -1,10 +1,18 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { createHmac } from 'https://deno.land/std@0.168.0/node/crypto.ts'
+import { SMTPClient } from 'https://deno.land/x/denomailer@1.6.0/mod.ts'
 
 const RAZORPAY_KEY_SECRET = Deno.env.get('RAZORPAY_KEY_SECRET')
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+
+// Email config — SMTP (primary) or Resend (fallback)
+const SMTP_HOSTNAME = Deno.env.get('SMTP_HOSTNAME')  // e.g. smtp.gmail.com
+const SMTP_PORT = parseInt(Deno.env.get('SMTP_PORT') || '465')
+const SMTP_USERNAME = Deno.env.get('SMTP_USERNAME')
+const SMTP_PASSWORD = Deno.env.get('SMTP_PASSWORD')
+const SMTP_FROM = Deno.env.get('SMTP_FROM') || 'BuyASpot <noreply@buyaspot.in>'
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
 
 // CORS: restrict to production domain + localhost for dev
@@ -92,18 +100,43 @@ function verifySignature(
    return timingSafeEqual(generatedSignature, signature)
 }
 
-// Send confirmation email
-async function sendConfirmationEmail(
-   email: string,
-   pixelCount: number,
-   totalAmount: number,
-   pixelName: string,
-   linkUrl?: string
-) {
-   if (!RESEND_API_KEY) {
-      console.warn('RESEND_API_KEY not set, skipping email')
-      return
+// ─── Email Sending (SMTP primary, Resend fallback) ──────────────────────────
+
+async function sendViaSmtp(to: string, subject: string, html: string): Promise<boolean> {
+   if (!SMTP_HOSTNAME || !SMTP_USERNAME || !SMTP_PASSWORD) return false
+
+   try {
+      const client = new SMTPClient({
+         connection: {
+            hostname: SMTP_HOSTNAME,
+            port: SMTP_PORT,
+            tls: SMTP_PORT === 465,
+            auth: {
+               username: SMTP_USERNAME,
+               password: SMTP_PASSWORD,
+            },
+         },
+      })
+
+      await client.send({
+         from: SMTP_FROM,
+         to: to,
+         subject,
+         content: 'auto',
+         html,
+      })
+
+      await client.close()
+      console.log('✅ Email sent via SMTP')
+      return true
+   } catch (err) {
+      console.error('SMTP send failed:', err)
+      return false
    }
+}
+
+async function sendViaResend(to: string, subject: string, html: string): Promise<boolean> {
+   if (!RESEND_API_KEY) return false
 
    try {
       const res = await fetch('https://api.resend.com/emails', {
@@ -114,20 +147,57 @@ async function sendConfirmationEmail(
          },
          body: JSON.stringify({
             from: 'BuyASpot <support@buyaspot.in>',
-            to: [email],
+            to: [to],
             reply_to: 'support@buyaspot.in',
-            subject: '🎉 Your BuyASpot Purchase Is Confirmed',
-            html: buildEmailHtml(email, pixelCount, totalAmount, pixelName, linkUrl),
+            subject,
+            html,
          }),
       })
 
       if (!res.ok) {
          const error = await res.json()
          console.error('Resend error:', error)
+         return false
       }
+      console.log('✅ Email sent via Resend')
+      return true
    } catch (err) {
-      console.error('Email send error:', err)
+      console.error('Resend send failed:', err)
+      return false
    }
+}
+
+// Send confirmation email — tries SMTP first, then Resend, then logs warning
+async function sendConfirmationEmail(
+   email: string,
+   pixelCount: number,
+   totalAmount: number,
+   pixelName: string,
+   linkUrl?: string
+) {
+   if (!email) {
+      console.warn('No email address provided, skipping confirmation email')
+      return
+   }
+
+   const subject = '🎉 Your BuyASpot Purchase Is Confirmed'
+   const html = buildEmailHtml(email, pixelCount, totalAmount, pixelName, linkUrl)
+
+   // Strategy 1: SMTP (Supabase custom SMTP credentials)
+   const smtpSent = await sendViaSmtp(email, subject, html)
+   if (smtpSent) return
+
+   // Strategy 2: Resend API (fallback)
+   const resendSent = await sendViaResend(email, subject, html)
+   if (resendSent) return
+
+   // No email service configured
+   console.warn(
+      '⚠️ No email service configured. To enable purchase confirmation emails, set either:\n' +
+      '   • SMTP_HOSTNAME, SMTP_PORT, SMTP_USERNAME, SMTP_PASSWORD (use your Supabase SMTP settings)\n' +
+      '   • RESEND_API_KEY (free tier: 100 emails/day at resend.com)\n' +
+      `   Skipped email for: ${email}`
+   )
 }
 
 // ✅ HTML entity escaping to prevent XSS in emails

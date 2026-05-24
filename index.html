@@ -2,75 +2,123 @@
 <html lang="en">
 
 <head>
+  <!-- Core -->
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+
   <title>BuyASpot - Buy Digital Advertising Space Online</title>
-  <link rel="canonical" href="https://buyaspot.in/" />
-  <meta name="keywords" content="buy pixels, pixel ads, digital advertising, startup promotion, online ads, advertising wall, internet billboard" />
-  <link rel="icon" type="image/png" href="%VITE_LOGO_PATH%" />
-  <meta name="description" content="Buy digital advertising space on BuyASpot. Promote your startup, app, portfolio, or business permanently online." />
+
+  <meta name="description"
+    content="Buy permanent digital advertising space on BuyASpot. Promote your startup, app, business, portfolio, or brand online forever." />
+
+  <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1" />
+
   <meta name="author" content="BuyASpot" />
   <meta name="theme-color" content="#6366f1" />
-  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
-  <meta name="author" content="BuyASpot" />
 
-  <meta property="og:title" content="BuyASpot" />
-  <meta property="og:description" content="Buy digital advertising space online and promote your brand permanently." />
-  <meta property="og:type" content="website" />
-  <meta property="og:site_name" content="BuyASpot" />
-  <meta property="og:url" content="https://buyaspot.in" />
-  <meta property="og:image" content="https://buyaspot.in/og-image.svg" />
-  <meta property="og:image:alt" content="BuyASpot - Buy Digital Advertising Space Online" />
+  <link rel="canonical" href="https://buyaspot.in/" />
 
-  <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="BuyASpot" />
-  <meta name="twitter:description" content="Buy digital advertising space online." />
-  <meta name="twitter:image" content="https://buyaspot.in/og-image.svg" />
+  <!-- Favicon -->
+  <link rel="icon" href="/favicon.ico" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 
+  <!-- Performance -->
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 
+  <!-- Open Graph -->
+  <meta property="og:title" content="BuyASpot - Buy Digital Advertising Space Online" />
+
+  <meta property="og:description"
+    content="Buy permanent advertising space online and promote your startup, app, portfolio, or business." />
+
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://buyaspot.in/" />
+  <meta property="og:site_name" content="BuyASpot" />
+
+  <meta property="og:image" content="https://buyaspot.in/og-image.png" />
+
+  <meta property="og:image:alt" content="BuyASpot Digital Advertising Platform" />
+
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image" />
+
+  <meta name="twitter:title" content="BuyASpot - Buy Digital Advertising Space Online" />
+
+  <meta name="twitter:description" content="Buy permanent digital advertising space online." />
+
+  <meta name="twitter:image" content="https://buyaspot.in/og-image.png" />
+
+  <meta name="twitter:site" content="@BuyASpot" />
+
+  <!-- WebSite Schema -->
   <script type="application/ld+json">
   {
-    "@context": "https://schema.org",
-    "@type": "WebSite",
-    "name": "BuyASpot",
-    "url": "https://buyaspot.in",
-    "potentialAction": {
-      "@type": "SearchAction",
-      "target": "https://buyaspot.in/search?q={search_term_string}",
-      "query-input": "required name=search_term_string"
+    "@context":"https://schema.org",
+    "@type":"WebSite",
+    "name":"BuyASpot",
+    "url":"https://buyaspot.in/",
+    "potentialAction":{
+      "@type":"SearchAction",
+      "target":"https://buyaspot.in/search?q={search_term_string}",
+      "query-input":"required name=search_term_string"
     }
   }
   </script>
 
+  <!-- Organization Schema -->
   <script type="application/ld+json">
   {
-    "@context": "https://schema.org",
-    "@type": "Organization",
-    "name": "BuyASpot",
-    "url": "https://buyaspot.in",
-    "logo": "https://buyaspot.in%VITE_LOGO_PATH%",
-    "sameAs": [
+    "@context":"https://schema.org",
+    "@type":"Organization",
+    "name":"BuyASpot",
+    "url":"https://buyaspot.in/",
+    "logo":"https://buyaspot.in/bap_logo.png",
+    "sameAs":[
       "https://twitter.com/BuyASpot",
       "https://www.linkedin.com/company/buyaspot"
     ]
   }
   </script>
 
+  <!-- Product/App Schema -->
   <script type="application/ld+json">
   {
-    "@context": "https://schema.org",
-    "@type": "WebPage",
-    "url": "https://buyaspot.in",
-    "name": "BuyASpot - Buy Digital Advertising Space Online",
-    "isPartOf": { "@type": "WebSite", "@id": "https://buyaspot.in" }
+    "@context":"https://schema.org",
+    "@type":"WebApplication",
+    "name":"BuyASpot",
+    "url":"https://buyaspot.in/",
+    "applicationCategory":"BusinessApplication",
+    "operatingSystem":"Web",
+    "description":"Digital advertising platform for buying permanent online advertising space."
   }
   </script>
+
+  <!-- WebPage Schema -->
+  <script type="application/ld+json">
+  {
+    "@context":"https://schema.org",
+    "@type":"WebPage",
+    "name":"BuyASpot - Buy Digital Advertising Space Online",
+    "url":"https://buyaspot.in/",
+    "isPartOf":{
+      "@type":"WebSite",
+      "url":"https://buyaspot.in/"
+    }
+  }
+  </script>
+
 </head>
 
 <body>
+
   <div id="root"></div>
-  <script type="module" src="/src/main.tsx"></script>
+
+  <script type="module" src="/src/main.tsx">
+  </script>
+
 </body>
 
 </html>

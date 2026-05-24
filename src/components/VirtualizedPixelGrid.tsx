@@ -11,12 +11,13 @@ import {
 } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { PixelTooltip } from "./PixelTooltip";
+import { PixelInfoModal } from "./PixelInfoModal";
 import { toast } from "sonner";
 import { Star, ExternalLink, Loader2 } from "lucide-react";
 import { usePixelGridData } from "@/hooks/usePixelGridData";
 import { useGridInteraction } from "@/hooks/useGridInteraction";
 import { GRID_CONFIG, ZONE_SIZES, AD_TIER_CONFIG, getAdTierByPrice, calculatePixelPrice } from "@/utils/gridConstants";
-import { SelectedPixel, PurchasedPixel } from "@/types/grid";
+import { SelectedPixel, PurchasedPixel, PixelBlock } from "@/types/grid";
 import { getGridImageUrl, getBillboardImageUrl } from "@/utils/imageOptimization";
 
 // ============================================================
@@ -39,6 +40,7 @@ interface VirtualizedPixelGridProps {
 
 export interface GridHandle {
   resetViewport: () => void;
+  refetchData: () => void;
 }
 
 // ============================================================
@@ -84,7 +86,7 @@ export const VirtualizedPixelGrid = forwardRef<
     const imageUrlsRef = useRef<Set<string>>(new Set());
 
     // ── Data & Interaction Hooks ──────────────────────────────
-    const { purchasedPixels, isLoading, error, spatialIndex } =
+    const { purchasedPixels, isLoading, error, spatialIndex, refetch } =
       usePixelGridData();
 
     const {
@@ -158,8 +160,11 @@ export const VirtualizedPixelGrid = forwardRef<
           onZoomChange(fitted.zoom);
           setViewportOffset(fitted.offset);
         },
+        refetchData: () => {
+          refetch();
+        },
       }),
-      [calculateFittedViewport, onZoomChange, setViewportOffset]
+      [calculateFittedViewport, onZoomChange, setViewportOffset, refetch]
     );
 
     // ── Concurrency ───────────────────────────────────────────
@@ -169,6 +174,11 @@ export const VirtualizedPixelGrid = forwardRef<
     const [isMobile, setIsMobile] = useState(false);
     const [currentFeaturedIndex, setCurrentFeaturedIndex] = useState(0);
     const [rangeStart, setRangeStart] = useState<{ x: number; y: number } | null>(null);
+
+    // Pixel info modal state
+    const [infoModalPixel, setInfoModalPixel] = useState<PurchasedPixel | null>(null);
+    const [infoModalBlock, setInfoModalBlock] = useState<PixelBlock | null>(null);
+    const [infoModalOpen, setInfoModalOpen] = useState(false);
 
     // ── Memoized Derivations ──────────────────────────────────
 
@@ -319,6 +329,14 @@ export const VirtualizedPixelGrid = forwardRef<
     const handleKeyDown = useCallback(
       (event: KeyboardEvent) => {
         if (!isSelecting || !hoveredPixel) return;
+
+        // Don't intercept keys when user is typing in an input/textarea
+        const tag = (event.target as HTMLElement)?.tagName;
+        if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" ||
+            (event.target as HTMLElement)?.isContentEditable) {
+          return;
+        }
+
         if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(event.key)) {
           event.preventDefault();
           // TODO: expose setHoveredPixel from useGridInteraction to support keyboard nav
@@ -707,26 +725,30 @@ export const VirtualizedPixelGrid = forwardRef<
                   }}
                   onClick={(e) => {
                     e.stopPropagation();
-                    // Show image preview in toast
-                    if (block.imageUrl) {
-                      toast(
-                        <div className="flex flex-col gap-2">
-                          <img
-                            src={block.imageUrl}
-                            alt={block.altText || 'Pixel block'}
-                            className="w-full max-w-[200px] h-auto rounded-lg object-cover"
-                          />
-                          <div className="text-sm font-medium">{block.altText || `${block.width}×${block.height} block`}</div>
-                          {block.linkUrl && (
-                            <div className="text-xs text-muted-foreground truncate">{block.linkUrl}</div>
-                          )}
-                        </div>,
-                        { duration: 4000 }
+                    if (!isSelecting) {
+                      // Open pixel info modal
+                      const firstPixel = visiblePurchasedPixels.find(
+                        (p) => p.block_id === block.blockId
                       );
-                    }
-                    // Open link in new tab
-                    if (block.linkUrl) {
-                      openUrl(block.linkUrl);
+                      if (firstPixel) {
+                        setInfoModalPixel(firstPixel);
+                        setInfoModalBlock({
+                          id: block.blockId,
+                          owner_id: block.ownerId,
+                          image_url: block.imageUrl,
+                          link_url: block.linkUrl || null,
+                          alt_text: block.altText || null,
+                          min_x: block.minX,
+                          max_x: block.minX + block.width - 1,
+                          min_y: block.minY,
+                          max_y: block.minY + block.height - 1,
+                          pixel_count: block.width * block.height,
+                          total_price: 0,
+                          created_at: firstPixel.purchased_at || new Date().toISOString(),
+                          updated_at: firstPixel.purchased_at || new Date().toISOString(),
+                        });
+                        setInfoModalOpen(true);
+                      }
                     }
                   }}
                   onKeyDown={(e) => {
@@ -776,26 +798,11 @@ export const VirtualizedPixelGrid = forwardRef<
                   }}
                   onClick={(e) => {
                     e.stopPropagation();
-                    // Show image preview in toast
-                    if (image_url) {
-                      toast(
-                        <div className="flex flex-col gap-2">
-                          <img
-                            src={image_url}
-                            alt={alt_text || 'Pixel'}
-                            className="w-full max-w-[200px] h-auto rounded-lg object-cover"
-                          />
-                          <div className="text-sm font-medium">{alt_text || `Pixel (${x}, ${y})`}</div>
-                          {link_url && (
-                            <div className="text-xs text-muted-foreground truncate">{link_url}</div>
-                          )}
-                        </div>,
-                        { duration: 4000 }
-                      );
-                    }
-                    // Open link in new tab
-                    if (link_url) {
-                      openUrl(link_url);
+                    if (!isSelecting) {
+                      // Open pixel info modal for individual pixel
+                      setInfoModalPixel(pixel);
+                      setInfoModalBlock(null);
+                      setInfoModalOpen(true);
                     }
                   }}
                   onKeyDown={(e) => {
@@ -857,6 +864,18 @@ export const VirtualizedPixelGrid = forwardRef<
             status={tooltipStatus}
           />
         )}
+
+        {/* Pixel Info Modal — shown when user clicks a purchased pixel */}
+        <PixelInfoModal
+          isOpen={infoModalOpen}
+          onClose={() => {
+            setInfoModalOpen(false);
+            setInfoModalPixel(null);
+            setInfoModalBlock(null);
+          }}
+          pixel={infoModalPixel}
+          block={infoModalBlock}
+        />
       </div>
     );
   }

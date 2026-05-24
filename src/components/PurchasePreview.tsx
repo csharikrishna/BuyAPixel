@@ -133,9 +133,16 @@ export const PurchasePreview = ({
   const pixelNameRef = useRef<HTMLInputElement>(null);
   const linkUrlRef = useRef<HTMLInputElement>(null);
 
-  // Auto-save to localStorage [web:140]
+  // Auto-save to localStorage and state reset [web:140]
   useEffect(() => {
     if (isOpen) {
+      // Reset state for new checkout session
+      setIsProcessing(false);
+      setCurrentStep('details');
+      setPaymentStatus('idle');
+      setPaymentError(null);
+      setFormProgress(0);
+
       const savedData = localStorage.getItem('checkout-draft');
       if (savedData) {
         try {
@@ -243,16 +250,16 @@ export const PurchasePreview = ({
 
   const selectionInfo = getSelectionInfo();
 
-  // Enhanced URL validation with common patterns [web:145]
+  // Enhanced URL validation — accepts bare domains like "example.com" [web:145]
   const validateUrl = (url: string): { valid: boolean; error?: string } => {
     if (!url) return { valid: true }; // Optional field
 
     // Remove whitespace
     url = url.trim();
 
-    // Check for common typos
-    if (url.startsWith('www.') && !url.includes('://')) {
-      return { valid: false, error: "URL must start with http:// or https://" };
+    // Auto-prepend https:// for bare domains (including www.)
+    if (!url.includes('://')) {
+      url = `https://${url}`;
     }
 
     try {
@@ -260,7 +267,12 @@ export const PurchasePreview = ({
 
       // Check protocol
       if (!['http:', 'https:'].includes(urlObj.protocol)) {
-        return { valid: false, error: "Only HTTP and HTTPS protocols are allowed" };
+        return { valid: false, error: "Only HTTP and HTTPS links are allowed" };
+      }
+
+      // Must have at least one dot in hostname (i.e. looks like a real domain)
+      if (!urlObj.hostname.includes('.')) {
+        return { valid: false, error: "Please enter a valid domain (e.g., example.com)" };
       }
 
       // Check for localhost in production
@@ -271,7 +283,7 @@ export const PurchasePreview = ({
 
       return { valid: true };
     } catch {
-      return { valid: false, error: "Please enter a valid URL (e.g., https://example.com)" };
+      return { valid: false, error: "Please enter a valid link (e.g., example.com)" };
     }
   };
 
@@ -355,6 +367,14 @@ export const PurchasePreview = ({
     }
 
     return isValid;
+  };
+
+  // Normalize URL: prepend https:// for bare domains before saving
+  const normalizeUrl = (url: string): string => {
+    const trimmed = url.trim();
+    if (!trimmed) return '';
+    if (!trimmed.includes('://')) return `https://${trimmed}`;
+    return trimmed;
   };
 
   const handleConfirmPurchase = async () => {
@@ -457,7 +477,7 @@ export const PurchasePreview = ({
           }
 
           // Success! Call the original onConfirmPurchase
-          await onConfirmPurchase(pixelName.trim(), linkUrl.trim(), imagePreview);
+          await onConfirmPurchase(pixelName.trim(), normalizeUrl(linkUrl), imagePreview);
 
           // Update payment status to success
           setPaymentStatus('success');
@@ -536,7 +556,7 @@ export const PurchasePreview = ({
             }
 
             // Success! Call the original onConfirmPurchase
-            await onConfirmPurchase(pixelName.trim(), linkUrl.trim(), imagePreview);
+            await onConfirmPurchase(pixelName.trim(), normalizeUrl(linkUrl), imagePreview);
 
             // Update payment status to success
             setPaymentStatus('success');
@@ -842,6 +862,39 @@ export const PurchasePreview = ({
         </CardContent>
       </Card>
 
+      {/* Image Upload Form */}
+      <Card className="card-premium">
+        <CardHeader>
+          <CardTitle className="text-base md:text-lg flex items-center gap-2">
+            <Sparkles className="w-4 h-4 md:w-5 md:h-5 text-primary" aria-hidden="true" />
+            Design Your Pixel
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div>
+            <Label htmlFor="image-upload" className="text-sm font-medium mb-2 block">
+              Image Upload
+              <span className="text-xs text-muted-foreground font-normal ml-1">(Optional)</span>
+            </Label>
+            <ImageUpload
+              onImageUploaded={(url) => setImagePreview(url)}
+              currentImage={imagePreview || ''}
+              folder="user-pixels"
+              bucket="pixel-images"
+              cropAspectRatio={selectionInfo ? selectionInfo.dimensions.width / selectionInfo.dimensions.height : 1}
+              placeholder="Upload Pixel Image"
+              className="w-full"
+            />
+            <p className="text-xs text-muted-foreground mt-2">
+              {selectedPixels.length > 1
+                ? `Upload ONE image — it will be displayed across all ${selectedPixels.length} pixels as a single merged ${selectionInfo?.dimensions.width}×${selectionInfo?.dimensions.height} block.`
+                : 'Any size accepted — auto-compressed. Square images work best.'
+              }
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Ad Tier Preview - Shows tier benefits and ad visualization */}
       <AdTierPreview 
         totalPrice={totalCost}
@@ -850,12 +903,12 @@ export const PurchasePreview = ({
         imageUrl={imagePreview}
       />
 
-      {/* Pixel Information Form with Accessibility [web:145][web:148] */}
+      {/* Text Details Form */}
       <Card className="card-premium">
         <CardHeader>
           <CardTitle className="text-base md:text-lg flex items-center gap-2">
             <Sparkles className="w-4 h-4 md:w-5 md:h-5 text-primary" aria-hidden="true" />
-            Pixel Information
+            Pixel Details
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -876,7 +929,6 @@ export const PurchasePreview = ({
               value={pixelName}
               onChange={(e) => handlePixelNameChange(e.target.value)}
               onBlur={handlePixelNameBlur}
-              autoFocus
               required
               aria-required="true"
               aria-invalid={!!pixelNameError}
@@ -913,7 +965,7 @@ export const PurchasePreview = ({
               id="link-url"
               ref={linkUrlRef}
               type="url"
-              placeholder="https://example.com"
+              placeholder="example.com"
               value={linkUrl}
               onChange={(e) => handleLinkUrlChange(e.target.value)}
               onBlur={handleLinkUrlBlur}
@@ -940,29 +992,6 @@ export const PurchasePreview = ({
                 {linkUrlError}
               </div>
             )}
-          </div>
-
-          {/* Image Upload */}
-          <div>
-            <Label htmlFor="image-upload" className="text-sm font-medium mb-2 block">
-              Image Upload
-              <span className="text-xs text-muted-foreground font-normal ml-1">(Optional)</span>
-            </Label>
-            <ImageUpload
-              onImageUploaded={(url) => setImagePreview(url)}
-              currentImage={imagePreview || ''}
-              folder="user-pixels"
-              bucket="pixel-images"
-              cropAspectRatio={selectionInfo ? selectionInfo.dimensions.width / selectionInfo.dimensions.height : 1}
-              placeholder="Upload Pixel Image"
-              className="w-full"
-            />
-            <p className="text-xs text-muted-foreground mt-1">
-              {selectedPixels.length > 1
-                ? `Upload ONE image — it will be displayed across all ${selectedPixels.length} pixels as a single merged ${selectionInfo?.dimensions.width}×${selectionInfo?.dimensions.height} block.`
-                : 'Any size accepted — auto-compressed. Square images work best.'
-              }
-            </p>
           </div>
         </CardContent>
       </Card>
@@ -1049,16 +1078,16 @@ export const PurchasePreview = ({
     return (
       <Drawer open={isOpen} onOpenChange={onClose}>
         <DrawerContent 
-          className="max-h-[95vh] flex flex-col"
+          className="max-h-[90dvh] flex flex-col"
           onInteractOutside={(e) => {
             if (isProcessing || document.querySelector('.razorpay-container')) {
               e.preventDefault();
             }
           }}
         >
-          <DrawerHeader className="border-b pb-3 px-4 flex-shrink-0">
+          <DrawerHeader className="border-b pb-3 px-4 shrink-0">
             <DrawerTitle className="flex items-center gap-2 text-lg">
-              <ShoppingCart className="w-6 h-6 text-primary" aria-hidden="true" />
+              <ShoppingCart className="w-5 h-5 text-primary" aria-hidden="true" />
               Checkout
             </DrawerTitle>
             <DrawerDescription className="text-sm text-muted-foreground">
@@ -1067,7 +1096,7 @@ export const PurchasePreview = ({
           </DrawerHeader>
 
           <div
-            className="flex-1 overflow-y-auto px-4 py-6"
+            className="flex-1 overflow-y-auto px-4 py-5"
             style={{
               WebkitOverflowScrolling: 'touch',
               overscrollBehavior: 'contain'
@@ -1077,8 +1106,8 @@ export const PurchasePreview = ({
             {purchaseContent}
           </div>
 
-          {/* Sticky Action Buttons for Mobile [web:140] */}
-          <div className={`sticky bottom-0 bg-background border-t p-4 flex-shrink-0 safe-area-bottom ${currentStep === 'payment' || isProcessing ? 'pointer-events-none' : ''}`}>
+          {/* Sticky Action Buttons for Mobile */}
+          <div className={`shrink-0 border-t bg-background px-4 py-4 safe-area-bottom ${currentStep === 'payment' || isProcessing ? 'pointer-events-none' : ''}`}>
             {actionButtons}
           </div>
         </DrawerContent>
@@ -1089,9 +1118,10 @@ export const PurchasePreview = ({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent 
-        className="max-w-2xl max-h-[90vh]" 
+        className="max-w-xl max-h-[90dvh]" 
         role="dialog" 
         aria-labelledby="checkout-title"
+        aria-modal="true"
         onInteractOutside={(e) => {
           if (isProcessing || document.querySelector('.razorpay-container')) {
             e.preventDefault();
@@ -1113,11 +1143,11 @@ export const PurchasePreview = ({
             Complete your pixel purchase securely with Razorpay
           </DialogDescription>
         </DialogHeader>
-        <ScrollArea className="max-h-[70vh] pr-4">
+        <ScrollArea className="max-h-[calc(90dvh-8rem)] pr-3">
           {purchaseContent}
 
           {/* Action Buttons for Desktop */}
-          <div className={`pt-6 border-t mt-6 ${currentStep === 'payment' || isProcessing ? 'pointer-events-none' : ''}`}>
+          <div className={`pt-5 border-t mt-5 ${currentStep === 'payment' || isProcessing ? 'pointer-events-none' : ''}`}>
             {actionButtons}
           </div>
         </ScrollArea>
