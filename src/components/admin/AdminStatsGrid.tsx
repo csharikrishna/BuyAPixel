@@ -38,7 +38,7 @@ export function AdminStatsGrid({ stats }: AdminStatsGridProps) {
       {statCards.map((card) => {
         const colors = colorMap[card.color];
         const Icon = card.icon;
-        const rawValue = stats[card.key];
+        const rawValue = stats[card.key] || 0;
         let displayValue: string;
 
         if (card.format === 'currency') {

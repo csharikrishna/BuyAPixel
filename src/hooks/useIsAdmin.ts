@@ -21,28 +21,30 @@ export const useIsAdmin = () => {
     }
 
     try {
-      // ✅ FIXED C9: Check admin status ONLY from database
-      // Never use client-side email-based checks
-      const { data, error } = await supabase
+      // Primary check: profiles.is_admin column (most reliable)
+      const profileResult = await supabase
         .from('profiles')
         .select('is_admin')
         .eq('user_id', user.id)
         .maybeSingle();
 
-      if (!error && data) {
-        const dbIsAdmin = data.is_admin === true;
-        setIsAdmin(dbIsAdmin);
-        // Note: Super admin distinction requires backend-only verification
-        // Do NOT use environment variables for privilege elevation
-        setIsSuperAdmin(false); // Client cannot verify super admin status
-      } else {
-        // Database query failed - default to non-admin
-        // This is safer than falling back to email check
-        setIsAdmin(false);
-        setIsSuperAdmin(false);
+      const dbIsAdmin = profileResult.data?.is_admin === true;
+      
+      // Secondary check: super admin email (optional)
+      let dbIsSuperAdmin = false;
+      try {
+        const superAdminResult = await supabase.rpc('is_current_user_super_admin');
+        dbIsSuperAdmin = superAdminResult.data === true;
+      } catch (err) {
+        // RPC might not be accessible; rely on profiles.is_admin
+        dbIsSuperAdmin = false;
       }
+
+      // Either condition grants admin access
+      setIsAdmin(dbIsAdmin || dbIsSuperAdmin);
+      setIsSuperAdmin(dbIsSuperAdmin);
     } catch {
-      // Error on exception - default to non-admin
+      // Error — default to non-admin (safer)
       setIsAdmin(false);
       setIsSuperAdmin(false);
     } finally {

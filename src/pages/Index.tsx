@@ -4,6 +4,8 @@ import HowItWorks from "@/components/HowItWorks";
 import Marketplace from "@/components/Marketplace";
 import Footer from "@/components/Footer";
 import Header from "@/components/Header";
+import SEO from "@/components/SEO";
+import { generateOrganizationSchema, generateWebsiteSchema } from "@/lib/seo-utils";
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -31,6 +33,23 @@ const Index = () => {
 
   return (
     <div className="min-h-screen pb-20 lg:pb-0">
+      <SEO
+        title="BuyASpot - Own a Piece of the Internet"
+        description="India's pixel marketplace where creators, brands, and communities buy, sell, and showcase digital space on a live grid."
+        canonical="https://buyaspot.in/"
+        image="https://buyaspot.in/og-image.jpg"
+        imageAlt="BuyASpot homepage preview"
+        keywords={[
+          'BuyASpot',
+          'pixel marketplace',
+          'buy pixels',
+          'sell pixels',
+          'digital advertising',
+          'online billboard',
+          'India startup',
+        ]}
+        structuredData={[generateWebsiteSchema(), generateOrganizationSchema()]}
+      />
       <Header />
 
       {broadcast && (

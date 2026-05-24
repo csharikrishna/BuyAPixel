@@ -108,9 +108,7 @@ export const ImageUpload = ({
 
   // Update preview when currentImage changes
   useEffect(() => {
-    if (currentImage) {
-      setPreview(currentImage);
-    }
+    setPreview(currentImage || null);
   }, [currentImage]);
 
   // Create and track object URL
@@ -244,10 +242,8 @@ export const ImageUpload = ({
 
         if (!isMountedRef.current) return;
 
-        startTransition(() => {
           setPreview(publicUrl);
           onImageUploaded(publicUrl);
-        });
 
         const sizeKB = (file.size / 1024).toFixed(2);
         toast.success('Image uploaded successfully!', {
@@ -343,10 +339,8 @@ export const ImageUpload = ({
   );
 
   const handleRemove = useCallback(() => {
-    startTransition(() => {
-      setPreview(null);
-      onImageUploaded('');
-    });
+    setPreview(null);
+    onImageUploaded('');
 
     if (fileInputRef.current) {
       fileInputRef.current.value = '';

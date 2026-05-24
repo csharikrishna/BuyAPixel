@@ -18,7 +18,7 @@ import {
 import {
    Clock, CheckCircle2, AlertCircle, Sparkles,
    Award, Shield, Check, Copy, Trash2, ExternalLink,
-   Edit, AlertTriangle, Loader2
+   Edit, AlertTriangle, Loader2, Globe, LogOut
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Profile, PixelStats, ProfileCompletionData } from '@/types/profile';
@@ -29,6 +29,7 @@ interface ProfileDetailsProps {
    profile: Profile | null;
    email: string | null | undefined;
    isOwnProfile: boolean;
+   isEmailVerified: boolean;
    profileCompletionData: ProfileCompletionData;
    pixelStats: PixelStats;
    onEditProfile: () => void;
@@ -41,6 +42,7 @@ export const ProfileDetails = ({
    profile,
    email,
    isOwnProfile,
+   isEmailVerified,
    profileCompletionData,
    pixelStats,
    onEditProfile,
@@ -79,12 +81,17 @@ export const ProfileDetails = ({
    };
 
    return (
-      <Card className="shadow-2xl sticky top-4 bg-white dark:bg-gray-900 border-purple-200 dark:border-purple-500/20 h-fit">
-         <CardHeader className="text-center pb-4">
-            <div className="flex justify-center mb-4">
+      <Card className="shadow-xl sticky top-4 bg-white dark:bg-gray-900 border-purple-100 dark:border-purple-500/20 h-fit overflow-hidden">
+         {/* Decorative header gradient */}
+         <div className="h-24 bg-gradient-to-r from-purple-600 via-pink-500 to-blue-600 relative">
+            <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMjAiIGN5PSIyMCIgcj0iMSIgZmlsbD0icmdiYSgyNTUsMjU1LDI1NSwwLjEpIi8+PC9zdmc+')] opacity-50" />
+         </div>
+
+         <CardHeader className="text-center pb-4 -mt-16 relative z-10">
+            <div className="flex justify-center mb-3">
                <div className="relative group">
-                  <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 via-pink-500 to-blue-600 rounded-full blur opacity-30 group-hover:opacity-50 transition duration-300"></div>
-                  <Avatar className="relative w-32 h-32 border-4 border-white dark:border-gray-900 shadow-xl ring-2 ring-purple-500/20">
+                  <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 via-pink-500 to-blue-600 rounded-full blur opacity-40 group-hover:opacity-60 transition duration-300"></div>
+                  <Avatar className="relative w-28 h-28 lg:w-32 lg:h-32 border-4 border-white dark:border-gray-900 shadow-xl ring-2 ring-purple-500/20">
                      <AvatarImage
                         src={profile?.avatar_url || undefined}
                         alt={`${profile?.full_name || 'User'}'s profile picture`}
@@ -93,13 +100,42 @@ export const ProfileDetails = ({
                         {getInitials(profile?.full_name)}
                      </AvatarFallback>
                   </Avatar>
+                  {isOwnProfile && (
+                     <button
+                        onClick={onEditProfile}
+                        className="absolute bottom-1 right-1 w-8 h-8 bg-white dark:bg-gray-800 rounded-full shadow-lg flex items-center justify-center border border-gray-200 dark:border-gray-700 hover:scale-110 transition-transform"
+                        aria-label="Edit profile picture"
+                     >
+                        <Edit className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
+                     </button>
+                  )}
                </div>
             </div>
-            <CardTitle className="text-xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+            <CardTitle className="text-xl font-bold text-gray-900 dark:text-gray-100">
                {profile?.full_name || 'Anonymous User'}
             </CardTitle>
             {isOwnProfile && (
                <p className="text-sm text-muted-foreground break-all">{email}</p>
+            )}
+
+            {/* Bio */}
+            {profile?.bio && (
+               <p className="text-sm text-muted-foreground mt-2 italic leading-relaxed">
+                  "{profile.bio}"
+               </p>
+            )}
+
+            {/* Website */}
+            {profile?.website_url && (
+               <a
+                  href={profile.website_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 text-sm text-purple-600 dark:text-purple-400 hover:underline mt-1"
+               >
+                  <Globe className="w-3.5 h-3.5" />
+                  {profile.website_url.replace(/^https?:\/\//, '').replace(/\/$/, '')}
+               </a>
             )}
 
             <div className="flex flex-wrap items-center justify-center gap-2 mt-3">
@@ -107,132 +143,126 @@ export const ProfileDetails = ({
                   <Clock className="w-3 h-3" aria-hidden="true" />
                   {formatRelativeDate(profile?.created_at || '')}
                </Badge>
-               <Badge variant="default" className="flex items-center gap-1 bg-gradient-to-r from-green-500 to-emerald-500 text-white border-0">
-                  <CheckCircle2 className="w-3 h-3" aria-hidden="true" />
-                  Verified
-               </Badge>
+               {isEmailVerified ? (
+                  <Badge variant="default" className="flex items-center gap-1 bg-gradient-to-r from-green-500 to-emerald-500 text-white border-0">
+                     <CheckCircle2 className="w-3 h-3" aria-hidden="true" />
+                     Verified
+                  </Badge>
+               ) : (
+                  <Badge variant="secondary" className="flex items-center gap-1 bg-amber-500/10 border-amber-500/20 text-amber-700 dark:text-amber-300">
+                     <AlertCircle className="w-3 h-3" aria-hidden="true" />
+                     Unverified
+                  </Badge>
+               )}
             </div>
          </CardHeader>
 
          <CardContent className="space-y-4">
             {/* Profile Completion Card - Only for Owner */}
-            {isOwnProfile && (
-               <div className="bg-gradient-to-br from-orange-50 to-pink-50 dark:from-orange-950/30 dark:to-pink-950/30 rounded-xl p-4 border-2 border-orange-200 dark:border-orange-500/20 shadow-lg">
+            {isOwnProfile && profileCompletionData.percentage < 100 && (
+               <div className="bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950/30 dark:to-amber-950/30 rounded-xl p-4 border border-orange-200 dark:border-orange-500/20">
                   <div className="flex items-center justify-between mb-3">
                      <div>
-                        <h3 className="font-semibold text-sm bg-gradient-to-r from-orange-600 to-pink-600 bg-clip-text text-transparent flex items-center gap-1">
-                           <Sparkles className="w-4 h-4 text-orange-600 dark:text-orange-400" />
+                        <h3 className="font-semibold text-sm text-orange-800 dark:text-orange-200 flex items-center gap-1.5">
+                           <Sparkles className="w-4 h-4 text-orange-500" />
                            Profile Completion
                         </h3>
                         <p className="text-xs text-muted-foreground mt-0.5">
-                           {profileCompletionData.percentage === 100
-                              ? '🎉 Complete!'
-                              : 'Complete to unlock all features'
-                           }
+                           Complete to unlock all features
                         </p>
                      </div>
-                     <div className="text-right">
-                        <p className="text-3xl font-bold bg-gradient-to-r from-orange-600 to-pink-600 bg-clip-text text-transparent">
-                           {profileCompletionData.percentage}%
-                        </p>
-                     </div>
+                     <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">
+                        {profileCompletionData.percentage}%
+                     </p>
                   </div>
 
                   <Progress
                      value={profileCompletionData.percentage}
-                     className="h-3 mb-4"
+                     className="h-2 mb-3"
                   />
 
-                  {/* Field Breakdown */}
-                  <div className="space-y-2">
-                     <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
-                        Field Status
-                     </p>
+                  {/* Compact Field Status */}
+                  <div className="space-y-1.5">
                      {profileCompletionData.allFields.map((field) => (
                         <div
                            key={field.name}
-                           className={`flex items-center justify-between p-2 rounded-lg transition-all duration-300 ${field.completed
-                              ? 'bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-500/30 shadow-sm'
-                              : 'bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-500/30 shadow-sm'
-                              }`}
+                           className={`flex items-center justify-between py-1.5 px-2.5 rounded-lg text-xs transition-all ${field.completed
+                              ? 'bg-green-50 dark:bg-green-950/20 text-green-700 dark:text-green-300'
+                              : 'bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-300'
+                           }`}
                         >
                            <div className="flex items-center gap-2">
-                              <div className={field.completed ? 'text-green-600 dark:text-green-400' : 'text-yellow-600 dark:text-yellow-400'}>
-                                 {field.icon}
-                              </div>
-                              <span className={`text-sm font-medium ${field.completed ? 'text-green-900 dark:text-green-100' : 'text-yellow-900 dark:text-yellow-100'
-                                 }`}>
-                                 {field.label}
-                              </span>
+                              {field.icon}
+                              <span className="font-medium">{field.label}</span>
                            </div>
                            {field.completed ? (
-                              <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400" />
+                              <CheckCircle2 className="w-3.5 h-3.5 text-green-500" />
                            ) : (
-                              <AlertCircle className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />
+                              <AlertCircle className="w-3.5 h-3.5 text-amber-500" />
                            )}
                         </div>
                      ))}
                   </div>
 
-                  {/* Missing Fields Alert */}
                   {profileCompletionData.missingFields.length > 0 && (
-                     <div className="mt-4 pt-4 border-t border-orange-500/20">
-                        <p className="text-xs font-medium text-orange-800 dark:text-orange-200 mb-2">
-                           ⚠️ Missing Information:
-                        </p>
-                        <ul className="text-xs text-orange-700 dark:text-orange-300 space-y-1 ml-4">
-                           {profileCompletionData.missingFields.map((field) => (
-                              <li key={field.name} className="list-disc">
-                                 Add your {field.label.toLowerCase()}
-                              </li>
-                           ))}
-                        </ul>
-                        <Button
-                           onClick={onEditProfile}
-                           size="sm"
-                           className="w-full mt-3 bg-gradient-to-r from-orange-600 to-pink-600 hover:from-orange-700 hover:to-pink-700 text-white shadow-lg hover:shadow-xl transition-all duration-300"
-                        >
-                           <Edit className="w-3 h-3 mr-2" />
-                           Complete Profile Now
-                        </Button>
-                     </div>
+                     <Button
+                        onClick={onEditProfile}
+                        size="sm"
+                        className="w-full mt-3 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white shadow-md hover:shadow-lg transition-all duration-300 border-0"
+                     >
+                        <Edit className="w-3 h-3 mr-2" />
+                        Complete Profile
+                     </Button>
                   )}
                </div>
             )}
 
+            {/* Profile Completion — 100% Done */}
+            {isOwnProfile && profileCompletionData.percentage === 100 && (
+               <div className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 rounded-xl p-3 border border-green-200 dark:border-green-500/20 text-center">
+                  <p className="text-sm font-medium text-green-700 dark:text-green-300 flex items-center justify-center gap-1.5">
+                     <CheckCircle2 className="w-4 h-4" />
+                     Profile Complete! 🎉
+                  </p>
+               </div>
+            )}
 
             {/* Account Status */}
-            <div className="bg-gradient-to-br from-purple-50 to-blue-50 dark:from-purple-950/20 dark:to-blue-950/20 rounded-xl p-4 border border-purple-200 dark:border-purple-500/20 shadow-lg">
-               <h3 className="font-semibold text-sm mb-3 flex items-center gap-2 bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-                  <Award className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-                  Account Status
+            <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4 border border-gray-200 dark:border-gray-700/50">
+               <h3 className="font-semibold text-sm mb-3 flex items-center gap-2 text-gray-700 dark:text-gray-300">
+                  <Award className="w-4 h-4 text-purple-500" />
+                  Account Stats
                </h3>
-               <div className="space-y-2 text-sm">
+               <div className="space-y-2.5 text-sm">
                   <div className="flex justify-between items-center">
-                     <span className="text-muted-foreground">Type</span>
-                     <Badge variant="default" className="bg-gradient-to-r from-purple-600 to-blue-600 text-white border-0">
+                     <span className="text-muted-foreground">Status</span>
+                     <Badge variant="secondary" className="bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border-0 font-medium">
                         {isOwnProfile ? 'Active Member' : 'Community Member'}
                      </Badge>
                   </div>
                   <div className="flex justify-between items-center">
                      <span className="text-muted-foreground">Pixels Owned</span>
-                     <span className="font-semibold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">{pixelStats.totalPixels}</span>
+                     <span className="font-bold text-purple-600 dark:text-purple-400">{pixelStats.totalPixels}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                     <span className="text-muted-foreground">Total Invested</span>
+                     <span className="font-bold text-green-600 dark:text-green-400">₹{pixelStats.totalInvestment.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between items-center">
                      <span className="text-muted-foreground">Member Since</span>
-                     <span className="font-semibold text-xs">{formatRelativeDate(profile?.created_at || '')}</span>
+                     <span className="font-medium text-xs">{formatDate(profile?.created_at || '')}</span>
                   </div>
                </div>
             </div>
 
             {/* User ID Card */}
-            <div className="bg-gradient-to-br from-gray-50 to-slate-100 dark:from-gray-950/20 dark:to-slate-950/20 rounded-xl p-4 border border-gray-200 dark:border-gray-500/20 shadow-lg">
-               <h3 className="font-semibold text-sm mb-2 flex items-center gap-2">
-                  <Shield className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+            <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4 border border-gray-200 dark:border-gray-700/50">
+               <h3 className="font-semibold text-sm mb-2 flex items-center gap-2 text-gray-700 dark:text-gray-300">
+                  <Shield className="w-4 h-4 text-purple-500" />
                   User ID
                </h3>
                <div className="flex items-center gap-2">
-                  <code className="flex-1 text-xs bg-slate-50 dark:bg-gray-800 p-2 rounded-lg border border-slate-200 dark:border-purple-500/20 font-mono truncate">
+                  <code className="flex-1 text-xs bg-white dark:bg-gray-900 p-2 rounded-lg border border-gray-200 dark:border-gray-700 font-mono truncate">
                      {profile?.user_id}
                   </code>
                   <Button
@@ -240,6 +270,7 @@ export const ProfileDetails = ({
                      variant="ghost"
                      onClick={handleCopyUserId}
                      className="flex-shrink-0 hover:bg-purple-500/10"
+                     aria-label="Copy User ID"
                   >
                      {copied ? (
                         <Check className="w-4 h-4 text-green-500" />
@@ -252,22 +283,22 @@ export const ProfileDetails = ({
 
             {/* Account Actions - Only for Owner */}
             {isOwnProfile && (
-               <div className="space-y-2 pt-2">
+               <div className="space-y-2 pt-2 border-t border-gray-200 dark:border-gray-700/50">
                   <Button
-                     variant="outline"
-                     className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/30 border-red-200 dark:border-red-500/30"
+                     variant="ghost"
+                     className="w-full justify-start text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
+                     onClick={onSignOut}
+                  >
+                     <LogOut className="w-4 h-4 mr-2" />
+                     Sign Out
+                  </Button>
+                  <Button
+                     variant="ghost"
+                     className="w-full justify-start text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20"
                      onClick={() => setDeleteDialogOpen(true)}
                   >
                      <Trash2 className="w-4 h-4 mr-2" />
                      Delete Account
-                  </Button>
-                  <Button
-                     variant="outline"
-                     className="w-full justify-start border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"
-                     onClick={onSignOut}
-                  >
-                     <ExternalLink className="w-4 h-4 mr-2" />
-                     Sign Out
                   </Button>
                </div>
             )}
@@ -283,7 +314,7 @@ export const ProfileDetails = ({
                   </div>
                   <AlertDialogTitle className="text-center text-xl text-red-600 dark:text-red-400">Delete Account & Data?</AlertDialogTitle>
                   <AlertDialogDescription className="text-center space-y-2">
-                     <p>This action cannot be undone. This will permanently delete your account and remove your <strong>{pixelStats.totalPixels} pixels</strong> from the board.</p>
+                     <p>This action cannot be undone. This will permanently delete your account and release your <strong>{pixelStats.totalPixels} pixels</strong> back to the grid.</p>
                      <div className="p-3 bg-red-50 dark:bg-red-900/20 rounded-lg text-sm text-red-800 dark:text-red-200 mt-4 text-left">
                         Type <strong>delete my account</strong> to confirm.
                      </div>

@@ -32,12 +32,15 @@ export const EnhancedSelectionSummary = ({
   };
 
   return (
-    <Card className="relative overflow-hidden shadow-xl border-2 border-primary/20 bg-gradient-to-br from-card/95 to-muted/30 backdrop-blur-sm hover:shadow-glow transition-all duration-300">
-      {/* Animated Background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5 opacity-50" />
-      <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-3xl" />
+    <Card className="relative shadow-xl border-2 border-primary/20 bg-gradient-to-br from-card/95 to-muted/30 backdrop-blur-sm hover:shadow-glow transition-all duration-300 rounded-xl">
+      {/* Background Wrapper (replaces overflow-hidden on Card) */}
+      <div className="absolute inset-0 overflow-hidden rounded-xl pointer-events-none">
+        {/* Animated Background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5 opacity-50" />
+        <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-3xl" />
+      </div>
 
-      <CardHeader className="relative pb-4 sm:pb-6">
+      <CardHeader className="relative pb-4 sm:pb-6 z-10">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <div className="p-2.5 bg-primary/10 rounded-lg">
@@ -111,35 +114,38 @@ export const EnhancedSelectionSummary = ({
               )}
             </div>
 
-            {/* Total */}
-            <div className="pt-2 border-t-2 border-primary/20">
-              <div className="flex justify-between items-center p-4 sm:p-5 rounded-xl bg-gradient-to-r from-primary/20 to-accent/20 border-2 border-primary/30">
-                <span className="text-base sm:text-lg font-bold text-foreground">Total Cost</span>
-                <span className="text-xl sm:text-2xl font-extrabold bg-gradient-primary bg-clip-text text-transparent tabular-nums">
-                  ₹{totalCost.toLocaleString()}
-                </span>
+            {/* Sticky Bottom Area */}
+            <div className="sticky bottom-0 z-20 -mx-4 -mb-4 sm:-mx-6 sm:-mb-6 p-4 sm:p-6 bg-card/95 backdrop-blur-xl border-t shadow-[0_-10px_30px_-10px_rgba(0,0,0,0.1)] dark:shadow-[0_-10px_30px_-10px_rgba(0,0,0,0.3)] rounded-b-xl mt-4">
+              {/* Total */}
+              <div className="mb-4">
+                <div className="flex justify-between items-center p-3 sm:p-4 rounded-xl bg-gradient-to-r from-primary/10 to-accent/10 border border-primary/20 shadow-sm">
+                  <span className="text-base sm:text-lg font-bold text-foreground">Total Cost</span>
+                  <span className="text-xl sm:text-2xl font-extrabold bg-gradient-primary bg-clip-text text-transparent tabular-nums">
+                    ₹{totalCost.toLocaleString()}
+                  </span>
+                </div>
               </div>
-            </div>
 
-            {/* Purchase Button */}
-            <Button
-              onClick={onPurchase}
-              className="w-full h-12 sm:h-13 text-base font-semibold shadow-xl hover:shadow-glow transition-all hover:scale-105 bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 rounded-xl"
-            >
-              <ShoppingCart className="mr-2 h-5 w-5" />
-              Proceed to Purchase
-            </Button>
-
-            {/* Smart Tip */}
-            <div className="bg-gradient-to-r from-primary/10 to-accent/10 border border-primary/20 rounded-xl p-4">
-              <div className="text-sm font-semibold text-primary mb-2 flex items-center gap-2">
-                <Sparkles className="h-4 w-4" />
-                Smart Tip
-              </div>
-              <div className="text-sm text-muted-foreground leading-relaxed">
-                {selectedPixels.length < 9 && "Consider a 3×3 logo size for better visibility"}
-                {selectedPixels.length >= 9 && selectedPixels.length < 25 && "Great choice! Perfect size for memorable branding"}
-                {selectedPixels.length >= 25 && "Excellent! Large selections get maximum attention"}
+              {/* Purchase Button */}
+              <Button
+                onClick={onPurchase}
+                className="w-full h-12 sm:h-13 text-base font-semibold shadow-lg hover:shadow-glow transition-all hover:scale-[1.02] bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 rounded-xl"
+              >
+                <ShoppingCart className="mr-2 h-5 w-5" />
+                Proceed to Purchase
+              </Button>
+              
+              {/* Smart Tip (moved below button in sticky footer) */}
+              <div className="mt-4 bg-primary/5 border border-primary/10 rounded-lg p-3">
+                <div className="text-xs font-semibold text-primary mb-1 flex items-center gap-1.5">
+                  <Sparkles className="h-3 w-3" />
+                  Smart Tip
+                </div>
+                <div className="text-xs text-muted-foreground leading-relaxed">
+                  {selectedPixels.length < 9 && "Consider a 3×3 logo size for better visibility"}
+                  {selectedPixels.length >= 9 && selectedPixels.length < 25 && "Great choice! Perfect size for memorable branding"}
+                  {selectedPixels.length >= 25 && "Excellent! Large selections get maximum attention"}
+                </div>
               </div>
             </div>
           </>

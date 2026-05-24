@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { Helmet } from 'react-helmet-async';
+import SEO from '@/components/SEO';
+import { generateBreadcrumbSchema } from '@/lib/seo-utils';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import {
@@ -157,13 +158,13 @@ const FAQS: FAQ[] = [
   {
     id: 'refund',
     question: 'What is your refund policy?',
-    answer: 'Due to the permanent and digital nature of pixel ownership, all sales are final. However, if there\'s a technical issue preventing you from accessing your pixels, please contact our support team.',
+    answer: 'Permanent pixel purchases are generally non-refundable once content goes live (usually within minutes). However, if you experience a technical issue preventing your content from displaying correctly, contact support@buyaspot.in within 24 hours with proof, and we\'ll provide a full refund or help fix the issue at no charge. For accidental duplicate purchases, we offer refunds within 1 hour of purchase.',
     category: 'billing',
   },
   {
     id: 'payment-methods',
     question: 'What payment methods do you accept?',
-    answer: 'We accept UPI, Credit Cards, Debit Cards, and Net Banking through our secure payment gateway. All transactions are encrypted and protected.',
+    answer: 'BuyASpot accepts all major payment methods including credit/debit cards (Visa, Mastercard, Amex), digital wallets (Google Pay, Apple Pay), and UPI (popular in India). All transactions are processed securely through Razorpay, India\'s leading payment gateway with 256-bit SSL encryption and PCI-DSS compliance. Your payment information is never stored on our servers.',
     category: 'billing',
   },
   {
@@ -171,6 +172,30 @@ const FAQS: FAQ[] = [
     question: 'Can I transfer ownership to someone else?',
     answer: 'Yes! You can transfer pixel ownership through our Marketplace by listing them for sale, or you can contact support for a direct transfer to a specific user.',
     category: 'marketplace',
+  },
+  {
+    id: 'payment-security',
+    question: 'Is my payment secure on BuyASpot?',
+    answer: 'Yes, 100% secure. We use Razorpay (trusted by 500K+ businesses) for all payments with 256-bit SSL encryption, tokenization, and fraud detection. Your card/UPI details are encrypted and never stored. Every transaction includes HMAC signature verification for extra security. We also comply with PCI-DSS Level 1 standards - the highest security certification for payment processing.',
+    category: 'billing',
+  },
+  {
+    id: 'image-not-displaying',
+    question: 'What if my image doesn\'t display correctly?',
+    answer: 'First, try refreshing the page (hard refresh: Ctrl+Shift+R). If the issue persists, check that your image is JPG/PNG/GIF format and under 5MB. Log into your profile, click Edit, and reupload the image. If it still doesn\'t work, contact support@buyaspot.in with your pixel ID and screenshots. Our team responds within 2 hours and will resolve the issue or provide a refund.',
+    category: 'technical',
+  },
+  {
+    id: 'pixel-selection-issue',
+    question: 'Why can\'t I select certain pixels?',
+    answer: 'Pixels are unavailable if: (1) Already owned by another user, (2) Reserved for premium customers, (3) Temporarily locked during high traffic. Try selecting nearby pixels instead, or check back in a few minutes if the page is experiencing high load. If pixels remain unavailable for hours, contact support@buyaspot.in for assistance.',
+    category: 'technical',
+  },
+  {
+    id: 'refund-change-mind',
+    question: 'Can I get a refund if I change my mind?',
+    answer: 'Since BuyASpot offers permanent, lifetime placement for a one-time fee, refunds after content goes live are not available (it\'s a permanent purchase, like buying real estate). However, you can remove your content anytime from your profile. If you haven\'t confirmed purchase yet, you can modify your selection before checkout. For genuine technical issues within 24 hours, contact support@buyaspot.in for a full refund.',
+    category: 'billing',
   },
 ];
 
@@ -252,20 +277,24 @@ const Help = () => {
     []
   );
 
+  const breadcrumbSchema = useMemo(
+    () => generateBreadcrumbSchema([
+      { name: 'Home', url: 'https://buyaspot.in' },
+      { name: 'Help', url: 'https://buyaspot.in/help' }
+    ]),
+    []
+  );
+
   return (
     <>
-      <Helmet>
-        <title>Help Center - buyaspot.in | FAQs & Support</title>
-        <meta
-          name="description"
-          content="Everything you need to know about buying pixels, managing your space, and joining the BuyASpot community. Get answers to frequently asked questions."
-        />
-        <meta property="og:title" content="Help Center - buyaspot.in" />
-        <meta property="og:type" content="website" />
-        <meta property="og:description" content="FAQs and support for BuyASpot" />
-        <link rel="canonical" href="https://buyaspot.in/help" />
-        <script type="application/ld+json">{JSON.stringify(structuredData)}</script>
-      </Helmet>
+      <SEO
+        title="Help Center - FAQs & Support | BuyASpot"
+        description="BuyASpot Help & FAQ: Learn how to buy pixels, upload content, understand marketplace rules, and get answers to questions about pixel advertising."
+        canonical="https://buyaspot.in/help"
+        keywords={['help', 'FAQ', 'pixel advertising help', 'how to buy pixels', 'BuyASpot support']}
+        type="website"
+        structuredData={[breadcrumbSchema, structuredData]}
+      />
 
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
         <Header />

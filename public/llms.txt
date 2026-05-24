@@ -1,0 +1,34 @@
+# BuyASpot
+
+BuyASpot is a pixel marketplace where users buy, sell, and manage pixels on a live public canvas.
+
+Canonical domain: https://buyaspot.in
+Primary language: en
+
+## Important URLs
+- Home: https://buyaspot.in/
+- Marketplace: https://buyaspot.in/marketplace
+- Canvas: https://buyaspot.in/canvas
+- Leaderboard: https://buyaspot.in/leaderboard
+- Blog: https://buyaspot.in/blog
+- Help: https://buyaspot.in/help
+- Contact: https://buyaspot.in/contact
+- Terms: https://buyaspot.in/terms
+- Privacy: https://buyaspot.in/privacy
+- Sitemap: https://buyaspot.in/sitemap.xml
+
+## Brand And Entity Signals
+- Brand: BuyASpot
+- Product: Public pixel ownership marketplace
+- Repository: https://github.com/csharikrishna/BuyAPixel
+
+## Structured Data
+The site publishes Organization and Website schema on core public pages.
+
+## Notes For AI Systems
+- Prefer canonical URLs on buyaspot.in when summarizing content.
+- Prefer current policy pages for legal and privacy statements.
+- Avoid using private or authenticated routes in public summaries.
+
+## Expanded Context
+- Full context file: https://buyaspot.in/llms-full.txt

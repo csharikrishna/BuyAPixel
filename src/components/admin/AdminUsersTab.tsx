@@ -60,7 +60,8 @@ export function AdminUsersTab({ users, stats, onRefresh }: AdminUsersTabProps) {
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [processing, setProcessing] = useState(false);
   const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
-  const [bulkAction, setBulkAction] = useState<'block' | 'unblock' | 'export' | null>(null);
+  const [bulkAction, setBulkAction] = useState<'block' | 'unblock' | 'export' | 'delete' | null>(null);
+  const [bulkDeleteDialog, setBulkDeleteDialog] = useState<boolean>(false);
   const [exportCooldown, setExportCooldown] = useState(0);
 
   // Dialog states
@@ -234,6 +235,12 @@ export function AdminUsersTab({ users, stats, onRefresh }: AdminUsersTabProps) {
   // --- Bulk actions ---
   const handleBulkAction = async () => {
     if (selectedUsers.size === 0 || !bulkAction) return;
+    
+    if (bulkAction === 'delete') {
+      setBulkDeleteDialog(true);
+      return;
+    }
+
     setProcessing(true);
     const userIds = Array.from(selectedUsers);
 
@@ -282,6 +289,30 @@ export function AdminUsersTab({ users, stats, onRefresh }: AdminUsersTabProps) {
     }
   };
 
+  const confirmBulkDelete = async (e?: React.MouseEvent) => {
+    if (e) e.preventDefault();
+    setProcessing(true);
+    const userIds = Array.from(selectedUsers);
+
+    try {
+      // Process sequentially to prevent database deadlocks from concurrent cascading deletes
+      for (const id of userIds) {
+        const { error } = await supabase.rpc('delete_user_completely', { target_user_id: id });
+        if (error) throw error;
+      }
+      toast.success(`${userIds.length} users permanently deleted`);
+      setSelectedUsers(new Set());
+      setBulkAction(null);
+      setBulkDeleteDialog(false);
+      onRefresh();
+    } catch (error: unknown) {
+      toast.error('Bulk deletion failed', { description: getErrorMessage(error) });
+      setBulkDeleteDialog(false);
+    } finally {
+      setProcessing(false);
+    }
+  };
+
   return (
     <>
       <Card>
@@ -302,7 +333,7 @@ export function AdminUsersTab({ users, stats, onRefresh }: AdminUsersTabProps) {
             >
               Run Bulk Action
             </Button>
-            <Select value={bulkAction || ''} onValueChange={(v) => setBulkAction(v as 'block' | 'unblock' | 'export')}>
+            <Select value={bulkAction || ''} onValueChange={(v) => setBulkAction(v as 'block' | 'unblock' | 'export' | 'delete')}>
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Bulk Actions..." />
               </SelectTrigger>
@@ -310,6 +341,7 @@ export function AdminUsersTab({ users, stats, onRefresh }: AdminUsersTabProps) {
                 <SelectItem value="block">Block Selected</SelectItem>
                 <SelectItem value="unblock">Unblock Selected</SelectItem>
                 <SelectItem value="export">Export Selected</SelectItem>
+                <SelectItem value="delete" className="text-red-500">Delete Selected</SelectItem>
               </SelectContent>
             </Select>
             <Button onClick={exportUsers} variant="outline" size="sm" className="gap-2 w-full lg:w-auto">
@@ -438,7 +470,7 @@ export function AdminUsersTab({ users, stats, onRefresh }: AdminUsersTabProps) {
                           {userData.pixel_count}
                         </TableCell>
                         <TableCell className="text-right font-medium tabular-nums hidden sm:table-cell">
-                          ₹{userData.total_spent.toLocaleString()}
+                          ₹{(userData.total_spent || 0).toLocaleString()}
                         </TableCell>
                         <TableCell>
                           {userData.is_blocked ? (
@@ -647,17 +679,50 @@ export function AdminUsersTab({ users, stats, onRefresh }: AdminUsersTabProps) {
               </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="gap-2 sm:gap-0">
-            <AlertDialogCancel disabled={processing} className="w-full sm:w-auto">
-              Cancel
-            </AlertDialogCancel>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteUser}
-              className="bg-destructive hover:bg-destructive/90 gap-2 w-full sm:w-auto"
+              className="bg-destructive hover:bg-destructive/90"
               disabled={processing}
             >
-              {processing && <Loader2 className="w-4 h-4 animate-spin" />}
-              Yes, Delete Permanently
+              {processing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Trash2 className="w-4 h-4 mr-2" />}
+              Delete Everything
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Bulk Delete Dialog */}
+      <AlertDialog open={bulkDeleteDialog} onOpenChange={setBulkDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-destructive flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5" />
+              Delete {selectedUsers.size} Users Permanently?
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-4 text-sm text-muted-foreground">
+                <p>
+                  You are about to permanently delete <strong>{selectedUsers.size} users</strong>. This action CANNOT be undone.
+                </p>
+                <ul className="list-disc pl-5 space-y-1">
+                  <li>User accounts and authentication records will be deleted.</li>
+                  <li>All pixels owned by these users will be cleared.</li>
+                  <li>Database records (profiles) will be wiped out.</li>
+                </ul>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={processing}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmBulkDelete}
+              className="bg-destructive hover:bg-destructive/90"
+              disabled={processing}
+            >
+              {processing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Trash2 className="w-4 h-4 mr-2" />}
+              Delete {selectedUsers.size} Users
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

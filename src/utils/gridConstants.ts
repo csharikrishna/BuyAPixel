@@ -17,7 +17,7 @@ export const GRID_CONFIG = {
 
    // Performance
    CULLING_BUFFER: 2,
-   HOVER_DEBOUNCE_MS: 5,
+   HOVER_DEBOUNCE_MS: 30,
    DRAG_THRESHOLD: 15, // Increased from 5 for better mobile tap detection
    MAX_SELECTION_AREA: 2500,
 

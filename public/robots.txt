@@ -1,3 +1,19 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://buyaspot.in/sitemap.xml
+
+# Allow popular AI crawlers
+User-agent: GPTBot
+Allow: /
+
+User-agent: Claude
+Allow: /
+
+User-agent: Perplexity
+Allow: /
+
+# Do not disallow JS/CSS to ensure proper rendering for modern crawlers
 User-agent: Googlebot
 Allow: /
 
@@ -10,5 +26,36 @@ Allow: /
 User-agent: facebookexternalhit
 Allow: /
 
+User-agent: GPTBot
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
 User-agent: *
 Allow: /
+
+Disallow: /admin
+Disallow: /auth/
+Disallow: /signin
+Disallow: /signup
+Disallow: /forgot-password
+Disallow: /reset-password
+Disallow: /profile
+
+# Discovery files for search and AI systems
+# llms: https://buyaspot.in/llms.txt
+# llms-full: https://buyaspot.in/llms-full.txt
+# ai: https://buyaspot.in/ai.txt
+# security: https://buyaspot.in/.well-known/security.txt
+
+Sitemap: https://buyaspot.in/sitemap.xml

@@ -48,6 +48,7 @@ const Contact = lazy(() => import("./pages/Contact"));
 const Help = lazy(() => import("./pages/Help"));
 const TermsOfService = lazy(() => import("./pages/TermsOfService"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
+const SeoInfo = lazy(() => import("./pages/SeoInfo"));
 
 // LiveTicker (not critical for first paint)
 const LiveTicker = lazy(() => import("./components/LiveTicker"));
@@ -88,12 +89,12 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <HelmetProvider>
       <TooltipProvider>
-        <LayoutProvider>
-          <Sonner position="top-right" richColors closeButton />
-          <BrowserRouter>
-            <AppContent />
-          </BrowserRouter>
-        </LayoutProvider>
+          <LayoutProvider>
+            <Sonner position="top-right" richColors closeButton />
+            <BrowserRouter>
+              <AppContent />
+            </BrowserRouter>
+          </LayoutProvider>
       </TooltipProvider>
     </HelmetProvider>
   </QueryClientProvider>
@@ -159,6 +160,8 @@ const AppContent = () => {
             {/* Legal Pages */}
             <Route path="/terms" element={<ErrorBoundary pageName="Terms"><TermsOfService /></ErrorBoundary>} />
             <Route path="/privacy" element={<ErrorBoundary pageName="Privacy"><PrivacyPolicy /></ErrorBoundary>} />
+            <Route path="/seo-info" element={<ErrorBoundary pageName="SEO Info"><SeoInfo /></ErrorBoundary>} />
+            <Route path="/seo-info" element={<ErrorBoundary pageName="SEO Info"><SeoInfo /></ErrorBoundary>} />
 
             {/* Catch-all 404 - MUST BE LAST */}
             <Route path="*" element={<NotFound />} />

@@ -59,7 +59,11 @@ BEGIN
   IF NOT FOUND THEN
     RETURN jsonb_build_object('success', false, 'error', 'Payment order not found');
   END IF;
-  
+  -- SECURITY: ensure caller is the order owner (or service role via RPC)
+  IF auth.uid() IS NOT NULL AND auth.uid()::UUID <> v_order.user_id THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Not authorized to complete this payment order');
+  END IF;
+
   IF v_order.status != 'created' THEN
     RETURN jsonb_build_object('success', false, 'error', 'Payment order already processed');
   END IF;

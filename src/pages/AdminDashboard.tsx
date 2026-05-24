@@ -213,10 +213,22 @@ const AdminDashboard = () => {
       if (!silent) setLoading(true);
       else setRefreshing(true);
 
-      // 1. Users
-      const { data: usersData, error: usersError } = await supabase.rpc('admin_get_all_users');
-      if (usersError) throw usersError;
-      const allUsers = (usersData as unknown as User[]) || [];
+      // 1. Users (via safe admin RPC that checks permissions internally)
+      let allUsers: User[] = [];
+      try {
+        const { data: usersData, error: usersError } = await supabase.rpc('get_admin_dashboard_users');
+        if (usersError) {
+          if (!silent) {
+            console.warn('Failed to load admin users:', usersError.message);
+          }
+        } else {
+          allUsers = (usersData as unknown as User[]) || [];
+        }
+      } catch (err) {
+        if (!silent) {
+          console.warn('Failed to fetch admin users:', err);
+        }
+      }
       setUsers(allUsers);
 
       // 1b. Admins
@@ -227,12 +239,12 @@ const AdminDashboard = () => {
       })));
 
       // Stats
-      const totalUsers = usersData?.length || 0;
-      const totalPixelsSold = usersData?.reduce((sum: number, u) => sum + (Number(u.pixel_count) || 0), 0) || 0;
-      const totalRevenue = usersData?.reduce((sum: number, u) => sum + (Number(u.total_spent) || 0), 0) || 0;
-      const blockedUsers = usersData?.filter((u) => u.is_blocked).length || 0;
-      const activeUsers = usersData?.filter((u) => !u.is_blocked).length || 0;
-      const paidUsers = usersData?.filter((u) => u.total_spent > 0).length || 0;
+      const totalUsers = allUsers?.length || 0;
+      const totalPixelsSold = allUsers?.reduce((sum: number, u) => sum + (Number(u.pixel_count) || 0), 0) || 0;
+      const totalRevenue = allUsers?.reduce((sum: number, u) => sum + (Number(u.total_spent) || 0), 0) || 0;
+      const blockedUsers = allUsers?.filter((u) => u.is_blocked).length || 0;
+      const activeUsers = allUsers?.filter((u) => !u.is_blocked).length || 0;
+      const paidUsers = allUsers?.filter((u) => u.total_spent > 0).length || 0;
       setStats({ totalUsers, totalPixelsSold, totalRevenue, blockedUsers, activeUsers, paidUsers });
 
       // 2. Marketplace analytics

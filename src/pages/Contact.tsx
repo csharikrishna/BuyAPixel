@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { Helmet } from 'react-helmet-async';
+import SEO from '@/components/SEO';
+import { generateBreadcrumbSchema } from '@/lib/seo-utils';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -485,20 +486,24 @@ const Contact = () => {
     []
   );
 
+  const breadcrumbSchema = useMemo(
+    () => generateBreadcrumbSchema([
+      { name: 'Home', url: 'https://buyaspot.in' },
+      { name: 'Contact', url: 'https://buyaspot.in/contact' }
+    ]),
+    []
+  );
+
   return (
     <>
-      <Helmet>
-        <title>Contact Us - buyaspot.in | Get Support & Assistance</title>
-        <meta
-          name="description"
-          content="Have questions about BuyASpot? Need support? Contact our team via email, phone, or our contact form. We respond within 24 hours."
-        />
-        <meta property="og:title" content="Contact Us - buyaspot.in" />
-        <meta property="og:type" content="website" />
-        <meta property="og:description" content="Get in touch with BuyASpot support team" />
-        <link rel="canonical" href="https://buyaspot.in/contact" />
-        <script type="application/ld+json">{JSON.stringify(structuredData)}</script>
-      </Helmet>
+      <SEO
+        title="Contact BuyASpot - Get Support & Assistance"
+        description="Contact BuyASpot Support: Reach our team via email or contact form. Get answers to pixel advertising questions and billing inquiries. We respond within 24 hours."
+        canonical="https://buyaspot.in/contact"
+        keywords={['contact BuyASpot', 'support', 'customer service', 'pixel help']}
+        type="website"
+        structuredData={[breadcrumbSchema, structuredData]}
+      />
 
       <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
         <Header />

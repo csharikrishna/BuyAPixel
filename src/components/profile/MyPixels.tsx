@@ -121,7 +121,7 @@ export const MyPixels = memo(({
                      <p className="text-purple-100">Total Investment</p>
                      <TrendingUp className="w-5 h-5 text-purple-200 group-hover:text-white transition-colors" />
                   </div>
-                  <h3 className="text-3xl font-bold mb-1">${pixelStats.totalInvestment.toFixed(2)}</h3>
+                  <h3 className="text-3xl font-bold mb-1">₹{pixelStats.totalInvestment.toFixed(2)}</h3>
                   <p className="text-xs text-purple-200">Lifetime value</p>
                </CardContent>
             </Card>
@@ -258,7 +258,7 @@ export const MyPixels = memo(({
                                        Purchased {formatRelativeDate(isBlock ? summary!.purchasedAt : pixel.purchased_at)}
                                     </Badge>
                                     <Badge variant="outline" className="text-xs font-normal bg-green-100 text-green-700 border-green-300 dark:bg-green-900/50 dark:text-green-300 dark:border-green-700">
-                                       ${isBlock ? summary!.totalPrice.toFixed(2) : pixel.price_paid}
+                                       ₹{isBlock ? summary!.totalPrice.toFixed(2) : pixel.price_paid}
                                     </Badge>
                                     {(pixel.times_resold || 0) > 0 && (
                                        <Badge variant="outline" className="text-xs font-normal bg-orange-100 text-orange-700 border-orange-300 dark:bg-orange-900/50 dark:text-orange-300 dark:border-orange-700">

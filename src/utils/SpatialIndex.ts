@@ -18,7 +18,22 @@ export class SpatialIndex {
    }
 
    add(pixel: PurchasedPixel) {
-      this.pixelMap.set(`${pixel.x}-${pixel.y}`, pixel);
+      const mapKey = `${pixel.x}-${pixel.y}`;
+
+      // Remove existing entry from chunk array to prevent duplicates
+      // (Realtime UPDATE events re-add pixels without removing the old one)
+      if (this.pixelMap.has(mapKey)) {
+         const cx = Math.floor(pixel.x / CHUNK_SIZE);
+         const cy = Math.floor(pixel.y / CHUNK_SIZE);
+         const chunkKey = `${cx}-${cy}`;
+         const chunk = this.chunks.get(chunkKey);
+         if (chunk) {
+            const idx = chunk.findIndex(p => p.x === pixel.x && p.y === pixel.y);
+            if (idx !== -1) chunk.splice(idx, 1);
+         }
+      }
+
+      this.pixelMap.set(mapKey, pixel);
 
       const cx = Math.floor(pixel.x / CHUNK_SIZE);
       const cy = Math.floor(pixel.y / CHUNK_SIZE);

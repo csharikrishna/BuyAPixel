@@ -19,6 +19,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import SEO from "@/components/SEO";
+import { generateOrganizationSchema, generateWebsiteSchema, generateServiceSchema, generateBreadcrumbSchema } from "@/lib/seo-utils";
 
 // Constants - Optimized for visual clarity
 const CANVAS_WIDTH = 100;
@@ -36,6 +38,33 @@ const Canvas = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const pageSeo = (
+    <SEO
+      title="Buy Pixels on the Interactive Grid | BuyASpot"
+      description="Interactive 100x100 pixel grid. Buy pixels starting at $1, upload your content, and reach global audience. Permanent digital real estate forever."
+      canonical="https://buyaspot.in/canvas"
+      image="https://buyaspot.in/og-image.png"
+      imageAlt="BuyASpot canvas - pixel grid marketplace"
+      keywords={[
+        'buy pixels',
+        'pixel grid',
+        'digital real estate',
+        'pixel advertising',
+        'interactive canvas'
+      ]}
+      type="website"
+      structuredData={[
+        generateWebsiteSchema(),
+        generateOrganizationSchema(),
+        generateServiceSchema(),
+        generateBreadcrumbSchema([
+          { name: 'Home', url: 'https://buyaspot.in' },
+          { name: 'Canvas', url: 'https://buyaspot.in/canvas' }
+        ])
+      ]}
+    />
+  );
 
   // Initial load - just verify connection
   const initializeCanvas = useCallback(async (showRefreshIndicator = false) => {
@@ -104,6 +133,7 @@ const Canvas = () => {
   if (isLoading) {
     return (
       <div className="h-screen flex flex-col overflow-hidden bg-slate-100">
+        {pageSeo}
         <Header />
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center space-y-4">
@@ -119,6 +149,7 @@ const Canvas = () => {
   if (error) {
     return (
       <div className="h-screen flex flex-col overflow-hidden bg-slate-100">
+        {pageSeo}
         <Header />
         <div className="flex-1 flex items-center justify-center p-4">
           <Card className="max-w-md w-full">
@@ -143,6 +174,7 @@ const Canvas = () => {
 
   return (
     <div className="flex flex-col min-h-screen bg-slate-100">
+      {pageSeo}
       <Header />
 
       {/* Main Canvas Container - Scrollable page */}
@@ -303,6 +335,20 @@ const Canvas = () => {
             </CardContent>
           </Card>
         </div>
+      <SEO
+        title="Canvas"
+        description="Explore the live BuyASpot pixel canvas, zoom into the grid, and inspect pixel ownership in real time."
+        canonical="https://buyaspot.in/canvas"
+        image="https://buyaspot.in/og-image.png"
+        imageAlt="BuyASpot canvas preview"
+        keywords={[
+          'BuyASpot canvas',
+          'live pixel grid',
+          'zoom canvas',
+          'pixel ownership',
+        ]}
+        structuredData={[generateWebsiteSchema(), generateOrganizationSchema()]}
+      />
 
         {/* The Pixel Grid */}
         <div className="w-full h-[600px]">

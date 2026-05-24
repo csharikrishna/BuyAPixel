@@ -295,3 +295,90 @@ All colors MUST be HSL for consistency and theming.
     @apply border border-border/50 backdrop-blur-sm;
   }
 }
+
+/* ── Google Sign-In Button: Premium Flowing Border ── */
+
+@property --google-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes google-border-spin {
+  to { --google-angle: 360deg; }
+}
+
+.btn-google-flow {
+  position: relative;
+  isolation: isolate;
+  border: 1px solid hsl(var(--border));
+  transition: border-color 0.4s ease, box-shadow 0.4s ease;
+}
+
+/* Rotating conic-gradient border — hidden by default, revealed on hover */
+.btn-google-flow::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1.5px;
+  background: conic-gradient(
+    from var(--google-angle),
+    #4285F4 0deg,
+    #4285F4 60deg,
+    #34A853 90deg,
+    #34A853 150deg,
+    #FBBC05 180deg,
+    #FBBC05 240deg,
+    #EA4335 270deg,
+    #EA4335 330deg,
+    #4285F4 360deg
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  z-index: -1;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+}
+
+/* Soft glow layer — subtle depth behind the border */
+.btn-google-flow::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: inherit;
+  background: conic-gradient(
+    from var(--google-angle),
+    #4285F4 0deg,
+    #34A853 90deg,
+    #FBBC05 180deg,
+    #EA4335 270deg,
+    #4285F4 360deg
+  );
+  filter: blur(8px);
+  opacity: 0;
+  z-index: -2;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+}
+
+/* Hover: reveal the flowing border + glow, spin the gradient */
+.btn-google-flow:hover::before,
+.btn-google-flow:hover::after {
+  opacity: 1;
+  animation: google-border-spin 3s linear infinite;
+}
+
+.btn-google-flow:hover::after {
+  opacity: 0.15;
+}
+
+.btn-google-flow:hover {
+  border-color: transparent;
+  background-color: transparent !important; /* Override shadcn outline hover background */
+  color: inherit !important; /* Override shadcn outline hover text color */
+}

@@ -19,7 +19,7 @@ import { toast } from "sonner";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { ShoppingCart, Store, Loader2, WifiOff, Undo2, X, GripVertical, PanelRightClose, PanelRightOpen } from "lucide-react";
 import {
   Tooltip,
@@ -41,6 +41,8 @@ import { SharePixelDialog } from "@/components/SharePixelDialog";
 
 import { useLayout } from "@/contexts/LayoutContext";
 import { useNetworkStatus } from "@/hooks/useNetworkStatus";
+import SEO from "@/components/SEO";
+import { generateOrganizationSchema, generateWebsiteSchema, generateFAQSchema, generateServiceSchema, generateLocalBusinessSchema, generateBreadcrumbSchema } from "@/lib/seo-utils";
 import confetti from "canvas-confetti";
 import debounce from "lodash/debounce";
 import { SelectedPixel } from "@/types/grid";
@@ -576,9 +578,22 @@ const BuyPixels = () => {
 
       localStorage.removeItem(DRAFT_STORAGE_KEY);
 
+      // Safety fallback: if realtime subscription doesn't update the grid
+      // within 4 seconds, force a page reload to guarantee the user sees
+      // their purchased pixels. This handles slow/stale WebSocket connections.
+      const reloadFallbackTimer = setTimeout(() => {
+        if (isMountedRef.current) {
+          console.log('[BuyPixels] Realtime fallback: reloading to sync grid state');
+          window.location.reload();
+        }
+      }, 4000);
+
       // Delayed actions
       setTimeout(() => {
-        if (!isMountedRef.current) return;
+        if (!isMountedRef.current) {
+          clearTimeout(reloadFallbackTimer);
+          return;
+        }
 
         // Open share dialog for the first pixel
         if (purchasedPixels.length > 0) {
@@ -624,6 +639,86 @@ const BuyPixels = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
+      <SEO
+        title="BuyASpot - Buy & Own Pixels Forever | Digital Real Estate Marketplace"
+        description="Own a piece of internet history on BuyASpot. Buy pixels from ₹1-₹299, upload your image/brand, and reach millions globally. Permanent digital real estate for startups, businesses & creators."
+        canonical="https://buyaspot.in/"
+        image="https://buyaspot.in/og-image.jpg"
+        imageAlt="BuyASpot - Digital pixel marketplace with 100x100 grid"
+        keywords={[
+          'buy pixels',
+          'pixel advertising',
+          'digital real estate',
+          'pixel marketplace',
+          'permanent ads',
+          'affordable advertising India',
+          'pixel grid',
+          'digital canvas',
+          'cheap online advertising',
+          'startup marketing'
+        ]}
+        type="website"
+        structuredData={[
+          generateBreadcrumbSchema([
+            { name: 'Home', url: 'https://buyaspot.in' }
+          ]),
+          generateWebsiteSchema(),
+          generateOrganizationSchema(),
+          generateServiceSchema(),
+          generateLocalBusinessSchema(),
+          generateFAQSchema([
+            { 
+              question: 'What is BuyASpot?', 
+              answer: 'BuyASpot is a global digital real estate marketplace where you can buy permanent pixels on a shared 100x100 grid. Purchase pixels starting at ₹1, upload your brand/image, add a link, and reach worldwide audience forever. No recurring fees - it\'s a one-time permanent purchase.' 
+            },
+            { 
+              question: 'How does BuyASpot work?', 
+              answer: 'Select pixels on the interactive canvas (Gold/Silver/Bronze zones), upload your image or brand logo (JPG, PNG, GIF up to 5MB), add a clickable link to your website or social media, checkout securely with card/UPI, and your content goes live permanently on the global grid visible to millions.' 
+            },
+            { 
+              question: 'How much does it cost?', 
+              answer: 'Pixel prices vary by location: Gold Zone (₹299 per pixel - center premium spots), Silver Zone (₹99 per pixel - high visibility areas), Bronze Zone (₹49 per pixel - outer edges). Bulk purchases get discounts. One-time payment = permanent placement.' 
+            },
+            { 
+              question: 'Who can use BuyASpot?', 
+              answer: 'Startups looking for affordable marketing, freelancers building portfolios, artists showcasing work, small businesses expanding globally, indie developers promoting apps, creators building personal brands, and anyone wanting permanent web presence can use BuyASpot.' 
+            },
+            { 
+              question: 'How long do my pixels stay live?', 
+              answer: 'Your pixels remain live permanently under your account indefinitely. Unlike traditional ads with expiration dates, BuyASpot offers lifetime placement. You can update content anytime or remove it yourself if needed.' 
+            },
+            { 
+              question: 'Can I edit my pixels after purchase?', 
+              answer: 'Yes! You can edit your pixel content anytime - change the image, update the link, modify alt text. Just login to your profile and click Edit. Changes go live instantly.' 
+            },
+            { 
+              question: 'What payment methods do you accept?', 
+              answer: 'BuyASpot accepts all major payment methods including credit/debit cards (Visa, Mastercard, Amex), digital wallets (Google Pay, Apple Pay), and UPI (popular in India). All transactions are processed securely through Razorpay, India\'s leading payment gateway with 256-bit SSL encryption and PCI-DSS compliance. Your payment information is never stored on our servers.' 
+            },
+            { 
+              question: 'Is my payment secure on BuyASpot?', 
+              answer: 'Yes, 100% secure. We use Razorpay (trusted by 500K+ businesses) for all payments with 256-bit SSL encryption, tokenization, and fraud detection. Your card/UPI details are encrypted and never stored. Every transaction includes HMAC signature verification for extra security. We also comply with PCI-DSS Level 1 standards - the highest security certification for payment processing.' 
+            },
+            { 
+              question: 'What is your refund policy?', 
+              answer: 'Permanent pixel purchases are generally non-refundable once content goes live (usually within minutes). However, if you experience a technical issue preventing your content from displaying correctly, contact support@buyaspot.in within 24 hours with proof, and we\'ll provide a full refund or help fix the issue at no charge. For accidental duplicate purchases, we offer refunds within 1 hour of purchase.' 
+            },
+            { 
+              question: 'What if my image doesn\'t display correctly?', 
+              answer: 'First, try refreshing the page (hard refresh: Ctrl+Shift+R). If the issue persists, check that your image is JPG/PNG/GIF format and under 5MB. Log into your profile, click Edit, and reupload the image. If it still doesn\'t work, contact support@buyaspot.in with your pixel ID and screenshots. Our team responds within 2 hours and will resolve the issue or provide a refund.' 
+            },
+            { 
+              question: 'Why can\'t I select certain pixels?', 
+              answer: 'Pixels are unavailable if: (1) Already owned by another user, (2) Reserved for premium customers, (3) Temporarily locked during high traffic. Try selecting nearby pixels instead, or check back in a few minutes if the page is experiencing high load. If pixels remain unavailable for hours, contact support@buyaspot.in for assistance.' 
+            },
+            { 
+              question: 'Can I get a refund if I change my mind?', 
+              answer: 'Since BuyASpot offers permanent, lifetime placement for a one-time fee, refunds after content goes live are not available (it\'s a permanent purchase, like buying real estate). However, you can remove your content anytime from your profile. If you haven\'t confirmed purchase yet, you can modify your selection before checkout. For genuine technical issues within 24 hours, contact support@buyaspot.in for a full refund.' 
+            },
+          ])
+        ]}
+      />
+      {/* Top banner intentionally removed per user preference */}
       <OnboardingTutorial />
       <Header />
 

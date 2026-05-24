@@ -3,10 +3,12 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ProfileSkeleton } from '@/components/ui/skeleton-primitives';
 import {
   ArrowLeft, RefreshCw, Edit, AlertCircle,
-  User, Sparkles, CheckCircle2, Phone, Calendar
+  User, Sparkles, CheckCircle2, Phone, Calendar,
+  Shield, Download, Trash2, Loader2
 } from 'lucide-react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -15,16 +17,18 @@ import { SharePixelDialog } from '@/components/SharePixelDialog';
 import { RealtimeChannel } from '@supabase/supabase-js';
 import Footer from '@/components/Footer';
 import { EditPixelDialog } from '@/components/EditPixelDialog';
+import SEO from '@/components/SEO';
 
 import { ProfileDetails } from '@/components/profile/ProfileDetails';
 import { MyPixels } from '@/components/profile/MyPixels';
+import { ChangePasswordSection } from '@/components/profile/ChangePasswordSection';
 import { TrophyCase } from '@/components/TrophyCase';
 import { Profile as UserProfile, UserPixel, PixelStats, ProfileField, ProfileCompletionData } from '@/types/profile';
 
 // Wrapper for ProfileSkeleton with page layout
 const ProfilePageSkeleton = () => (
-  <div className="min-h-screen bg-gradient-to-br from-purple-50 via-slate-50 to-blue-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 pb-20 lg:pb-8">
-    <div className="container mx-auto px-4 py-4 md:py-8 max-w-4xl">
+  <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-purple-50/30 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 pb-20 lg:pb-8">
+    <div className="container mx-auto px-4 py-4 md:py-8 max-w-6xl">
       <ProfileSkeleton />
     </div>
   </div>
@@ -42,6 +46,7 @@ const Profile = () => {
   const [pixelsLoading, setPixelsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [activeSettingsTab, setActiveSettingsTab] = useState('security');
 
   // States for delete account
   const [deleteLoading, setDeleteLoading] = useState(false);
@@ -55,6 +60,20 @@ const Profile = () => {
   const publicUserId = searchParams.get('id');
   const targetUserId = publicUserId || user?.id;
   const isOwnProfile = !publicUserId || (user && user.id === publicUserId);
+
+  // Check if email is verified
+  const isEmailVerified = Boolean(user?.email_confirmed_at);
+
+  const pageSeo = (
+    <SEO
+      title={isOwnProfile ? 'My Profile' : 'Public Profile'}
+      description={isOwnProfile ? 'Manage your BuyASpot account, pixels, and profile details.' : 'View a public BuyASpot profile and explore owned pixels.'}
+      canonical="https://buyaspot.in/profile"
+      image="https://buyaspot.in/og-image.png"
+      imageAlt="BuyASpot profile preview"
+      noindex
+    />
+  );
 
   // Calculate profile completion with detailed breakdown
   const profileCompletionData = useMemo<ProfileCompletionData>(() => {
@@ -147,7 +166,6 @@ const Profile = () => {
               avatar_url: user.user_metadata?.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(user.email || 'User')}`,
               phone_number: null,
               date_of_birth: null,
-              // New fields will use database defaults (pixel_count=0, total_spent=0)
             })
             .select()
             .single();
@@ -158,7 +176,9 @@ const Profile = () => {
           }
           setProfile({
             ...newProfile,
-            email: user.email ?? null // Ensure email matches auth for own profile
+            bio: newProfile.bio || null,
+            website_url: newProfile.website_url || null,
+            email: user.email ?? null
           });
         } else {
           // For public view, if profile not found
@@ -167,6 +187,8 @@ const Profile = () => {
       } else {
         setProfile({
           ...data,
+          bio: data.bio || null,
+          website_url: data.website_url || null,
           // Only show email if it's your own profile to protect privacy
           email: isOwnProfile ? (user?.email ?? null) : null
         });
@@ -260,44 +282,30 @@ const Profile = () => {
     }
   }, [profile, userPixels, pixelStats, user?.email]);
 
-  // Delete account
+  // Delete account — uses the delete_own_account RPC
   const handleDeleteAccount = useCallback(async () => {
-    // Note: Confirmation is handled by ProfileDetails component.
-    // This function runs only after user confirms.
     if (!isOwnProfile || !user) return;
 
     setDeleteLoading(true);
 
     try {
-      // Delete user's owned pixels first, then profile
+      const { data, error: rpcError } = await supabase.rpc('delete_own_account');
 
-      if (userPixels.length > 0) {
-        const { error: pixelsError } = await supabase
-          .from('pixels')
-          .delete()
-          .eq('owner_id', user.id);
-
-        if (pixelsError) {
-          console.error('Error deleting pixels:', pixelsError);
-          toast.error('Failed to delete your pixels. Please contact support.');
-          setDeleteLoading(false);
-          return;
-        }
+      if (rpcError) {
+        console.error('RPC error deleting account:', rpcError);
+        throw new Error(rpcError.message || 'Failed to delete account');
       }
 
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .delete()
-        .eq('user_id', user.id);
-
-      if (profileError) {
-        console.error('Error deleting profile:', profileError);
+      const result = data as { success?: boolean; error?: string } | null;
+      if (result && result.success === false) {
+        throw new Error(result.error || 'Failed to delete account');
       }
 
-      const { error: signOutError } = await supabase.auth.signOut();
-
-      if (signOutError) {
-        console.error('Error signing out:', signOutError);
+      // Sign out (session may already be invalid since auth.users was deleted)
+      try {
+        await supabase.auth.signOut();
+      } catch {
+        // Ignore sign-out errors — the auth record is already gone
       }
 
       toast.success('Your account has been deleted. We hope to see you again!', {
@@ -310,10 +318,11 @@ const Profile = () => {
 
     } catch (err: unknown) {
       console.error('Error deleting account:', err);
-      toast.error('Failed to delete account. Please try again or contact support.');
-      setDeleteLoading(false); // Only set to false on error, otherwise we are navigating away
+      const errorMessage = err instanceof Error ? err.message : 'Failed to delete account';
+      toast.error(errorMessage + '. Please try again or contact support.');
+      setDeleteLoading(false);
     }
-  }, [userPixels, user, navigate, isOwnProfile]);
+  }, [user, navigate, isOwnProfile]);
 
   // Refresh all data
   const handleRefresh = useCallback(async () => {
@@ -414,25 +423,25 @@ const Profile = () => {
 
   // Loading state
   if (authLoading || (profileLoading && !profile)) {
-    return <ProfilePageSkeleton />;
+    return <>{pageSeo}<ProfilePageSkeleton /></>;
   }
 
   // If no public user ID and no authenticated user
   if (!user && !publicUserId) {
-    return null;
+    return <>{pageSeo}</>;
   }
 
   // Error state
   if (error && !profile) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-purple-50 via-slate-50 to-blue-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950">
+      <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-slate-50 via-white to-purple-50/30 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950">
         <Card className="w-full max-w-md border-red-200 dark:border-red-500/20 bg-white dark:bg-gray-900 shadow-2xl">
           <CardContent className="p-6 text-center space-y-4">
             <div className="w-16 h-16 mx-auto bg-gradient-to-br from-red-100 to-orange-100 dark:from-red-500/20 dark:to-orange-500/20 rounded-full flex items-center justify-center border border-red-200 dark:border-red-500/20">
               <AlertCircle className="w-8 h-8 text-red-600 dark:text-red-400" />
             </div>
             <div>
-              <h2 className="text-xl font-semibold mb-2 bg-gradient-to-r from-red-600 to-orange-600 bg-clip-text text-transparent">
+              <h2 className="text-xl font-semibold mb-2 text-red-600 dark:text-red-400">
                 {publicUserId ? 'Profile Not Found' : 'Error Loading Profile'}
               </h2>
               <p className="text-sm text-muted-foreground">{error}</p>
@@ -453,27 +462,33 @@ const Profile = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-slate-50 to-blue-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-950 pb-20 lg:pb-8 relative">
-      {/* Premium gradient overlay */}
-      <div className="fixed inset-0 bg-gradient-to-b from-purple-100/30 via-transparent to-blue-100/30 dark:from-purple-500/5 dark:via-transparent dark:to-blue-500/5 pointer-events-none" />
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-purple-50/30 dark:from-gray-900 dark:via-gray-900 dark:to-gray-950 pb-20 lg:pb-8 relative">
+      <SEO
+        title={isOwnProfile ? 'My Profile' : 'Public Profile'}
+        description={isOwnProfile ? 'Manage your BuyASpot account, pixels, and profile details.' : 'View a public BuyASpot profile and explore owned pixels.'}
+        canonical="https://buyaspot.in/profile"
+        image="https://buyaspot.in/og-image.png"
+        imageAlt="BuyASpot profile preview"
+        noindex
+      />
 
       <div className="container relative mx-auto px-4 py-4 md:py-8 max-w-6xl">
         {/* Header */}
         <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 md:mb-8">
           <div className="flex items-center space-x-3 md:space-x-4">
             <Link to="/" aria-label="Back to home">
-              <Button variant="ghost" size="sm" className="group hover:bg-white dark:hover:bg-gray-800 border border-transparent hover:border-purple-200 dark:hover:border-purple-500/20">
+              <Button variant="ghost" size="sm" className="group hover:bg-white dark:hover:bg-gray-800 border border-transparent hover:border-gray-200 dark:hover:border-gray-700">
                 <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" aria-hidden="true" />
                 <span className="hidden sm:inline">Back to Home</span>
                 <span className="sm:hidden">Back</span>
               </Button>
             </Link>
             <div>
-              <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-purple-600 via-pink-500 to-blue-600 bg-clip-text text-transparent">
-                {isOwnProfile ? 'Account Overview' : 'Public Profile'}
+              <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-gray-100">
+                {isOwnProfile ? 'My Account' : 'Public Profile'}
               </h1>
               <p className="text-sm text-muted-foreground hidden sm:block">
-                {isOwnProfile ? 'Manage your account and pixels ✨' : `Viewing profile for ${profile?.full_name || 'User'}`}
+                {isOwnProfile ? 'Manage your profile, security, and pixels' : `Viewing profile for ${profile?.full_name || 'User'}`}
               </p>
             </div>
           </div>
@@ -484,16 +499,16 @@ const Profile = () => {
               size="sm"
               disabled={isRefreshing}
               aria-label="Refresh data"
-              className="bg-white dark:bg-gray-800 border-purple-200 dark:border-purple-500/20 hover:bg-purple-50 dark:hover:bg-gray-700 hover:border-purple-300 dark:hover:border-purple-500/30 transition-all duration-300"
+              className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700"
             >
-              <RefreshCw className={`w-4 h-4 text-purple-600 dark:text-purple-400 ${isRefreshing ? 'animate-spin' : ''}`} aria-hidden="true" />
+              <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} aria-hidden="true" />
               <span className="hidden sm:inline ml-2">Refresh</span>
             </Button>
 
             {isOwnProfile && (
               <Button
                 onClick={handleEditProfile}
-                className="gap-2 bg-gradient-to-r from-purple-600 via-pink-500 to-blue-600 hover:shadow-lg hover:shadow-purple-500/30 transition-all duration-300 border-0 text-white"
+                className="gap-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 hover:shadow-lg transition-all duration-300 border-0 text-white"
                 size="sm"
                 aria-label="Edit profile"
               >
@@ -505,44 +520,15 @@ const Profile = () => {
           </div>
         </header>
 
-        {/* Profile Completion Alert - Only for Owner */}
-        {isOwnProfile && profileCompletionData.percentage < 100 && (
-          <div className="mb-6 rounded-xl p-4 border border-orange-200 dark:border-orange-500/20 bg-gradient-to-r from-orange-50 to-pink-50 dark:from-orange-950/30 dark:to-pink-950/30 shadow-lg flex items-center gap-4">
-            <div className="p-2 bg-orange-100 dark:bg-orange-900/50 rounded-full shrink-0">
-              <Sparkles className="h-5 w-5 text-orange-600 dark:text-orange-400" />
-            </div>
-            <div className="flex-1">
-              <h3 className="text-sm font-semibold text-orange-900 dark:text-orange-100 flex items-center gap-2">
-                Complete your profile
-                {profileCompletionData.percentage > 0 && (
-                  <span className="text-xs font-normal px-2 py-0.5 rounded-full bg-orange-200/50 dark:bg-orange-800/50 text-orange-800 dark:text-orange-200">
-                    {profileCompletionData.percentage}% Done
-                  </span>
-                )}
-              </h3>
-              <p className="text-sm text-orange-800/80 dark:text-orange-200/80 mt-0.5">
-                Unlock all features by filling in
-                <span className="font-semibold mx-1">{profileCompletionData.missingFields.length}</span>
-                remaining field{profileCompletionData.missingFields.length !== 1 ? 's' : ''}.
-              </p>
-            </div>
-            <Button
-              size="sm"
-              variant="default"
-              onClick={handleEditProfile}
-              className="bg-gradient-to-r from-orange-600 to-pink-600 hover:from-orange-700 hover:to-pink-700 text-white border-0 shadow-md shrink-0"
-            >
-              Complete Now
-            </Button>
-          </div>
-        )}
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-1">
+        {/* Main Content — Two-Column Desktop Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* Left Sidebar — Profile Card */}
+          <div className="lg:col-span-4 xl:col-span-4">
             <ProfileDetails
               profile={profile}
-              email={user?.email} // Passed user.email instead of profile.email to rely on Auth
+              email={user?.email}
               isOwnProfile={isOwnProfile}
+              isEmailVerified={isEmailVerified}
               profileCompletionData={profileCompletionData}
               pixelStats={pixelStats}
               onEditProfile={handleEditProfile}
@@ -552,11 +538,12 @@ const Profile = () => {
             />
           </div>
 
-          <div className="lg:col-span-2">
+          {/* Right Content — Tabs for different sections */}
+          <div className="lg:col-span-8 xl:col-span-8 space-y-6">
+            {/* Trophy Case */}
             <TrophyCase userId={targetUserId || ""} />
-          </div>
 
-          <div className="lg:col-span-3">
+            {/* My Pixels */}
             <MyPixels
               userPixels={userPixels}
               pixelStats={pixelStats}
@@ -568,6 +555,85 @@ const Profile = () => {
               onSharePixel={setSharePixel}
               onEditPixel={setEditingPixel}
             />
+
+            {/* Settings Section — Only for Owner */}
+            {isOwnProfile && (
+              <Card className="shadow-lg bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700/50">
+                <CardHeader className="pb-0">
+                  <Tabs value={activeSettingsTab} onValueChange={setActiveSettingsTab} className="w-full">
+                    <TabsList className="grid w-full grid-cols-2 bg-gray-100 dark:bg-gray-800">
+                      <TabsTrigger value="security" className="flex items-center gap-2 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-700">
+                        <Shield className="w-4 h-4" />
+                        <span className="hidden sm:inline">Security</span>
+                        <span className="sm:hidden">Security</span>
+                      </TabsTrigger>
+                      <TabsTrigger value="data" className="flex items-center gap-2 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-700">
+                        <Download className="w-4 h-4" />
+                        <span className="hidden sm:inline">Data & Privacy</span>
+                        <span className="sm:hidden">Privacy</span>
+                      </TabsTrigger>
+                    </TabsList>
+
+                    <TabsContent value="security" className="mt-6 pb-6">
+                      <ChangePasswordSection />
+                    </TabsContent>
+
+                    <TabsContent value="data" className="mt-6 pb-6 space-y-4">
+                      {/* Export Data */}
+                      <Card className="border-gray-200 dark:border-gray-700/50 bg-gray-50 dark:bg-gray-800/50">
+                        <CardContent className="p-5">
+                          <div className="flex items-start justify-between gap-4">
+                            <div>
+                              <h3 className="font-semibold text-sm flex items-center gap-2">
+                                <Download className="w-4 h-4 text-purple-500" />
+                                Export Your Data
+                              </h3>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                Download a copy of your profile, pixels, and activity data as JSON.
+                              </p>
+                            </div>
+                            <Button
+                              onClick={handleExportData}
+                              disabled={exportLoading}
+                              variant="outline"
+                              size="sm"
+                              className="shrink-0"
+                            >
+                              {exportLoading ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <>
+                                  <Download className="w-4 h-4 mr-2" />
+                                  Export
+                                </>
+                              )}
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {/* Danger Zone */}
+                      <Card className="border-red-200 dark:border-red-500/20 bg-red-50/50 dark:bg-red-950/10">
+                        <CardContent className="p-5">
+                          <h3 className="font-semibold text-sm text-red-600 dark:text-red-400 flex items-center gap-2 mb-2">
+                            <Trash2 className="w-4 h-4" />
+                            Danger Zone
+                          </h3>
+                          <p className="text-xs text-muted-foreground mb-3">
+                            Permanently delete your account and all associated data. This action cannot be undone. 
+                            Your pixels will be released back to the grid.
+                          </p>
+                          <p className="text-xs text-amber-600 dark:text-amber-400 mb-3 flex items-center gap-1">
+                            <AlertCircle className="w-3 h-3" />
+                            We recommend exporting your data before deleting your account.
+                          </p>
+                        </CardContent>
+                      </Card>
+                    </TabsContent>
+                  </Tabs>
+                </CardHeader>
+              </Card>
+            )}
           </div>
         </div>
       </div>

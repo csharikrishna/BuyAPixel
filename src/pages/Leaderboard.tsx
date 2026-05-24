@@ -1,8 +1,9 @@
 import { useState, useEffect, useMemo, useCallback, useRef, useTransition } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Helmet } from 'react-helmet-async';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import SEO from '@/components/SEO';
+import { generateBreadcrumbSchema } from '@/lib/seo-utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -603,20 +604,24 @@ const Leaderboard = () => {
     );
   }
 
+  const breadcrumbSchema = useMemo(
+    () => generateBreadcrumbSchema([
+      { name: 'Home', url: 'https://buyaspot.in' },
+      { name: 'Leaderboard', url: 'https://buyaspot.in/leaderboard' }
+    ]),
+    []
+  );
+
   return (
     <>
-      <Helmet>
-        <title>Leaderboard - Top Pixel Owners | BuyASpot</title>
-        <meta
-          name="description"
-          content="View the BuyASpot leaderboard featuring top pixel owners, highest spenders, and recent purchases. Compete for the top spot!"
-        />
-        <meta property="og:title" content="Leaderboard - BuyASpot" />
-        <meta property="og:type" content="website" />
-        <meta property="og:description" content="Top pixel owners and spenders on BuyASpot" />
-        <link rel="canonical" href="https://buyaspot.in/leaderboard" />
-        <script type="application/ld+json">{JSON.stringify(structuredData)}</script>
-      </Helmet>
+      <SEO
+        title="Leaderboard - Top Pixel Owners | BuyASpot"
+        description="Real-time pixel leaderboard: Track top pixel owners, highest spenders, and compete for rewards on BuyASpot. See live rankings and recent activity."
+        canonical="https://buyaspot.in/leaderboard"
+        keywords={['pixel leaderboard', 'top pixel owners', 'pixel rewards', 'digital advertising rankings']}
+        type="website"
+        structuredData={[breadcrumbSchema, structuredData]}
+      />
 
       <div className="min-h-screen flex flex-col bg-gradient-to-b from-background to-muted/20">
         <Header />

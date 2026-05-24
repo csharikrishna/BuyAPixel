@@ -625,9 +625,10 @@ export const VirtualizedPixelGrid = forwardRef<
               ) : (
                 <>
                   <div
-                    className="absolute inset-0 bg-cover bg-center transition-all duration-1000 ease-in-out"
+                    className="absolute inset-0 bg-contain bg-center bg-no-repeat transition-all duration-1000 ease-in-out"
                     style={{
                       backgroundImage: `url(${getBillboardImageUrl(currentFeaturedPixel.image_url)})`,
+                      backgroundColor: '#18181b',
                       opacity: 0.95,
                       imageRendering: zoom < 1 ? "auto" : "pixelated",
                     }}
@@ -691,8 +692,10 @@ export const VirtualizedPixelGrid = forwardRef<
                     width: block.width * scaledPixelSize,
                     height: block.height * scaledPixelSize,
                     backgroundImage: `url(${getGridImageUrl(block.imageUrl, zoom)})`,
-                    backgroundSize: "cover",
+                    backgroundSize: "contain",
                     backgroundPosition: "center",
+                    backgroundRepeat: "no-repeat",
+                    backgroundColor: "#1e1e2e",
                     opacity: isOwner ? 1 : 0.9,
                     boxShadow: isOwner
                       ? "0 0 8px rgba(16,185,129,0.7)"
@@ -762,7 +765,9 @@ export const VirtualizedPixelGrid = forwardRef<
                     backgroundImage: image_url
                       ? `url(${getGridImageUrl(image_url, zoom)})`
                       : "none",
-                    backgroundSize: "cover",
+                    backgroundSize: "contain",
+                    backgroundPosition: "center",
+                    backgroundRepeat: "no-repeat",
                     opacity: isOwner ? 1 : 0.85,
                     boxShadow: isOwner ? "0 0 6px rgba(16,185,129,0.6)" : "none",
                     border: isOwner ? "1px solid #10b981" : "1px solid #cbd5e1",
@@ -831,6 +836,14 @@ export const VirtualizedPixelGrid = forwardRef<
             <div className="absolute top-3 right-3 pointer-events-none bg-purple-500/90 backdrop-blur-md text-white px-3 py-1.5 rounded-full text-xs font-semibold shadow-lg">
               {selectedPixels.length} selected
               {isPending && <span className="ml-2 inline-block animate-pulse">...</span>}
+            </div>
+          )}
+
+          {/* Test Mode Badge — visible when payment bypass is active */}
+          {import.meta.env.VITE_BYPASS_PAYMENT === 'true' && (
+            <div className="absolute bottom-3 right-3 pointer-events-none bg-amber-500/90 backdrop-blur-md text-white px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider shadow-lg flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+              Test Mode
             </div>
           )}
         </div>

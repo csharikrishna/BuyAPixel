@@ -118,7 +118,7 @@ export function AdminMarketplaceTab({ listings, getUserEmail, getPixelCoords, on
                       </div>
                       <div className="text-sm text-muted-foreground mt-1">
                         Seller: {getUserEmail(listing.seller_id)} ·
-                        Price: ₹{listing.asking_price.toLocaleString()} ·
+                        Price: ₹{(listing.asking_price || 0).toLocaleString()} ·
                         Listed: {format(new Date(listing.created_at), 'MMM dd, yyyy')}
                       </div>
                     </div>

@@ -44,6 +44,8 @@ import {
   Repeat,
   Loader2
 } from "lucide-react";
+import SEO from "@/components/SEO";
+import { generateOrganizationSchema, generateWebsiteSchema } from "@/lib/seo-utils";
 
 // Razorpay type declarations
 declare global {
@@ -148,8 +150,16 @@ const MarketplacePage = () => {
   const [isPurchasing, setIsPurchasing] = useState<string | null>(null); // Track which listing is being purchased
   const [razorpayLoaded, setRazorpayLoaded] = useState(false);
 
-  // Load Razorpay script
+  // Payment bypass flag — when true, skips Razorpay entirely
+  const isPaymentBypassed = import.meta.env.VITE_BYPASS_PAYMENT === 'true';
+
+  // Load Razorpay script — skip when payment is bypassed
   useEffect(() => {
+    if (isPaymentBypassed) {
+      setRazorpayLoaded(true);
+      return;
+    }
+
     if (window.Razorpay) {
       setRazorpayLoaded(true);
       return;
@@ -167,7 +177,7 @@ const MarketplacePage = () => {
         document.body.removeChild(script);
       }
     };
-  }, []);
+  }, [isPaymentBypassed]);
 
   // Fetch marketplace statistics
   const { data: marketplaceStats } = useQuery({
@@ -324,7 +334,7 @@ const MarketplacePage = () => {
       return;
     }
 
-    if (!razorpayLoaded) {
+    if (!isPaymentBypassed && !razorpayLoaded) {
       toast.error("Payment Not Ready", {
         description: "Please wait while payment system loads",
       });
@@ -332,6 +342,45 @@ const MarketplacePage = () => {
     }
 
     setIsPurchasing(listingId);
+
+    // ── BYPASS MODE: skip Razorpay, call bypass-marketplace-purchase directly ──
+    if (isPaymentBypassed) {
+      try {
+        const { data: bypassData, error: bypassError } = await supabase.functions.invoke(
+          'bypass-marketplace-purchase',
+          { body: { listing_id: listingId } }
+        );
+
+        if (bypassError || !bypassData?.success) {
+          let errMsg = bypassData?.error || 'Bypass marketplace purchase failed';
+          if (bypassError && !bypassData?.error) {
+            try {
+              const ctx = (bypassError as any)?.context;
+              if (ctx?.body) {
+                const parsed = typeof ctx.body === 'string' ? JSON.parse(ctx.body) : ctx.body;
+                errMsg = parsed?.error || parsed?.message || errMsg;
+              }
+            } catch {
+              errMsg = bypassError.message || errMsg;
+            }
+          }
+          throw new Error(errMsg);
+        }
+
+        toast.success("Purchase Successful! 🎉 (Payment bypassed)", {
+          description: `You have acquired a pixel for ₹${price.toLocaleString()}. Dev mode — no real charge.`,
+        });
+
+        refetchListings();
+      } catch (error: unknown) {
+        toast.error("Error", {
+          description: getErrorMessage(error) || "An unexpected error occurred",
+        });
+      } finally {
+        setIsPurchasing(null);
+      }
+      return; // Exit early — don't run Razorpay flow below
+    }
 
     try {
       // Step 1: Create Razorpay order via edge function
@@ -498,6 +547,21 @@ const MarketplacePage = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
+      <SEO
+        title="Pixel Marketplace"
+        description="Browse and buy verified pixel listings on BuyASpot's secondary marketplace. Discover owned pixels, compare prices, and purchase securely."
+        canonical="https://buyaspot.in/marketplace"
+        image="https://buyaspot.in/og-image.png"
+        imageAlt="BuyASpot marketplace preview"
+        keywords={[
+          'pixel marketplace',
+          'BuyASpot marketplace',
+          'buy pixels',
+          'secondary market',
+          'pixel listings',
+        ]}
+        structuredData={[generateWebsiteSchema(), generateOrganizationSchema()]}
+      />
       <Header />
 
       <main className="flex-1">

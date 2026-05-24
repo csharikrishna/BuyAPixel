@@ -136,6 +136,12 @@ const getCroppedImg = async (
    ctx.rotate((rotation * Math.PI) / 180);
    ctx.translate(-safeArea / 2, -safeArea / 2);
 
+   // Fill background with white for JPEGs if zooming out reveals empty canvas space
+   if (format !== 'image/png') {
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(-safeArea / 2, -safeArea / 2, safeArea, safeArea);
+   }
+
    // Draw rotated image
    ctx.drawImage(
       image,
@@ -339,7 +345,7 @@ export const ImageCropper = ({
    }, []);
 
    const zoomOut = useCallback(() => {
-      setZoom((prev) => Math.max(prev - ZOOM_STEP, 1));
+      setZoom((prev) => Math.max(prev - ZOOM_STEP, 0.1));
    }, []);
 
    // Keyboard shortcuts
@@ -408,7 +414,7 @@ export const ImageCropper = ({
             case 'ArrowDown':
                if (e.ctrlKey || e.metaKey) {
                   e.preventDefault();
-                  setZoom((prev) => Math.max(prev - KEYBOARD_ZOOM_STEP, 1));
+                  setZoom((prev) => Math.max(prev - KEYBOARD_ZOOM_STEP, 0.1));
                }
                break;
 
@@ -458,7 +464,7 @@ export const ImageCropper = ({
       <>
       <Dialog open={open} onOpenChange={handleDialogClose}>
          <DialogContent
-            className="sm:max-w-[600px] w-[95vw] max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden"
+            className="sm:max-w-[600px] w-[95vw] h-[90vh] max-h-[800px] flex flex-col p-0 gap-0 overflow-hidden"
             onPointerDownOutside={(e) => {
                if (isProcessing) {
                   e.preventDefault();
@@ -490,16 +496,6 @@ export const ImageCropper = ({
                      </p>
                   </div>
                </div>
-               <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={onCancel}
-                  disabled={isProcessing}
-                  className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                  aria-label="Close dialog"
-               >
-                  <X className="w-4 h-4" />
-               </Button>
             </div>
 
             {/* Error Alert */}
@@ -517,7 +513,7 @@ export const ImageCropper = ({
             )}
 
             {/* Crop Area */}
-            <div className="relative flex-1 min-h-[280px] sm:min-h-[320px] bg-muted/30">
+            <div className="relative flex-1 min-h-[200px] sm:min-h-[280px] bg-muted/30">
                <Cropper
                   image={image}
                   crop={crop}
@@ -529,7 +525,8 @@ export const ImageCropper = ({
                   onZoomChange={onZoomChange}
                   objectFit="contain"
                   showGrid={true}
-                  restrictPosition={true}
+                  restrictPosition={false}
+                  minZoom={0.1}
                   style={{
                      containerStyle: {
                         background: 'hsl(var(--muted) / 0.3)',
@@ -567,7 +564,7 @@ export const ImageCropper = ({
             </div>
 
             {/* Controls */}
-            <div className="px-5 py-4 space-y-4 bg-card border-t">
+            <div className="px-5 py-4 space-y-4 bg-card border-t overflow-y-auto shrink-0 max-h-[45vh]">
                {/* Quick Actions */}
                <div className="flex items-center justify-center gap-2" role="toolbar" aria-label="Quick actions">
                   <Button
@@ -621,7 +618,7 @@ export const ImageCropper = ({
                         variant="ghost"
                         size="icon"
                         onClick={zoomOut}
-                        disabled={zoom <= 1 || isProcessing}
+                        disabled={zoom <= 0.1 || isProcessing}
                         className="w-7 h-7 text-muted-foreground hover:text-foreground disabled:opacity-30"
                         aria-label="Zoom out"
                      >
@@ -629,7 +626,7 @@ export const ImageCropper = ({
                      </Button>
                      <Slider
                         value={[zoom]}
-                        min={1}
+                        min={0.1}
                         max={3}
                         step={0.01}
                         onValueChange={(value) => setZoom(value[0])}

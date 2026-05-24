@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { MapPin, Shield, User, Crown, Target, Sparkles, DollarSign } from "lucide-react";
 
 interface PixelTooltipProps {
@@ -7,7 +8,7 @@ interface PixelTooltipProps {
   status: 'available' | 'selected' | 'sold' | 'yours';
 }
 
-export const PixelTooltip = ({ x, y, price, status }: PixelTooltipProps) => {
+const PixelTooltipInner = ({ x, y, price, status }: PixelTooltipProps) => {
   const getStatusInfo = () => {
     switch (status) {
       case 'available':
@@ -62,7 +63,8 @@ export const PixelTooltip = ({ x, y, price, status }: PixelTooltipProps) => {
       style={{
         left: '50%',
         bottom: '20px',
-        transform: 'translateX(-50%)'
+        transform: 'translateX(-50%)',
+        willChange: 'transform',
       }}
     >
       <div className="bg-background/95 backdrop-blur-sm rounded-md px-3 py-2 shadow-lg border border-border/50 flex items-center gap-3">
@@ -95,3 +97,8 @@ export const PixelTooltip = ({ x, y, price, status }: PixelTooltipProps) => {
     </div>
   );
 };
+
+// React.memo prevents re-renders when x, y, price, status haven't changed.
+// This is critical for 60fps grid hovering — the parent re-renders on every
+// mousemove but the tooltip only needs to update when the hovered pixel changes.
+export const PixelTooltip = memo(PixelTooltipInner);

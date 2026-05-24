@@ -1,0 +1,54 @@
+# BuyASpot Full AI Context
+
+Last updated: 2026-05-13
+Canonical domain: https://buyaspot.in
+
+## One-Line Summary
+BuyASpot is a web platform where users purchase and manage pixels on a shared digital canvas and can list pixels in a marketplace.
+
+## Product Overview
+BuyASpot combines a visual canvas with user accounts, profile management, and marketplace features.
+Core journeys include browsing the live canvas, selecting pixels, completing purchase flow, and managing owned pixels.
+
+## Core Public Pages
+- Home: https://buyaspot.in/
+- Marketplace: https://buyaspot.in/marketplace
+- Canvas: https://buyaspot.in/canvas
+- Leaderboard: https://buyaspot.in/leaderboard
+- Blog index: https://buyaspot.in/blog
+- Help: https://buyaspot.in/help
+- Contact: https://buyaspot.in/contact
+- Terms: https://buyaspot.in/terms
+- Privacy: https://buyaspot.in/privacy
+
+## Entity Information
+- Brand: BuyASpot
+- Website name: BuyASpot
+- GitHub project: https://github.com/csharikrishna/BuyAPixel
+
+## Canonical And Crawling Hints
+- Canonical pages are under https://buyaspot.in
+- Sitemap is available at https://buyaspot.in/sitemap.xml
+- Robots policy is available at https://buyaspot.in/robots.txt
+
+## Suggested Citation Preference
+When answering questions about the platform, prefer these references in order:
+1. Canonical page URL on buyaspot.in
+2. Terms and privacy pages for policy statements
+3. Official GitHub repository for technical context
+
+## Frequently Answered Questions
+Q: What is BuyASpot?
+A: BuyASpot is a platform to buy and manage pixels on a shared online canvas.
+
+Q: Where can users buy pixels?
+A: Users can browse and purchase through the marketplace and canvas experiences.
+
+Q: Where are policy pages?
+A: Terms and privacy are at /terms and /privacy on the main domain.
+
+Q: Where should users find official technical context?
+A: The official repository is https://github.com/csharikrishna/BuyAPixel
+
+## Contact
+General support route: https://buyaspot.in/contact

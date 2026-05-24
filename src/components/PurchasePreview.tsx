@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription } from "@/components/ui/drawer";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -106,6 +107,9 @@ export const PurchasePreview = ({
   onConfirmPurchase
 }: PurchasePreviewProps) => {
   const isMobile = useIsMobile();
+  const { user } = useAuth();
+  const isPaymentBypassed = import.meta.env.VITE_BYPASS_PAYMENT === 'true';
+
   const [isProcessing, setIsProcessing] = useState(false);
   const [currentStep, setCurrentStep] = useState<CheckoutStep>('details');
   const [paymentStatus, setPaymentStatus] = useState<'idle' | 'processing' | 'success' | 'error'>('idle');
@@ -205,6 +209,7 @@ export const PurchasePreview = ({
     loadScript();
   }, []);
 
+  // Automatically calculate cost based on number of pixels
   const totalCost = selectedPixels.reduce((sum, pixel) => sum + pixel.price, 0);
   const pixelCounts = selectedPixels.reduce((acc, pixel) => {
     acc[pixel.price] = (acc[pixel.price] || 0) + 1;
@@ -361,7 +366,8 @@ export const PurchasePreview = ({
       return;
     }
 
-    if (!razorpayLoaded) {
+    // In bypass mode, skip Razorpay SDK check
+    if (!isPaymentBypassed && !razorpayLoaded) {
       toast.error("Payment system is loading. Please wait...");
       return;
     }
@@ -416,6 +422,70 @@ export const PurchasePreview = ({
         }
         console.error('Create order failed:', { orderError, orderData, errorMsg });
         throw new Error(errorMsg);
+      }
+
+      // ── BYPASS MODE: skip Razorpay, call bypass-purchase directly ──
+      if (isPaymentBypassed) {
+        try {
+          const { data: bypassData, error: bypassError } = await supabase.functions.invoke(
+            'bypass-purchase',
+            {
+              body: {
+                pixels: selectedPixels.map(p => ({ x: p.x, y: p.y, price: p.price })),
+                totalAmount: totalCost,
+                imageUrl: imagePreview,
+                linkUrl: linkUrl.trim() || null,
+                altText: pixelName.trim(),
+              },
+            }
+          );
+
+          if (bypassError || !bypassData?.success) {
+            let errMsg = bypassData?.error || 'Bypass purchase failed';
+            if (bypassError && !bypassData?.error) {
+              try {
+                const ctx = (bypassError as any)?.context;
+                if (ctx?.body) {
+                  const parsed = typeof ctx.body === 'string' ? JSON.parse(ctx.body) : ctx.body;
+                  errMsg = parsed?.error || parsed?.message || errMsg;
+                }
+              } catch {
+                errMsg = bypassError.message || errMsg;
+              }
+            }
+            throw new Error(errMsg);
+          }
+
+          // Success! Call the original onConfirmPurchase
+          await onConfirmPurchase(pixelName.trim(), linkUrl.trim(), imagePreview);
+
+          // Update payment status to success
+          setPaymentStatus('success');
+
+          toast.success("🎉 Purchase successful! (Payment bypassed)", {
+            description: "Dev mode active — no real charge.",
+            duration: 5000
+          });
+
+          // Clear form and localStorage after a delay to let notification show
+          setTimeout(() => {
+            setPixelName("");
+            setLinkUrl("");
+            setLinkUrlError(null);
+            setPixelNameError(null);
+            setImagePreview(null);
+            setPixelNameTouched(false);
+            setLinkUrlTouched(false);
+            localStorage.removeItem('checkout-draft');
+            setPaymentStatus('idle');
+            onClose();
+          }, 2000);
+
+          return; // Exit here, skipping Razorpay
+        } catch (err: unknown) {
+          console.error('Bypass error:', err);
+          throw err;
+        }
       }
 
       // Step 2: Open Razorpay checkout with enhanced options [web:144]
@@ -580,6 +650,17 @@ export const PurchasePreview = ({
         <title>Checkout - buyaspot.in</title>
         <meta name="robots" content="noindex, nofollow" />
       </Helmet>
+
+      {/* Dev Mode Banner — only visible when payment bypass is active */}
+      {isPaymentBypassed && (
+        <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-gradient-to-r from-amber-500/15 to-orange-500/15 border border-amber-500/30 text-amber-700 dark:text-amber-400">
+          <span className="text-lg">🛠️</span>
+          <div className="flex-1">
+            <p className="text-sm font-bold leading-tight">DEV MODE — Payment Bypassed</p>
+            <p className="text-xs opacity-80">No real charge will be made. Set VITE_BYPASS_PAYMENT=false for production.</p>
+          </div>
+        </div>
+      )}
 
       {/* Payment Notification - Shows during/after payment */}
       {paymentStatus !== 'idle' && (

@@ -9,7 +9,7 @@ interface AdminUser {
   email: string;
   full_name: string | null;
   created_at: string;
-}9
+}
 
 interface AdminAccessTabProps {
   admins: AdminUser[];

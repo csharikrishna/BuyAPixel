@@ -7,10 +7,23 @@ const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
 
-const corsHeaders = {
-   'Access-Control-Allow-Origin': '*',
-   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-   'Access-Control-Allow-Methods': 'POST, OPTIONS',
+// CORS: restrict to production domain + localhost for dev
+const ALLOWED_ORIGINS = [
+  'https://buyaspot.in',
+  'https://www.buyaspot.in',
+  'http://localhost:5173',
+  'http://localhost:5174',
+  'http://localhost:3000',
+]
+
+function getCorsHeaders(req: Request) {
+  const origin = req.headers.get('origin') || ''
+  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0]
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  }
 }
 
 // Rate limiting configuration
@@ -117,6 +130,16 @@ async function sendConfirmationEmail(
    }
 }
 
+// ✅ HTML entity escaping to prevent XSS in emails
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
 function buildEmailHtml(
    email: string,
    pixelCount: number,
@@ -130,6 +153,10 @@ function buildEmailHtml(
          currency: 'INR',
          maximumFractionDigits: 0,
       }).format(amount)
+
+   // ✅ Sanitize user-provided strings before HTML injection
+   const safePixelName = escapeHtml(pixelName)
+   const safeLinkUrl = linkUrl ? escapeHtml(linkUrl) : undefined
 
    return `
 <!DOCTYPE html>
@@ -157,12 +184,12 @@ function buildEmailHtml(
     <div class="content">
       <h1>Payment Successful 🎉</h1>
       <p>You now officially own a piece of the Million Dollar Canvas. Your pixels are secured forever.</p>
-      <div class="receipt">
-        <div class="row"><span>Pixel Name</span><span>${pixelName}</span></div>
-        <div class="row"><span>Quantity</span><span>${pixelCount} pixels</span></div>
-        ${linkUrl ? `<div class="row"><span>Link</span><span><a href="${linkUrl}" style="color:#10b981">${linkUrl}</a></span></div>` : ''}
-        <div class="row total"><span>Total Paid</span><span>${formatINR(totalAmount)}</span></div>
-      </div>
+       <div class="receipt">
+         <div class="row"><span>Pixel Name</span><span>${safePixelName}</span></div>
+         <div class="row"><span>Quantity</span><span>${pixelCount} pixels</span></div>
+         ${safeLinkUrl ? `<div class="row"><span>Link</span><span><a href="${safeLinkUrl}" style="color:#10b981">${safeLinkUrl}</a></span></div>` : ''}
+         <div class="row total"><span>Total Paid</span><span>${formatINR(totalAmount)}</span></div>
+       </div>
       <a href="https://buyaspot.in/profile" class="button">View Your Pixels</a>
     </div>
     <div class="footer">
@@ -176,6 +203,8 @@ function buildEmailHtml(
 }
 
 serve(async (req: Request) => {
+   const corsHeaders = getCorsHeaders(req)
+
    // Handle CORS preflight
    if (req.method === 'OPTIONS') {
       return new Response('ok', { status: 200, headers: corsHeaders })

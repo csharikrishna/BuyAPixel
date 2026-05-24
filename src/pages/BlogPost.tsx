@@ -31,6 +31,8 @@ import { Helmet } from 'react-helmet-async';
 import { toast } from 'sonner';
 import DOMPurify from 'dompurify';
 import { cn } from '@/lib/utils';
+import { BLOG_SEED_POSTS } from '@/data/blogSeedPosts';
+import { LOGO, getFullLogoUrl } from '@/lib/branding';
 
 // ======================
 // TYPES & INTERFACES
@@ -189,7 +191,7 @@ const BlogPost = () => {
 
   // Increment view count after reading for 3 seconds
   useEffect(() => {
-    if (!post || viewIncrementedRef.current) return;
+    if (!post || viewIncrementedRef.current || post.id.startsWith('seed-')) return;
 
     const timer = setTimeout(async () => {
       if (!isMountedRef.current) return;
@@ -221,7 +223,34 @@ const BlogPost = () => {
         .eq('status', 'published')
         .single();
 
-      if (postError) throw postError;
+      if (postError || !postData) {
+        const fallbackPost = BLOG_SEED_POSTS.find((p) => p.slug === slug);
+        if (fallbackPost) {
+          if (!isMountedRef.current) return;
+
+          const typedFallback = fallbackPost as unknown as BlogPost;
+          setPost(typedFallback);
+
+          const relatedFallback = BLOG_SEED_POSTS
+            .filter((p) => p.slug !== fallbackPost.slug)
+            .filter((p) => p.tags.some((tag) => fallbackPost.tags.includes(tag)))
+            .slice(0, 3)
+            .map((p) => ({
+              id: p.id,
+              slug: p.slug,
+              title: p.title,
+              excerpt: p.excerpt,
+              featured_image: p.featured_image,
+              published_at: p.published_at,
+              reading_time: p.reading_time,
+            }));
+
+          setRelatedPosts(relatedFallback);
+          return;
+        }
+
+        throw postError || new Error('Post not found');
+      }
 
       if (!isMountedRef.current) return;
 
@@ -245,10 +274,17 @@ const BlogPost = () => {
     } catch (error: unknown) {
       if (!isMountedRef.current) return;
 
-      console.error('Error loading blog post:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to load blog post';
-      setError(errorMessage);
-      toast.error(errorMessage);
+      const fallbackPost = BLOG_SEED_POSTS.find((p) => p.slug === slug);
+      if (fallbackPost) {
+        setPost(fallbackPost as unknown as BlogPost);
+        setError(null);
+        toast.info('Showing curated article content.');
+      } else {
+        console.error('Error loading blog post:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Failed to load blog post';
+        setError(errorMessage);
+        toast.error(errorMessage);
+      }
     } finally {
       if (isMountedRef.current) {
         setIsLoading(false);
@@ -339,6 +375,8 @@ const BlogPost = () => {
   // Prefetch related post
   const prefetchRelatedPost = useCallback(
     (postSlug: string) => {
+      if (BLOG_SEED_POSTS.some((post) => post.slug === postSlug)) return;
+
       queryClient.prefetchQuery({
         queryKey: ['blog-post', postSlug],
         queryFn: async () => {
@@ -377,7 +415,7 @@ const BlogPost = () => {
         name: 'BuyASpot',
         logo: {
           '@type': 'ImageObject',
-          url: 'https://buyaspot.in/logo.png',
+          url: getFullLogoUrl(LOGO),
         },
       },
       mainEntityOfPage: {

@@ -7,6 +7,8 @@ export interface Profile {
    phone_number: string | null;
    date_of_birth: string | null;
    avatar_url: string | null;
+   bio: string | null;
+   website_url: string | null;
    // Email is not stored in profiles table, comes from auth - optional for type compatibility
    email?: string | null;
    // Fields from database redesign - may have defaults

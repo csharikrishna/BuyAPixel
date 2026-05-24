@@ -25,6 +25,8 @@ import { Helmet } from 'react-helmet-async';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import debounce from 'lodash/debounce';
+import { BLOG_SEED_POSTS } from '@/data/blogSeedPosts';
+import { LOGO, getFullLogoUrl } from '@/lib/branding';
 
 // ======================
 // TYPES & INTERFACES
@@ -86,7 +88,9 @@ const Blog = () => {
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isUsingFallbackPosts, setIsUsingFallbackPosts] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const fallbackSlugs = useMemo(() => new Set(BLOG_SEED_POSTS.map((post) => post.slug)), []);
 
   // Get search and filter from URL params
   const searchQuery = searchParams.get('search') || '';
@@ -122,14 +126,22 @@ const Blog = () => {
 
       if (!isMountedRef.current) return;
 
-      setPosts((data as unknown as BlogPost[]) || []);
+      const typedData = (data as unknown as BlogPost[]) || [];
+      if (typedData.length > 0) {
+        setPosts(typedData);
+        setIsUsingFallbackPosts(false);
+      } else {
+        setPosts(BLOG_SEED_POSTS as unknown as BlogPost[]);
+        setIsUsingFallbackPosts(true);
+      }
     } catch (error: unknown) {
       if (!isMountedRef.current) return;
 
       console.error('Error loading blog posts:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to load blog posts';
-      setError(errorMessage);
-      toast.error(errorMessage);
+      setPosts(BLOG_SEED_POSTS as unknown as BlogPost[]);
+      setIsUsingFallbackPosts(true);
+      setError(null);
+      toast.info('Showing curated blog guides while live posts are unavailable.');
     } finally {
       if (isMountedRef.current) {
         setIsLoading(false);
@@ -227,6 +239,8 @@ const Blog = () => {
   // Prefetch blog post on hover
   const prefetchBlogPost = useCallback(
     (slug: string) => {
+      if (fallbackSlugs.has(slug)) return;
+
       queryClient.prefetchQuery({
         queryKey: ['blog-post', slug],
         queryFn: async () => {
@@ -241,7 +255,7 @@ const Blog = () => {
         staleTime: 5 * 60 * 1000, // 5 minutes
       });
     },
-    [queryClient]
+    [queryClient, fallbackSlugs]
   );
 
   // Keyboard shortcuts
@@ -274,7 +288,7 @@ const Blog = () => {
       publisher: {
         '@type': 'Organization',
         name: 'BuyASpot',
-        logo: 'https://buyaspot.in/logo.png',
+        logo: getFullLogoUrl(LOGO),
       },
       blogPost: filteredPosts.slice(0, 10).map((post) => ({
         '@type': 'BlogPosting',
@@ -335,6 +349,12 @@ const Blog = () => {
         </div>
 
         <main className="container mx-auto px-4 py-8 flex-1">
+          {isUsingFallbackPosts && (
+            <div className="mb-6 rounded-md border border-primary/20 bg-primary/5 p-3 text-sm text-foreground">
+              Showing curated SEO guides. Live posts will appear automatically when published.
+            </div>
+          )}
+
           {/* Search & Filter Bar */}
           <div className="mb-8 space-y-4">
             <div className="flex flex-col sm:flex-row gap-4">
@@ -478,7 +498,7 @@ const Blog = () => {
                           <div className="relative h-48 overflow-hidden bg-muted">
                             <img
                               src={post.featured_image}
-                              alt=""
+                              alt={post.title}
                               className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                               loading="lazy"
                               onError={(e) => {

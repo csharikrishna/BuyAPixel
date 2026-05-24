@@ -16,33 +16,26 @@ interface AdminDangerZoneProps {
   onRefresh: () => void;
 }
 
+const CONFIRM_PHRASE = 'CLEAR ALL DATA';
+
 export function AdminDangerZone({ userEmail, onRefresh }: AdminDangerZoneProps) {
   const [clearDbDialog, setClearDbDialog] = useState<{ open: boolean } | null>(null);
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [passwordError, setPasswordError] = useState('');
+  const [confirmText, setConfirmText] = useState('');
+  const [confirmError, setConfirmError] = useState('');
   const [clearingDb, setClearingDb] = useState(false);
 
+  const isConfirmValid = confirmText.trim() === CONFIRM_PHRASE;
+
   const handleClearDatabase = useCallback(async () => {
-    if (!confirmPassword.trim()) {
-      setPasswordError('Please enter your password');
+    if (!isConfirmValid) {
+      setConfirmError(`Please type "${CONFIRM_PHRASE}" exactly`);
       return;
     }
 
     setClearingDb(true);
-    setPasswordError('');
+    setConfirmError('');
 
     try {
-      const { error: authError } = await supabase.auth.signInWithPassword({
-        email: userEmail,
-        password: confirmPassword,
-      });
-
-      if (authError) {
-        setPasswordError('Incorrect password. Please try again.');
-        setClearingDb(false);
-        return;
-      }
-
       const { error } = await supabase.rpc('admin_clear_all_content');
       if (error) throw error;
 
@@ -52,8 +45,8 @@ export function AdminDangerZone({ userEmail, onRefresh }: AdminDangerZoneProps) 
       });
 
       setClearDbDialog(null);
-      setConfirmPassword('');
-      setPasswordError('');
+      setConfirmText('');
+      setConfirmError('');
       onRefresh();
     } catch (error: unknown) {
       console.error('Error clearing database:', error);
@@ -61,7 +54,7 @@ export function AdminDangerZone({ userEmail, onRefresh }: AdminDangerZoneProps) 
     } finally {
       setClearingDb(false);
     }
-  }, [confirmPassword, userEmail, onRefresh]);
+  }, [isConfirmValid, onRefresh]);
 
   return (
     <>
@@ -105,8 +98,8 @@ export function AdminDangerZone({ userEmail, onRefresh }: AdminDangerZoneProps) 
         onOpenChange={(open) => {
           if (!open) {
             setClearDbDialog(null);
-            setConfirmPassword('');
-            setPasswordError('');
+            setConfirmText('');
+            setConfirmError('');
           }
         }}
       >
@@ -137,26 +130,27 @@ export function AdminDangerZone({ userEmail, onRefresh }: AdminDangerZoneProps) 
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="confirm-password" className="text-sm font-medium flex items-center gap-2">
+              <Label htmlFor="confirm-text" className="text-sm font-medium flex items-center gap-2">
                 <KeyRound className="w-4 h-4" />
-                Enter your password to confirm
+                Type <span className="font-mono font-bold text-destructive">{CONFIRM_PHRASE}</span> to confirm
               </Label>
               <Input
-                id="confirm-password"
-                type="password"
-                value={confirmPassword}
+                id="confirm-text"
+                type="text"
+                value={confirmText}
                 onChange={(e) => {
-                  setConfirmPassword(e.target.value);
-                  setPasswordError('');
+                  setConfirmText(e.target.value);
+                  setConfirmError('');
                 }}
-                placeholder="Enter your password"
-                className={passwordError ? 'border-destructive' : ''}
+                placeholder={CONFIRM_PHRASE}
+                className={confirmError ? 'border-destructive' : isConfirmValid ? 'border-green-500' : ''}
                 autoFocus
+                autoComplete="off"
               />
-              {passwordError && (
+              {confirmError && (
                 <p className="text-sm text-destructive flex items-center gap-1">
                   <XCircle className="w-3 h-3" />
-                  {passwordError}
+                  {confirmError}
                 </p>
               )}
             </div>
@@ -166,8 +160,8 @@ export function AdminDangerZone({ userEmail, onRefresh }: AdminDangerZoneProps) 
               variant="outline"
               onClick={() => {
                 setClearDbDialog(null);
-                setConfirmPassword('');
-                setPasswordError('');
+                setConfirmText('');
+                setConfirmError('');
               }}
               disabled={clearingDb}
               className="w-full sm:w-auto"
@@ -177,7 +171,7 @@ export function AdminDangerZone({ userEmail, onRefresh }: AdminDangerZoneProps) 
             <Button
               variant="destructive"
               onClick={handleClearDatabase}
-              disabled={clearingDb || !confirmPassword.trim()}
+              disabled={clearingDb || !isConfirmValid}
               className="gap-2 w-full sm:w-auto"
             >
               {clearingDb && <Loader2 className="w-4 h-4 animate-spin" />}

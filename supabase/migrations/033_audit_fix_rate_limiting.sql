@@ -56,19 +56,26 @@ AS $$
 DECLARE
   v_limit_record rate_limits%ROWTYPE;
   v_now TIMESTAMPTZ := NOW();
+  v_bucket_epoch BIGINT;
+  v_window_start TIMESTAMPTZ;
+  v_window_end TIMESTAMPTZ;
   v_existing_count INTEGER;
 BEGIN
   -- Clean up expired rate limit windows first
   DELETE FROM rate_limits
   WHERE window_end_at <= v_now;
+  -- Bucket the window_start to deterministic boundary to avoid race-created buckets
+  v_bucket_epoch := floor(extract(epoch from v_now) / p_window_seconds)::BIGINT * p_window_seconds;
+  v_window_start := to_timestamp(v_bucket_epoch)::timestamptz;
+  v_window_end := v_window_start + (p_window_seconds || ' seconds')::INTERVAL;
 
   -- Try to get or create rate limit record for this window
   -- Using INSERT ... ON CONFLICT to atomically handle concurrent requests
   INSERT INTO rate_limits (user_id, endpoint, request_count, window_start_at, window_end_at)
-  VALUES (p_user_id, p_endpoint, 1, v_now, v_now + (p_window_seconds || ' seconds')::INTERVAL)
+  VALUES (p_user_id, p_endpoint, 1, v_window_start, v_window_end)
   ON CONFLICT (user_id, endpoint, window_start_at)
   DO UPDATE SET
-    request_count = request_count + 1,
+    request_count = rate_limits.request_count + 1,
     updated_at = v_now
   RETURNING * INTO v_limit_record;
 

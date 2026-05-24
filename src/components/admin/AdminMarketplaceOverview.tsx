@@ -28,20 +28,20 @@ export function AdminMarketplaceOverview({ analytics }: AdminMarketplaceOverview
           <div>
             <p className="text-sm text-muted-foreground">Revenue</p>
             <p className="text-2xl font-bold text-emerald-600">
-              ₹{analytics.total_revenue.toLocaleString()}
+              ₹{(analytics.total_revenue || 0).toLocaleString()}
             </p>
           </div>
           <div>
             <p className="text-sm text-muted-foreground">Active Listings</p>
-            <p className="text-2xl font-bold">{analytics.active_listings}</p>
+            <p className="text-2xl font-bold">{analytics.active_listings || 0}</p>
           </div>
           <div>
             <p className="text-sm text-muted-foreground">Featured</p>
-            <p className="text-2xl font-bold text-amber-600">{analytics.featured_listings}</p>
+            <p className="text-2xl font-bold text-amber-600">{analytics.featured_listings || 0}</p>
           </div>
           <div>
             <p className="text-sm text-muted-foreground">Refunds</p>
-            <p className="text-2xl font-bold text-red-600">{analytics.total_refunds}</p>
+            <p className="text-2xl font-bold text-red-600">{(analytics.total_refunds || 0).toLocaleString()}</p>
           </div>
         </div>
       </CardContent>

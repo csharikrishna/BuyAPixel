@@ -6,14 +6,54 @@ const RAZORPAY_KEY_SECRET = Deno.env.get('RAZORPAY_KEY_SECRET')
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 
-// ✅ FIXED C8: Remove in-memory rate limiting Map
-// Rate limiting is now checked via database
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+// ✅ FIXED C8: In-memory rate limiting as first defense
+interface RateLimitEntry {
+  count: number
+  resetTime: number
 }
+
+const rateLimitMap = new Map<string, RateLimitEntry>()
+const RATE_LIMIT_REQUESTS = 5 // Max 5 order creation attempts per window
+const RATE_LIMIT_WINDOW = 2 * 60 * 1000 // 2 minute window
+
+function checkRateLimit(userId: string): { allowed: boolean; remaining: number } {
+  const now = Date.now()
+  const entry = rateLimitMap.get(userId)
+
+  if (!entry || now > entry.resetTime) {
+    rateLimitMap.set(userId, { count: 1, resetTime: now + RATE_LIMIT_WINDOW })
+    return { allowed: true, remaining: RATE_LIMIT_REQUESTS - 1 }
+  }
+
+  if (entry.count >= RATE_LIMIT_REQUESTS) {
+    return { allowed: false, remaining: 0 }
+  }
+
+  entry.count++
+  return { allowed: true, remaining: RATE_LIMIT_REQUESTS - entry.count }
+}
+
+// CORS: restrict to production domain + localhost for dev
+const ALLOWED_ORIGINS = [
+  'https://buyaspot.in',
+  'https://www.buyaspot.in',
+  'http://localhost:5173',
+  'http://localhost:5174',
+  'http://localhost:3000',
+]
+
+function getCorsHeaders(req: Request) {
+  const origin = req.headers.get('origin') || ''
+  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0]
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  }
+}
+
+// Max pixels per purchase (server-side enforcement)
+const MAX_PIXELS_PER_PURCHASE = 1000
 
 interface CreateOrderRequest {
   pixels: Array<{ x: number; y: number; price: number }>
@@ -29,8 +69,8 @@ function validateUrl(url?: string): string | null {
 
   try {
     const parsed = new URL(url)
-    // Only allow http and https schemes
-    if (!['http:', 'https:'].includes(parsed.protocol)) {
+    // Only allow http, https, and data schemes
+    if (!['http:', 'https:', 'data:'].includes(parsed.protocol)) {
       throw new Error('Invalid URL scheme')
     }
     return url
@@ -63,6 +103,8 @@ function validateTextField(text?: string, maxLength: number = 200): string | nul
 }
 
 serve(async (req: Request) => {
+  const corsHeaders = getCorsHeaders(req)
+
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response('ok', { status: 200, headers: corsHeaders })
@@ -76,6 +118,14 @@ serve(async (req: Request) => {
   }
 
   try {
+    // ✅ Request body size validation — reject payloads > 5MB
+    const contentLength = req.headers.get('content-length')
+    if (contentLength && parseInt(contentLength) > 5_000_000) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Request payload too large' }),
+        { status: 413, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
     // Validate environment variables
     if (!RAZORPAY_KEY_ID || !RAZORPAY_KEY_SECRET) {
       console.error('Missing Razorpay credentials:', {
@@ -134,15 +184,37 @@ serve(async (req: Request) => {
 
     console.log(`✅ Authenticated user: ${user.id}`)
 
-    // ✅ Rate limiting check (optional - requires database RPC function)
-    // Skipping for now to avoid errors if RPC function doesn't exist
-    // Can be re-enabled after creating the check_and_record_rate_limit function
+    // ✅ Rate limiting check
+    const { allowed, remaining } = checkRateLimit(user.id)
+    if (!allowed) {
+      console.warn(`⚠️ Rate limit exceeded for user: ${user.id}`)
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'Too many order attempts. Please wait before trying again.',
+          retryAfter: Math.ceil(RATE_LIMIT_WINDOW / 1000) + ' seconds'
+        }),
+        {
+          status: 429,
+          headers: {
+            ...corsHeaders,
+            'Content-Type': 'application/json',
+            'Retry-After': Math.ceil(RATE_LIMIT_WINDOW / 1000).toString(),
+          },
+        }
+      )
+    }
 
     // Parse request body
     const body: CreateOrderRequest = await req.json()
 
     if (!body.pixels || body.pixels.length === 0) {
       throw new Error('No pixels provided')
+    }
+
+    // ✅ Server-side pixel count limit
+    if (body.pixels.length > MAX_PIXELS_PER_PURCHASE) {
+      throw new Error(`Cannot purchase more than ${MAX_PIXELS_PER_PURCHASE} pixels at once`)
     }
 
     if (!body.totalAmount || body.totalAmount <= 0) {

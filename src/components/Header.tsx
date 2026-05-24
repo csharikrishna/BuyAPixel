@@ -13,6 +13,8 @@ import {
   Info,
   Shield,
   ScanLine,
+  HelpCircle,
+  MessageCircle,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
@@ -37,6 +39,7 @@ import {
 } from "@/components/ui/sheet";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { LOGO } from "@/lib/branding";
 
 // ======================
 // TYPES & INTERFACES
@@ -67,6 +70,12 @@ const Header = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const queryClient = useQueryClient();
+
+  const [logoSrc, setLogoSrc] = useState(LOGO);
+
+  useEffect(() => {
+    setLogoSrc(LOGO);
+  }, [LOGO]);
 
   // Refs
   const prefetchTimerRef = useRef<Record<string, NodeJS.Timeout>>({});
@@ -217,6 +226,8 @@ const Header = () => {
       { label: 'Leaderboard', to: '/leaderboard', icon: Trophy, onPrefetch: prefetchLeaderboard },
       { label: 'Blog', to: '/blog', icon: BookOpen },
       { label: 'About', to: '/about', icon: Info },
+      { label: 'Help', to: '/help', icon: HelpCircle },
+      { label: 'Contact', to: '/contact', icon: MessageCircle },
     ],
     [prefetchMarketplace, prefetchLeaderboard]
   );
@@ -302,6 +313,11 @@ const Header = () => {
             // Prefetch home page data if needed
           })}
         >
+          <img 
+            src={logoSrc} 
+            alt="BuyASpot Logo" 
+            className="w-8 h-8 object-contain transition-all group-hover:scale-105 drop-shadow-sm"
+          />
           <div className="text-xl md:text-2xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent tracking-tight transition-all group-hover:scale-105">
             BuyASpot
           </div>
@@ -515,7 +531,12 @@ const Header = () => {
 
             <SheetContent side="right" className="w-72">
               <SheetHeader>
-                <SheetTitle className="text-left">
+                <SheetTitle className="text-left flex items-center gap-2">
+                  <img 
+                    src={logoSrc} 
+                    alt="BuyASpot Logo" 
+                    className="w-8 h-8 object-contain drop-shadow-sm"
+                  />
                   <span className="bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
                     BuyASpot
                   </span>
