@@ -605,6 +605,13 @@ const BuyPixels = () => {
     [selectedPixels, navigate]
   );
 
+  const handleAvailablePixelFocused = useCallback((x: number, y: number) => {
+    setMode("buying");
+    setIsSelecting(true);
+    const pixelId = `${x}-${y}`;
+    setSelectedPixels([{ x, y, price: calculatePixelPrice(x, y), id: pixelId }]);
+  }, []);
+
   // --- Network Status Change Handler ---
   useEffect(() => {
     if (!isOnline && mode === "buying") {
@@ -791,6 +798,7 @@ const BuyPixels = () => {
                 showGrid={showGrid}
                 showMyPixels={showMyPixels}
                 enableInteraction={true}
+                onAvailablePixelFocused={handleAvailablePixelFocused}
               />
             </div>
           </div>

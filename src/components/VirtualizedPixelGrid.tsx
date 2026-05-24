@@ -14,6 +14,7 @@ import { PixelTooltip } from "./PixelTooltip";
 import { PixelInfoModal } from "./PixelInfoModal";
 import { toast } from "sonner";
 import { Star, ExternalLink, Loader2 } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
 import { usePixelGridData } from "@/hooks/usePixelGridData";
 import { useGridInteraction } from "@/hooks/useGridInteraction";
 import { GRID_CONFIG, ZONE_SIZES, AD_TIER_CONFIG, getAdTierByPrice, calculatePixelPrice } from "@/utils/gridConstants";
@@ -36,6 +37,7 @@ interface VirtualizedPixelGridProps {
   showGrid?: boolean;
   showMyPixels?: boolean;
   enableInteraction?: boolean;
+  onAvailablePixelFocused?: (x: number, y: number) => void;
 }
 
 export interface GridHandle {
@@ -77,12 +79,15 @@ export const VirtualizedPixelGrid = forwardRef<
       showGrid = true,
       showMyPixels = false,
       enableInteraction = true,
+      onAvailablePixelFocused,
     },
     ref
   ) => {
     const { user } = useAuth();
     const containerRef = useRef<HTMLDivElement>(null);
     const hasInitializedRef = useRef(false);
+    const handledPixelParam = useRef<string | null>(null);
+    const [searchParams] = useSearchParams();
     const imageUrlsRef = useRef<Set<string>>(new Set());
 
     // ── Data & Interaction Hooks ──────────────────────────────
@@ -429,6 +434,88 @@ export const VirtualizedPixelGrid = forwardRef<
       observer.observe({ entryTypes: ["measure"] });
       return () => observer.disconnect();
     }, []);
+
+    // ── Handle URL Pixel Focus ─────────────────────────────────
+    useEffect(() => {
+      const pixelParam = searchParams.get('pixel');
+      if (!pixelParam || handledPixelParam.current === pixelParam) return;
+      if (isLoading || !containerSize.width || !containerSize.height) return;
+
+      handledPixelParam.current = pixelParam;
+
+      const [xStr, yStr] = pixelParam.split(',');
+      const px = parseInt(xStr, 10);
+      const py = parseInt(yStr, 10);
+
+      if (isNaN(px) || isNaN(py) || px < 0 || px >= gridWidth || py < 0 || py >= gridHeight) {
+         toast.error("Invalid pixel coordinates in URL");
+         return;
+      }
+
+      // Found a valid pixel to focus
+      const targetZoom = Math.min(8, GRID_CONFIG.MAX_ZOOM);
+      onZoomChange(targetZoom);
+      const scaled = Math.max(1, Math.floor(pixelSize * targetZoom));
+      const offsetX = (containerSize.width / 2) - (px * scaled) - (scaled / 2);
+      const offsetY = (containerSize.height / 2) - (py * scaled) - (scaled / 2);
+      setViewportOffset({ x: offsetX, y: offsetY });
+
+      const purchased = spatialIndex.get(px, py);
+      if (purchased) {
+        let block: PixelBlock | null = null;
+        if (purchased.block_id) {
+          // Find all pixels in this block
+          const blockPixels = purchasedPixels.filter(p => p.block_id === purchased.block_id);
+          if (blockPixels.length > 0) {
+             const xs = blockPixels.map(p => p.x);
+             const ys = blockPixels.map(p => p.y);
+             block = {
+                id: purchased.block_id,
+                owner_id: purchased.owner_id,
+                image_url: purchased.image_url || null,
+                link_url: purchased.link_url || null,
+                alt_text: purchased.alt_text || null,
+                min_x: Math.min(...xs),
+                max_x: Math.max(...xs),
+                min_y: Math.min(...ys),
+                max_y: Math.max(...ys),
+                pixel_count: blockPixels.length,
+                total_price: blockPixels.reduce((sum, p) => sum + (p.price_paid || 0), 0),
+                created_at: purchased.purchased_at || new Date().toISOString(),
+                updated_at: purchased.purchased_at || new Date().toISOString()
+             };
+          }
+        }
+        setInfoModalPixel(purchased);
+        setInfoModalBlock(block);
+        
+        // Add a slight delay to open the modal so the zoom animation feels smooth
+        setTimeout(() => setInfoModalOpen(true), 100);
+        
+      } else {
+        toast.success(`Pixel at (${px}, ${py}) is available!`, {
+           description: "We've selected it for you. Buy it now to own a piece of internet history.",
+           duration: 5000,
+        });
+        
+        if (onAvailablePixelFocused) {
+           onAvailablePixelFocused(px, py);
+        }
+      }
+    }, [
+      searchParams, 
+      isLoading, 
+      containerSize.width, 
+      containerSize.height, 
+      spatialIndex, 
+      purchasedPixels, 
+      gridWidth, 
+      gridHeight, 
+      pixelSize, 
+      onZoomChange, 
+      setViewportOffset,
+      onAvailablePixelFocused
+    ]);
 
     // ── Render Pre-calculations ───────────────────────────────
 
