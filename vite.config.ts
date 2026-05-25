@@ -35,27 +35,11 @@ export default defineConfig(({ mode }) => ({
       outDir: "dist",
       emptyOutDir: true,
       sourcemap: false,
-      minify: 'terser',
+      minify: 'esbuild',
       // Target modern browsers for smaller builds
       target: 'es2020',
       // Reduce chunk size warning limit to catch bloat
-      chunkSizeWarningLimit: 200,
-      // Terser options for aggressive minification
-      terserOptions: {
-         compress: {
-            drop_console: mode === 'production',
-            drop_debugger: true,
-            pure_funcs: mode === 'production' ? ['console.log', 'console.warn', 'console.info', 'console.debug'] : [],
-            passes: 3,
-            toplevel: true,
-            unsafe: true,
-            unsafe_methods: true,
-         },
-         format: {
-            comments: false,
-         },
-         mangle: true,
-      },
+      chunkSizeWarningLimit: 600,
       // CSS code splitting - critical for reducing main.css
       cssCodeSplit: true,
       // Asset inlining threshold (4KB) - aggressive inline small assets
@@ -100,14 +84,7 @@ export default defineConfig(({ mode }) => ({
                'helmet': ['react-helmet-async'],
                // Lucide icons - heavy but used everywhere, keep separate
                'lucide': ['lucide-react'],
-               // Charts - only used in dashboard
-               'charts': ['recharts'],
             },
-         },
-         treeshake: {
-            moduleSideEffects: false,
-            propertyReadSideEffects: true,
-            tryCatchDeoptimization: false,
          },
       },
    },
