@@ -35,11 +35,27 @@ export default defineConfig(({ mode }) => ({
       outDir: "dist",
       emptyOutDir: true,
       sourcemap: false,
-      minify: 'esbuild',
+      minify: 'terser',
       // Target modern browsers for smaller builds
       target: 'es2020',
       // Increase chunk size warning limit
-      chunkSizeWarningLimit: 600,
+      chunkSizeWarningLimit: 300,
+      // Terser options for aggressive minification
+      terserOptions: {
+         compress: {
+            drop_console: mode === 'production',
+            drop_debugger: true,
+            pure_funcs: mode === 'production' ? ['console.log', 'console.warn', 'console.info', 'console.debug'] : [],
+            passes: 2,
+         },
+         format: {
+            comments: false,
+         },
+      },
+      // CSS code splitting
+      cssCodeSplit: true,
+      // Asset inlining threshold (4KB)
+      assetsInlineLimit: 4096,
       rollupOptions: {
          output: {
             manualChunks: {
@@ -47,12 +63,19 @@ export default defineConfig(({ mode }) => ({
                'react-vendor': ['react', 'react-dom', 'react-router-dom'],
                // Supabase - needed for auth/data
                'supabase': ['@supabase/supabase-js'],
-               // UI Components - frequently used
+               // UI Components - split into tiers
                'ui-core': [
                   '@radix-ui/react-dialog',
                   '@radix-ui/react-dropdown-menu',
-                  '@radix-ui/react-toast',
                   '@radix-ui/react-tooltip',
+               ],
+               'ui-extra': [
+                  '@radix-ui/react-toast',
+                  '@radix-ui/react-accordion',
+                  '@radix-ui/react-tabs',
+                  '@radix-ui/react-select',
+                  '@radix-ui/react-popover',
+                  '@radix-ui/react-scroll-area',
                ],
                // Form handling - loaded when forms are used
                'forms': [
@@ -64,6 +87,10 @@ export default defineConfig(({ mode }) => ({
                'charts': ['recharts'],
                // Image cropping - only needed during upload
                'image-tools': ['react-easy-crop'],
+               // Query - used frequently but separable
+               'query': ['@tanstack/react-query'],
+               // Sonner (toast) - frequently used
+               'sonner': ['sonner'],
             },
          },
       },
@@ -78,11 +105,5 @@ export default defineConfig(({ mode }) => ({
          '@tanstack/react-query',
       ],
       exclude: [],
-   },
-
-   esbuild: {
-      // Strip console.log/warn in production builds (keep console.error for monitoring)
-      drop: mode === 'production' ? ['debugger'] : [],
-      pure: mode === 'production' ? ['console.log', 'console.warn', 'console.info', 'console.debug'] : [],
    },
 }));

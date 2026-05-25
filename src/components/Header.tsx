@@ -316,7 +316,10 @@ const Header = () => {
           <img 
             src={logoSrc} 
             alt="BuyASpot Logo" 
+            width={32}
+            height={32}
             className="w-8 h-8 object-contain transition-all group-hover:scale-105 drop-shadow-sm"
+            fetchPriority="high"
           />
           <div className="text-xl md:text-2xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent tracking-tight transition-all group-hover:scale-105">
             BuyASpot
@@ -535,7 +538,10 @@ const Header = () => {
                   <img 
                     src={logoSrc} 
                     alt="BuyASpot Logo" 
+                    width={32}
+                    height={32}
                     className="w-8 h-8 object-contain drop-shadow-sm"
+                    loading="lazy"
                   />
                   <span className="bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
                     BuyASpot

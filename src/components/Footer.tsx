@@ -39,7 +39,7 @@ const Footer = () => {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="bg-gradient-to-b from-muted/30 to-muted/50 border-t">
+    <footer className="bg-gradient-to-b from-muted/30 to-muted/50 border-t" role="contentinfo" aria-label="Site footer">
       <div className="container mx-auto px-4 py-12 md:py-16">
         {/* Main Grid - Different layout for mobile vs desktop */}
         <div className="grid grid-cols-1 gap-8 lg:gap-12">

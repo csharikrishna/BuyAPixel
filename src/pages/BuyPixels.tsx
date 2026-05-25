@@ -43,10 +43,19 @@ import { useLayout } from "@/contexts/LayoutContext";
 import { useNetworkStatus } from "@/hooks/useNetworkStatus";
 import SEO from "@/components/SEO";
 import { generateOrganizationSchema, generateWebsiteSchema, generateFAQSchema, generateServiceSchema, generateLocalBusinessSchema, generateBreadcrumbSchema } from "@/lib/seo-utils";
-import confetti from "canvas-confetti";
-import debounce from "lodash/debounce";
 import { SelectedPixel } from "@/types/grid";
 import { GRID_CONFIG, PIXEL_PRICING, calculatePixelPrice } from "@/utils/gridConstants";
+
+// Inline debounce to avoid lodash dependency (~25KB savings)
+function debounce<T extends (...args: unknown[]) => void>(fn: T, ms: number): T & { cancel: () => void } {
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  const debounced = (...args: unknown[]) => {
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(() => fn(...args), ms);
+  };
+  debounced.cancel = () => { if (timer) clearTimeout(timer); };
+  return debounced as T & { cancel: () => void };
+}
 
 // --- Constants ---
 const CANVAS_WIDTH = GRID_CONFIG.CANVAS_WIDTH;
@@ -560,12 +569,15 @@ const BuyPixels = () => {
 
       const purchasedPixels = [...selectedPixels];
 
-      // Trigger celebration
-      confetti({
-        particleCount: 150,
-        spread: 70,
-        origin: { y: 0.6 },
-        colors: ["#EF4444", "#10B981", "#F59E0B", "#6366F1"],
+      // Trigger celebration (dynamically imported to save ~15KB from critical path)
+      import("canvas-confetti").then((mod) => {
+        const confetti = mod.default;
+        confetti({
+          particleCount: 150,
+          spread: 70,
+          origin: { y: 0.6 },
+          colors: ["#EF4444", "#10B981", "#F59E0B", "#6366F1"],
+        });
       });
 
       // Reset UI state with transition

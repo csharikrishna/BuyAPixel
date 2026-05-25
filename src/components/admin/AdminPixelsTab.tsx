@@ -239,7 +239,7 @@ export function AdminPixelsTab({ pixels, setPixels, getUserEmail, getUserName }:
                 <Card key={pixel.id} className="overflow-hidden group relative hover:ring-2 hover:ring-primary/50 transition-all">
                   <div className="aspect-square bg-muted/20 relative">
                     {pixel.image_url ? (
-                      <img src={pixel.image_url} alt={pixel.alt_text} className="w-full h-full object-cover" />
+                      <img src={pixel.image_url} alt={pixel.alt_text} className="w-full h-full object-cover" loading="lazy" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-muted-foreground/30">
                         <Image className="w-8 h-8" />
