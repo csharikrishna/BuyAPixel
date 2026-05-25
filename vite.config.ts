@@ -83,8 +83,6 @@ export default defineConfig(({ mode }) => ({
                   'zod',
                   '@hookform/resolvers',
                ],
-               // Charts - only needed in admin/leaderboard
-               'charts': ['recharts'],
                // Image cropping - only needed during upload
                'image-tools': ['react-easy-crop'],
                // Query - used frequently but separable

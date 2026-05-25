@@ -10,7 +10,7 @@ interface TutorialStep {
 }
 
 export const OnboardingTutorial = () => {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(() => !localStorage.getItem("hasSeenTutorial"));
   const [currentStep, setCurrentStep] = useState(0);
   const isMobile = useIsMobile();
 
@@ -63,12 +63,7 @@ export const OnboardingTutorial = () => {
     }
   ];
 
-  useEffect(() => {
-    const hasSeenTutorial = localStorage.getItem("hasSeenTutorial");
-    if (!hasSeenTutorial) {
-      setIsOpen(true);
-    }
-  }, []);
+  // Initialized synchronously in useState
 
   const handleClose = () => {
     localStorage.setItem("hasSeenTutorial", "true");
