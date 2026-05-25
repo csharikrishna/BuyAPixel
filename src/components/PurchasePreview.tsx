@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription } from "@/components/ui/drawer";
-import { VisuallyHidden } from "@/components/ui/visually-hidden";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -1361,10 +1360,8 @@ export const PurchasePreview = ({
           }
         }}
       >
-        {/* Hidden DialogTitle for Radix UI accessibility - required for screen readers */}
-        <VisuallyHidden asChild>
-          <DialogTitle>Checkout</DialogTitle>
-        </VisuallyHidden>
+        {/* Required for Radix UI accessibility - DialogTitle must be direct child of DialogContent */}
+        <DialogTitle className="sr-only">Checkout</DialogTitle>
         <DialogHeader>
           <DialogTitle id="checkout-title" className="flex items-center gap-2">
             <ShoppingCart className="w-5 h-5 text-primary" aria-hidden="true" />
