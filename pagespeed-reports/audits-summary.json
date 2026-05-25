@@ -1,209 +1,142 @@
 {
   "mobile": {
-    "image-delivery-insight": {
-      "title": "Improve image delivery",
-      "score": 0,
-      "displayValue": "Est savings of 452 KiB"
-    },
-    "aria-toggle-field-name": {
-      "title": "ARIA toggle fields have accessible names",
-      "score": null
-    },
-    "forced-reflow-insight": {
-      "title": "Forced reflow",
-      "score": 0
-    },
-    "redirects-http": {
-      "title": "Redirects HTTP traffic to HTTPS",
-      "score": null
-    },
-    "lcp-breakdown-insight": {
-      "title": "LCP breakdown",
-      "score": 1
-    },
-    "link-in-text-block": {
-      "title": "Links are distinguishable without relying on color.",
-      "score": null
-    },
-    "http-status-code": {
-      "title": "Page has successful HTTP status code",
-      "score": 1
-    },
-    "button-name": {
-      "title": "Buttons do not have an accessible name",
-      "score": 0
-    },
-    "font-display-insight": {
-      "title": "Font display",
-      "score": 1
-    },
-    "first-contentful-paint": {
-      "title": "First Contentful Paint",
-      "score": 0.17,
-      "displayValue": "4.4 s",
-      "numericValue": 4377.943930375991,
-      "numericUnit": "millisecond"
-    },
-    "td-headers-attr": {
-      "title": "Cells in a `<table>` element that use the `[headers]` attribute refer to table cells within the same table.",
-      "score": null
-    },
-    "js-libraries": {
-      "title": "Detected JavaScript libraries",
-      "score": null
-    },
-    "input-image-alt": {
-      "title": "`<input type=\"image\">` elements have `[alt]` text",
-      "score": null
-    },
-    "input-button-name": {
-      "title": "Input buttons have discernible text.",
-      "score": null
-    },
-    "largest-contentful-paint": {
-      "title": "Largest Contentful Paint",
-      "score": 0.04,
-      "displayValue": "7.3 s",
-      "numericValue": 7326.074614468702,
-      "numericUnit": "millisecond"
-    },
-    "charset": {
-      "title": "Properly defines charset",
-      "score": 1
-    },
-    "duplicated-javascript-insight": {
-      "title": "Duplicated JavaScript",
-      "score": 1
-    },
-    "aria-allowed-role": {
-      "title": "Uses ARIA roles only on compatible elements",
-      "score": null
-    },
-    "speed-index": {
-      "title": "Speed Index",
-      "score": 0.52,
-      "displayValue": "5.6 s",
-      "numericValue": 5620.130436306694,
-      "numericUnit": "millisecond"
-    },
-    "aria-conditional-attr": {
-      "title": "ARIA attributes are used as specified for the element's role",
-      "score": 1
-    },
-    "clickjacking-mitigation": {
-      "title": "Mitigate clickjacking with XFO or CSP",
-      "score": 1
-    },
-    "definition-list": {
-      "title": "`<dl>`'s contain only properly-ordered `<dt>` and `<dd>` groups, `<script>`, `<template>` or `<div>` elements.",
-      "score": null
-    },
-    "origin-isolation": {
-      "title": "Ensure proper origin isolation with COOP",
-      "score": 1
-    },
-    "layout-shifts": {
-      "title": "Avoid large layout shifts",
-      "score": 1,
-      "displayValue": "2 layout shifts found"
-    },
-    "link-text": {
-      "title": "Links have descriptive text",
-      "score": 1
-    },
-    "aria-hidden-body": {
-      "title": "`[aria-hidden=\"true\"]` is not present on the document `<body>`",
-      "score": 1
-    },
-    "label": {
-      "title": "Form elements have associated labels",
-      "score": null
-    },
-    "geolocation-on-start": {
-      "title": "Avoids requesting the geolocation permission on page load",
-      "score": 1
-    },
-    "list": {
-      "title": "Lists contain only `<li>` elements and script supporting elements (`<script>` and `<template>`).",
+    "is-crawlable": {
+      "title": "Page isn’t blocked from indexing",
       "score": 1
     },
     "identical-links-same-purpose": {
       "title": "Identical links have the same purpose.",
       "score": null
     },
-    "bypass": {
-      "title": "The page contains a heading, skip link, or landmark region",
+    "aria-dialog-name": {
+      "title": "Elements with `role=\"dialog\"` or `role=\"alertdialog\"` have accessible names.",
       "score": null
     },
-    "meta-refresh": {
-      "title": "The document does not use `<meta http-equiv=\"refresh\">`",
+    "unused-css-rules": {
+      "title": "Reduce unused CSS",
+      "score": 0,
+      "displayValue": "Est savings of 24 KiB",
+      "numericValue": 0,
+      "numericUnit": "millisecond"
+    },
+    "aria-allowed-role": {
+      "title": "Uses ARIA roles only on compatible elements",
       "score": null
     },
-    "diagnostics": {
-      "title": "Diagnostics",
+    "aria-command-name": {
+      "title": "`button`, `link`, and `menuitem` elements have accessible names",
+      "score": null
+    },
+    "aria-input-field-name": {
+      "title": "ARIA input fields have accessible names",
+      "score": null
+    },
+    "js-libraries": {
+      "title": "Detected JavaScript libraries",
+      "score": null
+    },
+    "aria-toggle-field-name": {
+      "title": "ARIA toggle fields have accessible names",
+      "score": null
+    },
+    "aria-meter-name": {
+      "title": "ARIA `meter` elements have accessible names",
+      "score": null
+    },
+    "network-rtt": {
+      "title": "Network Round Trip Times",
+      "score": 1,
+      "displayValue": "10 ms",
+      "numericValue": 12.027825,
+      "numericUnit": "millisecond"
+    },
+    "total-byte-weight": {
+      "title": "Avoids enormous network payloads",
+      "score": 1,
+      "displayValue": "Total size was 747 KiB",
+      "numericValue": 764850,
+      "numericUnit": "byte"
+    },
+    "forced-reflow-insight": {
+      "title": "Forced reflow",
+      "score": 0
+    },
+    "duplicated-javascript-insight": {
+      "title": "Duplicated JavaScript",
+      "score": 1
+    },
+    "aria-required-children": {
+      "title": "Elements with an ARIA `[role]` that require children to contain a specific `[role]` have all required children.",
+      "score": null
+    },
+    "dlitem": {
+      "title": "Definition list items are wrapped in `<dl>` elements",
+      "score": null
+    },
+    "is-on-https": {
+      "title": "Uses HTTPS",
+      "score": 1
+    },
+    "aria-required-attr": {
+      "title": "`[role]`s have all required `[aria-*]` attributes",
+      "score": 1
+    },
+    "image-delivery-insight": {
+      "title": "Improve image delivery",
+      "score": 0,
+      "displayValue": "Est savings of 453 KiB"
+    },
+    "unused-javascript": {
+      "title": "Reduce unused JavaScript",
+      "score": 0,
+      "displayValue": "Est savings of 90 KiB",
+      "numericValue": 450,
+      "numericUnit": "millisecond"
+    },
+    "network-server-latency": {
+      "title": "Server Backend Latencies",
+      "score": 1,
+      "displayValue": "0 ms",
+      "numericValue": 1.5,
+      "numericUnit": "millisecond"
+    },
+    "largest-contentful-paint": {
+      "title": "Largest Contentful Paint",
+      "score": 0.24,
+      "displayValue": "5.2 s",
+      "numericValue": 5176.5,
+      "numericUnit": "millisecond"
+    },
+    "crawlable-anchors": {
+      "title": "Links are crawlable",
       "score": 1
     },
     "document-title": {
       "title": "Document has a `<title>` element",
       "score": 1
     },
-    "network-rtt": {
-      "title": "Network Round Trip Times",
-      "score": 1,
-      "displayValue": "10 ms",
-      "numericValue": 11.504497499999996,
-      "numericUnit": "millisecond"
+    "interactive-element-affordance": {
+      "title": "Interactive elements indicate their purpose and state",
+      "score": null
     },
-    "screenshot-thumbnails": {
-      "title": "Screenshot Thumbnails",
+    "focusable-controls": {
+      "title": "Interactive controls are keyboard focusable",
+      "score": null
+    },
+    "lcp-breakdown-insight": {
+      "title": "LCP breakdown",
       "score": 1
     },
-    "aria-input-field-name": {
-      "title": "ARIA input fields have accessible names",
+    "definition-list": {
+      "title": "`<dl>`'s contain only properly-ordered `<dt>` and `<dd>` groups, `<script>`, `<template>` or `<div>` elements.",
       "score": null
     },
-    "label-content-name-mismatch": {
-      "title": "Elements with visible text labels do not have matching accessible names.",
-      "score": 0
-    },
-    "viewport-insight": {
-      "title": "Optimize viewport for mobile",
+    "aria-roles": {
+      "title": "`[role]` values are valid",
       "score": 1
     },
-    "html-xml-lang-mismatch": {
-      "title": "`<html>` element has an `[xml:lang]` attribute with the same base language as the `[lang]` attribute.",
-      "score": null
-    },
-    "target-size": {
-      "title": "Touch targets have sufficient size and spacing.",
-      "score": 1
-    },
-    "aria-treeitem-name": {
-      "title": "ARIA `treeitem` elements have accessible names",
-      "score": null
-    },
-    "listitem": {
-      "title": "List items (`<li>`) are contained within `<ul>`, `<ol>` or `<menu>` parent elements",
-      "score": 1
-    },
-    "aria-text": {
-      "title": "Elements with the `role=text` attribute do not have focusable descendents.",
-      "score": null
-    },
-    "table-fake-caption": {
-      "title": "Tables use `<caption>` instead of cells with the `[colspan]` attribute to indicate a caption.",
-      "score": null
-    },
-    "third-parties-insight": {
-      "title": "3rd parties",
-      "score": 1
-    },
-    "structured-data": {
-      "title": "Structured data is valid",
-      "score": null
-    },
-    "accesskeys": {
-      "title": "`[accesskey]` values are unique",
+    "logical-tab-order": {
+      "title": "The page has a logical tab order",
       "score": null
     },
     "redirects": {
@@ -212,260 +145,313 @@
       "numericValue": 0,
       "numericUnit": "millisecond"
     },
-    "max-potential-fid": {
-      "title": "Max Potential First Input Delay",
-      "score": 0.96,
-      "displayValue": "100 ms",
-      "numericValue": 99,
+    "clickjacking-mitigation": {
+      "title": "Mitigate clickjacking with XFO or CSP",
+      "score": 1
+    },
+    "bootup-time": {
+      "title": "JavaScript execution time",
+      "score": 1,
+      "displayValue": "0.2 s",
+      "numericValue": 185.02920000000043,
       "numericUnit": "millisecond"
     },
-    "aria-allowed-attr": {
-      "title": "`[aria-*]` attributes match their roles",
+    "resource-summary": {
+      "title": "Resources Summary",
       "score": 1
     },
-    "legacy-javascript-insight": {
-      "title": "Legacy JavaScript",
-      "score": 0,
-      "displayValue": "Est savings of 20 KiB"
-    },
-    "tabindex": {
-      "title": "No element has a `[tabindex]` value greater than 0",
+    "doctype": {
+      "title": "Page has the HTML doctype",
       "score": 1
     },
-    "landmark-one-main": {
-      "title": "Document has a main landmark.",
+    "redirects-http": {
+      "title": "Redirects HTTP traffic to HTTPS",
+      "score": null
+    },
+    "accesskeys": {
+      "title": "`[accesskey]` values are unique",
+      "score": null
+    },
+    "cache-insight": {
+      "title": "Use efficient cache lifetimes",
       "score": 1
     },
-    "aria-command-name": {
-      "title": "`button`, `link`, and `menuitem` elements have accessible names",
+    "aria-treeitem-name": {
+      "title": "ARIA `treeitem` elements have accessible names",
+      "score": null
+    },
+    "max-potential-fid": {
+      "title": "Max Potential First Input Delay",
+      "score": 0.99,
+      "displayValue": "70 ms",
+      "numericValue": 68,
+      "numericUnit": "millisecond"
+    },
+    "third-party-cookies": {
+      "title": "Avoids third-party cookies",
+      "score": 1
+    },
+    "layout-shifts": {
+      "title": "Avoid large layout shifts",
+      "score": 1,
+      "displayValue": "15 layout shifts found"
+    },
+    "total-blocking-time": {
+      "title": "Total Blocking Time",
+      "score": 1,
+      "displayValue": "20 ms",
+      "numericValue": 18,
+      "numericUnit": "millisecond"
+    },
+    "structured-data": {
+      "title": "Structured data is valid",
       "score": null
     },
     "skip-link": {
       "title": "Skip links are focusable.",
       "score": null
     },
-    "managed-focus": {
-      "title": "The user's focus is directed to new content added to the page",
+    "input-image-alt": {
+      "title": "`<input type=\"image\">` elements have `[alt]` text",
       "score": null
     },
-    "interactive": {
-      "title": "Time to Interactive",
-      "score": 0.38,
-      "displayValue": "8.5 s",
-      "numericValue": 8503.125762819927,
-      "numericUnit": "millisecond"
+    "table-duplicate-name": {
+      "title": "Tables have different content in the summary attribute and `<caption>`.",
+      "score": null
     },
-    "inspector-issues": {
-      "title": "Issues were logged in the `Issues` panel in Chrome Devtools",
-      "score": 0
-    },
-    "mainthread-work-breakdown": {
-      "title": "Minimizes main-thread work",
-      "score": 1,
-      "displayValue": "1.4 s",
-      "numericValue": 1409.0867999999955,
-      "numericUnit": "millisecond"
-    },
-    "non-composited-animations": {
-      "title": "Avoid non-composited animations",
-      "score": 1,
-      "displayValue": "3 animated elements found"
-    },
-    "long-tasks": {
-      "title": "Avoid long main-thread tasks",
-      "score": 1,
-      "displayValue": "6 long tasks found"
-    },
-    "valid-source-maps": {
-      "title": "Page has valid source maps",
+    "image-alt": {
+      "title": "Image elements have `[alt]` attributes",
       "score": 1
     },
-    "deprecations": {
-      "title": "Avoids deprecated APIs",
+    "aria-tooltip-name": {
+      "title": "ARIA `tooltip` elements have accessible names",
+      "score": null
+    },
+    "target-size": {
+      "title": "Touch targets have sufficient size and spacing.",
       "score": 1
     },
-    "visual-order-follows-dom": {
-      "title": "Visual order on the page follows DOM order",
+    "inp-breakdown-insight": {
+      "title": "INP breakdown",
       "score": null
     },
-    "td-has-header": {
-      "title": "`<td>` elements in a large `<table>` have one or more table headers.",
-      "score": null
-    },
-    "frame-title": {
-      "title": "`<frame>` or `<iframe>` elements have a title",
-      "score": null
-    },
-    "dom-size-insight": {
-      "title": "Optimize DOM size",
-      "score": 1,
-      "numericValue": 325,
-      "numericUnit": "element"
-    },
-    "unused-css-rules": {
-      "title": "Reduce unused CSS",
-      "score": 0,
-      "displayValue": "Est savings of 45 KiB",
-      "numericValue": 0,
-      "numericUnit": "millisecond"
-    },
-    "valid-lang": {
-      "title": "`[lang]` attributes have a valid value",
-      "score": null
-    },
-    "custom-controls-labels": {
-      "title": "Custom controls have associated labels",
-      "score": null
-    },
-    "aria-prohibited-attr": {
-      "title": "Elements use only permitted ARIA attributes",
-      "score": 1
-    },
-    "aria-required-attr": {
-      "title": "`[role]`s have all required `[aria-*]` attributes",
-      "score": 1
-    },
-    "aria-progressbar-name": {
-      "title": "ARIA `progressbar` elements have accessible names",
-      "score": null
-    },
-    "heading-order": {
-      "title": "Heading elements are not in a sequentially-descending order",
-      "score": 0
-    },
-    "network-dependency-tree-insight": {
-      "title": "Network dependency tree",
-      "score": 0
-    },
-    "document-latency-insight": {
-      "title": "Document request latency",
-      "score": 1
-    },
-    "has-hsts": {
-      "title": "Use a strong HSTS policy",
-      "score": 1
-    },
-    "aria-roles": {
-      "title": "`[role]` values are valid",
+    "network-requests": {
+      "title": "Network Requests",
       "score": 1
     },
     "hreflang": {
       "title": "Document has a valid `hreflang`",
       "score": 1
     },
-    "html-has-lang": {
-      "title": "`<html>` element has a `[lang]` attribute",
-      "score": 1
-    },
-    "meta-viewport": {
-      "title": "`[user-scalable=\"no\"]` is not used in the `<meta name=\"viewport\">` element and the `[maximum-scale]` attribute is not less than 5.",
-      "score": 1
-    },
-    "cls-culprits-insight": {
-      "title": "Layout shift culprits",
-      "score": 1
-    },
-    "color-contrast": {
-      "title": "Background and foreground colors do not have a sufficient contrast ratio.",
-      "score": 0
-    },
-    "image-size-responsive": {
-      "title": "Serves images with appropriate resolution",
-      "score": 1
-    },
-    "metrics": {
-      "title": "Metrics",
-      "score": 1,
-      "numericValue": 8503,
-      "numericUnit": "millisecond"
-    },
-    "doctype": {
-      "title": "Page has the HTML doctype",
-      "score": 1
-    },
-    "errors-in-console": {
-      "title": "Browser errors were logged to the console",
-      "score": 0
-    },
-    "inp-breakdown-insight": {
-      "title": "INP breakdown",
+    "td-headers-attr": {
+      "title": "Cells in a `<table>` element that use the `[headers]` attribute refer to table cells within the same table.",
       "score": null
     },
-    "resource-summary": {
-      "title": "Resources Summary",
-      "score": 1
+    "first-contentful-paint": {
+      "title": "First Contentful Paint",
+      "score": 0.85,
+      "displayValue": "2.0 s",
+      "numericValue": 1955,
+      "numericUnit": "millisecond"
     },
-    "final-screenshot": {
-      "title": "Final Screenshot",
-      "score": 1
+    "speed-index": {
+      "title": "Speed Index",
+      "score": 0.69,
+      "displayValue": "4.7 s",
+      "numericValue": 4680.662624814716,
+      "numericUnit": "millisecond"
     },
     "paste-preventing-inputs": {
       "title": "Allows users to paste into input fields",
       "score": 1
     },
+    "mainthread-work-breakdown": {
+      "title": "Minimizes main-thread work",
+      "score": 1,
+      "displayValue": "0.6 s",
+      "numericValue": 565.7303999999998,
+      "numericUnit": "millisecond"
+    },
+    "network-dependency-tree-insight": {
+      "title": "Network dependency tree",
+      "score": 0
+    },
+    "table-fake-caption": {
+      "title": "Tables use `<caption>` instead of cells with the `[colspan]` attribute to indicate a caption.",
+      "score": null
+    },
     "csp-xss": {
       "title": "Ensure CSP is effective against XSS attacks",
       "score": 1
     },
-    "render-blocking-insight": {
-      "title": "Render blocking requests",
-      "score": 0.5
+    "long-tasks": {
+      "title": "Avoid long main-thread tasks",
+      "score": 1,
+      "displayValue": "1 long task found"
     },
-    "is-on-https": {
-      "title": "Uses HTTPS",
+    "aria-valid-attr-value": {
+      "title": "`[aria-*]` attributes have valid values",
       "score": 1
     },
-    "offscreen-content-hidden": {
-      "title": "Offscreen content is hidden from assistive technology",
+    "list": {
+      "title": "Lists contain only `<li>` elements and script supporting elements (`<script>` and `<template>`).",
+      "score": 1
+    },
+    "use-landmarks": {
+      "title": "HTML5 landmark elements are used to improve navigation",
       "score": null
     },
-    "script-treemap-data": {
-      "title": "Script Treemap Data",
+    "aria-hidden-body": {
+      "title": "`[aria-hidden=\"true\"]` is not present on the document `<body>`",
       "score": 1
     },
-    "aria-hidden-focus": {
-      "title": "`[aria-hidden=\"true\"]` elements do not contain focusable descendents",
-      "score": 1
+    "focus-traps": {
+      "title": "User focus is not accidentally trapped in a region",
+      "score": null
+    },
+    "input-button-name": {
+      "title": "Input buttons have discernible text.",
+      "score": null
     },
     "unsized-images": {
       "title": "Image elements have explicit `width` and `height`",
       "score": 1
     },
-    "cache-insight": {
-      "title": "Use efficient cache lifetimes",
-      "score": 0,
-      "displayValue": "Est savings of 58 KiB"
-    },
-    "table-duplicate-name": {
-      "title": "Tables have different content in the summary attribute and `<caption>`.",
-      "score": null
-    },
-    "robots-txt": {
-      "title": "robots.txt is valid",
-      "score": 1
-    },
-    "third-party-cookies": {
-      "title": "Avoids third-party cookies",
-      "score": 1
-    },
-    "unused-javascript": {
-      "title": "Reduce unused JavaScript",
-      "score": 0,
-      "displayValue": "Est savings of 375 KiB",
-      "numericValue": 1060,
+    "metrics": {
+      "title": "Metrics",
+      "score": 1,
+      "numericValue": 5184,
       "numericUnit": "millisecond"
     },
-    "crawlable-anchors": {
-      "title": "Links are crawlable",
+    "offscreen-content-hidden": {
+      "title": "Offscreen content is hidden from assistive technology",
+      "score": null
+    },
+    "color-contrast": {
+      "title": "Background and foreground colors do not have a sufficient contrast ratio.",
+      "score": 0
+    },
+    "valid-source-maps": {
+      "title": "Page has valid source maps",
       "score": 1
     },
-    "lcp-discovery-insight": {
-      "title": "LCP request discovery",
+    "legacy-javascript-insight": {
+      "title": "Legacy JavaScript",
+      "score": 1
+    },
+    "image-redundant-alt": {
+      "title": "Image elements do not have `[alt]` attributes that are redundant text.",
       "score": null
     },
-    "object-alt": {
-      "title": "`<object>` elements have alternate text",
+    "unminified-javascript": {
+      "title": "Minify JavaScript",
+      "score": 1,
+      "numericValue": 0,
+      "numericUnit": "millisecond"
+    },
+    "aria-required-parent": {
+      "title": "`[role]`s are contained by their required parent element",
       "score": null
+    },
+    "meta-description": {
+      "title": "Document has a meta description",
+      "score": 1
+    },
+    "duplicate-id-aria": {
+      "title": "ARIA IDs are unique",
+      "score": null
+    },
+    "deprecations": {
+      "title": "Avoids deprecated APIs",
+      "score": 1
+    },
+    "canonical": {
+      "title": "Document has a valid `rel=canonical`",
+      "score": 1
+    },
+    "td-has-header": {
+      "title": "`<td>` elements in a large `<table>` have one or more table headers.",
+      "score": null
+    },
+    "custom-controls-roles": {
+      "title": "Custom controls have ARIA roles",
+      "score": null
+    },
+    "render-blocking-insight": {
+      "title": "Render blocking requests",
+      "score": 0,
+      "displayValue": "Est savings of 310 ms"
+    },
+    "listitem": {
+      "title": "List items (`<li>`) are contained within `<ul>`, `<ol>` or `<menu>` parent elements",
+      "score": 1
+    },
+    "html-has-lang": {
+      "title": "`<html>` element has a `[lang]` attribute",
+      "score": 1
+    },
+    "font-display-insight": {
+      "title": "Font display",
+      "score": 1
+    },
+    "custom-controls-labels": {
+      "title": "Custom controls have associated labels",
+      "score": null
+    },
+    "non-composited-animations": {
+      "title": "Avoid non-composited animations",
+      "score": 1,
+      "displayValue": "3 animated elements found"
+    },
+    "origin-isolation": {
+      "title": "Ensure proper origin isolation with COOP",
+      "score": 1
+    },
+    "heading-order": {
+      "title": "Heading elements are not in a sequentially-descending order",
+      "score": 0
+    },
+    "cls-culprits-insight": {
+      "title": "Layout shift culprits",
+      "score": 1
+    },
+    "document-latency-insight": {
+      "title": "Document request latency",
+      "score": 1
+    },
+    "diagnostics": {
+      "title": "Diagnostics",
+      "score": 1
+    },
+    "select-name": {
+      "title": "Select elements have associated label elements.",
+      "score": null
+    },
+    "http-status-code": {
+      "title": "Page has successful HTTP status code",
+      "score": 1
+    },
+    "dom-size-insight": {
+      "title": "Optimize DOM size",
+      "score": 1,
+      "numericValue": 319,
+      "numericUnit": "element"
+    },
+    "aria-valid-attr": {
+      "title": "`[aria-*]` attributes are valid and not misspelled",
+      "score": 1
+    },
+    "link-in-text-block": {
+      "title": "Links are distinguishable without relying on color.",
+      "score": null
+    },
+    "managed-focus": {
+      "title": "The user's focus is directed to new content added to the page",
+      "score": null
+    },
+    "errors-in-console": {
+      "title": "Browser errors were logged to the console",
+      "score": 0
     },
     "unminified-css": {
       "title": "Minify CSS",
@@ -473,37 +459,194 @@
       "numericValue": 0,
       "numericUnit": "millisecond"
     },
+    "geolocation-on-start": {
+      "title": "Avoids requesting the geolocation permission on page load",
+      "score": 1
+    },
+    "notification-on-start": {
+      "title": "Avoids requesting the notification permission on page load",
+      "score": 1
+    },
     "link-name": {
       "title": "Links have a discernible name",
       "score": 1
     },
-    "aria-meter-name": {
-      "title": "ARIA `meter` elements have accessible names",
+    "object-alt": {
+      "title": "`<object>` elements have alternate text",
       "score": null
     },
-    "focus-traps": {
-      "title": "User focus is not accidentally trapped in a region",
-      "score": null
-    },
-    "user-timings": {
-      "title": "User Timing marks and measures",
-      "score": 1,
-      "displayValue": "4 user timings"
-    },
-    "image-redundant-alt": {
-      "title": "Image elements do not have `[alt]` attributes that are redundant text.",
-      "score": null
-    },
-    "network-requests": {
-      "title": "Network Requests",
+    "third-parties-insight": {
+      "title": "3rd parties",
       "score": 1
     },
-    "custom-controls-roles": {
-      "title": "Custom controls have ARIA roles",
+    "form-field-multiple-labels": {
+      "title": "No form fields have multiple labels",
       "score": null
+    },
+    "html-xml-lang-mismatch": {
+      "title": "`<html>` element has an `[xml:lang]` attribute with the same base language as the `[lang]` attribute.",
+      "score": null
+    },
+    "aria-progressbar-name": {
+      "title": "ARIA `progressbar` elements have accessible names",
+      "score": null
+    },
+    "cumulative-layout-shift": {
+      "title": "Cumulative Layout Shift",
+      "score": 1,
+      "displayValue": "0.002",
+      "numericValue": 0.0018960000000000001,
+      "numericUnit": "unitless"
+    },
+    "button-name": {
+      "title": "Buttons have an accessible name",
+      "score": 1
+    },
+    "charset": {
+      "title": "Properly defines charset",
+      "score": 1
+    },
+    "aria-text": {
+      "title": "Elements with the `role=text` attribute do not have focusable descendents.",
+      "score": null
+    },
+    "link-text": {
+      "title": "Links have descriptive text",
+      "score": 1
     },
     "video-caption": {
       "title": "`<video>` elements contain a `<track>` element with `[kind=\"captions\"]`",
+      "score": null
+    },
+    "tabindex": {
+      "title": "No element has a `[tabindex]` value greater than 0",
+      "score": 1
+    },
+    "aria-hidden-focus": {
+      "title": "`[aria-hidden=\"true\"]` elements do not contain focusable descendents",
+      "score": 1
+    },
+    "aria-allowed-attr": {
+      "title": "`[aria-*]` attributes match their roles",
+      "score": 1
+    },
+    "user-timings": {
+      "title": "User Timing marks and measures",
+      "score": null
+    },
+    "th-has-data-cells": {
+      "title": "`<th>` elements and elements with `[role=\"columnheader\"/\"rowheader\"]` have data cells they describe.",
+      "score": null
+    },
+    "script-treemap-data": {
+      "title": "Script Treemap Data",
+      "score": 1
+    },
+    "bypass": {
+      "title": "The page contains a heading, skip link, or landmark region",
+      "score": null
+    },
+    "aria-prohibited-attr": {
+      "title": "Elements use only permitted ARIA attributes",
+      "score": 1
+    },
+    "final-screenshot": {
+      "title": "Final Screenshot",
+      "score": 1
+    },
+    "interactive": {
+      "title": "Time to Interactive",
+      "score": 0.74,
+      "displayValue": "5.2 s",
+      "numericValue": 5184,
+      "numericUnit": "millisecond"
+    },
+    "main-thread-tasks": {
+      "title": "Tasks",
+      "score": 1
+    },
+    "valid-lang": {
+      "title": "`[lang]` attributes have a valid value",
+      "score": null
+    },
+    "robots-txt": {
+      "title": "robots.txt is valid",
+      "score": 1
+    },
+    "meta-refresh": {
+      "title": "The document does not use `<meta http-equiv=\"refresh\">`",
+      "score": null
+    },
+    "empty-heading": {
+      "title": "All heading elements contain content.",
+      "score": null
+    },
+    "screenshot-thumbnails": {
+      "title": "Screenshot Thumbnails",
+      "score": 1
+    },
+    "has-hsts": {
+      "title": "Use a strong HSTS policy",
+      "score": 1
+    },
+    "landmark-one-main": {
+      "title": "Document has a main landmark.",
+      "score": 1
+    },
+    "label-content-name-mismatch": {
+      "title": "Elements with visible text labels do not have matching accessible names.",
+      "score": 0
+    },
+    "inspector-issues": {
+      "title": "No issues in the `Issues` panel in Chrome Devtools",
+      "score": 1
+    },
+    "image-size-responsive": {
+      "title": "Serves images with appropriate resolution",
+      "score": 1
+    },
+    "html-lang-valid": {
+      "title": "`<html>` element has a valid value for its `[lang]` attribute",
+      "score": 1
+    },
+    "image-aspect-ratio": {
+      "title": "Displays images with correct aspect ratio",
+      "score": 1
+    },
+    "visual-order-follows-dom": {
+      "title": "Visual order on the page follows DOM order",
+      "score": null
+    },
+    "meta-viewport": {
+      "title": "`[user-scalable=\"no\"]` is not used in the `<meta name=\"viewport\">` element and the `[maximum-scale]` attribute is not less than 5.",
+      "score": 1
+    },
+    "label": {
+      "title": "Form elements have associated labels",
+      "score": null
+    },
+    "trusted-types-xss": {
+      "title": "Mitigate DOM-based XSS with Trusted Types",
+      "score": 1
+    },
+    "aria-conditional-attr": {
+      "title": "ARIA attributes are used as specified for the element's role",
+      "score": 1
+    },
+    "lcp-discovery-insight": {
+      "title": "LCP request discovery",
+      "score": null
+    },
+    "viewport-insight": {
+      "title": "Optimize viewport for mobile",
+      "score": 1
+    },
+    "aria-deprecated-role": {
+      "title": "Deprecated ARIA roles were not used",
+      "score": 1
+    },
+    "frame-title": {
+      "title": "`<frame>` or `<iframe>` elements have a title",
       "score": null
     },
     "server-response-time": {
@@ -512,268 +655,98 @@
       "displayValue": "Root document took 0 ms",
       "numericValue": 1,
       "numericUnit": "millisecond"
-    },
-    "aria-required-children": {
-      "title": "Elements with an ARIA `[role]` that require children to contain a specific `[role]` have all required children.",
-      "score": null
-    },
-    "duplicate-id-aria": {
-      "title": "ARIA IDs are unique",
-      "score": null
-    },
-    "is-crawlable": {
-      "title": "Page isn’t blocked from indexing",
+    }
+  },
+  "desktop": {
+    "geolocation-on-start": {
+      "title": "Avoids requesting the geolocation permission on page load",
       "score": 1
     },
-    "th-has-data-cells": {
-      "title": "`<th>` elements and elements with `[role=\"columnheader\"/\"rowheader\"]` have data cells they describe.",
+    "js-libraries": {
+      "title": "Detected JavaScript libraries",
       "score": null
     },
-    "total-blocking-time": {
-      "title": "Total Blocking Time",
-      "score": 1,
-      "displayValue": "60 ms",
-      "numericValue": 62,
-      "numericUnit": "millisecond"
+    "managed-focus": {
+      "title": "The user's focus is directed to new content added to the page",
+      "score": null
     },
-    "total-byte-weight": {
-      "title": "Avoids enormous network payloads",
-      "score": 1,
-      "displayValue": "Total size was 1,537 KiB",
-      "numericValue": 1574069,
-      "numericUnit": "byte"
+    "meta-refresh": {
+      "title": "The document does not use `<meta http-equiv=\"refresh\">`",
+      "score": null
     },
-    "aria-deprecated-role": {
-      "title": "Deprecated ARIA roles were not used",
+    "render-blocking-insight": {
+      "title": "Render blocking requests",
+      "score": 0,
+      "displayValue": "Est savings of 80 ms"
+    },
+    "aria-conditional-attr": {
+      "title": "ARIA attributes are used as specified for the element's role",
       "score": 1
     },
-    "logical-tab-order": {
-      "title": "The page has a logical tab order",
-      "score": null
-    },
-    "trusted-types-xss": {
-      "title": "Mitigate DOM-based XSS with Trusted Types",
-      "score": 1
-    },
-    "aria-required-parent": {
-      "title": "`[role]`s are contained by their required parent element",
-      "score": null
-    },
-    "dlitem": {
-      "title": "Definition list items are wrapped in `<dl>` elements",
-      "score": null
-    },
-    "canonical": {
-      "title": "Document has a valid `rel=canonical`",
-      "score": 1
-    },
-    "aria-valid-attr-value": {
-      "title": "`[aria-*]` attributes have valid values",
-      "score": 1
-    },
-    "notification-on-start": {
-      "title": "Avoids requesting the notification permission on page load",
-      "score": 1
-    },
-    "network-server-latency": {
-      "title": "Server Backend Latencies",
-      "score": 1,
-      "displayValue": "10 ms",
-      "numericValue": 5,
-      "numericUnit": "millisecond"
-    },
-    "aria-tooltip-name": {
-      "title": "ARIA `tooltip` elements have accessible names",
-      "score": null
-    },
-    "select-name": {
-      "title": "Select elements have associated label elements.",
-      "score": null
-    },
-    "image-alt": {
-      "title": "Image elements have `[alt]` attributes",
-      "score": 1
-    },
-    "form-field-multiple-labels": {
-      "title": "No form fields have multiple labels",
-      "score": null
-    },
-    "html-lang-valid": {
-      "title": "`<html>` element has a valid value for its `[lang]` attribute",
-      "score": 1
-    },
-    "cumulative-layout-shift": {
-      "title": "Cumulative Layout Shift",
-      "score": 1,
-      "displayValue": "0.002",
-      "numericValue": 0.002173,
-      "numericUnit": "unitless"
-    },
-    "unminified-javascript": {
-      "title": "Minify JavaScript",
-      "score": 1,
-      "numericValue": 0,
-      "numericUnit": "millisecond"
-    },
-    "use-landmarks": {
-      "title": "HTML5 landmark elements are used to improve navigation",
-      "score": null
-    },
-    "interactive-element-affordance": {
-      "title": "Interactive elements indicate their purpose and state",
-      "score": null
-    },
-    "aria-dialog-name": {
-      "title": "Elements with `role=\"dialog\"` or `role=\"alertdialog\"` have accessible names.",
-      "score": null
-    },
-    "empty-heading": {
-      "title": "All heading elements contain content.",
-      "score": null
-    },
-    "aria-valid-attr": {
-      "title": "`[aria-*]` attributes are valid and not misspelled",
+    "landmark-one-main": {
+      "title": "Document has a main landmark.",
       "score": 1
     },
     "focusable-controls": {
       "title": "Interactive controls are keyboard focusable",
       "score": null
     },
-    "meta-description": {
-      "title": "Document has a meta description",
-      "score": 1
-    },
-    "main-thread-tasks": {
-      "title": "Tasks",
-      "score": 1
-    },
-    "image-aspect-ratio": {
-      "title": "Displays images with correct aspect ratio",
-      "score": 1
-    },
-    "bootup-time": {
-      "title": "JavaScript execution time",
+    "network-rtt": {
+      "title": "Network Round Trip Times",
       "score": 1,
-      "displayValue": "0.6 s",
-      "numericValue": 627.8268000000002,
+      "displayValue": "0 ms",
+      "numericValue": 3.2481449999999996,
       "numericUnit": "millisecond"
-    }
-  },
-  "desktop": {
-    "total-byte-weight": {
-      "title": "Avoids enormous network payloads",
+    },
+    "accesskeys": {
+      "title": "`[accesskey]` values are unique",
+      "score": null
+    },
+    "total-blocking-time": {
+      "title": "Total Blocking Time",
+      "score": 0.93,
+      "displayValue": "130 ms",
+      "numericValue": 130.5,
+      "numericUnit": "millisecond"
+    },
+    "label": {
+      "title": "Form elements have associated labels",
+      "score": null
+    },
+    "largest-contentful-paint": {
+      "title": "Largest Contentful Paint",
+      "score": 0.98,
+      "displayValue": "0.8 s",
+      "numericValue": 814,
+      "numericUnit": "millisecond"
+    },
+    "cache-insight": {
+      "title": "Use efficient cache lifetimes",
+      "score": 1
+    },
+    "aria-meter-name": {
+      "title": "ARIA `meter` elements have accessible names",
+      "score": null
+    },
+    "first-contentful-paint": {
+      "title": "First Contentful Paint",
       "score": 1,
-      "displayValue": "Total size was 1,142 KiB",
-      "numericValue": 1169620,
-      "numericUnit": "byte"
+      "displayValue": "0.5 s",
+      "numericValue": 478.5,
+      "numericUnit": "millisecond"
+    },
+    "label-content-name-mismatch": {
+      "title": "Elements with visible text labels do not have matching accessible names.",
+      "score": 0
     },
     "long-tasks": {
       "title": "Avoid long main-thread tasks",
       "score": 1,
-      "displayValue": "2 long tasks found"
+      "displayValue": "1 long task found"
     },
-    "video-caption": {
-      "title": "`<video>` elements contain a `<track>` element with `[kind=\"captions\"]`",
-      "score": null
-    },
-    "aria-valid-attr": {
-      "title": "`[aria-*]` attributes are valid and not misspelled",
-      "score": 1
-    },
-    "aria-roles": {
-      "title": "`[role]` values are valid",
-      "score": 1
-    },
-    "hreflang": {
-      "title": "Document has a valid `hreflang`",
-      "score": 1
-    },
-    "render-blocking-insight": {
-      "title": "Render blocking requests",
-      "score": 0,
-      "displayValue": "Est savings of 90 ms"
-    },
-    "target-size": {
-      "title": "Touch targets have sufficient size and spacing.",
-      "score": 1
-    },
-    "aria-allowed-attr": {
-      "title": "`[aria-*]` attributes match their roles",
-      "score": 1
-    },
-    "td-has-header": {
-      "title": "`<td>` elements in a large `<table>` have one or more table headers.",
-      "score": null
-    },
-    "aria-tooltip-name": {
-      "title": "ARIA `tooltip` elements have accessible names",
-      "score": null
-    },
-    "third-party-cookies": {
-      "title": "Avoids third-party cookies",
-      "score": 1
-    },
-    "meta-refresh": {
-      "title": "The document does not use `<meta http-equiv=\"refresh\">`",
-      "score": null
-    },
-    "landmark-one-main": {
-      "title": "Document has a main landmark.",
-      "score": 1
-    },
-    "aria-required-children": {
-      "title": "Elements with an ARIA `[role]` that require children to contain a specific `[role]` have all required children.",
-      "score": null
-    },
-    "dom-size-insight": {
-      "title": "Optimize DOM size",
-      "score": 1,
-      "numericValue": 328,
-      "numericUnit": "element"
-    },
-    "link-in-text-block": {
-      "title": "Links are distinguishable without relying on color.",
-      "score": null
-    },
-    "select-name": {
-      "title": "Select elements have associated label elements.",
-      "score": null
-    },
-    "image-redundant-alt": {
-      "title": "Image elements do not have `[alt]` attributes that are redundant text.",
-      "score": null
-    },
-    "table-fake-caption": {
-      "title": "Tables use `<caption>` instead of cells with the `[colspan]` attribute to indicate a caption.",
-      "score": null
-    },
-    "network-requests": {
-      "title": "Network Requests",
-      "score": 1
-    },
-    "object-alt": {
-      "title": "`<object>` elements have alternate text",
-      "score": null
-    },
-    "offscreen-content-hidden": {
-      "title": "Offscreen content is hidden from assistive technology",
-      "score": null
-    },
-    "clickjacking-mitigation": {
-      "title": "Mitigate clickjacking with XFO or CSP",
-      "score": 1
-    },
-    "structured-data": {
-      "title": "Structured data is valid",
-      "score": null
-    },
-    "color-contrast": {
-      "title": "Background and foreground colors do not have a sufficient contrast ratio.",
+    "cls-culprits-insight": {
+      "title": "Layout shift culprits",
       "score": 0
-    },
-    "meta-description": {
-      "title": "Document has a meta description",
-      "score": 1
     },
     "cumulative-layout-shift": {
       "title": "Cumulative Layout Shift",
@@ -782,238 +755,31 @@
       "numericValue": 0.147852,
       "numericUnit": "unitless"
     },
-    "input-button-name": {
-      "title": "Input buttons have discernible text.",
-      "score": null
-    },
-    "network-rtt": {
-      "title": "Network Round Trip Times",
-      "score": 1,
-      "displayValue": "10 ms",
-      "numericValue": 12.728947499999999,
-      "numericUnit": "millisecond"
-    },
-    "first-contentful-paint": {
-      "title": "First Contentful Paint",
-      "score": 1,
-      "displayValue": "0.5 s",
-      "numericValue": 477.88104788946225,
-      "numericUnit": "millisecond"
-    },
-    "network-dependency-tree-insight": {
-      "title": "Network dependency tree",
-      "score": 0
-    },
-    "diagnostics": {
-      "title": "Diagnostics",
-      "score": 1
-    },
-    "aria-text": {
-      "title": "Elements with the `role=text` attribute do not have focusable descendents.",
-      "score": null
-    },
-    "image-aspect-ratio": {
-      "title": "Displays images with correct aspect ratio",
-      "score": 1
-    },
-    "notification-on-start": {
-      "title": "Avoids requesting the notification permission on page load",
-      "score": 1
-    },
-    "document-title": {
-      "title": "Document has a `<title>` element",
-      "score": 1
-    },
-    "unminified-javascript": {
-      "title": "Minify JavaScript",
-      "score": 1,
-      "numericValue": 0,
-      "numericUnit": "millisecond"
-    },
-    "focusable-controls": {
-      "title": "Interactive controls are keyboard focusable",
-      "score": null
-    },
-    "accesskeys": {
-      "title": "`[accesskey]` values are unique",
-      "score": null
-    },
-    "valid-lang": {
-      "title": "`[lang]` attributes have a valid value",
-      "score": null
-    },
-    "custom-controls-labels": {
-      "title": "Custom controls have associated labels",
-      "score": null
-    },
-    "use-landmarks": {
-      "title": "HTML5 landmark elements are used to improve navigation",
-      "score": null
-    },
-    "max-potential-fid": {
-      "title": "Max Potential First Input Delay",
-      "score": 0.99,
-      "displayValue": "70 ms",
-      "numericValue": 72,
-      "numericUnit": "millisecond"
-    },
-    "doctype": {
-      "title": "Page has the HTML doctype",
-      "score": 1
-    },
-    "bypass": {
-      "title": "The page contains a heading, skip link, or landmark region",
-      "score": null
-    },
-    "errors-in-console": {
-      "title": "Browser errors were logged to the console",
-      "score": 0
-    },
-    "script-treemap-data": {
-      "title": "Script Treemap Data",
-      "score": 1
-    },
-    "image-delivery-insight": {
-      "title": "Improve image delivery",
-      "score": 0,
-      "displayValue": "Est savings of 58 KiB"
-    },
     "html-xml-lang-mismatch": {
       "title": "`<html>` element has an `[xml:lang]` attribute with the same base language as the `[lang]` attribute.",
       "score": null
-    },
-    "skip-link": {
-      "title": "Skip links are focusable.",
-      "score": null
-    },
-    "inspector-issues": {
-      "title": "Issues were logged in the `Issues` panel in Chrome Devtools",
-      "score": 0
-    },
-    "is-crawlable": {
-      "title": "Page isn’t blocked from indexing",
-      "score": 1
-    },
-    "listitem": {
-      "title": "List items (`<li>`) are contained within `<ul>`, `<ol>` or `<menu>` parent elements",
-      "score": null
-    },
-    "aria-allowed-role": {
-      "title": "Uses ARIA roles only on compatible elements",
-      "score": null
-    },
-    "html-lang-valid": {
-      "title": "`<html>` element has a valid value for its `[lang]` attribute",
-      "score": 1
-    },
-    "link-text": {
-      "title": "Links have descriptive text",
-      "score": 1
-    },
-    "unsized-images": {
-      "title": "Image elements have explicit `width` and `height`",
-      "score": 1
-    },
-    "html-has-lang": {
-      "title": "`<html>` element has a `[lang]` attribute",
-      "score": 1
-    },
-    "aria-dialog-name": {
-      "title": "Elements with `role=\"dialog\"` or `role=\"alertdialog\"` have accessible names.",
-      "score": null
-    },
-    "frame-title": {
-      "title": "`<frame>` or `<iframe>` elements have a title",
-      "score": null
-    },
-    "unused-javascript": {
-      "title": "Reduce unused JavaScript",
-      "score": 0,
-      "displayValue": "Est savings of 376 KiB",
-      "numericValue": 210,
-      "numericUnit": "millisecond"
-    },
-    "non-composited-animations": {
-      "title": "Avoid non-composited animations",
-      "score": 1,
-      "displayValue": "1 animated element found"
-    },
-    "metrics": {
-      "title": "Metrics",
-      "score": 1,
-      "numericValue": 1582,
-      "numericUnit": "millisecond"
-    },
-    "network-server-latency": {
-      "title": "Server Backend Latencies",
-      "score": 1,
-      "displayValue": "10 ms",
-      "numericValue": 6,
-      "numericUnit": "millisecond"
-    },
-    "managed-focus": {
-      "title": "The user's focus is directed to new content added to the page",
-      "score": null
-    },
-    "final-screenshot": {
-      "title": "Final Screenshot",
-      "score": 1
-    },
-    "image-size-responsive": {
-      "title": "Serves images with appropriate resolution",
-      "score": 1
-    },
-    "aria-progressbar-name": {
-      "title": "ARIA `progressbar` elements have accessible names",
-      "score": null
-    },
-    "td-headers-attr": {
-      "title": "Cells in a `<table>` element that use the `[headers]` attribute refer to table cells within the same table.",
-      "score": null
-    },
-    "screenshot-thumbnails": {
-      "title": "Screenshot Thumbnails",
-      "score": 1
-    },
-    "font-display-insight": {
-      "title": "Font display",
-      "score": 1
-    },
-    "js-libraries": {
-      "title": "Detected JavaScript libraries",
-      "score": null
-    },
-    "list": {
-      "title": "Lists contain only `<li>` elements and script supporting elements (`<script>` and `<template>`).",
-      "score": null
-    },
-    "resource-summary": {
-      "title": "Resources Summary",
-      "score": 1
-    },
-    "aria-hidden-body": {
-      "title": "`[aria-hidden=\"true\"]` is not present on the document `<body>`",
-      "score": 1
-    },
-    "user-timings": {
-      "title": "User Timing marks and measures",
-      "score": 1,
-      "displayValue": "4 user timings"
     },
     "paste-preventing-inputs": {
       "title": "Allows users to paste into input fields",
       "score": 1
     },
-    "duplicated-javascript-insight": {
-      "title": "Duplicated JavaScript",
-      "score": 1
+    "bootup-time": {
+      "title": "JavaScript execution time",
+      "score": 1,
+      "displayValue": "0.5 s",
+      "numericValue": 532.504,
+      "numericUnit": "millisecond"
     },
-    "identical-links-same-purpose": {
-      "title": "Identical links have the same purpose.",
+    "listitem": {
+      "title": "List items (`<li>`) are contained within `<ul>`, `<ol>` or `<menu>` parent elements",
       "score": null
     },
-    "aria-required-parent": {
-      "title": "`[role]`s are contained by their required parent element",
+    "table-duplicate-name": {
+      "title": "Tables have different content in the summary attribute and `<caption>`.",
+      "score": null
+    },
+    "aria-dialog-name": {
+      "title": "Elements with `role=\"dialog\"` or `role=\"alertdialog\"` have accessible names.",
       "score": null
     },
     "unminified-css": {
@@ -1022,114 +788,301 @@
       "numericValue": 0,
       "numericUnit": "millisecond"
     },
-    "total-blocking-time": {
-      "title": "Total Blocking Time",
-      "score": 1,
-      "displayValue": "30 ms",
-      "numericValue": 25,
-      "numericUnit": "millisecond"
-    },
-    "crawlable-anchors": {
-      "title": "Links are crawlable",
+    "aria-deprecated-role": {
+      "title": "Deprecated ARIA roles were not used",
       "score": 1
     },
-    "aria-meter-name": {
-      "title": "ARIA `meter` elements have accessible names",
+    "bypass": {
+      "title": "The page contains a heading, skip link, or landmark region",
       "score": null
     },
-    "server-response-time": {
-      "title": "Initial server response time was short",
-      "score": 1,
-      "displayValue": "Root document took 0 ms",
-      "numericValue": 1,
+    "structured-data": {
+      "title": "Structured data is valid",
+      "score": null
+    },
+    "aria-input-field-name": {
+      "title": "ARIA input fields have accessible names",
+      "score": null
+    },
+    "custom-controls-roles": {
+      "title": "Custom controls have ARIA roles",
+      "score": null
+    },
+    "target-size": {
+      "title": "Touch targets have sufficient size and spacing.",
+      "score": 1
+    },
+    "aria-hidden-focus": {
+      "title": "`[aria-hidden=\"true\"]` elements do not contain focusable descendents",
+      "score": 1
+    },
+    "speed-index": {
+      "title": "Speed Index",
+      "score": 0.73,
+      "displayValue": "1.7 s",
+      "numericValue": 1749.0591449939961,
       "numericUnit": "millisecond"
     },
-    "cls-culprits-insight": {
-      "title": "Layout shift culprits",
-      "score": 0
+    "valid-lang": {
+      "title": "`[lang]` attributes have a valid value",
+      "score": null
     },
-    "button-name": {
-      "title": "Buttons do not have an accessible name",
-      "score": 0
-    },
-    "aria-prohibited-attr": {
-      "title": "Elements use only permitted ARIA attributes",
-      "score": 1
-    },
-    "http-status-code": {
-      "title": "Page has successful HTTP status code",
-      "score": 1
-    },
-    "canonical": {
-      "title": "Document has a valid `rel=canonical`",
-      "score": 1
-    },
-    "deprecations": {
-      "title": "Avoids deprecated APIs",
+    "duplicated-javascript-insight": {
+      "title": "Duplicated JavaScript",
       "score": 1
     },
     "aria-valid-attr-value": {
       "title": "`[aria-*]` attributes have valid values",
       "score": 1
     },
-    "robots-txt": {
-      "title": "robots.txt is valid",
+    "aria-required-attr": {
+      "title": "`[role]`s have all required `[aria-*]` attributes",
       "score": 1
     },
-    "main-thread-tasks": {
-      "title": "Tasks",
-      "score": 1
-    },
-    "th-has-data-cells": {
-      "title": "`<th>` elements and elements with `[role=\"columnheader\"/\"rowheader\"]` have data cells they describe.",
+    "list": {
+      "title": "Lists contain only `<li>` elements and script supporting elements (`<script>` and `<template>`).",
       "score": null
     },
-    "csp-xss": {
-      "title": "Ensure CSP is effective against XSS attacks",
+    "link-name": {
+      "title": "Links have a discernible name",
       "score": 1
+    },
+    "aria-treeitem-name": {
+      "title": "ARIA `treeitem` elements have accessible names",
+      "score": null
+    },
+    "font-display-insight": {
+      "title": "Font display",
+      "score": 1
+    },
+    "table-fake-caption": {
+      "title": "Tables use `<caption>` instead of cells with the `[colspan]` attribute to indicate a caption.",
+      "score": null
+    },
+    "total-byte-weight": {
+      "title": "Avoids enormous network payloads",
+      "score": 1,
+      "displayValue": "Total size was 352 KiB",
+      "numericValue": 360428,
+      "numericUnit": "byte"
+    },
+    "charset": {
+      "title": "Properly defines charset",
+      "score": 1
+    },
+    "meta-description": {
+      "title": "Document has a meta description",
+      "score": 1
+    },
+    "unused-javascript": {
+      "title": "Reduce unused JavaScript",
+      "score": 0,
+      "displayValue": "Est savings of 91 KiB",
+      "numericValue": 80,
+      "numericUnit": "millisecond"
+    },
+    "aria-command-name": {
+      "title": "`button`, `link`, and `menuitem` elements have accessible names",
+      "score": null
+    },
+    "aria-hidden-body": {
+      "title": "`[aria-hidden=\"true\"]` is not present on the document `<body>`",
+      "score": 1
+    },
+    "select-name": {
+      "title": "Select elements have associated label elements.",
+      "score": null
     },
     "heading-order": {
       "title": "Heading elements are not in a sequentially-descending order",
       "score": 0
     },
-    "mainthread-work-breakdown": {
-      "title": "Minimizes main-thread work",
-      "score": 1,
-      "displayValue": "0.7 s",
-      "numericValue": 737.0889999999994,
-      "numericUnit": "millisecond"
+    "focus-traps": {
+      "title": "User focus is not accidentally trapped in a region",
+      "score": null
     },
-    "label-content-name-mismatch": {
-      "title": "Elements with visible text labels do not have matching accessible names.",
+    "lcp-breakdown-insight": {
+      "title": "LCP breakdown",
       "score": 0
     },
-    "aria-hidden-focus": {
-      "title": "`[aria-hidden=\"true\"]` elements do not contain focusable descendents",
-      "score": 1
+    "unused-css-rules": {
+      "title": "Reduce unused CSS",
+      "score": 0.5,
+      "displayValue": "Est savings of 23 KiB",
+      "numericValue": 0,
+      "numericUnit": "millisecond"
     },
-    "trusted-types-xss": {
-      "title": "Mitigate DOM-based XSS with Trusted Types",
-      "score": 1
+    "redirects-http": {
+      "title": "Redirects HTTP traffic to HTTPS",
+      "score": null
     },
-    "is-on-https": {
-      "title": "Uses HTTPS",
-      "score": 1
-    },
-    "layout-shifts": {
-      "title": "Avoid large layout shifts",
-      "score": 0,
-      "displayValue": "2 layout shifts found"
-    },
-    "aria-conditional-attr": {
-      "title": "ARIA attributes are used as specified for the element's role",
+    "image-size-responsive": {
+      "title": "Serves images with appropriate resolution",
       "score": 1
     },
     "document-latency-insight": {
       "title": "Document request latency",
       "score": 1
     },
-    "input-image-alt": {
-      "title": "`<input type=\"image\">` elements have `[alt]` text",
+    "identical-links-same-purpose": {
+      "title": "Identical links have the same purpose.",
+      "score": null
+    },
+    "html-lang-valid": {
+      "title": "`<html>` element has a valid value for its `[lang]` attribute",
+      "score": 1
+    },
+    "is-crawlable": {
+      "title": "Page isn’t blocked from indexing",
+      "score": 1
+    },
+    "unminified-javascript": {
+      "title": "Minify JavaScript",
+      "score": 1,
+      "numericValue": 0,
+      "numericUnit": "millisecond"
+    },
+    "color-contrast": {
+      "title": "Background and foreground colors do not have a sufficient contrast ratio.",
+      "score": 0
+    },
+    "aria-required-children": {
+      "title": "Elements with an ARIA `[role]` that require children to contain a specific `[role]` have all required children.",
+      "score": null
+    },
+    "aria-text": {
+      "title": "Elements with the `role=text` attribute do not have focusable descendents.",
+      "score": null
+    },
+    "origin-isolation": {
+      "title": "Ensure proper origin isolation with COOP",
+      "score": 1
+    },
+    "interactive-element-affordance": {
+      "title": "Interactive elements indicate their purpose and state",
+      "score": null
+    },
+    "errors-in-console": {
+      "title": "Browser errors were logged to the console",
+      "score": 0
+    },
+    "image-delivery-insight": {
+      "title": "Improve image delivery",
+      "score": 0,
+      "displayValue": "Est savings of 58 KiB"
+    },
+    "user-timings": {
+      "title": "User Timing marks and measures",
+      "score": null
+    },
+    "diagnostics": {
+      "title": "Diagnostics",
+      "score": 1
+    },
+    "hreflang": {
+      "title": "Document has a valid `hreflang`",
+      "score": 1
+    },
+    "screenshot-thumbnails": {
+      "title": "Screenshot Thumbnails",
+      "score": 1
+    },
+    "network-server-latency": {
+      "title": "Server Backend Latencies",
+      "score": 1,
+      "displayValue": "0 ms",
+      "numericValue": 3,
+      "numericUnit": "millisecond"
+    },
+    "has-hsts": {
+      "title": "Use a strong HSTS policy",
+      "score": 1
+    },
+    "th-has-data-cells": {
+      "title": "`<th>` elements and elements with `[role=\"columnheader\"/\"rowheader\"]` have data cells they describe.",
+      "score": null
+    },
+    "custom-controls-labels": {
+      "title": "Custom controls have associated labels",
+      "score": null
+    },
+    "is-on-https": {
+      "title": "Uses HTTPS",
+      "score": 1
+    },
+    "lcp-discovery-insight": {
+      "title": "LCP request discovery",
+      "score": null
+    },
+    "main-thread-tasks": {
+      "title": "Tasks",
+      "score": 1
+    },
+    "image-aspect-ratio": {
+      "title": "Displays images with correct aspect ratio",
+      "score": 1
+    },
+    "aria-progressbar-name": {
+      "title": "ARIA `progressbar` elements have accessible names",
+      "score": null
+    },
+    "server-response-time": {
+      "title": "Initial server response time was short",
+      "score": 1,
+      "displayValue": "Root document took 0 ms",
+      "numericValue": 2,
+      "numericUnit": "millisecond"
+    },
+    "mainthread-work-breakdown": {
+      "title": "Minimizes main-thread work",
+      "score": 1,
+      "displayValue": "1.1 s",
+      "numericValue": 1076.3329999999996,
+      "numericUnit": "millisecond"
+    },
+    "network-dependency-tree-insight": {
+      "title": "Network dependency tree",
+      "score": 0
+    },
+    "layout-shifts": {
+      "title": "Avoid large layout shifts",
+      "score": 0,
+      "displayValue": "2 layout shifts found"
+    },
+    "resource-summary": {
+      "title": "Resources Summary",
+      "score": 1
+    },
+    "network-requests": {
+      "title": "Network Requests",
+      "score": 1
+    },
+    "tabindex": {
+      "title": "No element has a `[tabindex]` value greater than 0",
+      "score": 1
+    },
+    "third-party-cookies": {
+      "title": "Avoids third-party cookies",
+      "score": 1
+    },
+    "valid-source-maps": {
+      "title": "Page has valid source maps",
+      "score": 1
+    },
+    "button-name": {
+      "title": "Buttons have an accessible name",
+      "score": 1
+    },
+    "robots-txt": {
+      "title": "robots.txt is valid",
+      "score": 1
+    },
+    "aria-prohibited-attr": {
+      "title": "Elements use only permitted ARIA attributes",
+      "score": 1
+    },
+    "aria-toggle-field-name": {
+      "title": "ARIA toggle fields have accessible names",
       "score": null
     },
     "redirects": {
@@ -1138,186 +1091,228 @@
       "numericValue": 0,
       "numericUnit": "millisecond"
     },
-    "viewport-insight": {
-      "title": "Optimize viewport for mobile",
-      "score": 1
+    "definition-list": {
+      "title": "`<dl>`'s contain only properly-ordered `<dt>` and `<dd>` groups, `<script>`, `<template>` or `<div>` elements.",
+      "score": null
     },
     "duplicate-id-aria": {
       "title": "ARIA IDs are unique",
       "score": null
     },
-    "visual-order-follows-dom": {
-      "title": "Visual order on the page follows DOM order",
-      "score": null
-    },
-    "largest-contentful-paint": {
-      "title": "Largest Contentful Paint",
-      "score": 0.77,
-      "displayValue": "1.6 s",
-      "numericValue": 1581.6692174484547,
+    "metrics": {
+      "title": "Metrics",
+      "score": 1,
+      "numericValue": 821,
       "numericUnit": "millisecond"
-    },
-    "link-name": {
-      "title": "Links have a discernible name",
-      "score": 1
-    },
-    "aria-deprecated-role": {
-      "title": "Deprecated ARIA roles were not used",
-      "score": 1
-    },
-    "empty-heading": {
-      "title": "All heading elements contain content.",
-      "score": null
-    },
-    "aria-toggle-field-name": {
-      "title": "ARIA toggle fields have accessible names",
-      "score": null
-    },
-    "speed-index": {
-      "title": "Speed Index",
-      "score": 0.78,
-      "displayValue": "1.6 s",
-      "numericValue": 1620.6096709844237,
-      "numericUnit": "millisecond"
-    },
-    "aria-input-field-name": {
-      "title": "ARIA input fields have accessible names",
-      "score": null
-    },
-    "aria-command-name": {
-      "title": "`button`, `link`, and `menuitem` elements have accessible names",
-      "score": null
-    },
-    "redirects-http": {
-      "title": "Redirects HTTP traffic to HTTPS",
-      "score": null
-    },
-    "inp-breakdown-insight": {
-      "title": "INP breakdown",
-      "score": null
     },
     "image-alt": {
       "title": "Image elements have `[alt]` attributes",
       "score": 1
     },
-    "bootup-time": {
-      "title": "JavaScript execution time",
-      "score": 1,
-      "displayValue": "0.3 s",
-      "numericValue": 290.8270000000005,
-      "numericUnit": "millisecond"
+    "input-image-alt": {
+      "title": "`<input type=\"image\">` elements have `[alt]` text",
+      "score": null
     },
     "logical-tab-order": {
       "title": "The page has a logical tab order",
       "score": null
     },
-    "cache-insight": {
-      "title": "Use efficient cache lifetimes",
-      "score": 0,
-      "displayValue": "Est savings of 58 KiB"
-    },
-    "meta-viewport": {
-      "title": "`[user-scalable=\"no\"]` is not used in the `<meta name=\"viewport\">` element and the `[maximum-scale]` attribute is not less than 5.",
+    "script-treemap-data": {
+      "title": "Script Treemap Data",
       "score": 1
     },
-    "valid-source-maps": {
-      "title": "Page has valid source maps",
+    "offscreen-content-hidden": {
+      "title": "Offscreen content is hidden from assistive technology",
+      "score": null
+    },
+    "deprecations": {
+      "title": "Avoids deprecated APIs",
       "score": 1
     },
-    "charset": {
-      "title": "Properly defines charset",
+    "aria-allowed-attr": {
+      "title": "`[aria-*]` attributes match their roles",
       "score": 1
     },
-    "legacy-javascript-insight": {
-      "title": "Legacy JavaScript",
-      "score": 0,
-      "displayValue": "Est savings of 20 KiB"
-    },
-    "third-parties-insight": {
-      "title": "3rd parties",
+    "trusted-types-xss": {
+      "title": "Mitigate DOM-based XSS with Trusted Types",
       "score": 1
     },
-    "origin-isolation": {
-      "title": "Ensure proper origin isolation with COOP",
-      "score": 1
+    "object-alt": {
+      "title": "`<object>` elements have alternate text",
+      "score": null
     },
-    "unused-css-rules": {
-      "title": "Reduce unused CSS",
-      "score": 0,
-      "displayValue": "Est savings of 45 KiB",
-      "numericValue": 30,
+    "interactive": {
+      "title": "Time to Interactive",
+      "score": 1,
+      "displayValue": "0.8 s",
+      "numericValue": 820.5,
       "numericUnit": "millisecond"
     },
-    "definition-list": {
-      "title": "`<dl>`'s contain only properly-ordered `<dt>` and `<dd>` groups, `<script>`, `<template>` or `<div>` elements.",
+    "unsized-images": {
+      "title": "Image elements have explicit `width` and `height`",
+      "score": 1
+    },
+    "aria-valid-attr": {
+      "title": "`[aria-*]` attributes are valid and not misspelled",
+      "score": 1
+    },
+    "final-screenshot": {
+      "title": "Final Screenshot",
+      "score": 1
+    },
+    "notification-on-start": {
+      "title": "Avoids requesting the notification permission on page load",
+      "score": 1
+    },
+    "canonical": {
+      "title": "Document has a valid `rel=canonical`",
+      "score": 1
+    },
+    "dlitem": {
+      "title": "Definition list items are wrapped in `<dl>` elements",
       "score": null
     },
-    "custom-controls-roles": {
-      "title": "Custom controls have ARIA roles",
+    "csp-xss": {
+      "title": "Ensure CSP is effective against XSS attacks",
+      "score": 1
+    },
+    "link-text": {
+      "title": "Links have descriptive text",
+      "score": 1
+    },
+    "inp-breakdown-insight": {
+      "title": "INP breakdown",
       "score": null
     },
-    "forced-reflow-insight": {
-      "title": "Forced reflow",
-      "score": 0
-    },
-    "lcp-discovery-insight": {
-      "title": "LCP request discovery",
-      "score": null
-    },
-    "aria-required-attr": {
-      "title": "`[role]`s have all required `[aria-*]` attributes",
+    "viewport-insight": {
+      "title": "Optimize viewport for mobile",
       "score": 1
     },
     "form-field-multiple-labels": {
       "title": "No form fields have multiple labels",
       "score": null
     },
-    "tabindex": {
-      "title": "No element has a `[tabindex]` value greater than 0",
+    "empty-heading": {
+      "title": "All heading elements contain content.",
+      "score": null
+    },
+    "image-redundant-alt": {
+      "title": "Image elements do not have `[alt]` attributes that are redundant text.",
+      "score": null
+    },
+    "document-title": {
+      "title": "Document has a `<title>` element",
       "score": 1
     },
-    "geolocation-on-start": {
-      "title": "Avoids requesting the geolocation permission on page load",
+    "dom-size-insight": {
+      "title": "Optimize DOM size",
+      "score": 1,
+      "numericValue": 322,
+      "numericUnit": "element"
+    },
+    "aria-allowed-role": {
+      "title": "Uses ARIA roles only on compatible elements",
+      "score": null
+    },
+    "aria-tooltip-name": {
+      "title": "ARIA `tooltip` elements have accessible names",
+      "score": null
+    },
+    "third-parties-insight": {
+      "title": "3rd parties",
       "score": 1
     },
-    "aria-treeitem-name": {
-      "title": "ARIA `treeitem` elements have accessible names",
-      "score": null
-    },
-    "dlitem": {
-      "title": "Definition list items are wrapped in `<dl>` elements",
-      "score": null
-    },
-    "label": {
-      "title": "Form elements have associated labels",
-      "score": null
-    },
-    "focus-traps": {
-      "title": "User focus is not accidentally trapped in a region",
-      "score": null
-    },
-    "lcp-breakdown-insight": {
-      "title": "LCP breakdown",
+    "legacy-javascript-insight": {
+      "title": "Legacy JavaScript",
       "score": 1
     },
-    "interactive-element-affordance": {
-      "title": "Interactive elements indicate their purpose and state",
+    "aria-roles": {
+      "title": "`[role]` values are valid",
+      "score": 1
+    },
+    "skip-link": {
+      "title": "Skip links are focusable.",
       "score": null
     },
-    "interactive": {
-      "title": "Time to Interactive",
-      "score": 0.99,
-      "displayValue": "1.6 s",
-      "numericValue": 1581.6692174484547,
+    "max-potential-fid": {
+      "title": "Max Potential First Input Delay",
+      "score": 0.7,
+      "displayValue": "190 ms",
+      "numericValue": 191,
       "numericUnit": "millisecond"
     },
-    "has-hsts": {
-      "title": "Use a strong HSTS policy",
+    "forced-reflow-insight": {
+      "title": "Forced reflow",
+      "score": 0
+    },
+    "aria-required-parent": {
+      "title": "`[role]`s are contained by their required parent element",
+      "score": null
+    },
+    "use-landmarks": {
+      "title": "HTML5 landmark elements are used to improve navigation",
+      "score": null
+    },
+    "frame-title": {
+      "title": "`<frame>` or `<iframe>` elements have a title",
+      "score": null
+    },
+    "crawlable-anchors": {
+      "title": "Links are crawlable",
       "score": 1
     },
-    "table-duplicate-name": {
-      "title": "Tables have different content in the summary attribute and `<caption>`.",
+    "td-has-header": {
+      "title": "`<td>` elements in a large `<table>` have one or more table headers.",
       "score": null
+    },
+    "input-button-name": {
+      "title": "Input buttons have discernible text.",
+      "score": null
+    },
+    "clickjacking-mitigation": {
+      "title": "Mitigate clickjacking with XFO or CSP",
+      "score": 1
+    },
+    "inspector-issues": {
+      "title": "No issues in the `Issues` panel in Chrome Devtools",
+      "score": 1
+    },
+    "non-composited-animations": {
+      "title": "Avoid non-composited animations",
+      "score": 1,
+      "displayValue": "1 animated element found"
+    },
+    "http-status-code": {
+      "title": "Page has successful HTTP status code",
+      "score": 1
+    },
+    "link-in-text-block": {
+      "title": "Links are distinguishable without relying on color.",
+      "score": null
+    },
+    "visual-order-follows-dom": {
+      "title": "Visual order on the page follows DOM order",
+      "score": null
+    },
+    "video-caption": {
+      "title": "`<video>` elements contain a `<track>` element with `[kind=\"captions\"]`",
+      "score": null
+    },
+    "td-headers-attr": {
+      "title": "Cells in a `<table>` element that use the `[headers]` attribute refer to table cells within the same table.",
+      "score": null
+    },
+    "html-has-lang": {
+      "title": "`<html>` element has a `[lang]` attribute",
+      "score": 1
+    },
+    "meta-viewport": {
+      "title": "`[user-scalable=\"no\"]` is not used in the `<meta name=\"viewport\">` element and the `[maximum-scale]` attribute is not less than 5.",
+      "score": 1
+    },
+    "doctype": {
+      "title": "Page has the HTML doctype",
+      "score": 1
     }
   }
 }

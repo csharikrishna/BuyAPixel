@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription } from "@/components/ui/drawer";
+import { VisuallyHidden } from "@/components/ui/visually-hidden";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -162,6 +163,13 @@ export const PurchasePreview = ({
       setPaymentError(null);
       setFormProgress(0);
 
+      // Preload Razorpay script to enable button immediately [perf]
+      if (!isPaymentBypassed && !razorpayLoaded) {
+        loadRazorpayScript().catch(() => {
+          console.warn('Razorpay preload failed, will retry on payment');
+        });
+      }
+
       const savedData = localStorage.getItem('checkout-draft');
       if (savedData) {
         try {
@@ -173,7 +181,7 @@ export const PurchasePreview = ({
         }
       }
     }
-  }, [isOpen]);
+  }, [isOpen, isPaymentBypassed, razorpayLoaded]);
 
   // Auto-save draft [web:140]
   useEffect(() => {
@@ -235,7 +243,7 @@ export const PurchasePreview = ({
             setTimeout(loadScript, 2000 * retries);
           } else {
             console.error('Failed to load Razorpay script after multiple attempts');
-            toast.error('Payment gateway failed to load. Please refresh the page.');
+            toast.error('Payment gateway failed to load. Please refresh the page.', { duration: 5000 });
             reject(new Error('Failed to load Razorpay'));
           }
         };
@@ -411,7 +419,8 @@ export const PurchasePreview = ({
     // Validate form before proceeding [web:140]
     if (!validateForm()) {
       toast.error("Please fix the errors before continuing", {
-        description: "Check the highlighted fields"
+        description: "Check the highlighted fields",
+        duration: 5000
       });
       return;
     }
@@ -420,10 +429,10 @@ export const PurchasePreview = ({
     if (!isPaymentBypassed && !razorpayLoaded) {
       // Load Razorpay on-demand when user first clicks Pay [perf]
       try {
-        toast.info("Loading payment gateway...");
+        toast.info("Loading payment gateway...", { duration: 3000 });
         await loadRazorpayScript();
       } catch {
-        toast.error("Payment gateway failed to load. Please try again.");
+        toast.error("Payment gateway failed to load. Please try again.", { duration: 5000 });
         return;
       }
     }
@@ -437,7 +446,7 @@ export const PurchasePreview = ({
       // Get current session for auth
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
-        toast.error("Please sign in to continue");
+        toast.error("Please sign in to continue", { duration: 5000 });
         setIsProcessing(false);
         setCurrentStep('details');
         setPaymentStatus('error');
@@ -622,6 +631,7 @@ export const PurchasePreview = ({
             setPaymentStatus('error');
             setPaymentError(errorMsg);
             toast.error("Payment verification failed", {
+              duration: 6000,
               description: "Please contact support with your order ID"
             });
           } finally {
@@ -667,6 +677,7 @@ export const PurchasePreview = ({
         setPaymentStatus('error');
         setPaymentError(errorMsg);
         toast.error("Payment failed", {
+          duration: 6000,
           description: errorMsg
         });
         setIsProcessing(false);
@@ -680,7 +691,7 @@ export const PurchasePreview = ({
       const errorMsg = error instanceof Error ? error.message : "Failed to initiate payment";
       setPaymentStatus('error');
       setPaymentError(errorMsg);
-      toast.error(errorMsg);
+      toast.error(errorMsg, { duration: 5000 });
       setIsProcessing(false);
       setCurrentStep('details');
     }
@@ -689,7 +700,7 @@ export const PurchasePreview = ({
   // Generate a solid-color image, upload to Supabase, and set as pixel image
   const handleApplyColor = async () => {
     if (selectedColor.length !== 7) {
-      toast.error('Please enter a valid 6-digit hex color');
+      toast.error('Please enter a valid 6-digit hex color', { duration: 4000 });
       return;
     }
 
@@ -737,6 +748,7 @@ export const PurchasePreview = ({
     } catch (err: unknown) {
       console.error('Color generation error:', err);
       toast.error('Failed to apply color', {
+        duration: 4000,
         description: err instanceof Error ? err.message : 'Please try again',
       });
     } finally {
@@ -758,7 +770,7 @@ export const PurchasePreview = ({
   };
 
   const purchaseContent = (
-    <div className={`space-y-6 ${currentStep === 'payment' || isProcessing ? 'pointer-events-none opacity-60 transition-opacity' : ''}`}>
+    <div className="space-y-6">
       {/* SEO and Metadata */}
       <Helmet>
         <title>Checkout - buyaspot.in</title>
@@ -1270,7 +1282,7 @@ export const PurchasePreview = ({
       </Button>
       <Button
         onClick={handleConfirmPurchase}
-        disabled={isProcessing || !razorpayLoaded || !!pixelNameError || !!linkUrlError}
+        disabled={isProcessing || !!pixelNameError || !!linkUrlError}
         className="flex-1 h-11 md:h-10 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white border-0 font-semibold text-base md:text-sm shadow-lg hover:shadow-xl transition-all"
         aria-label={isProcessing ? "Processing payment" : "Proceed to payment"}
       >
@@ -1322,7 +1334,7 @@ export const PurchasePreview = ({
           </div>
 
           {/* Sticky Action Buttons for Mobile */}
-          <div className={`shrink-0 border-t bg-background px-4 py-4 safe-area-bottom ${currentStep === 'payment' || isProcessing ? 'pointer-events-none' : ''}`}>
+          <div className="shrink-0 border-t bg-background px-4 py-4 safe-area-bottom">
             {actionButtons}
           </div>
         </DrawerContent>
@@ -1349,6 +1361,10 @@ export const PurchasePreview = ({
           }
         }}
       >
+        {/* Hidden DialogTitle for Radix UI accessibility - required for screen readers */}
+        <VisuallyHidden asChild>
+          <DialogTitle>Checkout</DialogTitle>
+        </VisuallyHidden>
         <DialogHeader>
           <DialogTitle id="checkout-title" className="flex items-center gap-2">
             <ShoppingCart className="w-5 h-5 text-primary" aria-hidden="true" />
@@ -1362,7 +1378,7 @@ export const PurchasePreview = ({
           {purchaseContent}
 
           {/* Action Buttons for Desktop */}
-          <div className={`pt-5 border-t mt-5 ${currentStep === 'payment' || isProcessing ? 'pointer-events-none' : ''}`}>
+          <div className="pt-5 border-t mt-5">
             {actionButtons}
           </div>
         </ScrollArea>

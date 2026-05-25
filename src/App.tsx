@@ -90,7 +90,12 @@ const App = () => (
     <HelmetProvider>
       <TooltipProvider>
           <LayoutProvider>
-            <Sonner position="top-right" richColors closeButton />
+            <Sonner 
+              position="top-right" 
+              richColors 
+              closeButton
+              duration={3000}
+            />
             <BrowserRouter>
               <AppContent />
             </BrowserRouter>

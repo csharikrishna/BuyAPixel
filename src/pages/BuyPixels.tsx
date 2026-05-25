@@ -4,6 +4,8 @@ import {
   useEffect,
   useMemo,
   useRef,
+  lazy,
+  Suspense,
 } from "react";
 import { VirtualizedPixelGrid, GridHandle } from "@/components/VirtualizedPixelGrid";
 import { FloatingActionButton } from "@/components/FloatingActionButton";
@@ -12,7 +14,8 @@ import { QuickSelectTools } from "@/components/QuickSelectTools";
 import { EnhancedSelectionSummary } from "@/components/EnhancedSelectionSummary";
 import { EnhancedCanvasControls } from "@/components/EnhancedCanvasControls";
 import { PurchasePreview } from "@/components/PurchasePreview";
-import { EnhancedStatsPanel } from "@/components/EnhancedStatsPanel";
+// Lazy-load stats panel - not critical for initial paint
+const EnhancedStatsPanel = lazy(() => import("@/components/EnhancedStatsPanel").then(m => ({ default: m.EnhancedStatsPanel })));
 import { MobileCanvasPanel } from "@/components/MobileCanvasPanel";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -1130,7 +1133,9 @@ const BuyPixels = () => {
                   />
                 </div>
 
-                <EnhancedStatsPanel selectedPixelsCount={selectedPixels.length} />
+                <Suspense fallback={<div className="h-32 bg-muted rounded-lg animate-pulse" />}>
+                  <EnhancedStatsPanel selectedPixelsCount={selectedPixels.length} />
+                </Suspense>
               </div>
             )}
             </div>

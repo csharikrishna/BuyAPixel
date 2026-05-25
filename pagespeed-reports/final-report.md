@@ -4,41 +4,41 @@
 
 | Category | Mobile | Desktop |
 |---|---|---|
-| Performance | 63 | 86 |
-| Accessibility | 89 | 88 |
-| Best Practices | 92 | 92 |
+| Performance | 76 | 89 |
+| Accessibility | 94 | 94 |
+| Best Practices | 96 | 96 |
 | SEO | 100 | 100 |
 | PWA | N/A | N/A |
 
 ## Core Web Vitals (Mobile)
 
-- **Largest Contentful Paint**: 7.33 s (Score: 0.04)
+- **Largest Contentful Paint**: 5.18 s (Score: 0.24)
 - **Cumulative Layout Shift**: 0.002 (Score: 1)
-- **Time to Interactive**: 8.50 s (Score: 0.38)
-- **Total Blocking Time**: 62 ms (Score: 1)
-- **Speed Index**: 5.62 s (Score: 0.52)
-- **First Contentful Paint**: 4.38 s (Score: 0.17)
+- **Time to Interactive**: 5.18 s (Score: 0.74)
+- **Total Blocking Time**: 18 ms (Score: 1)
+- **Speed Index**: 4.68 s (Score: 0.69)
+- **First Contentful Paint**: 1.96 s (Score: 0.85)
 - **Initial server response time was short**: 1 ms (Score: 1)
 
 ## Core Web Vitals (Desktop)
 
-- **Largest Contentful Paint**: 1.58 s (Score: 0.77)
+- **Largest Contentful Paint**: 814 ms (Score: 0.98)
 - **Cumulative Layout Shift**: 0.148 (Score: 0.76)
-- **Time to Interactive**: 1.58 s (Score: 0.99)
-- **Total Blocking Time**: 25 ms (Score: 1)
-- **Speed Index**: 1.62 s (Score: 0.78)
-- **First Contentful Paint**: 478 ms (Score: 1)
-- **Initial server response time was short**: 1 ms (Score: 1)
+- **Time to Interactive**: 821 ms (Score: 1)
+- **Total Blocking Time**: 131 ms (Score: 0.93)
+- **Speed Index**: 1.75 s (Score: 0.73)
+- **First Contentful Paint**: 479 ms (Score: 1)
+- **Initial server response time was short**: 2 ms (Score: 1)
 
 ## Top Optimization Opportunities (Mobile)
 
-- **Reduce unused JavaScript**: Savings 1.06 s / 374.63 KB
+- **Reduce unused JavaScript**: Savings 450 ms / 89.66 KB
+- **Reduce unused CSS**: Savings 0 ms / 23.66 KB
 - **Avoid multiple page redirects**: Savings 0 ms / 0 Bytes
-- **Reduce unused CSS**: Savings 0 ms / 45.32 KB
+- **Minify JavaScript**: Savings 0 ms / 0 Bytes
 - **Minify CSS**: Savings 0 ms / 0 Bytes
-- **Initial server response time was short**: Savings 0 ms / 0 Bytes
 
 ## Selected Diagnostics (Mobile)
 
-**JS Execution Cost**: 1.4 s
-**Server Latency**: 10 ms
+**JS Execution Cost**: 0.6 s
+**Server Latency**: 0 ms

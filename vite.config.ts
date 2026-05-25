@@ -38,32 +38,39 @@ export default defineConfig(({ mode }) => ({
       minify: 'terser',
       // Target modern browsers for smaller builds
       target: 'es2020',
-      // Increase chunk size warning limit
-      chunkSizeWarningLimit: 300,
+      // Reduce chunk size warning limit to catch bloat
+      chunkSizeWarningLimit: 200,
       // Terser options for aggressive minification
       terserOptions: {
          compress: {
             drop_console: mode === 'production',
             drop_debugger: true,
             pure_funcs: mode === 'production' ? ['console.log', 'console.warn', 'console.info', 'console.debug'] : [],
-            passes: 2,
+            passes: 3,
+            toplevel: true,
+            unsafe: true,
+            unsafe_methods: true,
          },
          format: {
             comments: false,
          },
+         mangle: true,
       },
-      // CSS code splitting
+      // CSS code splitting - critical for reducing main.css
       cssCodeSplit: true,
-      // Asset inlining threshold (4KB)
+      // Asset inlining threshold (4KB) - aggressive inline small assets
       assetsInlineLimit: 4096,
+      // Enable tree-shaking for unused code removal
       rollupOptions: {
          output: {
+            // Dynamic imports should be code-split
+            dynamicImportInCjs: false,
             manualChunks: {
                // React core - always needed
                'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-               // Supabase - needed for auth/data
+               // Supabase - lazy loaded after auth check
                'supabase': ['@supabase/supabase-js'],
-               // UI Components - split into tiers
+               // UI Components - split into tiers for lazy loading
                'ui-core': [
                   '@radix-ui/react-dialog',
                   '@radix-ui/react-dropdown-menu',
@@ -91,7 +98,16 @@ export default defineConfig(({ mode }) => ({
                'sonner': ['sonner'],
                // Helmet (SEO) - used on every page but separable
                'helmet': ['react-helmet-async'],
+               // Lucide icons - heavy but used everywhere, keep separate
+               'lucide': ['lucide-react'],
+               // Charts - only used in dashboard
+               'charts': ['recharts'],
             },
+         },
+         treeshake: {
+            moduleSideEffects: false,
+            propertyReadSideEffects: true,
+            tryCatchDeoptimization: false,
          },
       },
    },

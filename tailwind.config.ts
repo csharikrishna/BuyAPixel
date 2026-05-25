@@ -8,6 +8,19 @@ export default {
 		"./app/**/*.{ts,tsx}",
 		"./src/**/*.{ts,tsx}",
 	],
+	// Safelist critical dynamic classes that shouldn't be purged
+	safelist: [
+		// Pixel pricing tier colors (dynamically generated)
+		'bg-yellow-500', 'bg-yellow-600', 'text-yellow-500',
+		'bg-gray-500', 'bg-gray-600', 'text-gray-500',
+		'bg-blue-500', 'bg-blue-600', 'text-blue-500',
+		// UI state classes
+		'animate-spin', 'animate-pulse', 'opacity-0', 'opacity-100',
+		// Grid responsive classes
+		'grid-cols-1', 'grid-cols-2', 'grid-cols-3', 'grid-cols-4',
+		// Visibility
+		'hidden', 'block', 'flex', 'inline',
+	],
 	prefix: "",
 	theme: {
 		container: {

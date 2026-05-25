@@ -20,7 +20,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+// Defer supabase import - only load when prefetch is actually triggered
+// import { supabase } from "@/integrations/supabase/client";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -139,7 +140,7 @@ const Header = () => {
   // ======================
 
   const createPrefetchHandler = useCallback(
-    (key: string, prefetchFn: () => void) => {
+    (key: string, prefetchFn: () => void | Promise<void>) => {
       return () => {
         // Clear existing timer for this key
         if (prefetchTimerRef.current[key]) {
@@ -149,7 +150,8 @@ const Header = () => {
         // Set new timer
         prefetchTimerRef.current[key] = setTimeout(() => {
           if (isMountedRef.current) {
-            prefetchFn();
+            // Handle both sync and async prefetch functions
+            Promise.resolve(prefetchFn());
           }
         }, PREFETCH_DELAY);
       };
@@ -159,57 +161,72 @@ const Header = () => {
 
   const prefetchProfile = useMemo(
     () =>
-      createPrefetchHandler('profile', () => {
+      createPrefetchHandler('profile', async () => {
         if (!user?.id) return;
-        queryClient.prefetchQuery({
-          queryKey: ['profile', user.id],
-          queryFn: async () => {
-            const { data } = await supabase
-              .from('profiles')
-              .select('*')
-              .eq('user_id', user.id)
-              .maybeSingle();
-            return data;
-          },
-          staleTime: 5 * 60 * 1000,
-        });
+        try {
+          const { supabase } = await import('@/integrations/supabase/client');
+          queryClient.prefetchQuery({
+            queryKey: ['profile', user.id],
+            queryFn: async () => {
+              const { data } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('user_id', user.id)
+                .maybeSingle();
+              return data;
+            },
+            staleTime: 5 * 60 * 1000,
+          });
+        } catch (error) {
+          console.warn('Failed to prefetch profile:', error);
+        }
       }),
     [queryClient, user?.id, createPrefetchHandler]
   );
 
   const prefetchMarketplace = useMemo(
     () =>
-      createPrefetchHandler('marketplace', () => {
-        queryClient.prefetchQuery({
-          queryKey: ['marketplace_stats_landing'],
-          queryFn: async () => {
-            const { count } = await supabase
-              .from('marketplace_listings')
-              .select('id', { count: 'exact', head: true })
-              .eq('status', 'active');
-            return { active_listings: count || 0 };
-          },
-          staleTime: 2 * 60 * 1000,
-        });
+      createPrefetchHandler('marketplace', async () => {
+        try {
+          const { supabase } = await import('@/integrations/supabase/client');
+          queryClient.prefetchQuery({
+            queryKey: ['marketplace_stats_landing'],
+            queryFn: async () => {
+              const { count } = await supabase
+                .from('marketplace_listings')
+                .select('id', { count: 'exact', head: true })
+                .eq('status', 'active');
+              return { active_listings: count || 0 };
+            },
+            staleTime: 2 * 60 * 1000,
+          });
+        } catch (error) {
+          console.warn('Failed to prefetch marketplace:', error);
+        }
       }),
     [queryClient, createPrefetchHandler]
   );
 
   const prefetchLeaderboard = useMemo(
     () =>
-      createPrefetchHandler('leaderboard', () => {
-        queryClient.prefetchQuery({
-          queryKey: ['leaderboard_preview'],
-          queryFn: async () => {
-            const { data } = await supabase
-              .from('profiles')
-              .select('user_id, full_name, pixel_count')
-              .order('pixel_count', { ascending: false })
-              .limit(10);
-            return data;
-          },
-          staleTime: 5 * 60 * 1000,
-        });
+      createPrefetchHandler('leaderboard', async () => {
+        try {
+          const { supabase } = await import('@/integrations/supabase/client');
+          queryClient.prefetchQuery({
+            queryKey: ['leaderboard_preview'],
+            queryFn: async () => {
+              const { data } = await supabase
+                .from('profiles')
+                .select('user_id, full_name, pixel_count')
+                .order('pixel_count', { ascending: false })
+                .limit(10);
+              return data;
+            },
+            staleTime: 5 * 60 * 1000,
+          });
+        } catch (error) {
+          console.warn('Failed to prefetch leaderboard:', error);
+        }
       }),
     [queryClient, createPrefetchHandler]
   );
@@ -319,7 +336,7 @@ const Header = () => {
             width={32}
             height={32}
             className="w-8 h-8 object-contain transition-all group-hover:scale-105 drop-shadow-sm"
-            fetchPriority="high"
+            fetchpriority="high"
           />
           <div className="text-xl md:text-2xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent tracking-tight transition-all group-hover:scale-105">
             BuyASpot

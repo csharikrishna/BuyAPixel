@@ -4,51 +4,43 @@
       "id": "unused-javascript",
       "title": "Reduce unused JavaScript",
       "description": "Reduce unused JavaScript and defer loading scripts until they are required to decrease bytes consumed by network activity. [Learn how to reduce unused JavaScript](https://developer.chrome.com/docs/lighthouse/performance/unused-javascript/).",
-      "savingsMs": "1.06 s",
-      "savingsBytes": "374.63 KB",
+      "savingsMs": "450 ms",
+      "savingsBytes": "89.66 KB",
       "score": 0,
       "items": [
         {
-          "wastedPercent": 99.22075026180721,
-          "wastedBytes": 145825,
-          "totalBytes": 146970,
-          "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-app-ed3ccc60.modern.js"
-        },
-        {
-          "wastedPercent": 81.97232471325087,
-          "wastedBytes": 78924,
-          "totalBytes": 96281,
-          "url": "https://buyaspot.in/assets/charts-DuJsZA4b.js"
-        },
-        {
-          "url": "https://buyaspot.in/assets/index-CSDYb__M.js",
-          "wastedBytes": 49592,
-          "totalBytes": 99339,
-          "wastedPercent": 49.92144903428519
-        },
-        {
+          "url": "https://buyaspot.in/assets/supabase-sh0IBSG1.js",
           "wastedPercent": 72.5907290839414,
-          "wastedBytes": 34837,
-          "totalBytes": 47991,
-          "url": "https://buyaspot.in/assets/supabase-sh0IBSG1.js"
+          "totalBytes": 48001,
+          "wastedBytes": 34844
         },
         {
-          "wastedPercent": 99.52175606872741,
-          "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-c4908e31.modern.js",
-          "wastedBytes": 26707,
-          "totalBytes": 26835
+          "url": "https://buyaspot.in/assets/index-Cfv142Z7.js",
+          "wastedPercent": 41.97166715134394,
+          "wastedBytes": 34813,
+          "totalBytes": 82943
         },
         {
-          "url": "https://checkout.razorpay.com/v1/checkout.js",
-          "wastedBytes": 25581,
-          "totalBytes": 57976,
-          "wastedPercent": 44.12403249638603
-        },
-        {
-          "wastedPercent": 80.42216177915932,
           "wastedBytes": 22157,
           "totalBytes": 27551,
+          "wastedPercent": 80.42216177915932,
           "url": "https://buyaspot.in/assets/ui-core-a2qpXD_n.js"
+        }
+      ]
+    },
+    {
+      "id": "unused-css-rules",
+      "title": "Reduce unused CSS",
+      "description": "Reduce unused rules from stylesheets and defer CSS not used for above-the-fold content to decrease bytes consumed by network activity. [Learn how to reduce unused CSS](https://developer.chrome.com/docs/lighthouse/performance/unused-css-rules/).",
+      "savingsMs": "0 ms",
+      "savingsBytes": "23.66 KB",
+      "score": 0,
+      "items": [
+        {
+          "totalBytes": 26762,
+          "wastedBytes": 24223,
+          "wastedPercent": 90.5133971109502,
+          "url": "https://buyaspot.in/assets/index-NvPDiAOM.css"
         }
       ]
     },
@@ -62,26 +54,13 @@
       "items": []
     },
     {
-      "id": "unused-css-rules",
-      "title": "Reduce unused CSS",
-      "description": "Reduce unused rules from stylesheets and defer CSS not used for above-the-fold content to decrease bytes consumed by network activity. [Learn how to reduce unused CSS](https://developer.chrome.com/docs/lighthouse/performance/unused-css-rules/).",
+      "id": "unminified-javascript",
+      "title": "Minify JavaScript",
+      "description": "Minifying JavaScript files can reduce payload sizes and script parse time. [Learn how to minify JavaScript](https://developer.chrome.com/docs/lighthouse/performance/unminified-javascript/).",
       "savingsMs": "0 ms",
-      "savingsBytes": "45.32 KB",
-      "score": 0,
-      "items": [
-        {
-          "url": "https://buyaspot.in/assets/index-NvPDiAOM.css",
-          "wastedBytes": 24222,
-          "totalBytes": 26773,
-          "wastedPercent": 90.47038261125238
-        },
-        {
-          "url": "https://checkout-static-next.razorpay.com/build/chunks/v2.06b43253.32143.css",
-          "totalBytes": 22181,
-          "wastedBytes": 22181,
-          "wastedPercent": 100
-        }
-      ]
+      "savingsBytes": "0 Bytes",
+      "score": 1,
+      "items": []
     },
     {
       "id": "unminified-css",
@@ -105,15 +84,6 @@
           "responseTime": 1
         }
       ]
-    },
-    {
-      "id": "unminified-javascript",
-      "title": "Minify JavaScript",
-      "description": "Minifying JavaScript files can reduce payload sizes and script parse time. [Learn how to minify JavaScript](https://developer.chrome.com/docs/lighthouse/performance/unminified-javascript/).",
-      "savingsMs": "0 ms",
-      "savingsBytes": "0 Bytes",
-      "score": 1,
-      "items": []
     }
   ],
   "desktop": [
@@ -121,73 +91,52 @@
       "id": "unused-javascript",
       "title": "Reduce unused JavaScript",
       "description": "Reduce unused JavaScript and defer loading scripts until they are required to decrease bytes consumed by network activity. [Learn how to reduce unused JavaScript](https://developer.chrome.com/docs/lighthouse/performance/unused-javascript/).",
-      "savingsMs": "210 ms",
-      "savingsBytes": "376.18 KB",
+      "savingsMs": "80 ms",
+      "savingsBytes": "91.3 KB",
       "score": 0,
       "items": [
         {
-          "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-app-ed3ccc60.modern.js",
-          "wastedPercent": 99.22075026180721,
-          "totalBytes": 146970,
-          "wastedBytes": 145825
+          "wastedPercent": 43.98688601775304,
+          "url": "https://buyaspot.in/assets/index-Cfv142Z7.js",
+          "totalBytes": 82946,
+          "wastedBytes": 36485
         },
         {
-          "wastedBytes": 78924,
-          "wastedPercent": 81.97232471325087,
-          "totalBytes": 96281,
-          "url": "https://buyaspot.in/assets/charts-DuJsZA4b.js"
-        },
-        {
-          "wastedBytes": 51217,
-          "wastedPercent": 51.55155659730099,
-          "totalBytes": 99350,
-          "url": "https://buyaspot.in/assets/index-CSDYb__M.js"
-        },
-        {
-          "totalBytes": 48002,
           "url": "https://buyaspot.in/assets/supabase-sh0IBSG1.js",
           "wastedPercent": 72.5907290839414,
-          "wastedBytes": 34845
+          "wastedBytes": 34847,
+          "totalBytes": 48005
         },
         {
-          "totalBytes": 26824,
-          "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-c4908e31.modern.js",
-          "wastedPercent": 99.52175606872741,
-          "wastedBytes": 26696
-        },
-        {
-          "totalBytes": 58006,
-          "url": "https://checkout.razorpay.com/v1/checkout.js",
-          "wastedPercent": 44.02961587906138,
-          "wastedBytes": 25540
-        },
-        {
-          "wastedBytes": 22157,
-          "wastedPercent": 80.42216177915932,
-          "totalBytes": 27551,
-          "url": "https://buyaspot.in/assets/ui-core-a2qpXD_n.js"
+          "wastedBytes": 22160,
+          "totalBytes": 27555,
+          "url": "https://buyaspot.in/assets/ui-core-a2qpXD_n.js",
+          "wastedPercent": 80.42216177915932
         }
       ]
+    },
+    {
+      "id": "unminified-css",
+      "title": "Minify CSS",
+      "description": "Minifying CSS files can reduce network payload sizes. [Learn how to minify CSS](https://developer.chrome.com/docs/lighthouse/performance/unminified-css/).",
+      "savingsMs": "0 ms",
+      "savingsBytes": "0 Bytes",
+      "score": 1,
+      "items": []
     },
     {
       "id": "unused-css-rules",
       "title": "Reduce unused CSS",
       "description": "Reduce unused rules from stylesheets and defer CSS not used for above-the-fold content to decrease bytes consumed by network activity. [Learn how to reduce unused CSS](https://developer.chrome.com/docs/lighthouse/performance/unused-css-rules/).",
-      "savingsMs": "30 ms",
-      "savingsBytes": "44.74 KB",
-      "score": 0,
+      "savingsMs": "0 ms",
+      "savingsBytes": "23.1 KB",
+      "score": 0.5,
       "items": [
         {
-          "wastedBytes": 23643,
-          "totalBytes": 26773,
-          "wastedPercent": 88.30876787960295,
-          "url": "https://buyaspot.in/assets/index-NvPDiAOM.css"
-        },
-        {
-          "wastedBytes": 22172,
-          "totalBytes": 22172,
-          "wastedPercent": 100,
-          "url": "https://checkout-static-next.razorpay.com/build/chunks/v2.06b43253.32143.css"
+          "url": "https://buyaspot.in/assets/index-NvPDiAOM.css",
+          "wastedPercent": 88.35178237930077,
+          "wastedBytes": 23657,
+          "totalBytes": 26776
         }
       ]
     },
@@ -195,15 +144,6 @@
       "id": "unminified-javascript",
       "title": "Minify JavaScript",
       "description": "Minifying JavaScript files can reduce payload sizes and script parse time. [Learn how to minify JavaScript](https://developer.chrome.com/docs/lighthouse/performance/unminified-javascript/).",
-      "savingsMs": "0 ms",
-      "savingsBytes": "0 Bytes",
-      "score": 1,
-      "items": []
-    },
-    {
-      "id": "unminified-css",
-      "title": "Minify CSS",
-      "description": "Minifying CSS files can reduce network payload sizes. [Learn how to minify CSS](https://developer.chrome.com/docs/lighthouse/performance/unminified-css/).",
       "savingsMs": "0 ms",
       "savingsBytes": "0 Bytes",
       "score": 1,
@@ -218,7 +158,7 @@
       "score": 1,
       "items": [
         {
-          "responseTime": 1,
+          "responseTime": 2,
           "url": "https://buyaspot.in/"
         }
       ]

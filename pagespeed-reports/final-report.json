@@ -1,56 +1,56 @@
 {
   "url": "https://buyaspot.in",
-  "timestamp": "2026-05-25T16:35:58.738Z",
+  "timestamp": "2026-05-25T17:06:35.384Z",
   "mobile": {
     "scores": {
-      "Performance": 63,
-      "Accessibility": 89,
-      "Best Practices": 92,
+      "Performance": 76,
+      "Accessibility": 94,
+      "Best Practices": 96,
       "SEO": 100,
       "PWA": "N/A"
     },
     "coreWebVitals": {
       "largest-contentful-paint": {
         "title": "Largest Contentful Paint",
-        "score": 0.04,
-        "displayValue": "7.3 s",
-        "numericValue": 7326.074614468702,
-        "formattedValue": "7.33 s"
+        "score": 0.24,
+        "displayValue": "5.2 s",
+        "numericValue": 5176.5,
+        "formattedValue": "5.18 s"
       },
       "cumulative-layout-shift": {
         "title": "Cumulative Layout Shift",
         "score": 1,
         "displayValue": "0.002",
-        "numericValue": 0.002173,
+        "numericValue": 0.0018960000000000001,
         "formattedValue": "0.002"
       },
       "interactive": {
         "title": "Time to Interactive",
-        "score": 0.38,
-        "displayValue": "8.5 s",
-        "numericValue": 8503.125762819927,
-        "formattedValue": "8.50 s"
+        "score": 0.74,
+        "displayValue": "5.2 s",
+        "numericValue": 5184,
+        "formattedValue": "5.18 s"
       },
       "total-blocking-time": {
         "title": "Total Blocking Time",
         "score": 1,
-        "displayValue": "60 ms",
-        "numericValue": 62,
-        "formattedValue": "62 ms"
+        "displayValue": "20 ms",
+        "numericValue": 18,
+        "formattedValue": "18 ms"
       },
       "speed-index": {
         "title": "Speed Index",
-        "score": 0.52,
-        "displayValue": "5.6 s",
-        "numericValue": 5620.130436306694,
-        "formattedValue": "5.62 s"
+        "score": 0.69,
+        "displayValue": "4.7 s",
+        "numericValue": 4680.662624814716,
+        "formattedValue": "4.68 s"
       },
       "first-contentful-paint": {
         "title": "First Contentful Paint",
-        "score": 0.17,
-        "displayValue": "4.4 s",
-        "numericValue": 4377.943930375991,
-        "formattedValue": "4.38 s"
+        "score": 0.85,
+        "displayValue": "2.0 s",
+        "numericValue": 1955,
+        "formattedValue": "1.96 s"
       },
       "server-response-time": {
         "title": "Initial server response time was short",
@@ -63,19 +63,19 @@
   },
   "desktop": {
     "scores": {
-      "Performance": 86,
-      "Accessibility": 88,
-      "Best Practices": 92,
+      "Performance": 89,
+      "Accessibility": 94,
+      "Best Practices": 96,
       "SEO": 100,
       "PWA": "N/A"
     },
     "coreWebVitals": {
       "largest-contentful-paint": {
         "title": "Largest Contentful Paint",
-        "score": 0.77,
-        "displayValue": "1.6 s",
-        "numericValue": 1581.6692174484547,
-        "formattedValue": "1.58 s"
+        "score": 0.98,
+        "displayValue": "0.8 s",
+        "numericValue": 814,
+        "formattedValue": "814 ms"
       },
       "cumulative-layout-shift": {
         "title": "Cumulative Layout Shift",
@@ -86,38 +86,38 @@
       },
       "interactive": {
         "title": "Time to Interactive",
-        "score": 0.99,
-        "displayValue": "1.6 s",
-        "numericValue": 1581.6692174484547,
-        "formattedValue": "1.58 s"
+        "score": 1,
+        "displayValue": "0.8 s",
+        "numericValue": 820.5,
+        "formattedValue": "821 ms"
       },
       "total-blocking-time": {
         "title": "Total Blocking Time",
-        "score": 1,
-        "displayValue": "30 ms",
-        "numericValue": 25,
-        "formattedValue": "25 ms"
+        "score": 0.93,
+        "displayValue": "130 ms",
+        "numericValue": 130.5,
+        "formattedValue": "131 ms"
       },
       "speed-index": {
         "title": "Speed Index",
-        "score": 0.78,
-        "displayValue": "1.6 s",
-        "numericValue": 1620.6096709844237,
-        "formattedValue": "1.62 s"
+        "score": 0.73,
+        "displayValue": "1.7 s",
+        "numericValue": 1749.0591449939961,
+        "formattedValue": "1.75 s"
       },
       "first-contentful-paint": {
         "title": "First Contentful Paint",
         "score": 1,
         "displayValue": "0.5 s",
-        "numericValue": 477.88104788946225,
-        "formattedValue": "478 ms"
+        "numericValue": 478.5,
+        "formattedValue": "479 ms"
       },
       "server-response-time": {
         "title": "Initial server response time was short",
         "score": 1,
         "displayValue": "Root document took 0 ms",
-        "numericValue": 1,
-        "formattedValue": "1 ms"
+        "numericValue": 2,
+        "formattedValue": "2 ms"
       }
     }
   }
