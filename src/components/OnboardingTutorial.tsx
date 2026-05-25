@@ -103,6 +103,7 @@ export const OnboardingTutorial = () => {
             size="icon"
             onClick={handleClose}
             className="h-8 w-8"
+            aria-label="Close tutorial"
           >
             <X className="h-4 w-4" />
           </Button>

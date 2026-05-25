@@ -1,5 +1,5 @@
 // Centralized branding configurations loaded from client-side environment variables
-export const LOGO = import.meta.env.VITE_LOGO_PATH || "/logo/light_theme.jpeg";
+export const LOGO = import.meta.env.VITE_LOGO_PATH || "/logo/logo-32.webp";
 
 /**
  * Builds a fully qualified URL for SEO and schema crawlers.

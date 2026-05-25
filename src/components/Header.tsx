@@ -308,7 +308,7 @@ const Header = () => {
         <Link
           to="/"
           className="flex items-center gap-2.5 shrink-0 group focus:outline-none focus:ring-2 focus:ring-primary/20 rounded-md"
-          aria-label="BuyASpot home"
+          aria-label="BuyASpot"
           onMouseEnter={createPrefetchHandler('home', () => {
             // Prefetch home page data if needed
           })}

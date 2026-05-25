@@ -14,9 +14,6 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 // STATIC IMPORTS (Critical Path - Always Loaded)
 // ============================================
 import BuyPixels from "./pages/BuyPixels";
-import SignIn from "./pages/SignIn";
-import SignUp from "./pages/SignUp";
-import NotFound from "./pages/NotFound";
 
 // ============================================
 // LAZY IMPORTS (Code Splitting - Loaded on Demand)
@@ -38,6 +35,8 @@ const Blog = lazy(() => import("./pages/Blog"));
 const BlogPost = lazy(() => import("./pages/BlogPost"));
 
 // Auth
+const SignIn = lazy(() => import("./pages/SignIn"));
+const SignUp = lazy(() => import("./pages/SignUp"));
 const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const AuthCallback = lazy(() => import("./pages/AuthCallback"));
@@ -49,6 +48,7 @@ const Help = lazy(() => import("./pages/Help"));
 const TermsOfService = lazy(() => import("./pages/TermsOfService"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const SeoInfo = lazy(() => import("./pages/SeoInfo"));
+const NotFound = lazy(() => import("./pages/NotFound"));
 
 // LiveTicker (not critical for first paint)
 const LiveTicker = lazy(() => import("./components/LiveTicker"));

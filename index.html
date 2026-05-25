@@ -28,23 +28,22 @@
   <meta name="ICBM" content="20.5937,78.9629" />
   <meta name="language" content="English" />
 
-  <!-- Favicon -->
-  <link rel="icon" href="/logo/light_theme_nobg.png" type="image/png" />
-  <link rel="icon" href="/logo/light_theme_nobg.png" type="image/png" sizes="32x32" />
-  <link rel="icon" href="/logo/light_theme_nobg.png" type="image/png" sizes="16x16" />
-  <link rel="apple-touch-icon" href="/logo/light_theme_nobg.png" sizes="180x180" />
+  <!-- Favicon (optimized sizes) -->
+  <link rel="icon" href="/logo/logo-32.png" type="image/png" sizes="32x32" />
+  <link rel="icon" href="/logo/logo-16.png" type="image/png" sizes="16x16" />
+  <link rel="apple-touch-icon" href="/logo/logo-180.webp" sizes="180x180" />
 
   <!-- Web App Manifest -->
   <link rel="manifest" href="/manifest.json" />
 
   <!-- Performance: Preconnect to critical origins -->
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="preconnect" href="https://qbwnwsaktoctqufipgab.supabase.co" crossorigin />
-  <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
-  <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
   <link rel="dns-prefetch" href="https://qbwnwsaktoctqufipgab.supabase.co" />
   <link rel="dns-prefetch" href="https://checkout.razorpay.com" />
+  <link rel="dns-prefetch" href="https://checkout-static-next.razorpay.com" />
+
+  <!-- Preload LCP image for faster first paint -->
+  <link rel="preload" href="/logo/logo-32.webp" as="image" type="image/webp" />
 
   <!-- Open Graph -->
   <meta property="og:title" content="BuyASpot — Buy Digital Advertising Space Online" />

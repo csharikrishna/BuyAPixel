@@ -194,46 +194,57 @@ export const PurchasePreview = ({
     setFormProgress(progress);
   }, [pixelName, linkUrl, linkUrlError, imagePreview]);
 
-  // Load Razorpay script with retry logic [web:144]
-  useEffect(() => {
-    if (typeof window.Razorpay !== 'undefined') {
-      setRazorpayLoaded(true);
-      return;
-    }
-
-    // Guard against duplicate script tags on remount
-    const existingScript = document.querySelector('script[src*="checkout.razorpay.com"]');
-    if (existingScript) {
-      // Script already in DOM — wait for it to load
-      existingScript.addEventListener('load', () => setRazorpayLoaded(true));
-      return;
-    }
-
-    let retries = 0;
-    const maxRetries = 3;
-
-    const loadScript = () => {
-      const script = document.createElement('script');
-      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-      script.async = true;
-      script.onload = () => {
+  // Lazy-load Razorpay script on demand (deferred from mount to payment time) [perf]
+  const loadRazorpayScript = (): Promise<void> => {
+    return new Promise((resolve, reject) => {
+      if (typeof window.Razorpay !== 'undefined') {
         setRazorpayLoaded(true);
-      };
-      script.onerror = () => {
-        retries++;
-        if (retries < maxRetries) {
-          console.warn(`Razorpay script load failed, retrying... (${retries}/${maxRetries})`);
-          setTimeout(loadScript, 2000 * retries);
-        } else {
-          console.error('Failed to load Razorpay script after multiple attempts');
-          toast.error('Payment gateway failed to load. Please refresh the page.');
-        }
-      };
-      document.body.appendChild(script);
-    };
+        resolve();
+        return;
+      }
 
-    loadScript();
-  }, []);
+      const existingScript = document.querySelector('script[src*="checkout.razorpay.com"]');
+      if (existingScript) {
+        existingScript.addEventListener('load', () => {
+          setRazorpayLoaded(true);
+          resolve();
+        });
+        // If already loaded but Razorpay is available
+        if (typeof window.Razorpay !== 'undefined') {
+          setRazorpayLoaded(true);
+          resolve();
+        }
+        return;
+      }
+
+      let retries = 0;
+      const maxRetries = 3;
+
+      const loadScript = () => {
+        const script = document.createElement('script');
+        script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+        script.async = true;
+        script.onload = () => {
+          setRazorpayLoaded(true);
+          resolve();
+        };
+        script.onerror = () => {
+          retries++;
+          if (retries < maxRetries) {
+            console.warn(`Razorpay script load failed, retrying... (${retries}/${maxRetries})`);
+            setTimeout(loadScript, 2000 * retries);
+          } else {
+            console.error('Failed to load Razorpay script after multiple attempts');
+            toast.error('Payment gateway failed to load. Please refresh the page.');
+            reject(new Error('Failed to load Razorpay'));
+          }
+        };
+        document.body.appendChild(script);
+      };
+
+      loadScript();
+    });
+  };
 
   // Automatically calculate cost based on number of pixels
   const totalCost = selectedPixels.reduce((sum, pixel) => sum + pixel.price, 0);
@@ -407,8 +418,14 @@ export const PurchasePreview = ({
 
     // In bypass mode, skip Razorpay SDK check
     if (!isPaymentBypassed && !razorpayLoaded) {
-      toast.error("Payment system is loading. Please wait...");
-      return;
+      // Load Razorpay on-demand when user first clicks Pay [perf]
+      try {
+        toast.info("Loading payment gateway...");
+        await loadRazorpayScript();
+      } catch {
+        toast.error("Payment gateway failed to load. Please try again.");
+        return;
+      }
     }
 
     setIsProcessing(true);

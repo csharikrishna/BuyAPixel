@@ -1,0 +1,1480 @@
+{
+  "mobile": [
+    {
+      "url": "https://buyaspot.in/",
+      "resourceType": "Document",
+      "transferSize": "3.36 KB",
+      "resourceSize": "10.65 KB",
+      "statusCode": 200,
+      "mimeType": "text/html",
+      "endTime": "0 ms",
+      "networkRequestTime": "1 ms"
+    },
+    {
+      "url": "https://buyaspot.in/assets/index-CSDYb__M.js",
+      "resourceType": "Script",
+      "transferSize": "97.62 KB",
+      "resourceSize": "348.98 KB",
+      "statusCode": 200,
+      "mimeType": "application/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "161 ms"
+    },
+    {
+      "url": "https://buyaspot.in/assets/index-NvPDiAOM.css",
+      "resourceType": "Stylesheet",
+      "transferSize": "26.67 KB",
+      "resourceSize": "179.36 KB",
+      "statusCode": 200,
+      "mimeType": "text/css",
+      "endTime": "0 ms",
+      "networkRequestTime": "162 ms"
+    },
+    {
+      "url": "https://buyaspot.in/assets/ui-core-a2qpXD_n.js",
+      "resourceType": "Script",
+      "transferSize": "27.43 KB",
+      "resourceSize": "85.45 KB",
+      "statusCode": 200,
+      "mimeType": "application/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "433 ms"
+    },
+    {
+      "url": "https://buyaspot.in/assets/react-vendor-BTkds9uv.js",
+      "resourceType": "Script",
+      "transferSize": "52.29 KB",
+      "resourceSize": "156.35 KB",
+      "statusCode": 200,
+      "mimeType": "application/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "433 ms"
+    },
+    {
+      "url": "https://buyaspot.in/assets/sonner-CZpM2exi.js",
+      "resourceType": "Script",
+      "transferSize": "8.5 KB",
+      "resourceSize": "27.93 KB",
+      "statusCode": 200,
+      "mimeType": "application/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "433 ms"
+    },
+    {
+      "url": "https://buyaspot.in/assets/charts-DuJsZA4b.js",
+      "resourceType": "Script",
+      "transferSize": "94.55 KB",
+      "resourceSize": "360.49 KB",
+      "statusCode": 200,
+      "mimeType": "application/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "433 ms"
+    },
+    {
+      "url": "https://buyaspot.in/assets/query-DQitdCIW.js",
+      "resourceType": "Script",
+      "transferSize": "10.69 KB",
+      "resourceSize": "33.72 KB",
+      "statusCode": 200,
+      "mimeType": "application/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "434 ms"
+    },
+    {
+      "url": "https://buyaspot.in/assets/supabase-sh0IBSG1.js",
+      "resourceType": "Script",
+      "transferSize": "47.4 KB",
+      "resourceSize": "183.22 KB",
+      "statusCode": 200,
+      "mimeType": "application/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "434 ms"
+    },
+    {
+      "url": "https://buyaspot.in/assets/ui-extra-1qv0ihSX.js",
+      "resourceType": "Script",
+      "transferSize": "12 KB",
+      "resourceSize": "36.9 KB",
+      "statusCode": 200,
+      "mimeType": "application/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "434 ms"
+    },
+    {
+      "url": "https://buyaspot.in/assets/image-tools-CXcmlBvZ.js",
+      "resourceType": "Script",
+      "transferSize": "7.21 KB",
+      "resourceSize": "22.6 KB",
+      "statusCode": 200,
+      "mimeType": "application/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "435 ms"
+    },
+    {
+      "url": "https://buyaspot.in/assets/forms-BYQnG7sx.js",
+      "resourceType": "Script",
+      "transferSize": "13.94 KB",
+      "resourceSize": "55.78 KB",
+      "statusCode": 200,
+      "mimeType": "application/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "435 ms"
+    },
+    {
+      "url": "https://checkout.razorpay.com/v1/checkout.js",
+      "resourceType": "Script",
+      "transferSize": "57.37 KB",
+      "resourceSize": "183.26 KB",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "889 ms"
+    },
+    {
+      "url": "https://buyaspot.in/assets/LiveTicker-lhHZFaH7.js",
+      "resourceType": "Script",
+      "transferSize": "5.48 KB",
+      "resourceSize": "14.28 KB",
+      "statusCode": 200,
+      "mimeType": "application/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "910 ms"
+    },
+    {
+      "url": "https://buyaspot.in/logo/light_theme_nobg.png",
+      "resourceType": "Image",
+      "transferSize": "453.27 KB",
+      "resourceSize": "452.83 KB",
+      "statusCode": 200,
+      "mimeType": "image/png",
+      "endTime": "0 ms",
+      "networkRequestTime": "910 ms"
+    },
+    {
+      "url": "https://api.razorpay.com/v1/checkout/public?traffic_env=production&build=5a3d99b12f534f37d49054f8568055301b1194d0&build_v1=da4ee3f43a28ad81dba8ed06daf899a4520c691f&checkout_v2=1&new_session=1&unified_session_id=StfHoTKPFAu2dg",
+      "resourceType": "Document",
+      "transferSize": "2.49 KB",
+      "resourceSize": "2.25 KB",
+      "statusCode": 200,
+      "mimeType": "text/html",
+      "endTime": "0 ms",
+      "networkRequestTime": "1.10 s"
+    },
+    {
+      "url": "https://cdn.razorpay.com/static/cx/razorpay-risk-detection/bundle.js",
+      "resourceType": "Script",
+      "transferSize": "1.92 KB",
+      "resourceSize": "2.88 KB",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "1.10 s"
+    },
+    {
+      "url": "https://qbwnwsaktoctqufipgab.supabase.co/rest/v1/pixels?select=id%2Cx%2Cy%2Cowner_id%2Cimage_url%2Clink_url%2Calt_text%2Cblock_id%2Cprice_paid%2Cpurchased_at&owner_id=not.is.null&order=y.asc%2Cx.asc",
+      "resourceType": "Fetch",
+      "transferSize": "1.21 KB",
+      "resourceSize": "2 Bytes",
+      "statusCode": 200,
+      "mimeType": "application/json",
+      "endTime": "0 ms",
+      "networkRequestTime": "1.24 s"
+    },
+    {
+      "url": "https://qbwnwsaktoctqufipgab.supabase.co/rest/v1/pixels?select=id%2Cx%2Cy%2Cowner_id%2Cimage_url%2Clink_url%2Calt_text%2Cblock_id%2Cprice_paid%2Cpurchased_at&owner_id=not.is.null&order=y.asc%2Cx.asc",
+      "resourceType": "Preflight",
+      "transferSize": "918 Bytes",
+      "resourceSize": "0 Bytes",
+      "statusCode": 200,
+      "endTime": "0 ms",
+      "networkRequestTime": "1.11 s"
+    },
+    {
+      "url": "https://qbwnwsaktoctqufipgab.supabase.co/rest/v1/pixel_blocks?select=id%2Cpixel_count%2Ctotal_price%2Ccreated_at&order=created_at.desc&limit=10",
+      "resourceType": "Fetch",
+      "transferSize": "1.16 KB",
+      "resourceSize": "2 Bytes",
+      "statusCode": 200,
+      "mimeType": "application/json",
+      "endTime": "0 ms",
+      "networkRequestTime": "1.25 s"
+    },
+    {
+      "url": "https://qbwnwsaktoctqufipgab.supabase.co/rest/v1/pixel_blocks?select=id%2Cpixel_count%2Ctotal_price%2Ccreated_at&order=created_at.desc&limit=10",
+      "resourceType": "Preflight",
+      "transferSize": "917 Bytes",
+      "resourceSize": "0 Bytes",
+      "statusCode": 200,
+      "endTime": "0 ms",
+      "networkRequestTime": "1.14 s"
+    },
+    {
+      "url": "https://lumberjack.razorpay.com/v2/logz",
+      "resourceType": "Ping",
+      "transferSize": "0 Bytes",
+      "resourceSize": "0 Bytes",
+      "statusCode": -1,
+      "endTime": "0 ms",
+      "networkRequestTime": "1.25 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/5a3d99b12f534f37d49054f8568055301b1194d0/v2-entry.modern.js",
+      "resourceType": "Script",
+      "transferSize": "38.43 KB",
+      "resourceSize": "119.94 KB",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "2.66 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-loader-eebe73ca.modern.js",
+      "resourceType": "Script",
+      "transferSize": "6.61 KB",
+      "resourceSize": "43.25 KB",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "2.71 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-c4908e31.modern.js",
+      "resourceType": "Script",
+      "transferSize": "26.92 KB",
+      "resourceSize": "72.7 KB",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "2.71 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-d3a7c88e.modern.js",
+      "resourceType": "Script",
+      "transferSize": "11.58 KB",
+      "resourceSize": "34.59 KB",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "2.71 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-4ffa4fed.modern.js",
+      "resourceType": "Script",
+      "transferSize": "11.18 KB",
+      "resourceSize": "40.85 KB",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "2.71 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-66772d30.modern.js",
+      "resourceType": "Script",
+      "transferSize": "15.65 KB",
+      "resourceSize": "41.27 KB",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "2.71 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2.06b43253.32143.css",
+      "resourceType": "Stylesheet",
+      "transferSize": "22.37 KB",
+      "resourceSize": "129.33 KB",
+      "statusCode": 200,
+      "mimeType": "text/css",
+      "endTime": "0 ms",
+      "networkRequestTime": "2.71 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-app-ed3ccc60.modern.js",
+      "resourceType": "Script",
+      "transferSize": "144.25 KB",
+      "resourceSize": "490.54 KB",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "2.71 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-a49c05c2.modern.js",
+      "resourceType": "Other",
+      "transferSize": "3.08 KB",
+      "resourceSize": "0 Bytes",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "2.80 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-c0cffd85.modern.js",
+      "resourceType": "Other",
+      "transferSize": "4.33 KB",
+      "resourceSize": "0 Bytes",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "2.80 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-19e35d03.modern.js",
+      "resourceType": "Other",
+      "transferSize": "4.55 KB",
+      "resourceSize": "0 Bytes",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "2.80 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-55102c52.modern.js",
+      "resourceType": "Other",
+      "transferSize": "6.29 KB",
+      "resourceSize": "0 Bytes",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "2.80 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-22ca8b00.modern.js",
+      "resourceType": "Other",
+      "transferSize": "5.49 KB",
+      "resourceSize": "0 Bytes",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "2.80 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-1369ed27.modern.js",
+      "resourceType": "Other",
+      "transferSize": "3.62 KB",
+      "resourceSize": "0 Bytes",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "2.80 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-79d63325.modern.js",
+      "resourceType": "Other",
+      "transferSize": "12.74 KB",
+      "resourceSize": "0 Bytes",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "2.81 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-f95b46d6.modern.js",
+      "resourceType": "Other",
+      "transferSize": "16.61 KB",
+      "resourceSize": "0 Bytes",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "2.81 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-240db249.modern.js",
+      "resourceType": "Other",
+      "transferSize": "19.1 KB",
+      "resourceSize": "0 Bytes",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "2.81 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-2061d9a0.modern.js",
+      "resourceType": "Other",
+      "transferSize": "6.04 KB",
+      "resourceSize": "0 Bytes",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "2.81 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-fcf4b5fe.modern.js",
+      "resourceType": "Other",
+      "transferSize": "5.81 KB",
+      "resourceSize": "0 Bytes",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "2.81 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-12bd7436.modern.js",
+      "resourceType": "Other",
+      "transferSize": "5.42 KB",
+      "resourceSize": "0 Bytes",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "2.81 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-0e08afce.modern.js",
+      "resourceType": "Other",
+      "transferSize": "7.76 KB",
+      "resourceSize": "0 Bytes",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "2.81 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-15fac4af.modern.js",
+      "resourceType": "Other",
+      "transferSize": "3.74 KB",
+      "resourceSize": "0 Bytes",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "2.81 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-card-b7f11def.modern.js",
+      "resourceType": "Other",
+      "transferSize": "15.46 KB",
+      "resourceSize": "0 Bytes",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "2.82 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-5166cd64.modern.js",
+      "resourceType": "Other",
+      "transferSize": "5.01 KB",
+      "resourceSize": "0 Bytes",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "2.82 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-857af642.modern.js",
+      "resourceType": "Other",
+      "transferSize": "14.22 KB",
+      "resourceSize": "0 Bytes",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "2.82 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-f2bbf6bf.modern.js",
+      "resourceType": "Other",
+      "transferSize": "5.62 KB",
+      "resourceSize": "0 Bytes",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "2.82 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-3c2642bc.modern.js",
+      "resourceType": "Other",
+      "transferSize": "11.75 KB",
+      "resourceSize": "0 Bytes",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "2.82 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-df81238d.modern.js",
+      "resourceType": "Other",
+      "transferSize": "4 KB",
+      "resourceSize": "0 Bytes",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "2.82 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-70ed96d8.modern.js",
+      "resourceType": "Other",
+      "transferSize": "16.77 KB",
+      "resourceSize": "0 Bytes",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "2.82 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-checkout-payment-3fb61e73.modern.js",
+      "resourceType": "Other",
+      "transferSize": "2.87 KB",
+      "resourceSize": "0 Bytes",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "2.82 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-card-block-5d08a713.modern.js",
+      "resourceType": "Other",
+      "transferSize": "3.54 KB",
+      "resourceSize": "0 Bytes",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "2.82 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-c950b4ae.modern.js",
+      "resourceType": "Other",
+      "transferSize": "5.14 KB",
+      "resourceSize": "0 Bytes",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "2.82 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-94f944c8.modern.js",
+      "resourceType": "Other",
+      "transferSize": "4.2 KB",
+      "resourceSize": "0 Bytes",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "2.82 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-apple-pay-method-button-18f53fc0.modern.js",
+      "resourceType": "Other",
+      "transferSize": "7.25 KB",
+      "resourceSize": "0 Bytes",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "2.82 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-apple-pay-button-98e460fc.modern.js",
+      "resourceType": "Other",
+      "transferSize": "8.12 KB",
+      "resourceSize": "0 Bytes",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "2.82 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-72db346f.modern.js",
+      "resourceType": "Other",
+      "transferSize": "10.72 KB",
+      "resourceSize": "0 Bytes",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "2.82 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-upi-qr-ce814fcd.modern.js",
+      "resourceType": "Other",
+      "transferSize": "1.18 KB",
+      "resourceSize": "0 Bytes",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "2.82 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-emi-block-dfc57449.modern.js",
+      "resourceType": "Other",
+      "transferSize": "3.85 KB",
+      "resourceSize": "0 Bytes",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "2.82 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-upi-block-7631c5cf.modern.js",
+      "resourceType": "Other",
+      "transferSize": "7.62 KB",
+      "resourceSize": "0 Bytes",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "2.82 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-netbanking-block-ea385277.modern.js",
+      "resourceType": "Other",
+      "transferSize": "4.64 KB",
+      "resourceSize": "0 Bytes",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "2.82 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-wallet-block-96636c43.modern.js",
+      "resourceType": "Other",
+      "transferSize": "4.13 KB",
+      "resourceSize": "0 Bytes",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "2.82 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-otp-e3c3ea26.modern.js",
+      "resourceType": "Other",
+      "transferSize": "12.75 KB",
+      "resourceSize": "0 Bytes",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "2.82 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-paylater-block-da0cb06d.modern.js",
+      "resourceType": "Other",
+      "transferSize": "4.21 KB",
+      "resourceSize": "0 Bytes",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "2.82 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-nach-block-22478978.modern.js",
+      "resourceType": "Other",
+      "transferSize": "963 Bytes",
+      "resourceSize": "0 Bytes",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "2.82 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-v2-icon-common-4562f295.modern.js",
+      "resourceType": "Script",
+      "transferSize": "25.56 KB",
+      "resourceSize": "75.09 KB",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "2.82 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-analytics-43a02261.modern.js",
+      "resourceType": "Script",
+      "transferSize": "9.32 KB",
+      "resourceSize": "36.58 KB",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "2.82 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-v2-icon-common0-17d40644.modern.js",
+      "resourceType": "Script",
+      "transferSize": "1.52 KB",
+      "resourceSize": "901 Bytes",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "2.83 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-v2-standard-icon-common-339ee233.modern.js",
+      "resourceType": "Script",
+      "transferSize": "10.38 KB",
+      "resourceSize": "27.7 KB",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "2.83 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-illustration-a3bdff51.modern.js",
+      "resourceType": "Script",
+      "transferSize": "4.03 KB",
+      "resourceSize": "8.28 KB",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "4.41 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-lang-en-715a6c70.modern.js",
+      "resourceType": "Script",
+      "transferSize": "16.08 KB",
+      "resourceSize": "55.77 KB",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "4.41 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-customer-a7dcf3f7.modern.js",
+      "resourceType": "Script",
+      "transferSize": "1.27 KB",
+      "resourceSize": "646 Bytes",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "4.41 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-shield-05b86d80.modern.js",
+      "resourceType": "Script",
+      "transferSize": "7.1 KB",
+      "resourceSize": "18.23 KB",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "4.41 s"
+    }
+  ],
+  "desktop": [
+    {
+      "url": "https://buyaspot.in/",
+      "resourceType": "Document",
+      "transferSize": "3.36 KB",
+      "resourceSize": "10.65 KB",
+      "statusCode": 200,
+      "mimeType": "text/html",
+      "endTime": "0 ms",
+      "networkRequestTime": "2 ms"
+    },
+    {
+      "url": "https://buyaspot.in/assets/index-CSDYb__M.js",
+      "resourceType": "Script",
+      "transferSize": "97.61 KB",
+      "resourceSize": "348.98 KB",
+      "statusCode": 200,
+      "mimeType": "application/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "241 ms"
+    },
+    {
+      "url": "https://buyaspot.in/assets/index-NvPDiAOM.css",
+      "resourceType": "Stylesheet",
+      "transferSize": "26.67 KB",
+      "resourceSize": "179.36 KB",
+      "statusCode": 200,
+      "mimeType": "text/css",
+      "endTime": "0 ms",
+      "networkRequestTime": "241 ms"
+    },
+    {
+      "url": "https://buyaspot.in/assets/ui-core-a2qpXD_n.js",
+      "resourceType": "Script",
+      "transferSize": "27.43 KB",
+      "resourceSize": "85.45 KB",
+      "statusCode": 200,
+      "mimeType": "application/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "496 ms"
+    },
+    {
+      "url": "https://buyaspot.in/assets/react-vendor-BTkds9uv.js",
+      "resourceType": "Script",
+      "transferSize": "52.29 KB",
+      "resourceSize": "156.35 KB",
+      "statusCode": 200,
+      "mimeType": "application/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "496 ms"
+    },
+    {
+      "url": "https://buyaspot.in/assets/sonner-CZpM2exi.js",
+      "resourceType": "Script",
+      "transferSize": "8.5 KB",
+      "resourceSize": "27.93 KB",
+      "statusCode": 200,
+      "mimeType": "application/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "496 ms"
+    },
+    {
+      "url": "https://buyaspot.in/assets/charts-DuJsZA4b.js",
+      "resourceType": "Script",
+      "transferSize": "94.55 KB",
+      "resourceSize": "360.49 KB",
+      "statusCode": 200,
+      "mimeType": "application/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "496 ms"
+    },
+    {
+      "url": "https://buyaspot.in/assets/query-DQitdCIW.js",
+      "resourceType": "Script",
+      "transferSize": "10.68 KB",
+      "resourceSize": "33.72 KB",
+      "statusCode": 200,
+      "mimeType": "application/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "497 ms"
+    },
+    {
+      "url": "https://buyaspot.in/assets/supabase-sh0IBSG1.js",
+      "resourceType": "Script",
+      "transferSize": "47.4 KB",
+      "resourceSize": "183.22 KB",
+      "statusCode": 200,
+      "mimeType": "application/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "498 ms"
+    },
+    {
+      "url": "https://buyaspot.in/assets/ui-extra-1qv0ihSX.js",
+      "resourceType": "Script",
+      "transferSize": "12 KB",
+      "resourceSize": "36.9 KB",
+      "statusCode": 200,
+      "mimeType": "application/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "498 ms"
+    },
+    {
+      "url": "https://buyaspot.in/assets/image-tools-CXcmlBvZ.js",
+      "resourceType": "Script",
+      "transferSize": "7.21 KB",
+      "resourceSize": "22.6 KB",
+      "statusCode": 200,
+      "mimeType": "application/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "498 ms"
+    },
+    {
+      "url": "https://buyaspot.in/assets/forms-BYQnG7sx.js",
+      "resourceType": "Script",
+      "transferSize": "13.94 KB",
+      "resourceSize": "55.78 KB",
+      "statusCode": 200,
+      "mimeType": "application/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "499 ms"
+    },
+    {
+      "url": "https://checkout.razorpay.com/v1/checkout.js",
+      "resourceType": "Script",
+      "transferSize": "57.4 KB",
+      "resourceSize": "183.26 KB",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "964 ms"
+    },
+    {
+      "url": "https://buyaspot.in/assets/LiveTicker-lhHZFaH7.js",
+      "resourceType": "Script",
+      "transferSize": "5.48 KB",
+      "resourceSize": "14.28 KB",
+      "statusCode": 200,
+      "mimeType": "application/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "977 ms"
+    },
+    {
+      "url": "https://buyaspot.in/logo/light_theme_nobg.png",
+      "resourceType": "Image",
+      "transferSize": "58.22 KB",
+      "resourceSize": "57.68 KB",
+      "statusCode": 200,
+      "mimeType": "image/webp",
+      "endTime": "0 ms",
+      "networkRequestTime": "977 ms"
+    },
+    {
+      "url": "https://api.razorpay.com/v1/checkout/public?traffic_env=production&build=5a3d99b12f534f37d49054f8568055301b1194d0&build_v1=da4ee3f43a28ad81dba8ed06daf899a4520c691f&checkout_v2=1&new_session=1&unified_session_id=StfI9T5IcwRI9k",
+      "resourceType": "Document",
+      "transferSize": "2.49 KB",
+      "resourceSize": "2.25 KB",
+      "statusCode": 200,
+      "mimeType": "text/html",
+      "endTime": "0 ms",
+      "networkRequestTime": "1.14 s"
+    },
+    {
+      "url": "https://cdn.razorpay.com/static/cx/razorpay-risk-detection/bundle.js",
+      "resourceType": "Script",
+      "transferSize": "1.91 KB",
+      "resourceSize": "2.88 KB",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "1.14 s"
+    },
+    {
+      "url": "https://qbwnwsaktoctqufipgab.supabase.co/rest/v1/pixels?select=id%2Cx%2Cy%2Cowner_id%2Cimage_url%2Clink_url%2Calt_text%2Cblock_id%2Cprice_paid%2Cpurchased_at&owner_id=not.is.null&order=y.asc%2Cx.asc",
+      "resourceType": "Fetch",
+      "transferSize": "1.21 KB",
+      "resourceSize": "2 Bytes",
+      "statusCode": 200,
+      "mimeType": "application/json",
+      "endTime": "0 ms",
+      "networkRequestTime": "1.40 s"
+    },
+    {
+      "url": "https://qbwnwsaktoctqufipgab.supabase.co/rest/v1/pixels?select=id%2Cx%2Cy%2Cowner_id%2Cimage_url%2Clink_url%2Calt_text%2Cblock_id%2Cprice_paid%2Cpurchased_at&owner_id=not.is.null&order=y.asc%2Cx.asc",
+      "resourceType": "Preflight",
+      "transferSize": "918 Bytes",
+      "resourceSize": "0 Bytes",
+      "statusCode": 200,
+      "endTime": "0 ms",
+      "networkRequestTime": "1.14 s"
+    },
+    {
+      "url": "https://qbwnwsaktoctqufipgab.supabase.co/rest/v1/pixel_blocks?select=id%2Cpixel_count%2Ctotal_price%2Ccreated_at&order=created_at.desc&limit=10",
+      "resourceType": "Fetch",
+      "transferSize": "1.16 KB",
+      "resourceSize": "2 Bytes",
+      "statusCode": 200,
+      "mimeType": "application/json",
+      "endTime": "0 ms",
+      "networkRequestTime": "1.40 s"
+    },
+    {
+      "url": "https://qbwnwsaktoctqufipgab.supabase.co/rest/v1/pixel_blocks?select=id%2Cpixel_count%2Ctotal_price%2Ccreated_at&order=created_at.desc&limit=10",
+      "resourceType": "Preflight",
+      "transferSize": "918 Bytes",
+      "resourceSize": "0 Bytes",
+      "statusCode": 200,
+      "endTime": "0 ms",
+      "networkRequestTime": "1.20 s"
+    },
+    {
+      "url": "https://lumberjack.razorpay.com/v2/logz",
+      "resourceType": "Ping",
+      "transferSize": "0 Bytes",
+      "resourceSize": "0 Bytes",
+      "statusCode": -1,
+      "endTime": "0 ms",
+      "networkRequestTime": "1.28 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/5a3d99b12f534f37d49054f8568055301b1194d0/v2-entry.modern.js",
+      "resourceType": "Script",
+      "transferSize": "38.42 KB",
+      "resourceSize": "119.94 KB",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "2.85 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-loader-eebe73ca.modern.js",
+      "resourceType": "Script",
+      "transferSize": "6.81 KB",
+      "resourceSize": "43.25 KB",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "2.90 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-c4908e31.modern.js",
+      "resourceType": "Script",
+      "transferSize": "26.92 KB",
+      "resourceSize": "72.7 KB",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "2.90 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-d3a7c88e.modern.js",
+      "resourceType": "Script",
+      "transferSize": "11.56 KB",
+      "resourceSize": "34.59 KB",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "2.90 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-4ffa4fed.modern.js",
+      "resourceType": "Script",
+      "transferSize": "11.18 KB",
+      "resourceSize": "40.85 KB",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "2.90 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-66772d30.modern.js",
+      "resourceType": "Script",
+      "transferSize": "15.64 KB",
+      "resourceSize": "41.27 KB",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "2.90 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2.06b43253.32143.css",
+      "resourceType": "Stylesheet",
+      "transferSize": "22.36 KB",
+      "resourceSize": "129.33 KB",
+      "statusCode": 200,
+      "mimeType": "text/css",
+      "endTime": "0 ms",
+      "networkRequestTime": "2.90 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-app-ed3ccc60.modern.js",
+      "resourceType": "Script",
+      "transferSize": "144.25 KB",
+      "resourceSize": "490.54 KB",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "2.90 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-a49c05c2.modern.js",
+      "resourceType": "Other",
+      "transferSize": "3.08 KB",
+      "resourceSize": "0 Bytes",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "2.97 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-c0cffd85.modern.js",
+      "resourceType": "Other",
+      "transferSize": "4.33 KB",
+      "resourceSize": "0 Bytes",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "2.97 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-19e35d03.modern.js",
+      "resourceType": "Other",
+      "transferSize": "4.55 KB",
+      "resourceSize": "0 Bytes",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "2.97 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-55102c52.modern.js",
+      "resourceType": "Other",
+      "transferSize": "6.29 KB",
+      "resourceSize": "0 Bytes",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "2.97 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-22ca8b00.modern.js",
+      "resourceType": "Other",
+      "transferSize": "5.49 KB",
+      "resourceSize": "0 Bytes",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "2.97 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-1369ed27.modern.js",
+      "resourceType": "Other",
+      "transferSize": "3.8 KB",
+      "resourceSize": "0 Bytes",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "2.97 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-79d63325.modern.js",
+      "resourceType": "Other",
+      "transferSize": "12.79 KB",
+      "resourceSize": "0 Bytes",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "2.97 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-f95b46d6.modern.js",
+      "resourceType": "Other",
+      "transferSize": "16.62 KB",
+      "resourceSize": "0 Bytes",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "2.97 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-240db249.modern.js",
+      "resourceType": "Other",
+      "transferSize": "19.1 KB",
+      "resourceSize": "0 Bytes",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "2.97 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-2061d9a0.modern.js",
+      "resourceType": "Other",
+      "transferSize": "6.07 KB",
+      "resourceSize": "0 Bytes",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "2.97 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-fcf4b5fe.modern.js",
+      "resourceType": "Other",
+      "transferSize": "5.81 KB",
+      "resourceSize": "0 Bytes",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "2.97 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-12bd7436.modern.js",
+      "resourceType": "Other",
+      "transferSize": "5.4 KB",
+      "resourceSize": "0 Bytes",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "2.97 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-0e08afce.modern.js",
+      "resourceType": "Other",
+      "transferSize": "7.75 KB",
+      "resourceSize": "0 Bytes",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "2.97 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-15fac4af.modern.js",
+      "resourceType": "Other",
+      "transferSize": "3.53 KB",
+      "resourceSize": "0 Bytes",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "2.98 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-card-b7f11def.modern.js",
+      "resourceType": "Other",
+      "transferSize": "15.46 KB",
+      "resourceSize": "0 Bytes",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "2.98 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-5166cd64.modern.js",
+      "resourceType": "Other",
+      "transferSize": "5.01 KB",
+      "resourceSize": "0 Bytes",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "2.98 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-857af642.modern.js",
+      "resourceType": "Other",
+      "transferSize": "14.22 KB",
+      "resourceSize": "0 Bytes",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "2.98 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-f2bbf6bf.modern.js",
+      "resourceType": "Other",
+      "transferSize": "5.62 KB",
+      "resourceSize": "0 Bytes",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "2.98 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-3c2642bc.modern.js",
+      "resourceType": "Other",
+      "transferSize": "11.79 KB",
+      "resourceSize": "0 Bytes",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "2.98 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-df81238d.modern.js",
+      "resourceType": "Other",
+      "transferSize": "3.99 KB",
+      "resourceSize": "0 Bytes",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "2.98 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-70ed96d8.modern.js",
+      "resourceType": "Other",
+      "transferSize": "16.77 KB",
+      "resourceSize": "0 Bytes",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "2.98 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-checkout-payment-3fb61e73.modern.js",
+      "resourceType": "Other",
+      "transferSize": "2.86 KB",
+      "resourceSize": "0 Bytes",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "2.98 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-card-block-5d08a713.modern.js",
+      "resourceType": "Other",
+      "transferSize": "3.54 KB",
+      "resourceSize": "0 Bytes",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "2.98 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-c950b4ae.modern.js",
+      "resourceType": "Other",
+      "transferSize": "5.14 KB",
+      "resourceSize": "0 Bytes",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "2.98 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-94f944c8.modern.js",
+      "resourceType": "Other",
+      "transferSize": "4.2 KB",
+      "resourceSize": "0 Bytes",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "2.98 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-apple-pay-method-button-18f53fc0.modern.js",
+      "resourceType": "Other",
+      "transferSize": "7.3 KB",
+      "resourceSize": "0 Bytes",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "2.98 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-apple-pay-button-98e460fc.modern.js",
+      "resourceType": "Other",
+      "transferSize": "8.12 KB",
+      "resourceSize": "0 Bytes",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "2.98 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-72db346f.modern.js",
+      "resourceType": "Other",
+      "transferSize": "10.68 KB",
+      "resourceSize": "0 Bytes",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "2.98 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-upi-qr-ce814fcd.modern.js",
+      "resourceType": "Other",
+      "transferSize": "1.15 KB",
+      "resourceSize": "0 Bytes",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "2.98 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-emi-block-dfc57449.modern.js",
+      "resourceType": "Other",
+      "transferSize": "3.85 KB",
+      "resourceSize": "0 Bytes",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "2.98 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-upi-block-7631c5cf.modern.js",
+      "resourceType": "Other",
+      "transferSize": "7.67 KB",
+      "resourceSize": "0 Bytes",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "2.98 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-netbanking-block-ea385277.modern.js",
+      "resourceType": "Other",
+      "transferSize": "4.63 KB",
+      "resourceSize": "0 Bytes",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "2.98 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-wallet-block-96636c43.modern.js",
+      "resourceType": "Other",
+      "transferSize": "4.09 KB",
+      "resourceSize": "0 Bytes",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "2.98 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-otp-e3c3ea26.modern.js",
+      "resourceType": "Other",
+      "transferSize": "12.68 KB",
+      "resourceSize": "0 Bytes",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "2.98 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-paylater-block-da0cb06d.modern.js",
+      "resourceType": "Other",
+      "transferSize": "4.21 KB",
+      "resourceSize": "0 Bytes",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "2.98 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-nach-block-22478978.modern.js",
+      "resourceType": "Other",
+      "transferSize": "962 Bytes",
+      "resourceSize": "0 Bytes",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "2.98 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-v2-icon-common-4562f295.modern.js",
+      "resourceType": "Script",
+      "transferSize": "25.6 KB",
+      "resourceSize": "75.09 KB",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "3.00 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-analytics-43a02261.modern.js",
+      "resourceType": "Script",
+      "transferSize": "9.34 KB",
+      "resourceSize": "36.58 KB",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "3.01 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-v2-icon-common0-17d40644.modern.js",
+      "resourceType": "Script",
+      "transferSize": "1.52 KB",
+      "resourceSize": "901 Bytes",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "3.01 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-v2-standard-icon-common-339ee233.modern.js",
+      "resourceType": "Script",
+      "transferSize": "10.46 KB",
+      "resourceSize": "27.7 KB",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "3.01 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-illustration-a3bdff51.modern.js",
+      "resourceType": "Script",
+      "transferSize": "3.84 KB",
+      "resourceSize": "8.28 KB",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "4.59 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-lang-en-715a6c70.modern.js",
+      "resourceType": "Script",
+      "transferSize": "16.13 KB",
+      "resourceSize": "55.77 KB",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "4.59 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-customer-a7dcf3f7.modern.js",
+      "resourceType": "Script",
+      "transferSize": "1.27 KB",
+      "resourceSize": "646 Bytes",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "4.59 s"
+    },
+    {
+      "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-shield-05b86d80.modern.js",
+      "resourceType": "Script",
+      "transferSize": "7.1 KB",
+      "resourceSize": "18.23 KB",
+      "statusCode": 200,
+      "mimeType": "text/javascript",
+      "endTime": "0 ms",
+      "networkRequestTime": "4.59 s"
+    }
+  ]
+}

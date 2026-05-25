@@ -1,0 +1,3454 @@
+{
+  "mobile": {
+    "diagnostics": {
+      "id": "diagnostics",
+      "title": "Diagnostics",
+      "description": "Collection of useful page vitals.",
+      "score": 1,
+      "scoreDisplayMode": "informative",
+      "details": {
+        "items": [
+          {
+            "mainDocumentTransferSize": 3445,
+            "rtt": 0.0011794469096539247,
+            "numTasksOver500ms": 0,
+            "maxRtt": 11.504497499999996,
+            "totalByteWeight": 1574069,
+            "numStylesheets": 2,
+            "numTasksOver10ms": 20,
+            "numTasks": 1418,
+            "maxServerLatency": 5,
+            "totalTaskTime": 1174.2389999999932,
+            "throughput": 5266646298.921533,
+            "numScripts": 28,
+            "numTasksOver50ms": 6,
+            "numFonts": 0,
+            "numTasksOver25ms": 11,
+            "numTasksOver100ms": 1,
+            "numRequests": 74
+          }
+        ],
+        "type": "debugdata"
+      }
+    },
+    "mainthread-work-breakdown": {
+      "id": "mainthread-work-breakdown",
+      "title": "Minimizes main-thread work",
+      "description": "Consider reducing the time spent parsing, compiling and executing JS. You may find delivering smaller JS payloads helps with this. [Learn how to minimize main-thread work](https://developer.chrome.com/docs/lighthouse/performance/mainthread-work-breakdown/)",
+      "score": 1,
+      "scoreDisplayMode": "metricSavings",
+      "displayValue": "1.4 s",
+      "metricSavings": {
+        "TBT": 50
+      },
+      "details": {
+        "sortedBy": [
+          "duration"
+        ],
+        "headings": [
+          {
+            "key": "groupLabel",
+            "label": "Category",
+            "valueType": "text"
+          },
+          {
+            "granularity": 1,
+            "valueType": "ms",
+            "label": "Time Spent",
+            "key": "duration"
+          }
+        ],
+        "type": "table",
+        "items": [
+          {
+            "duration": 535.5192000000002,
+            "groupLabel": "Script Evaluation",
+            "group": "scriptEvaluation"
+          },
+          {
+            "groupLabel": "Other",
+            "group": "other",
+            "duration": 330.27719999999596
+          },
+          {
+            "duration": 232.84319999999997,
+            "groupLabel": "Script Parsing & Compilation",
+            "group": "scriptParseCompile"
+          },
+          {
+            "duration": 192.67199999999994,
+            "groupLabel": "Style & Layout",
+            "group": "styleLayout"
+          },
+          {
+            "duration": 84.34559999999944,
+            "groupLabel": "Rendering",
+            "group": "paintCompositeRender"
+          },
+          {
+            "duration": 22.0236,
+            "groupLabel": "Parse HTML & CSS",
+            "group": "parseHTML"
+          },
+          {
+            "duration": 11.406,
+            "groupLabel": "Garbage Collection",
+            "group": "garbageCollection"
+          }
+        ]
+      },
+      "numericValue": 1409.0867999999955,
+      "numericUnit": "millisecond"
+    },
+    "unused-javascript": {
+      "id": "unused-javascript",
+      "title": "Reduce unused JavaScript",
+      "description": "Reduce unused JavaScript and defer loading scripts until they are required to decrease bytes consumed by network activity. [Learn how to reduce unused JavaScript](https://developer.chrome.com/docs/lighthouse/performance/unused-javascript/).",
+      "score": 0,
+      "scoreDisplayMode": "metricSavings",
+      "displayValue": "Est savings of 375 KiB",
+      "metricSavings": {
+        "LCP": 1050,
+        "FCP": 450
+      },
+      "details": {
+        "overallSavingsBytes": 383623,
+        "debugData": {
+          "metricSavings": {
+            "FCP": 450,
+            "LCP": 1060
+          },
+          "type": "debugdata"
+        },
+        "sortedBy": [
+          "wastedBytes"
+        ],
+        "overallSavingsMs": 1060,
+        "items": [
+          {
+            "wastedPercent": 99.22075026180721,
+            "wastedBytes": 145825,
+            "totalBytes": 146970,
+            "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-app-ed3ccc60.modern.js"
+          },
+          {
+            "wastedPercent": 81.97232471325087,
+            "wastedBytes": 78924,
+            "totalBytes": 96281,
+            "url": "https://buyaspot.in/assets/charts-DuJsZA4b.js"
+          },
+          {
+            "url": "https://buyaspot.in/assets/index-CSDYb__M.js",
+            "wastedBytes": 49592,
+            "totalBytes": 99339,
+            "wastedPercent": 49.92144903428519
+          },
+          {
+            "wastedPercent": 72.5907290839414,
+            "wastedBytes": 34837,
+            "totalBytes": 47991,
+            "url": "https://buyaspot.in/assets/supabase-sh0IBSG1.js"
+          },
+          {
+            "wastedPercent": 99.52175606872741,
+            "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-c4908e31.modern.js",
+            "wastedBytes": 26707,
+            "totalBytes": 26835
+          },
+          {
+            "url": "https://checkout.razorpay.com/v1/checkout.js",
+            "wastedBytes": 25581,
+            "totalBytes": 57976,
+            "wastedPercent": 44.12403249638603
+          },
+          {
+            "wastedPercent": 80.42216177915932,
+            "wastedBytes": 22157,
+            "totalBytes": 27551,
+            "url": "https://buyaspot.in/assets/ui-core-a2qpXD_n.js"
+          }
+        ],
+        "headings": [
+          {
+            "label": "URL",
+            "subItemsHeading": {
+              "valueType": "code",
+              "key": "source"
+            },
+            "key": "url",
+            "valueType": "url"
+          },
+          {
+            "label": "Transfer Size",
+            "subItemsHeading": {
+              "key": "sourceBytes"
+            },
+            "key": "totalBytes",
+            "valueType": "bytes"
+          },
+          {
+            "label": "Est Savings",
+            "subItemsHeading": {
+              "key": "sourceWastedBytes"
+            },
+            "key": "wastedBytes",
+            "valueType": "bytes"
+          }
+        ],
+        "type": "opportunity"
+      },
+      "numericValue": 1060,
+      "numericUnit": "millisecond"
+    },
+    "unused-css-rules": {
+      "id": "unused-css-rules",
+      "title": "Reduce unused CSS",
+      "description": "Reduce unused rules from stylesheets and defer CSS not used for above-the-fold content to decrease bytes consumed by network activity. [Learn how to reduce unused CSS](https://developer.chrome.com/docs/lighthouse/performance/unused-css-rules/).",
+      "score": 0,
+      "scoreDisplayMode": "metricSavings",
+      "displayValue": "Est savings of 45 KiB",
+      "metricSavings": {
+        "LCP": 0,
+        "FCP": 150
+      },
+      "details": {
+        "debugData": {
+          "type": "debugdata",
+          "metricSavings": {
+            "LCP": 0,
+            "FCP": 130
+          }
+        },
+        "sortedBy": [
+          "wastedBytes"
+        ],
+        "overallSavingsMs": 0,
+        "overallSavingsBytes": 46403,
+        "items": [
+          {
+            "url": "https://buyaspot.in/assets/index-NvPDiAOM.css",
+            "wastedBytes": 24222,
+            "totalBytes": 26773,
+            "wastedPercent": 90.47038261125238
+          },
+          {
+            "url": "https://checkout-static-next.razorpay.com/build/chunks/v2.06b43253.32143.css",
+            "totalBytes": 22181,
+            "wastedBytes": 22181,
+            "wastedPercent": 100
+          }
+        ],
+        "headings": [
+          {
+            "valueType": "url",
+            "label": "URL",
+            "key": "url"
+          },
+          {
+            "valueType": "bytes",
+            "label": "Transfer Size",
+            "key": "totalBytes"
+          },
+          {
+            "label": "Est Savings",
+            "key": "wastedBytes",
+            "valueType": "bytes"
+          }
+        ],
+        "type": "opportunity"
+      },
+      "numericValue": 0,
+      "numericUnit": "millisecond"
+    },
+    "bootup-time": {
+      "id": "bootup-time",
+      "title": "JavaScript execution time",
+      "description": "Consider reducing the time spent parsing, compiling, and executing JS. You may find delivering smaller JS payloads helps with this. [Learn how to reduce Javascript execution time](https://developer.chrome.com/docs/lighthouse/performance/bootup-time/).",
+      "score": 1,
+      "scoreDisplayMode": "metricSavings",
+      "displayValue": "0.6 s",
+      "metricSavings": {
+        "TBT": 50
+      },
+      "details": {
+        "sortedBy": [
+          "total"
+        ],
+        "summary": {
+          "wastedMs": 627.8268000000002
+        },
+        "items": [
+          {
+            "url": "https://buyaspot.in/assets/react-vendor-BTkds9uv.js",
+            "total": 394.0692000000002,
+            "scriptParseCompile": 12.558,
+            "scripting": 260.5236000000002
+          },
+          {
+            "scriptParseCompile": 0.21839999999999998,
+            "scripting": 47.35200000000006,
+            "total": 320.96519999999947,
+            "url": "https://buyaspot.in/"
+          },
+          {
+            "url": "Unattributable",
+            "total": 183.81119999999638,
+            "scriptParseCompile": 0,
+            "scripting": 7.1555999999999935
+          },
+          {
+            "url": "https://checkout.razorpay.com/v1/checkout.js",
+            "total": 108.38639999999995,
+            "scriptParseCompile": 17.6952,
+            "scripting": 88.70159999999996
+          },
+          {
+            "total": 84.80879999999999,
+            "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-app-ed3ccc60.modern.js",
+            "scriptParseCompile": 44.9544,
+            "scripting": 34.8012
+          },
+          {
+            "scriptParseCompile": 53.6892,
+            "scripting": 3.666,
+            "url": "https://buyaspot.in/assets/index-CSDYb__M.js",
+            "total": 71.0688
+          },
+          {
+            "scriptParseCompile": 13.3956,
+            "scripting": 43.11599999999999,
+            "url": "https://buyaspot.in/assets/supabase-sh0IBSG1.js",
+            "total": 65.514
+          }
+        ],
+        "headings": [
+          {
+            "valueType": "url",
+            "key": "url",
+            "label": "URL"
+          },
+          {
+            "key": "total",
+            "label": "Total CPU Time",
+            "valueType": "ms",
+            "granularity": 1
+          },
+          {
+            "label": "Script Evaluation",
+            "key": "scripting",
+            "valueType": "ms",
+            "granularity": 1
+          },
+          {
+            "granularity": 1,
+            "valueType": "ms",
+            "key": "scriptParseCompile",
+            "label": "Script Parse"
+          }
+        ],
+        "type": "table"
+      },
+      "numericValue": 627.8268000000002,
+      "numericUnit": "millisecond"
+    },
+    "resource-summary": {
+      "id": "resource-summary",
+      "title": "Resources Summary",
+      "description": "Aggregates all network requests and groups them by type",
+      "score": 1,
+      "scoreDisplayMode": "informative",
+      "details": {
+        "headings": [
+          {
+            "valueType": "text",
+            "label": "Resource Type",
+            "key": "label"
+          },
+          {
+            "valueType": "numeric",
+            "key": "requestCount",
+            "label": "Requests"
+          },
+          {
+            "label": "Transfer Size",
+            "key": "transferSize",
+            "valueType": "bytes"
+          }
+        ],
+        "items": [
+          {
+            "transferSize": 1574069,
+            "label": "Total",
+            "requestCount": 74,
+            "resourceType": "total"
+          },
+          {
+            "requestCount": 28,
+            "resourceType": "script",
+            "transferSize": 784668,
+            "label": "Script"
+          },
+          {
+            "transferSize": 464152,
+            "label": "Image",
+            "resourceType": "image",
+            "requestCount": 1
+          },
+          {
+            "requestCount": 41,
+            "resourceType": "other",
+            "label": "Other",
+            "transferSize": 269036
+          },
+          {
+            "transferSize": 50214,
+            "label": "Stylesheet",
+            "requestCount": 2,
+            "resourceType": "stylesheet"
+          },
+          {
+            "transferSize": 5999,
+            "label": "Document",
+            "requestCount": 2,
+            "resourceType": "document"
+          },
+          {
+            "transferSize": 0,
+            "label": "Media",
+            "requestCount": 0,
+            "resourceType": "media"
+          },
+          {
+            "requestCount": 0,
+            "resourceType": "font",
+            "transferSize": 0,
+            "label": "Font"
+          },
+          {
+            "transferSize": 692998,
+            "label": "Third-party",
+            "requestCount": 60,
+            "resourceType": "third-party"
+          }
+        ],
+        "type": "table"
+      }
+    },
+    "network-server-latency": {
+      "id": "network-server-latency",
+      "title": "Server Backend Latencies",
+      "description": "Server latencies can impact web performance. If the server latency of an origin is high, it's an indication the server is overloaded or has poor backend performance. [Learn more about server response time](https://hpbn.co/primer-on-web-performance/#analyzing-the-resource-waterfall).",
+      "score": 1,
+      "scoreDisplayMode": "informative",
+      "displayValue": "10 ms",
+      "details": {
+        "items": [
+          {
+            "serverResponseTime": 5,
+            "origin": "https://checkout.razorpay.com"
+          },
+          {
+            "serverResponseTime": 2,
+            "origin": "https://buyaspot.in"
+          },
+          {
+            "serverResponseTime": 1,
+            "origin": "https://api.razorpay.com"
+          },
+          {
+            "serverResponseTime": 1,
+            "origin": "https://qbwnwsaktoctqufipgab.supabase.co"
+          },
+          {
+            "serverResponseTime": 1,
+            "origin": "https://checkout-static-next.razorpay.com"
+          },
+          {
+            "serverResponseTime": 0,
+            "origin": "https://cdn.razorpay.com"
+          }
+        ],
+        "type": "table",
+        "sortedBy": [
+          "serverResponseTime"
+        ],
+        "headings": [
+          {
+            "valueType": "text",
+            "label": "URL",
+            "key": "origin"
+          },
+          {
+            "granularity": 1,
+            "valueType": "ms",
+            "label": "Time Spent",
+            "key": "serverResponseTime"
+          }
+        ]
+      },
+      "numericValue": 5,
+      "numericUnit": "millisecond"
+    },
+    "image-delivery-insight": {
+      "id": "image-delivery-insight",
+      "title": "Improve image delivery",
+      "score": 0,
+      "displayValue": "Est savings of 452 KiB",
+      "details": {
+        "debugData": {
+          "wastedBytes": 463180,
+          "type": "debugdata"
+        },
+        "headings": [
+          {
+            "valueType": "node",
+            "key": "node"
+          },
+          {
+            "valueType": "url",
+            "key": "url",
+            "subItemsHeading": {
+              "valueType": "text",
+              "key": "reason"
+            },
+            "label": "URL"
+          },
+          {
+            "label": "Resource Size",
+            "key": "totalBytes",
+            "valueType": "bytes"
+          },
+          {
+            "subItemsHeading": {
+              "valueType": "bytes",
+              "key": "wastedBytes"
+            },
+            "label": "Est Savings",
+            "key": "wastedBytes",
+            "valueType": "bytes"
+          }
+        ],
+        "items": [
+          {
+            "node": {
+              "nodeLabel": "BuyASpot Logo",
+              "type": "node",
+              "boundingRect": {
+                "top": 16,
+                "height": 32,
+                "bottom": 48,
+                "left": 16,
+                "right": 48,
+                "width": 32
+              },
+              "snippet": "<img src=\"/logo/light_theme_nobg.png\" alt=\"BuyASpot Logo\" width=\"32\" height=\"32\" class=\"w-8 h-8 object-contain transition-all group-hover:scale-105 drop-shadow-sm\" fetchpriority=\"high\">",
+              "selector": "header.sticky > div.flex > a.flex > img.w-8",
+              "path": "1,HTML,1,BODY,0,DIV,1,DIV,1,HEADER,0,DIV,0,A,0,IMG",
+              "lhId": "page-0-IMG"
+            },
+            "url": "https://buyaspot.in/logo/light_theme_nobg.png",
+            "subItems": {
+              "items": [
+                {
+                  "wastedBytes": 422036,
+                  "reason": "Using a modern image format (WebP, AVIF) or increasing the image compression could improve this image's download size."
+                },
+                {
+                  "reason": "This image file is larger than it needs to be (500x500) for its displayed dimensions (56x56). Use responsive images to reduce the image download size.",
+                  "wastedBytes": 457886
+                }
+              ],
+              "type": "subitems"
+            },
+            "wastedBytes": 463180,
+            "totalBytes": 463703
+          }
+        ],
+        "type": "table"
+      }
+    },
+    "forced-reflow-insight": {
+      "id": "forced-reflow-insight",
+      "title": "Forced reflow",
+      "score": 0,
+      "details": {
+        "items": [
+          {
+            "items": [
+              {
+                "reflowTime": 47.038,
+                "source": {
+                  "urlProvider": "network",
+                  "type": "source-location",
+                  "url": "https://buyaspot.in/assets/react-vendor-BTkds9uv.js",
+                  "column": 9404,
+                  "line": 1
+                }
+              }
+            ],
+            "type": "table",
+            "headings": [
+              {
+                "valueType": "source-location",
+                "label": "Top function call",
+                "key": "source"
+              },
+              {
+                "key": "reflowTime",
+                "label": "Total reflow time",
+                "granularity": 1,
+                "valueType": "ms"
+              }
+            ]
+          },
+          {
+            "headings": [
+              {
+                "valueType": "source-location",
+                "label": "Source",
+                "key": "source"
+              },
+              {
+                "label": "Total reflow time",
+                "key": "reflowTime",
+                "granularity": 1,
+                "valueType": "ms"
+              }
+            ],
+            "items": [
+              {
+                "reflowTime": 29.494,
+                "source": {
+                  "urlProvider": "network",
+                  "line": 0,
+                  "url": "https://buyaspot.in/assets/index-CSDYb__M.js",
+                  "column": 119004,
+                  "type": "source-location"
+                }
+              },
+              {
+                "reflowTime": 0.346,
+                "source": {
+                  "value": "[unattributed]",
+                  "type": "text"
+                }
+              },
+              {
+                "reflowTime": 17.544,
+                "source": {
+                  "type": "source-location",
+                  "column": 85228,
+                  "line": 0,
+                  "url": "https://buyaspot.in/assets/index-CSDYb__M.js",
+                  "urlProvider": "network"
+                }
+              }
+            ],
+            "type": "table"
+          }
+        ],
+        "type": "list"
+      }
+    },
+    "button-name": {
+      "id": "button-name",
+      "title": "Buttons do not have an accessible name",
+      "score": 0,
+      "details": {
+        "headings": [
+          {
+            "label": "Failing Elements",
+            "subItemsHeading": {
+              "valueType": "node",
+              "key": "relatedNode"
+            },
+            "key": "node",
+            "valueType": "node"
+          }
+        ],
+        "debugData": {
+          "type": "debugdata",
+          "tags": [
+            "cat.name-role-value",
+            "wcag2a",
+            "wcag412",
+            "section508",
+            "section508.22.a",
+            "TTv5",
+            "TT6.a",
+            "EN-301-549",
+            "EN-9.4.1.2",
+            "ACT",
+            "RGAAv4",
+            "RGAA-11.9.1"
+          ],
+          "impact": "critical"
+        },
+        "type": "table",
+        "items": [
+          {
+            "node": {
+              "selector": "div.fixed > div.bg-card > div.flex > button.inline-flex",
+              "snippet": "<button class=\"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md…\">",
+              "path": "1,HTML,1,BODY,0,DIV,1,DIV,0,DIV,0,DIV,0,DIV,1,BUTTON",
+              "lhId": "1-0-BUTTON",
+              "explanation": "Fix any of the following:\n  Element does not have inner text that is visible to screen readers\n  aria-label attribute does not exist or is empty\n  aria-labelledby attribute does not exist, references elements that do not exist or references elements that are empty\n  Element has no title attribute\n  Element does not have an implicit (wrapped) <label>\n  Element does not have an explicit <label>\n  Element's default semantics were not overridden with role=\"none\" or role=\"presentation\"",
+              "type": "node",
+              "nodeLabel": "div.fixed > div.bg-card > div.flex > button.inline-flex",
+              "boundingRect": {
+                "top": 291,
+                "height": 32,
+                "bottom": 323,
+                "left": 339,
+                "right": 371,
+                "width": 32
+              }
+            }
+          }
+        ]
+      }
+    },
+    "first-contentful-paint": {
+      "id": "first-contentful-paint",
+      "title": "First Contentful Paint",
+      "score": 0.17,
+      "displayValue": "4.4 s"
+    },
+    "largest-contentful-paint": {
+      "id": "largest-contentful-paint",
+      "title": "Largest Contentful Paint",
+      "score": 0.04,
+      "displayValue": "7.3 s"
+    },
+    "speed-index": {
+      "id": "speed-index",
+      "title": "Speed Index",
+      "score": 0.52,
+      "displayValue": "5.6 s"
+    },
+    "label-content-name-mismatch": {
+      "id": "label-content-name-mismatch",
+      "title": "Elements with visible text labels do not have matching accessible names.",
+      "score": 0,
+      "details": {
+        "debugData": {
+          "impact": "serious",
+          "tags": [
+            "cat.semantics",
+            "wcag21a",
+            "wcag253",
+            "EN-301-549",
+            "EN-9.2.5.3",
+            "RGAAv4",
+            "RGAA-6.1.5",
+            "experimental"
+          ],
+          "type": "debugdata"
+        },
+        "headings": [
+          {
+            "valueType": "node",
+            "label": "Failing Elements",
+            "subItemsHeading": {
+              "valueType": "node",
+              "key": "relatedNode"
+            },
+            "key": "node"
+          }
+        ],
+        "items": [
+          {
+            "node": {
+              "selector": "div.min-h-screen > header.sticky > div.flex > a.flex",
+              "snippet": "<a class=\"flex items-center gap-2.5 shrink-0 group focus:outline-none focus:ring-2 f…\" aria-label=\"BuyASpot home\" href=\"/\">",
+              "path": "1,HTML,1,BODY,0,DIV,1,DIV,1,HEADER,0,DIV,0,A",
+              "lhId": "1-5-A",
+              "explanation": "Fix any of the following:\n  Text inside the element is not included in the accessible name",
+              "type": "node",
+              "nodeLabel": "BuyASpot",
+              "boundingRect": {
+                "width": 135,
+                "right": 151,
+                "left": 16,
+                "height": 32,
+                "bottom": 48,
+                "top": 16
+              }
+            }
+          }
+        ],
+        "type": "table"
+      }
+    },
+    "max-potential-fid": {
+      "id": "max-potential-fid",
+      "title": "Max Potential First Input Delay",
+      "score": 0.96,
+      "displayValue": "100 ms"
+    },
+    "legacy-javascript-insight": {
+      "id": "legacy-javascript-insight",
+      "title": "Legacy JavaScript",
+      "score": 0,
+      "displayValue": "Est savings of 20 KiB",
+      "details": {
+        "headings": [
+          {
+            "valueType": "url",
+            "label": "URL",
+            "subItemsHeading": {
+              "valueType": "source-location",
+              "key": "location"
+            },
+            "key": "url"
+          },
+          {
+            "subItemsHeading": {
+              "key": "signal"
+            },
+            "key": null,
+            "valueType": "code"
+          },
+          {
+            "valueType": "bytes",
+            "label": "Wasted bytes",
+            "key": "wastedBytes"
+          }
+        ],
+        "debugData": {
+          "wastedBytes": 20755,
+          "type": "debugdata"
+        },
+        "type": "table",
+        "items": [
+          {
+            "wastedBytes": 20755,
+            "url": "https://checkout.razorpay.com/v1/checkout.js",
+            "subItems": {
+              "type": "subitems",
+              "items": [
+                {
+                  "signal": "@babel/plugin-transform-regenerator",
+                  "location": {
+                    "urlProvider": "network",
+                    "type": "source-location",
+                    "url": "https://checkout.razorpay.com/v1/checkout.js",
+                    "column": 121823,
+                    "line": 0
+                  }
+                },
+                {
+                  "signal": "@babel/plugin-transform-spread",
+                  "location": {
+                    "column": 129678,
+                    "line": 0,
+                    "url": "https://checkout.razorpay.com/v1/checkout.js",
+                    "type": "source-location",
+                    "urlProvider": "network"
+                  }
+                },
+                {
+                  "location": {
+                    "urlProvider": "network",
+                    "type": "source-location",
+                    "url": "https://checkout.razorpay.com/v1/checkout.js",
+                    "column": 89769,
+                    "line": 0
+                  },
+                  "signal": "Array.from"
+                },
+                {
+                  "signal": "Array.prototype.fill",
+                  "location": {
+                    "urlProvider": "network",
+                    "column": 90647,
+                    "line": 0,
+                    "url": "https://checkout.razorpay.com/v1/checkout.js",
+                    "type": "source-location"
+                  }
+                },
+                {
+                  "location": {
+                    "urlProvider": "network",
+                    "type": "source-location",
+                    "column": 91613,
+                    "line": 0,
+                    "url": "https://checkout.razorpay.com/v1/checkout.js"
+                  },
+                  "signal": "Array.prototype.filter"
+                },
+                {
+                  "signal": "Array.prototype.find",
+                  "location": {
+                    "column": 88425,
+                    "line": 0,
+                    "url": "https://checkout.razorpay.com/v1/checkout.js",
+                    "type": "source-location",
+                    "urlProvider": "network"
+                  }
+                },
+                {
+                  "signal": "Array.prototype.findIndex",
+                  "location": {
+                    "urlProvider": "network",
+                    "type": "source-location",
+                    "column": 89255,
+                    "line": 0,
+                    "url": "https://checkout.razorpay.com/v1/checkout.js"
+                  }
+                },
+                {
+                  "signal": "Array.prototype.flat",
+                  "location": {
+                    "urlProvider": "network",
+                    "type": "source-location",
+                    "column": 88780,
+                    "line": 0,
+                    "url": "https://checkout.razorpay.com/v1/checkout.js"
+                  }
+                },
+                {
+                  "signal": "Array.prototype.flatMap",
+                  "location": {
+                    "urlProvider": "network",
+                    "column": 89066,
+                    "line": 0,
+                    "url": "https://checkout.razorpay.com/v1/checkout.js",
+                    "type": "source-location"
+                  }
+                },
+                {
+                  "location": {
+                    "urlProvider": "network",
+                    "type": "source-location",
+                    "column": 88656,
+                    "line": 0,
+                    "url": "https://checkout.razorpay.com/v1/checkout.js"
+                  },
+                  "signal": "Array.prototype.includes"
+                },
+                {
+                  "location": {
+                    "type": "source-location",
+                    "url": "https://checkout.razorpay.com/v1/checkout.js",
+                    "column": 91001,
+                    "line": 0,
+                    "urlProvider": "network"
+                  },
+                  "signal": "Object.assign"
+                },
+                {
+                  "signal": "Object.entries",
+                  "location": {
+                    "urlProvider": "network",
+                    "type": "source-location",
+                    "column": 92164,
+                    "line": 0,
+                    "url": "https://checkout.razorpay.com/v1/checkout.js"
+                  }
+                },
+                {
+                  "location": {
+                    "type": "source-location",
+                    "column": 92294,
+                    "line": 0,
+                    "url": "https://checkout.razorpay.com/v1/checkout.js",
+                    "urlProvider": "network"
+                  },
+                  "signal": "Object.values"
+                },
+                {
+                  "location": {
+                    "urlProvider": "network",
+                    "column": 136557,
+                    "line": 0,
+                    "url": "https://checkout.razorpay.com/v1/checkout.js",
+                    "type": "source-location"
+                  },
+                  "signal": "Promise.allSettled"
+                },
+                {
+                  "signal": "String.prototype.endsWith",
+                  "location": {
+                    "column": 92815,
+                    "line": 0,
+                    "url": "https://checkout.razorpay.com/v1/checkout.js",
+                    "type": "source-location",
+                    "urlProvider": "network"
+                  }
+                },
+                {
+                  "location": {
+                    "type": "source-location",
+                    "column": 89530,
+                    "line": 0,
+                    "url": "https://checkout.razorpay.com/v1/checkout.js",
+                    "urlProvider": "network"
+                  },
+                  "signal": "String.prototype.includes"
+                },
+                {
+                  "signal": "String.prototype.replaceAll",
+                  "location": {
+                    "urlProvider": "network",
+                    "column": 92964,
+                    "line": 0,
+                    "url": "https://checkout.razorpay.com/v1/checkout.js",
+                    "type": "source-location"
+                  }
+                },
+                {
+                  "signal": "String.prototype.startsWith",
+                  "location": {
+                    "column": 89657,
+                    "line": 0,
+                    "url": "https://checkout.razorpay.com/v1/checkout.js",
+                    "type": "source-location",
+                    "urlProvider": "network"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "interactive": {
+      "id": "interactive",
+      "title": "Time to Interactive",
+      "score": 0.38,
+      "displayValue": "8.5 s"
+    },
+    "inspector-issues": {
+      "id": "inspector-issues",
+      "title": "Issues were logged in the `Issues` panel in Chrome Devtools",
+      "score": 0,
+      "details": {
+        "type": "table",
+        "items": [
+          {
+            "subItems": {
+              "items": [
+                {
+                  "url": "https://api.razorpay.com/v1/checkout/public?traffic_env=production&build=5a3d99b12f534f37d49054f8568055301b1194d0&build_v1=da4ee3f43a28ad81dba8ed06daf899a4520c691f&checkout_v2=1&new_session=1&unified_session_id=StfHoTKPFAu2dg"
+                }
+              ],
+              "type": "subitems"
+            },
+            "issueType": "Cookie"
+          }
+        ],
+        "headings": [
+          {
+            "valueType": "text",
+            "label": "Issue type",
+            "subItemsHeading": {
+              "valueType": "url",
+              "key": "url"
+            },
+            "key": "issueType"
+          }
+        ]
+      }
+    },
+    "heading-order": {
+      "id": "heading-order",
+      "title": "Heading elements are not in a sequentially-descending order",
+      "score": 0,
+      "details": {
+        "items": [
+          {
+            "node": {
+              "type": "node",
+              "nodeLabel": "Contact Information",
+              "explanation": "Fix any of the following:\n  Heading order invalid",
+              "boundingRect": {
+                "top": 715,
+                "height": 20,
+                "bottom": 735,
+                "left": 16,
+                "right": 396,
+                "width": 380
+              },
+              "snippet": "<h4 class=\"font-semibold mb-3 text-sm\">",
+              "selector": "div.lg:col-span-2 > div.space-y-6 > div > h4.font-semibold",
+              "path": "1,HTML,1,BODY,0,DIV,1,DIV,3,DIV,0,FOOTER,0,DIV,0,DIV,0,DIV,2,DIV,0,DIV,0,H4",
+              "lhId": "1-4-H4"
+            }
+          }
+        ],
+        "type": "table",
+        "debugData": {
+          "impact": "moderate",
+          "type": "debugdata",
+          "tags": [
+            "cat.semantics",
+            "best-practice"
+          ]
+        },
+        "headings": [
+          {
+            "valueType": "node",
+            "label": "Failing Elements",
+            "subItemsHeading": {
+              "valueType": "node",
+              "key": "relatedNode"
+            },
+            "key": "node"
+          }
+        ]
+      }
+    },
+    "network-dependency-tree-insight": {
+      "id": "network-dependency-tree-insight",
+      "title": "Network dependency tree",
+      "score": 0,
+      "details": {
+        "items": [
+          {
+            "value": {
+              "chains": {
+                "316F62A7AB9A97402965CE60B302D7EB": {
+                  "children": {
+                    "53.3": {
+                      "transferSize": 27311,
+                      "navStartToEndTime": 358,
+                      "children": {},
+                      "url": "https://buyaspot.in/assets/index-NvPDiAOM.css"
+                    },
+                    "53.2": {
+                      "children": {
+                        "53.11": {
+                          "url": "https://buyaspot.in/assets/supabase-sh0IBSG1.js",
+                          "navStartToEndTime": 664,
+                          "children": {
+                            "53.20": {
+                              "transferSize": 1243,
+                              "isLongest": true,
+                              "children": {},
+                              "navStartToEndTime": 3092,
+                              "url": "https://qbwnwsaktoctqufipgab.supabase.co/rest/v1/pixels?select=id%2Cx%2Cy%2Cowner_id%2Cimage_url%2Clink_url%2Calt_text%2Cblock_id%2Cprice_paid%2Cpurchased_at&owner_id=not.is.null&order=y.asc%2Cx.asc"
+                            },
+                            "53.22": {
+                              "children": {},
+                              "url": "https://qbwnwsaktoctqufipgab.supabase.co/rest/v1/pixel_blocks?select=id%2Cpixel_count%2Ctotal_price%2Ccreated_at&order=created_at.desc&limit=10",
+                              "transferSize": 1189,
+                              "navStartToEndTime": 3092
+                            },
+                            "53.17": {
+                              "children": {},
+                              "url": "https://buyaspot.in/assets/LiveTicker-lhHZFaH7.js",
+                              "transferSize": 5613,
+                              "navStartToEndTime": 1103
+                            }
+                          },
+                          "isLongest": true,
+                          "transferSize": 48539
+                        },
+                        "53.6": {
+                          "transferSize": 28088,
+                          "navStartToEndTime": 589,
+                          "children": {},
+                          "url": "https://buyaspot.in/assets/ui-core-a2qpXD_n.js"
+                        },
+                        "53.8": {
+                          "transferSize": 8704,
+                          "navStartToEndTime": 581,
+                          "children": {},
+                          "url": "https://buyaspot.in/assets/sonner-CZpM2exi.js"
+                        },
+                        "53.13": {
+                          "children": {},
+                          "url": "https://buyaspot.in/assets/image-tools-CXcmlBvZ.js",
+                          "transferSize": 7384,
+                          "navStartToEndTime": 560
+                        },
+                        "53.10": {
+                          "transferSize": 10944,
+                          "navStartToEndTime": 576,
+                          "children": {},
+                          "url": "https://buyaspot.in/assets/query-DQitdCIW.js"
+                        },
+                        "53.14": {
+                          "transferSize": 14274,
+                          "navStartToEndTime": 594,
+                          "children": {},
+                          "url": "https://buyaspot.in/assets/forms-BYQnG7sx.js"
+                        },
+                        "53.9": {
+                          "url": "https://buyaspot.in/assets/charts-DuJsZA4b.js",
+                          "children": {},
+                          "navStartToEndTime": 633,
+                          "transferSize": 96820
+                        },
+                        "53.7": {
+                          "transferSize": 53547,
+                          "navStartToEndTime": 645,
+                          "children": {},
+                          "url": "https://buyaspot.in/assets/react-vendor-BTkds9uv.js"
+                        },
+                        "53.12": {
+                          "navStartToEndTime": 547,
+                          "transferSize": 12291,
+                          "url": "https://buyaspot.in/assets/ui-extra-1qv0ihSX.js",
+                          "children": {}
+                        }
+                      },
+                      "isLongest": true,
+                      "transferSize": 99959,
+                      "url": "https://buyaspot.in/assets/index-CSDYb__M.js",
+                      "navStartToEndTime": 425
+                    }
+                  },
+                  "isLongest": true,
+                  "transferSize": 3445,
+                  "url": "https://buyaspot.in/",
+                  "navStartToEndTime": 163
+                }
+              },
+              "type": "network-tree",
+              "longestChain": {
+                "duration": 3092
+              }
+            },
+            "type": "list-section"
+          },
+          {
+            "value": {
+              "items": [
+                {
+                  "source": {
+                    "path": "1,HTML,0,HEAD,24,LINK",
+                    "lhId": "page-6-LINK",
+                    "snippet": "<link rel=\"preconnect\" href=\"https://fonts.googleapis.com\">",
+                    "selector": "head > link",
+                    "boundingRect": {
+                      "bottom": 0,
+                      "height": 0,
+                      "top": 0,
+                      "right": 0,
+                      "width": 0,
+                      "left": 0
+                    },
+                    "type": "node",
+                    "nodeLabel": "head > link"
+                  },
+                  "origin": "https://fonts.googleapis.com/",
+                  "subItems": {
+                    "items": [
+                      {
+                        "warning": "Unused preconnect. Only use preconnect for origins that the page is likely to request."
+                      }
+                    ],
+                    "type": "subitems"
+                  }
+                },
+                {
+                  "subItems": {
+                    "items": [
+                      {
+                        "warning": "Unused preconnect. Only use preconnect for origins that the page is likely to request."
+                      }
+                    ],
+                    "type": "subitems"
+                  },
+                  "source": {
+                    "path": "1,HTML,0,HEAD,25,LINK",
+                    "lhId": "page-7-LINK",
+                    "snippet": "<link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin=\"\">",
+                    "selector": "head > link",
+                    "boundingRect": {
+                      "height": 0,
+                      "bottom": 0,
+                      "top": 0,
+                      "width": 0,
+                      "right": 0,
+                      "left": 0
+                    },
+                    "type": "node",
+                    "nodeLabel": "head > link"
+                  },
+                  "origin": "https://fonts.gstatic.com/"
+                },
+                {
+                  "subItems": {
+                    "items": [],
+                    "type": "subitems"
+                  },
+                  "origin": "https://qbwnwsaktoctqufipgab.supabase.co/",
+                  "source": {
+                    "path": "1,HTML,0,HEAD,26,LINK",
+                    "lhId": "page-8-LINK",
+                    "selector": "head > link",
+                    "snippet": "<link rel=\"preconnect\" href=\"https://qbwnwsaktoctqufipgab.supabase.co\" crossorigin=\"\">",
+                    "boundingRect": {
+                      "top": 0,
+                      "bottom": 0,
+                      "height": 0,
+                      "left": 0,
+                      "right": 0,
+                      "width": 0
+                    },
+                    "type": "node",
+                    "nodeLabel": "head > link"
+                  }
+                }
+              ],
+              "type": "table",
+              "headings": [
+                {
+                  "label": "Origin",
+                  "subItemsHeading": {
+                    "key": "warning"
+                  },
+                  "key": "origin",
+                  "valueType": "text"
+                },
+                {
+                  "valueType": "node",
+                  "label": "Source",
+                  "key": "source"
+                }
+              ]
+            },
+            "description": "[preconnect](https://developer.chrome.com/docs/lighthouse/performance/uses-rel-preconnect/) hints help the browser establish a connection earlier in the page load, saving time when the first request for that origin is made. The following are the origins that the page preconnected to.",
+            "title": "Preconnected origins",
+            "type": "list-section"
+          },
+          {
+            "title": "Preconnect candidates",
+            "type": "list-section",
+            "value": {
+              "items": [
+                {
+                  "wastedMs": 310,
+                  "origin": "https://checkout.razorpay.com"
+                }
+              ],
+              "type": "table",
+              "headings": [
+                {
+                  "label": "Origin",
+                  "key": "origin",
+                  "valueType": "text"
+                },
+                {
+                  "label": "Est LCP savings",
+                  "key": "wastedMs",
+                  "valueType": "ms"
+                }
+              ]
+            },
+            "description": "Add [preconnect](https://developer.chrome.com/docs/lighthouse/performance/uses-rel-preconnect/) hints to your most important origins, but try to use no more than 4."
+          }
+        ],
+        "type": "list"
+      }
+    },
+    "color-contrast": {
+      "id": "color-contrast",
+      "title": "Background and foreground colors do not have a sufficient contrast ratio.",
+      "score": 0,
+      "details": {
+        "headings": [
+          {
+            "valueType": "node",
+            "key": "node",
+            "label": "Failing Elements",
+            "subItemsHeading": {
+              "valueType": "node",
+              "key": "relatedNode"
+            }
+          }
+        ],
+        "debugData": {
+          "tags": [
+            "cat.color",
+            "wcag2aa",
+            "wcag143",
+            "TTv5",
+            "TT13.c",
+            "EN-301-549",
+            "EN-9.1.4.3",
+            "ACT",
+            "RGAAv4",
+            "RGAA-3.2.1"
+          ],
+          "type": "debugdata",
+          "impact": "serious"
+        },
+        "type": "table",
+        "items": [
+          {
+            "subItems": {
+              "items": [
+                {
+                  "relatedNode": {
+                    "type": "node",
+                    "nodeLabel": "👋\nWelcome to Buy-A-Pixel! 🎨\n\nOwn your piece of the internet. Select pixels, upl…",
+                    "boundingRect": {
+                      "height": 292,
+                      "bottom": 558,
+                      "top": 266,
+                      "width": 380,
+                      "right": 396,
+                      "left": 16
+                    },
+                    "snippet": "<div class=\"bg-card border border-border rounded-2xl shadow-elegant max-w-md w-full p-…\">",
+                    "selector": "div#root > div.min-h-screen > div.fixed > div.bg-card",
+                    "path": "1,HTML,1,BODY,0,DIV,1,DIV,0,DIV,0,DIV",
+                    "lhId": "1-2-DIV"
+                  }
+                }
+              ],
+              "type": "subitems"
+            },
+            "node": {
+              "boundingRect": {
+                "top": 395,
+                "bottom": 473,
+                "height": 78,
+                "left": 41,
+                "width": 330,
+                "right": 371
+              },
+              "type": "node",
+              "nodeLabel": "Own your piece of the internet. Select pixels, upload your content, and showcas…",
+              "explanation": "Fix any of the following:\n  Element has insufficient color contrast of 4.25 (foreground color: #737b8c, background color: #ffffff, font size: 12.0pt (16px), font weight: normal). Expected contrast ratio of 4.5:1",
+              "path": "1,HTML,1,BODY,0,DIV,1,DIV,0,DIV,0,DIV,1,DIV,1,P",
+              "lhId": "1-1-P",
+              "selector": "div.fixed > div.bg-card > div.space-y-4 > p.text-muted-foreground",
+              "snippet": "<p class=\"text-muted-foreground leading-relaxed\">"
+            }
+          },
+          {
+            "node": {
+              "path": "1,HTML,1,BODY,0,DIV,1,DIV,0,DIV,0,DIV,2,DIV,1,DIV,0,BUTTON",
+              "lhId": "1-3-BUTTON",
+              "snippet": "<button class=\"inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm fo…\">",
+              "selector": "div.bg-card > div.flex > div.flex > button.inline-flex",
+              "boundingRect": {
+                "left": 290,
+                "right": 371,
+                "width": 81,
+                "top": 497,
+                "height": 36,
+                "bottom": 533
+              },
+              "nodeLabel": "Next",
+              "type": "node",
+              "explanation": "Fix any of the following:\n  Element has insufficient color contrast of 2.78 (foreground color: #ffffff, background color: #f97415, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1"
+            }
+          }
+        ]
+      }
+    },
+    "errors-in-console": {
+      "id": "errors-in-console",
+      "title": "Browser errors were logged to the console",
+      "score": 0,
+      "details": {
+        "items": [
+          {
+            "description": "WebSocket connection to 'wss://qbwnwsaktoctqufipgab.supabase.co/realtime/v1/websocket?apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFid253c2FrdG9jdHF1ZmlwZ2FiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ0MDk5MzksImV4cCI6MjA2OTk4NTkzOX0.5xrdhsGkVhVhFNkMVSyUkZe7hph0IMqlXQl9TdvvRM0&vsn=1.0.0' failed: Error in connection establishment: net::ERR_NAME_NOT_RESOLVED",
+            "sourceLocation": {
+              "urlProvider": "network",
+              "type": "source-location",
+              "column": 29028,
+              "line": 0,
+              "url": "https://buyaspot.in/assets/supabase-sh0IBSG1.js"
+            },
+            "source": "network"
+          },
+          {
+            "source": "network",
+            "sourceLocation": {
+              "urlProvider": "network",
+              "type": "source-location",
+              "column": 29028,
+              "line": 0,
+              "url": "https://buyaspot.in/assets/supabase-sh0IBSG1.js"
+            },
+            "description": "WebSocket connection to 'wss://qbwnwsaktoctqufipgab.supabase.co/realtime/v1/websocket?apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFid253c2FrdG9jdHF1ZmlwZ2FiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ0MDk5MzksImV4cCI6MjA2OTk4NTkzOX0.5xrdhsGkVhVhFNkMVSyUkZe7hph0IMqlXQl9TdvvRM0&vsn=1.0.0' failed: Error in connection establishment: net::ERR_NAME_NOT_RESOLVED"
+          },
+          {
+            "description": "WebSocket connection to 'wss://qbwnwsaktoctqufipgab.supabase.co/realtime/v1/websocket?apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFid253c2FrdG9jdHF1ZmlwZ2FiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ0MDk5MzksImV4cCI6MjA2OTk4NTkzOX0.5xrdhsGkVhVhFNkMVSyUkZe7hph0IMqlXQl9TdvvRM0&vsn=1.0.0' failed: Error in connection establishment: net::ERR_NAME_NOT_RESOLVED",
+            "sourceLocation": {
+              "type": "source-location",
+              "column": 29028,
+              "line": 0,
+              "url": "https://buyaspot.in/assets/supabase-sh0IBSG1.js",
+              "urlProvider": "network"
+            },
+            "source": "network"
+          },
+          {
+            "description": "WebSocket connection to 'wss://qbwnwsaktoctqufipgab.supabase.co/realtime/v1/websocket?apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFid253c2FrdG9jdHF1ZmlwZ2FiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ0MDk5MzksImV4cCI6MjA2OTk4NTkzOX0.5xrdhsGkVhVhFNkMVSyUkZe7hph0IMqlXQl9TdvvRM0&vsn=1.0.0' failed: Error in connection establishment: net::ERR_NAME_NOT_RESOLVED",
+            "sourceLocation": {
+              "urlProvider": "network",
+              "url": "https://buyaspot.in/assets/supabase-sh0IBSG1.js",
+              "column": 29028,
+              "line": 0,
+              "type": "source-location"
+            },
+            "source": "network"
+          }
+        ],
+        "type": "table",
+        "headings": [
+          {
+            "valueType": "source-location",
+            "label": "Source",
+            "key": "sourceLocation"
+          },
+          {
+            "key": "description",
+            "label": "Description",
+            "valueType": "code"
+          }
+        ]
+      }
+    },
+    "render-blocking-insight": {
+      "id": "render-blocking-insight",
+      "title": "Render blocking requests",
+      "score": 0.5,
+      "details": {
+        "type": "table",
+        "items": [
+          {
+            "url": "https://buyaspot.in/assets/index-NvPDiAOM.css",
+            "wastedMs": 318,
+            "totalBytes": 27311
+          }
+        ],
+        "headings": [
+          {
+            "valueType": "url",
+            "label": "URL",
+            "key": "url"
+          },
+          {
+            "valueType": "bytes",
+            "label": "Transfer Size",
+            "key": "totalBytes"
+          },
+          {
+            "valueType": "timespanMs",
+            "label": "Duration",
+            "key": "wastedMs"
+          }
+        ]
+      }
+    },
+    "cache-insight": {
+      "id": "cache-insight",
+      "title": "Use efficient cache lifetimes",
+      "score": 0,
+      "displayValue": "Est savings of 58 KiB",
+      "details": {
+        "items": [
+          {
+            "wastedBytes": 57766.899999999994,
+            "totalBytes": 58746,
+            "cacheLifetimeMs": 120000,
+            "url": "https://checkout.razorpay.com/v1/checkout.js"
+          },
+          {
+            "url": "https://cdn.razorpay.com/static/cx/razorpay-risk-detection/bundle.js",
+            "wastedBytes": 1961,
+            "totalBytes": 1961,
+            "cacheLifetimeMs": 0
+          }
+        ],
+        "debugData": {
+          "wastedBytes": 59727.899999999994,
+          "type": "debugdata"
+        },
+        "sortedBy": [
+          "wastedBytes"
+        ],
+        "type": "table",
+        "headings": [
+          {
+            "label": "Request",
+            "key": "url",
+            "valueType": "url"
+          },
+          {
+            "label": "Cache TTL",
+            "key": "cacheLifetimeMs",
+            "valueType": "ms",
+            "displayUnit": "duration"
+          },
+          {
+            "granularity": 1,
+            "key": "totalBytes",
+            "label": "Transfer Size",
+            "valueType": "bytes",
+            "displayUnit": "kb"
+          }
+        ],
+        "skipSumming": [
+          "cacheLifetimeMs"
+        ]
+      }
+    }
+  },
+  "desktop": {
+    "diagnostics": {
+      "id": "diagnostics",
+      "title": "Diagnostics",
+      "description": "Collection of useful page vitals.",
+      "score": 1,
+      "scoreDisplayMode": "informative",
+      "details": {
+        "type": "debugdata",
+        "items": [
+          {
+            "numScripts": 28,
+            "maxRtt": 12.728947499999999,
+            "numTasksOver500ms": 0,
+            "numRequests": 74,
+            "numTasksOver50ms": 3,
+            "numTasksOver100ms": 1,
+            "numTasks": 1283,
+            "mainDocumentTransferSize": 3441,
+            "totalTaskTime": 737.088999999992,
+            "rtt": 0.0010316695302888498,
+            "numTasksOver25ms": 5,
+            "totalByteWeight": 1169620,
+            "numFonts": 0,
+            "throughput": 8712253259.025402,
+            "numTasksOver10ms": 14,
+            "numStylesheets": 2,
+            "maxServerLatency": 6
+          }
+        ]
+      }
+    },
+    "mainthread-work-breakdown": {
+      "id": "mainthread-work-breakdown",
+      "title": "Minimizes main-thread work",
+      "description": "Consider reducing the time spent parsing, compiling and executing JS. You may find delivering smaller JS payloads helps with this. [Learn how to minimize main-thread work](https://developer.chrome.com/docs/lighthouse/performance/mainthread-work-breakdown/)",
+      "score": 1,
+      "scoreDisplayMode": "metricSavings",
+      "displayValue": "0.7 s",
+      "metricSavings": {
+        "TBT": 50
+      },
+      "details": {
+        "type": "table",
+        "sortedBy": [
+          "duration"
+        ],
+        "items": [
+          {
+            "groupLabel": "Script Evaluation",
+            "group": "scriptEvaluation",
+            "duration": 289.9129999999999
+          },
+          {
+            "duration": 184.53099999999944,
+            "groupLabel": "Other",
+            "group": "other"
+          },
+          {
+            "groupLabel": "Script Parsing & Compilation",
+            "group": "scriptParseCompile",
+            "duration": 120.26499999999999
+          },
+          {
+            "groupLabel": "Style & Layout",
+            "group": "styleLayout",
+            "duration": 108.09100000000001
+          },
+          {
+            "groupLabel": "Rendering",
+            "group": "paintCompositeRender",
+            "duration": 19.32300000000004
+          },
+          {
+            "duration": 10.099,
+            "groupLabel": "Parse HTML & CSS",
+            "group": "parseHTML"
+          },
+          {
+            "duration": 4.866999999999997,
+            "group": "garbageCollection",
+            "groupLabel": "Garbage Collection"
+          }
+        ],
+        "headings": [
+          {
+            "valueType": "text",
+            "label": "Category",
+            "key": "groupLabel"
+          },
+          {
+            "granularity": 1,
+            "valueType": "ms",
+            "label": "Time Spent",
+            "key": "duration"
+          }
+        ]
+      },
+      "numericValue": 737.0889999999994,
+      "numericUnit": "millisecond"
+    },
+    "unused-javascript": {
+      "id": "unused-javascript",
+      "title": "Reduce unused JavaScript",
+      "description": "Reduce unused JavaScript and defer loading scripts until they are required to decrease bytes consumed by network activity. [Learn how to reduce unused JavaScript](https://developer.chrome.com/docs/lighthouse/performance/unused-javascript/).",
+      "score": 0,
+      "scoreDisplayMode": "metricSavings",
+      "displayValue": "Est savings of 376 KiB",
+      "metricSavings": {
+        "LCP": 200,
+        "FCP": 50
+      },
+      "details": {
+        "items": [
+          {
+            "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-app-ed3ccc60.modern.js",
+            "wastedPercent": 99.22075026180721,
+            "totalBytes": 146970,
+            "wastedBytes": 145825
+          },
+          {
+            "wastedBytes": 78924,
+            "wastedPercent": 81.97232471325087,
+            "totalBytes": 96281,
+            "url": "https://buyaspot.in/assets/charts-DuJsZA4b.js"
+          },
+          {
+            "wastedBytes": 51217,
+            "wastedPercent": 51.55155659730099,
+            "totalBytes": 99350,
+            "url": "https://buyaspot.in/assets/index-CSDYb__M.js"
+          },
+          {
+            "totalBytes": 48002,
+            "url": "https://buyaspot.in/assets/supabase-sh0IBSG1.js",
+            "wastedPercent": 72.5907290839414,
+            "wastedBytes": 34845
+          },
+          {
+            "totalBytes": 26824,
+            "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-c4908e31.modern.js",
+            "wastedPercent": 99.52175606872741,
+            "wastedBytes": 26696
+          },
+          {
+            "totalBytes": 58006,
+            "url": "https://checkout.razorpay.com/v1/checkout.js",
+            "wastedPercent": 44.02961587906138,
+            "wastedBytes": 25540
+          },
+          {
+            "wastedBytes": 22157,
+            "wastedPercent": 80.42216177915932,
+            "totalBytes": 27551,
+            "url": "https://buyaspot.in/assets/ui-core-a2qpXD_n.js"
+          }
+        ],
+        "headings": [
+          {
+            "label": "URL",
+            "subItemsHeading": {
+              "valueType": "code",
+              "key": "source"
+            },
+            "valueType": "url",
+            "key": "url"
+          },
+          {
+            "key": "totalBytes",
+            "label": "Transfer Size",
+            "subItemsHeading": {
+              "key": "sourceBytes"
+            },
+            "valueType": "bytes"
+          },
+          {
+            "label": "Est Savings",
+            "subItemsHeading": {
+              "key": "sourceWastedBytes"
+            },
+            "valueType": "bytes",
+            "key": "wastedBytes"
+          }
+        ],
+        "overallSavingsMs": 210,
+        "overallSavingsBytes": 385204,
+        "type": "opportunity",
+        "debugData": {
+          "metricSavings": {
+            "LCP": 210,
+            "FCP": 40
+          },
+          "type": "debugdata"
+        },
+        "sortedBy": [
+          "wastedBytes"
+        ]
+      },
+      "numericValue": 210,
+      "numericUnit": "millisecond"
+    },
+    "unused-css-rules": {
+      "id": "unused-css-rules",
+      "title": "Reduce unused CSS",
+      "description": "Reduce unused rules from stylesheets and defer CSS not used for above-the-fold content to decrease bytes consumed by network activity. [Learn how to reduce unused CSS](https://developer.chrome.com/docs/lighthouse/performance/unused-css-rules/).",
+      "score": 0,
+      "scoreDisplayMode": "metricSavings",
+      "displayValue": "Est savings of 45 KiB",
+      "metricSavings": {
+        "LCP": 50,
+        "FCP": 50
+      },
+      "details": {
+        "debugData": {
+          "metricSavings": {
+            "LCP": 30,
+            "FCP": 30
+          },
+          "type": "debugdata"
+        },
+        "sortedBy": [
+          "wastedBytes"
+        ],
+        "type": "opportunity",
+        "overallSavingsBytes": 45815,
+        "overallSavingsMs": 30,
+        "headings": [
+          {
+            "valueType": "url",
+            "label": "URL",
+            "key": "url"
+          },
+          {
+            "label": "Transfer Size",
+            "valueType": "bytes",
+            "key": "totalBytes"
+          },
+          {
+            "key": "wastedBytes",
+            "valueType": "bytes",
+            "label": "Est Savings"
+          }
+        ],
+        "items": [
+          {
+            "wastedBytes": 23643,
+            "totalBytes": 26773,
+            "wastedPercent": 88.30876787960295,
+            "url": "https://buyaspot.in/assets/index-NvPDiAOM.css"
+          },
+          {
+            "wastedBytes": 22172,
+            "totalBytes": 22172,
+            "wastedPercent": 100,
+            "url": "https://checkout-static-next.razorpay.com/build/chunks/v2.06b43253.32143.css"
+          }
+        ]
+      },
+      "numericValue": 30,
+      "numericUnit": "millisecond"
+    },
+    "bootup-time": {
+      "id": "bootup-time",
+      "title": "JavaScript execution time",
+      "description": "Consider reducing the time spent parsing, compiling, and executing JS. You may find delivering smaller JS payloads helps with this. [Learn how to reduce Javascript execution time](https://developer.chrome.com/docs/lighthouse/performance/bootup-time/).",
+      "score": 1,
+      "scoreDisplayMode": "metricSavings",
+      "displayValue": "0.3 s",
+      "metricSavings": {
+        "TBT": 0
+      },
+      "details": {
+        "items": [
+          {
+            "scripting": 144.33300000000057,
+            "scriptParseCompile": 7.098,
+            "url": "https://buyaspot.in/assets/react-vendor-BTkds9uv.js",
+            "total": 239.55200000000056
+          },
+          {
+            "scripting": 4.777999999999993,
+            "scriptParseCompile": 0,
+            "total": 120.59499999999967,
+            "url": "Unattributable"
+          },
+          {
+            "scriptParseCompile": 0.137,
+            "total": 117.5779999999999,
+            "url": "https://buyaspot.in/",
+            "scripting": 38.04099999999996
+          },
+          {
+            "url": "https://checkout-static-next.razorpay.com/build/chunks/v2-entry-app-ed3ccc60.modern.js",
+            "total": 55.773,
+            "scriptParseCompile": 26.168,
+            "scripting": 17.502
+          },
+          {
+            "total": 53.952999999999946,
+            "url": "https://checkout.razorpay.com/v1/checkout.js",
+            "scriptParseCompile": 10.491,
+            "scripting": 42.27899999999995
+          }
+        ],
+        "headings": [
+          {
+            "label": "URL",
+            "valueType": "url",
+            "key": "url"
+          },
+          {
+            "key": "total",
+            "valueType": "ms",
+            "granularity": 1,
+            "label": "Total CPU Time"
+          },
+          {
+            "key": "scripting",
+            "valueType": "ms",
+            "granularity": 1,
+            "label": "Script Evaluation"
+          },
+          {
+            "label": "Script Parse",
+            "valueType": "ms",
+            "granularity": 1,
+            "key": "scriptParseCompile"
+          }
+        ],
+        "type": "table",
+        "sortedBy": [
+          "total"
+        ],
+        "summary": {
+          "wastedMs": 290.8270000000005
+        }
+      },
+      "numericValue": 290.8270000000005,
+      "numericUnit": "millisecond"
+    },
+    "resource-summary": {
+      "id": "resource-summary",
+      "title": "Resources Summary",
+      "description": "Aggregates all network requests and groups them by type",
+      "score": 1,
+      "scoreDisplayMode": "informative",
+      "details": {
+        "type": "table",
+        "items": [
+          {
+            "requestCount": 74,
+            "label": "Total",
+            "resourceType": "total",
+            "transferSize": 1169620
+          },
+          {
+            "requestCount": 28,
+            "label": "Script",
+            "resourceType": "script",
+            "transferSize": 784812
+          },
+          {
+            "transferSize": 268997,
+            "requestCount": 41,
+            "label": "Other",
+            "resourceType": "other"
+          },
+          {
+            "resourceType": "image",
+            "requestCount": 1,
+            "label": "Image",
+            "transferSize": 59615
+          },
+          {
+            "resourceType": "stylesheet",
+            "requestCount": 2,
+            "label": "Stylesheet",
+            "transferSize": 50201
+          },
+          {
+            "transferSize": 5995,
+            "label": "Document",
+            "requestCount": 2,
+            "resourceType": "document"
+          },
+          {
+            "transferSize": 0,
+            "resourceType": "media",
+            "requestCount": 0,
+            "label": "Media"
+          },
+          {
+            "transferSize": 0,
+            "resourceType": "font",
+            "requestCount": 0,
+            "label": "Font"
+          },
+          {
+            "requestCount": 60,
+            "label": "Third-party",
+            "resourceType": "third-party",
+            "transferSize": 693138
+          }
+        ],
+        "headings": [
+          {
+            "label": "Resource Type",
+            "valueType": "text",
+            "key": "label"
+          },
+          {
+            "key": "requestCount",
+            "label": "Requests",
+            "valueType": "numeric"
+          },
+          {
+            "key": "transferSize",
+            "valueType": "bytes",
+            "label": "Transfer Size"
+          }
+        ]
+      }
+    },
+    "network-server-latency": {
+      "id": "network-server-latency",
+      "title": "Server Backend Latencies",
+      "description": "Server latencies can impact web performance. If the server latency of an origin is high, it's an indication the server is overloaded or has poor backend performance. [Learn more about server response time](https://hpbn.co/primer-on-web-performance/#analyzing-the-resource-waterfall).",
+      "score": 1,
+      "scoreDisplayMode": "informative",
+      "displayValue": "10 ms",
+      "details": {
+        "items": [
+          {
+            "origin": "https://checkout.razorpay.com",
+            "serverResponseTime": 6
+          },
+          {
+            "serverResponseTime": 1.5,
+            "origin": "https://buyaspot.in"
+          },
+          {
+            "serverResponseTime": 1,
+            "origin": "https://api.razorpay.com"
+          },
+          {
+            "serverResponseTime": 1,
+            "origin": "https://checkout-static-next.razorpay.com"
+          },
+          {
+            "serverResponseTime": 0.5,
+            "origin": "https://qbwnwsaktoctqufipgab.supabase.co"
+          },
+          {
+            "serverResponseTime": 0,
+            "origin": "https://cdn.razorpay.com"
+          }
+        ],
+        "headings": [
+          {
+            "key": "origin",
+            "label": "URL",
+            "valueType": "text"
+          },
+          {
+            "granularity": 1,
+            "valueType": "ms",
+            "label": "Time Spent",
+            "key": "serverResponseTime"
+          }
+        ],
+        "sortedBy": [
+          "serverResponseTime"
+        ],
+        "type": "table"
+      },
+      "numericValue": 6,
+      "numericUnit": "millisecond"
+    },
+    "render-blocking-insight": {
+      "id": "render-blocking-insight",
+      "title": "Render blocking requests",
+      "score": 0,
+      "displayValue": "Est savings of 90 ms",
+      "details": {
+        "items": [
+          {
+            "wastedMs": 95,
+            "totalBytes": 27307,
+            "url": "https://buyaspot.in/assets/index-NvPDiAOM.css"
+          }
+        ],
+        "headings": [
+          {
+            "valueType": "url",
+            "label": "URL",
+            "key": "url"
+          },
+          {
+            "key": "totalBytes",
+            "valueType": "bytes",
+            "label": "Transfer Size"
+          },
+          {
+            "key": "wastedMs",
+            "label": "Duration",
+            "valueType": "timespanMs"
+          }
+        ],
+        "type": "table"
+      }
+    },
+    "color-contrast": {
+      "id": "color-contrast",
+      "title": "Background and foreground colors do not have a sufficient contrast ratio.",
+      "score": 0,
+      "details": {
+        "debugData": {
+          "tags": [
+            "cat.color",
+            "wcag2aa",
+            "wcag143",
+            "TTv5",
+            "TT13.c",
+            "EN-301-549",
+            "EN-9.1.4.3",
+            "ACT",
+            "RGAAv4",
+            "RGAA-3.2.1"
+          ],
+          "impact": "serious",
+          "type": "debugdata"
+        },
+        "items": [
+          {
+            "subItems": {
+              "type": "subitems",
+              "items": [
+                {
+                  "relatedNode": {
+                    "snippet": "<div class=\"bg-card border border-border rounded-2xl shadow-elegant max-w-md w-full p-…\">",
+                    "path": "1,HTML,1,BODY,0,DIV,1,DIV,0,DIV,0,DIV",
+                    "lhId": "1-2-DIV",
+                    "nodeLabel": "👋\nWelcome to Buy-A-Pixel! 🎨\n\nOwn your piece of the internet. Select pixels, upl…",
+                    "selector": "div#root > div.min-h-screen > div.fixed > div.bg-card",
+                    "type": "node",
+                    "boundingRect": {
+                      "width": 448,
+                      "top": 337,
+                      "left": 447,
+                      "right": 895,
+                      "bottom": 603,
+                      "height": 266
+                    }
+                  }
+                }
+              ]
+            },
+            "node": {
+              "snippet": "<p class=\"text-muted-foreground leading-relaxed\">",
+              "explanation": "Fix any of the following:\n  Element has insufficient color contrast of 4.25 (foreground color: #737b8c, background color: #ffffff, font size: 12.0pt (16px), font weight: normal). Expected contrast ratio of 4.5:1",
+              "nodeLabel": "Own your piece of the internet. Select pixels, upload your content, and showcas…",
+              "path": "1,HTML,1,BODY,0,DIV,1,DIV,0,DIV,0,DIV,1,DIV,1,P",
+              "lhId": "1-1-P",
+              "type": "node",
+              "boundingRect": {
+                "left": 472,
+                "top": 466,
+                "width": 398,
+                "height": 52,
+                "bottom": 518,
+                "right": 870
+              },
+              "selector": "div.fixed > div.bg-card > div.space-y-4 > p.text-muted-foreground"
+            }
+          },
+          {
+            "node": {
+              "path": "1,HTML,1,BODY,0,DIV,1,DIV,0,DIV,0,DIV,2,DIV,1,DIV,0,BUTTON",
+              "lhId": "1-3-BUTTON",
+              "nodeLabel": "Next",
+              "selector": "div.bg-card > div.flex > div.flex > button.inline-flex",
+              "type": "node",
+              "boundingRect": {
+                "width": 81,
+                "top": 542,
+                "left": 789,
+                "right": 870,
+                "bottom": 578,
+                "height": 36
+              },
+              "snippet": "<button class=\"inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm fo…\">",
+              "explanation": "Fix any of the following:\n  Element has insufficient color contrast of 2.78 (foreground color: #ffffff, background color: #f97415, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1"
+            }
+          },
+          {
+            "node": {
+              "snippet": "<div class=\"items-center rounded-full border px-2.5 py-0.5 transition-colors focus:out…\">",
+              "explanation": "Fix any of the following:\n  Element has insufficient color contrast of 3.26 (foreground color: #ffffff, background color: #1f8fff, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 4.5:1",
+              "nodeLabel": "₹99+",
+              "path": "1,HTML,1,BODY,0,DIV,1,DIV,1,HEADER,0,DIV,0,A,2,DIV",
+              "lhId": "1-4-DIV",
+              "boundingRect": {
+                "left": 203,
+                "width": 49,
+                "top": 21,
+                "height": 22,
+                "right": 253,
+                "bottom": 43
+              },
+              "selector": "header.sticky > div.flex > a.flex > div.items-center",
+              "type": "node"
+            }
+          },
+          {
+            "node": {
+              "snippet": "<a aria-current=\"page\" class=\"inline-flex items-center justify-center whitespace-nowrap text-sm ring-off…\" href=\"/\">",
+              "explanation": "Fix any of the following:\n  Element has insufficient color contrast of 2.51 (foreground color: #f97415, background color: #fef1e8, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1",
+              "nodeLabel": "Buy Pixels",
+              "path": "1,HTML,1,BODY,0,DIV,1,DIV,1,HEADER,0,DIV,1,NAV,0,A",
+              "lhId": "1-5-A",
+              "boundingRect": {
+                "right": 420,
+                "bottom": 50,
+                "height": 36,
+                "top": 14,
+                "width": 119,
+                "left": 302
+              },
+              "selector": "header.sticky > div.flex > nav.hidden > a.inline-flex",
+              "type": "node"
+            },
+            "subItems": {
+              "items": [
+                {
+                  "relatedNode": {
+                    "snippet": "<header class=\"sticky top-0 z-50 w-full border-b border-border/40 backdrop-blur-xl transi…\" role=\"banner\">",
+                    "boundingRect": {
+                      "top": 0,
+                      "width": 1342,
+                      "left": 0,
+                      "right": 1342,
+                      "bottom": 65,
+                      "height": 65
+                    },
+                    "selector": "body > div#root > div.min-h-screen > header.sticky",
+                    "type": "node",
+                    "nodeLabel": "BuyASpot\n₹99+\nBuy Pixels\nScan\nMarketplace\nLeaderboard\nBlog\nAbout\nHelp\nContact\nS…",
+                    "path": "1,HTML,1,BODY,0,DIV,1,DIV,1,HEADER",
+                    "lhId": "1-6-HEADER"
+                  }
+                },
+                {
+                  "relatedNode": {
+                    "snippet": "<div class=\"fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center jus…\">",
+                    "path": "1,HTML,1,BODY,0,DIV,1,DIV,0,DIV",
+                    "lhId": "1-7-DIV",
+                    "nodeLabel": "👋\nWelcome to Buy-A-Pixel! 🎨\n\nOwn your piece of the internet. Select pixels, upl…",
+                    "type": "node",
+                    "boundingRect": {
+                      "width": 1342,
+                      "top": 0,
+                      "left": 0,
+                      "right": 1342,
+                      "bottom": 940,
+                      "height": 940
+                    },
+                    "selector": "body > div#root > div.min-h-screen > div.fixed"
+                  }
+                },
+                {
+                  "relatedNode": {
+                    "snippet": "<div class=\"min-h-screen bg-background flex flex-col\">",
+                    "path": "1,HTML,1,BODY,0,DIV,1,DIV",
+                    "lhId": "1-8-DIV",
+                    "nodeLabel": "👋\nWelcome to Buy-A-Pixel! 🎨\n\nOwn your piece of the internet. Select pixels, upl…",
+                    "boundingRect": {
+                      "height": 941,
+                      "bottom": 941,
+                      "right": 1342,
+                      "left": 0,
+                      "top": 0,
+                      "width": 1342
+                    },
+                    "selector": "body > div#root > div.min-h-screen",
+                    "type": "node"
+                  }
+                }
+              ],
+              "type": "subitems"
+            }
+          }
+        ],
+        "headings": [
+          {
+            "key": "node",
+            "label": "Failing Elements",
+            "subItemsHeading": {
+              "valueType": "node",
+              "key": "relatedNode"
+            },
+            "valueType": "node"
+          }
+        ],
+        "type": "table"
+      }
+    },
+    "cumulative-layout-shift": {
+      "id": "cumulative-layout-shift",
+      "title": "Cumulative Layout Shift",
+      "score": 0.76,
+      "displayValue": "0.148",
+      "details": {
+        "items": [
+          {
+            "newEngineResultDiffered": false,
+            "newEngineResult": {
+              "cumulativeLayoutShiftMainFrame": 0.147852,
+              "cumulativeLayoutShift": 0.147852
+            },
+            "cumulativeLayoutShiftMainFrame": 0.147852
+          }
+        ],
+        "type": "debugdata"
+      }
+    },
+    "network-dependency-tree-insight": {
+      "id": "network-dependency-tree-insight",
+      "title": "Network dependency tree",
+      "score": 0,
+      "details": {
+        "type": "list",
+        "items": [
+          {
+            "type": "list-section",
+            "value": {
+              "longestChain": {
+                "duration": 2934
+              },
+              "chains": {
+                "60E6B1409CA4914DA743C369859AB1D2": {
+                  "url": "https://buyaspot.in/",
+                  "isLongest": true,
+                  "navStartToEndTime": 248,
+                  "children": {
+                    "49.3": {
+                      "children": {},
+                      "transferSize": 27307,
+                      "navStartToEndTime": 495,
+                      "url": "https://buyaspot.in/assets/index-NvPDiAOM.css"
+                    },
+                    "49.2": {
+                      "url": "https://buyaspot.in/assets/index-CSDYb__M.js",
+                      "isLongest": true,
+                      "navStartToEndTime": 488,
+                      "children": {
+                        "49.14": {
+                          "navStartToEndTime": 764,
+                          "transferSize": 14270,
+                          "children": {},
+                          "url": "https://buyaspot.in/assets/forms-BYQnG7sx.js"
+                        },
+                        "49.10": {
+                          "children": {},
+                          "transferSize": 10940,
+                          "navStartToEndTime": 729,
+                          "url": "https://buyaspot.in/assets/query-DQitdCIW.js"
+                        },
+                        "49.6": {
+                          "url": "https://buyaspot.in/assets/ui-core-a2qpXD_n.js",
+                          "navStartToEndTime": 727,
+                          "children": {},
+                          "transferSize": 28084
+                        },
+                        "49.11": {
+                          "url": "https://buyaspot.in/assets/supabase-sh0IBSG1.js",
+                          "children": {
+                            "49.22": {
+                              "url": "https://qbwnwsaktoctqufipgab.supabase.co/rest/v1/pixel_blocks?select=id%2Cpixel_count%2Ctotal_price%2Ccreated_at&order=created_at.desc&limit=10",
+                              "isLongest": true,
+                              "navStartToEndTime": 2934,
+                              "transferSize": 1188,
+                              "children": {}
+                            },
+                            "49.17": {
+                              "url": "https://buyaspot.in/assets/LiveTicker-lhHZFaH7.js",
+                              "navStartToEndTime": 1190,
+                              "children": {},
+                              "transferSize": 5609
+                            },
+                            "49.20": {
+                              "url": "https://qbwnwsaktoctqufipgab.supabase.co/rest/v1/pixels?select=id%2Cx%2Cy%2Cowner_id%2Cimage_url%2Clink_url%2Calt_text%2Cblock_id%2Cprice_paid%2Cpurchased_at&owner_id=not.is.null&order=y.asc%2Cx.asc",
+                              "navStartToEndTime": 1954,
+                              "children": {},
+                              "transferSize": 1244
+                            }
+                          },
+                          "transferSize": 48535,
+                          "isLongest": true,
+                          "navStartToEndTime": 761
+                        },
+                        "49.8": {
+                          "url": "https://buyaspot.in/assets/sonner-CZpM2exi.js",
+                          "children": {},
+                          "transferSize": 8700,
+                          "navStartToEndTime": 732
+                        },
+                        "49.13": {
+                          "children": {},
+                          "transferSize": 7380,
+                          "navStartToEndTime": 730,
+                          "url": "https://buyaspot.in/assets/image-tools-CXcmlBvZ.js"
+                        },
+                        "49.12": {
+                          "navStartToEndTime": 754,
+                          "children": {},
+                          "transferSize": 12287,
+                          "url": "https://buyaspot.in/assets/ui-extra-1qv0ihSX.js"
+                        },
+                        "49.7": {
+                          "url": "https://buyaspot.in/assets/react-vendor-BTkds9uv.js",
+                          "navStartToEndTime": 713,
+                          "children": {},
+                          "transferSize": 53543
+                        },
+                        "49.9": {
+                          "url": "https://buyaspot.in/assets/charts-DuJsZA4b.js",
+                          "navStartToEndTime": 751,
+                          "children": {},
+                          "transferSize": 96816
+                        }
+                      },
+                      "transferSize": 99955
+                    }
+                  },
+                  "transferSize": 3441
+                }
+              },
+              "type": "network-tree"
+            }
+          },
+          {
+            "type": "list-section",
+            "description": "[preconnect](https://developer.chrome.com/docs/lighthouse/performance/uses-rel-preconnect/) hints help the browser establish a connection earlier in the page load, saving time when the first request for that origin is made. The following are the origins that the page preconnected to.",
+            "value": {
+              "type": "table",
+              "items": [
+                {
+                  "subItems": {
+                    "type": "subitems",
+                    "items": [
+                      {
+                        "warning": "Unused preconnect. Only use preconnect for origins that the page is likely to request."
+                      }
+                    ]
+                  },
+                  "source": {
+                    "snippet": "<link rel=\"preconnect\" href=\"https://fonts.googleapis.com\">",
+                    "path": "1,HTML,0,HEAD,24,LINK",
+                    "lhId": "page-5-LINK",
+                    "nodeLabel": "head > link",
+                    "boundingRect": {
+                      "left": 0,
+                      "width": 0,
+                      "top": 0,
+                      "height": 0,
+                      "right": 0,
+                      "bottom": 0
+                    },
+                    "selector": "head > link",
+                    "type": "node"
+                  },
+                  "origin": "https://fonts.googleapis.com/"
+                },
+                {
+                  "subItems": {
+                    "items": [
+                      {
+                        "warning": "Unused preconnect. Only use preconnect for origins that the page is likely to request."
+                      }
+                    ],
+                    "type": "subitems"
+                  },
+                  "source": {
+                    "snippet": "<link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin=\"\">",
+                    "path": "1,HTML,0,HEAD,25,LINK",
+                    "lhId": "page-6-LINK",
+                    "nodeLabel": "head > link",
+                    "boundingRect": {
+                      "width": 0,
+                      "top": 0,
+                      "left": 0,
+                      "right": 0,
+                      "bottom": 0,
+                      "height": 0
+                    },
+                    "selector": "head > link",
+                    "type": "node"
+                  },
+                  "origin": "https://fonts.gstatic.com/"
+                },
+                {
+                  "subItems": {
+                    "type": "subitems",
+                    "items": [
+                      {
+                        "warning": "Unused preconnect. Check that the crossorigin attribute is used properly."
+                      }
+                    ]
+                  },
+                  "source": {
+                    "boundingRect": {
+                      "left": 0,
+                      "top": 0,
+                      "width": 0,
+                      "height": 0,
+                      "bottom": 0,
+                      "right": 0
+                    },
+                    "selector": "head > link",
+                    "type": "node",
+                    "nodeLabel": "head > link",
+                    "path": "1,HTML,0,HEAD,26,LINK",
+                    "lhId": "page-7-LINK",
+                    "snippet": "<link rel=\"preconnect\" href=\"https://qbwnwsaktoctqufipgab.supabase.co\" crossorigin=\"\">"
+                  },
+                  "origin": "https://qbwnwsaktoctqufipgab.supabase.co/"
+                }
+              ],
+              "headings": [
+                {
+                  "valueType": "text",
+                  "label": "Origin",
+                  "subItemsHeading": {
+                    "key": "warning"
+                  },
+                  "key": "origin"
+                },
+                {
+                  "label": "Source",
+                  "valueType": "node",
+                  "key": "source"
+                }
+              ]
+            },
+            "title": "Preconnected origins"
+          },
+          {
+            "description": "Add [preconnect](https://developer.chrome.com/docs/lighthouse/performance/uses-rel-preconnect/) hints to your most important origins, but try to use no more than 4.",
+            "type": "list-section",
+            "value": {
+              "items": [
+                {
+                  "origin": "https://qbwnwsaktoctqufipgab.supabase.co",
+                  "wastedMs": 91
+                },
+                {
+                  "origin": "https://checkout.razorpay.com",
+                  "wastedMs": 89
+                },
+                {
+                  "origin": "https://cdn.razorpay.com",
+                  "wastedMs": 80
+                }
+              ],
+              "headings": [
+                {
+                  "label": "Origin",
+                  "valueType": "text",
+                  "key": "origin"
+                },
+                {
+                  "key": "wastedMs",
+                  "label": "Est LCP savings",
+                  "valueType": "ms"
+                }
+              ],
+              "type": "table"
+            },
+            "title": "Preconnect candidates"
+          }
+        ]
+      }
+    },
+    "max-potential-fid": {
+      "id": "max-potential-fid",
+      "title": "Max Potential First Input Delay",
+      "score": 0.99,
+      "displayValue": "70 ms"
+    },
+    "errors-in-console": {
+      "id": "errors-in-console",
+      "title": "Browser errors were logged to the console",
+      "score": 0,
+      "details": {
+        "items": [
+          {
+            "sourceLocation": {
+              "urlProvider": "network",
+              "type": "source-location",
+              "column": 29028,
+              "line": 0,
+              "url": "https://buyaspot.in/assets/supabase-sh0IBSG1.js"
+            },
+            "description": "WebSocket connection to 'wss://qbwnwsaktoctqufipgab.supabase.co/realtime/v1/websocket?apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFid253c2FrdG9jdHF1ZmlwZ2FiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ0MDk5MzksImV4cCI6MjA2OTk4NTkzOX0.5xrdhsGkVhVhFNkMVSyUkZe7hph0IMqlXQl9TdvvRM0&vsn=1.0.0' failed: Error in connection establishment: net::ERR_NAME_NOT_RESOLVED",
+            "source": "network"
+          },
+          {
+            "sourceLocation": {
+              "line": 0,
+              "url": "https://buyaspot.in/assets/supabase-sh0IBSG1.js",
+              "type": "source-location",
+              "column": 29028,
+              "urlProvider": "network"
+            },
+            "description": "WebSocket connection to 'wss://qbwnwsaktoctqufipgab.supabase.co/realtime/v1/websocket?apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFid253c2FrdG9jdHF1ZmlwZ2FiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ0MDk5MzksImV4cCI6MjA2OTk4NTkzOX0.5xrdhsGkVhVhFNkMVSyUkZe7hph0IMqlXQl9TdvvRM0&vsn=1.0.0' failed: Error in connection establishment: net::ERR_NAME_NOT_RESOLVED",
+            "source": "network"
+          },
+          {
+            "source": "network",
+            "sourceLocation": {
+              "column": 29028,
+              "type": "source-location",
+              "line": 0,
+              "url": "https://buyaspot.in/assets/supabase-sh0IBSG1.js",
+              "urlProvider": "network"
+            },
+            "description": "WebSocket connection to 'wss://qbwnwsaktoctqufipgab.supabase.co/realtime/v1/websocket?apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFid253c2FrdG9jdHF1ZmlwZ2FiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ0MDk5MzksImV4cCI6MjA2OTk4NTkzOX0.5xrdhsGkVhVhFNkMVSyUkZe7hph0IMqlXQl9TdvvRM0&vsn=1.0.0' failed: Error in connection establishment: net::ERR_NAME_NOT_RESOLVED"
+          },
+          {
+            "sourceLocation": {
+              "column": 29028,
+              "type": "source-location",
+              "url": "https://buyaspot.in/assets/supabase-sh0IBSG1.js",
+              "line": 0,
+              "urlProvider": "network"
+            },
+            "description": "WebSocket connection to 'wss://qbwnwsaktoctqufipgab.supabase.co/realtime/v1/websocket?apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFid253c2FrdG9jdHF1ZmlwZ2FiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ0MDk5MzksImV4cCI6MjA2OTk4NTkzOX0.5xrdhsGkVhVhFNkMVSyUkZe7hph0IMqlXQl9TdvvRM0&vsn=1.0.0' failed: Error in connection establishment: net::ERR_NAME_NOT_RESOLVED",
+            "source": "network"
+          }
+        ],
+        "headings": [
+          {
+            "key": "sourceLocation",
+            "valueType": "source-location",
+            "label": "Source"
+          },
+          {
+            "key": "description",
+            "label": "Description",
+            "valueType": "code"
+          }
+        ],
+        "type": "table"
+      }
+    },
+    "image-delivery-insight": {
+      "id": "image-delivery-insight",
+      "title": "Improve image delivery",
+      "score": 0,
+      "displayValue": "Est savings of 58 KiB",
+      "details": {
+        "type": "table",
+        "debugData": {
+          "type": "debugdata",
+          "wastedBytes": 58895
+        },
+        "items": [
+          {
+            "url": "https://buyaspot.in/logo/light_theme_nobg.png",
+            "node": {
+              "type": "node",
+              "boundingRect": {
+                "top": 16,
+                "width": 32,
+                "left": 40,
+                "right": 72,
+                "bottom": 48,
+                "height": 32
+              },
+              "selector": "header.sticky > div.flex > a.flex > img.w-8",
+              "path": "1,HTML,1,BODY,0,DIV,1,DIV,1,HEADER,0,DIV,0,A,0,IMG",
+              "lhId": "page-0-IMG",
+              "nodeLabel": "BuyASpot Logo",
+              "snippet": "<img src=\"/logo/light_theme_nobg.png\" alt=\"BuyASpot Logo\" width=\"32\" height=\"32\" class=\"w-8 h-8 object-contain transition-all group-hover:scale-105 drop-shadow-sm\" fetchpriority=\"high\">"
+            },
+            "subItems": {
+              "items": [
+                {
+                  "wastedBytes": 17399,
+                  "reason": "Increasing the image compression factor could improve this image's download size."
+                },
+                {
+                  "wastedBytes": 58824,
+                  "reason": "This image file is larger than it needs to be (500x500) for its displayed dimensions (32x32). Use responsive images to reduce the image download size."
+                }
+              ],
+              "type": "subitems"
+            },
+            "wastedBytes": 58895,
+            "totalBytes": 59066
+          }
+        ],
+        "headings": [
+          {
+            "valueType": "node",
+            "key": "node"
+          },
+          {
+            "key": "url",
+            "valueType": "url",
+            "label": "URL",
+            "subItemsHeading": {
+              "valueType": "text",
+              "key": "reason"
+            }
+          },
+          {
+            "key": "totalBytes",
+            "label": "Resource Size",
+            "valueType": "bytes"
+          },
+          {
+            "subItemsHeading": {
+              "valueType": "bytes",
+              "key": "wastedBytes"
+            },
+            "label": "Est Savings",
+            "valueType": "bytes",
+            "key": "wastedBytes"
+          }
+        ]
+      }
+    },
+    "inspector-issues": {
+      "id": "inspector-issues",
+      "title": "Issues were logged in the `Issues` panel in Chrome Devtools",
+      "score": 0,
+      "details": {
+        "type": "table",
+        "items": [
+          {
+            "issueType": "Cookie",
+            "subItems": {
+              "type": "subitems",
+              "items": [
+                {
+                  "url": "https://api.razorpay.com/v1/checkout/public?traffic_env=production&build=5a3d99b12f534f37d49054f8568055301b1194d0&build_v1=da4ee3f43a28ad81dba8ed06daf899a4520c691f&checkout_v2=1&new_session=1&unified_session_id=StfI9T5IcwRI9k"
+                }
+              ]
+            }
+          }
+        ],
+        "headings": [
+          {
+            "key": "issueType",
+            "valueType": "text",
+            "label": "Issue type",
+            "subItemsHeading": {
+              "valueType": "url",
+              "key": "url"
+            }
+          }
+        ]
+      }
+    },
+    "cls-culprits-insight": {
+      "id": "cls-culprits-insight",
+      "title": "Layout shift culprits",
+      "score": 0,
+      "details": {
+        "type": "list",
+        "items": [
+          {
+            "items": [
+              {
+                "score": 0.147852,
+                "node": {
+                  "type": "text",
+                  "value": "Total"
+                }
+              },
+              {
+                "node": {
+                  "snippet": "<div class=\"absolute rounded-md\" style=\"left: 42px; top: 42px; width: 1316px; height: 1316px;\">",
+                  "type": "node",
+                  "boundingRect": {
+                    "height": 1316,
+                    "bottom": 1439,
+                    "right": 1156,
+                    "left": -160,
+                    "top": 123,
+                    "width": 1316
+                  },
+                  "selector": "div.relative > div > div.absolute > div.absolute",
+                  "nodeLabel": "div.relative > div > div.absolute > div.absolute",
+                  "path": "1,HTML,1,BODY,0,DIV,1,DIV,2,MAIN,0,DIV,0,DIV,0,DIV,0,DIV,0,DIV,0,DIV,2,DIV,0,DIV",
+                  "lhId": "page-2-DIV"
+                },
+                "score": 0.073926
+              },
+              {
+                "score": 0.073926,
+                "node": {
+                  "boundingRect": {
+                    "height": 1316,
+                    "right": 1156,
+                    "bottom": 1439,
+                    "left": -160,
+                    "width": 1316,
+                    "top": 123
+                  },
+                  "selector": "div.relative > div > div.absolute > div.absolute",
+                  "type": "node",
+                  "path": "1,HTML,1,BODY,0,DIV,1,DIV,2,MAIN,0,DIV,0,DIV,0,DIV,0,DIV,0,DIV,0,DIV,2,DIV,0,DIV",
+                  "lhId": "page-2-DIV",
+                  "nodeLabel": "div.relative > div > div.absolute > div.absolute",
+                  "snippet": "<div class=\"absolute rounded-md\" style=\"left: 42px; top: 42px; width: 1316px; height: 1316px;\">"
+                }
+              }
+            ],
+            "headings": [
+              {
+                "label": "Element",
+                "subItemsHeading": {
+                  "key": "extra"
+                },
+                "valueType": "node",
+                "key": "node"
+              },
+              {
+                "subItemsHeading": {
+                  "valueType": "text",
+                  "key": "cause"
+                },
+                "label": "Layout shift score",
+                "valueType": "numeric",
+                "granularity": 0.001,
+                "key": "score"
+              }
+            ],
+            "type": "table"
+          }
+        ]
+      }
+    },
+    "button-name": {
+      "id": "button-name",
+      "title": "Buttons do not have an accessible name",
+      "score": 0,
+      "details": {
+        "type": "table",
+        "debugData": {
+          "type": "debugdata",
+          "impact": "critical",
+          "tags": [
+            "cat.name-role-value",
+            "wcag2a",
+            "wcag412",
+            "section508",
+            "section508.22.a",
+            "TTv5",
+            "TT6.a",
+            "EN-301-549",
+            "EN-9.4.1.2",
+            "ACT",
+            "RGAAv4",
+            "RGAA-11.9.1"
+          ]
+        },
+        "items": [
+          {
+            "node": {
+              "selector": "div.fixed > div.bg-card > div.flex > button.inline-flex",
+              "type": "node",
+              "boundingRect": {
+                "height": 32,
+                "right": 870,
+                "bottom": 394,
+                "left": 838,
+                "width": 32,
+                "top": 362
+              },
+              "path": "1,HTML,1,BODY,0,DIV,1,DIV,0,DIV,0,DIV,0,DIV,1,BUTTON",
+              "lhId": "1-0-BUTTON",
+              "nodeLabel": "div.fixed > div.bg-card > div.flex > button.inline-flex",
+              "explanation": "Fix any of the following:\n  Element does not have inner text that is visible to screen readers\n  aria-label attribute does not exist or is empty\n  aria-labelledby attribute does not exist, references elements that do not exist or references elements that are empty\n  Element has no title attribute\n  Element does not have an implicit (wrapped) <label>\n  Element does not have an explicit <label>\n  Element's default semantics were not overridden with role=\"none\" or role=\"presentation\"",
+              "snippet": "<button class=\"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md…\">"
+            }
+          }
+        ],
+        "headings": [
+          {
+            "label": "Failing Elements",
+            "subItemsHeading": {
+              "valueType": "node",
+              "key": "relatedNode"
+            },
+            "valueType": "node",
+            "key": "node"
+          }
+        ]
+      }
+    },
+    "heading-order": {
+      "id": "heading-order",
+      "title": "Heading elements are not in a sequentially-descending order",
+      "score": 0,
+      "details": {
+        "debugData": {
+          "impact": "moderate",
+          "type": "debugdata",
+          "tags": [
+            "cat.semantics",
+            "best-practice"
+          ]
+        },
+        "items": [
+          {
+            "node": {
+              "snippet": "<h3 class=\"text-sm font-bold mb-4 text-foreground\">",
+              "explanation": "Fix any of the following:\n  Heading order invalid",
+              "nodeLabel": "Pricing Zones",
+              "path": "1,HTML,1,BODY,0,DIV,1,DIV,2,MAIN,2,DIV,1,DIV,0,DIV,0,DIV,2,DIV,0,H3",
+              "lhId": "1-9-H3",
+              "boundingRect": {
+                "right": 1309,
+                "bottom": 478,
+                "height": 20,
+                "top": 458,
+                "width": 253,
+                "left": 1056
+              },
+              "selector": "div.overflow-y-auto > div.p-4 > div.hidden > h3.text-sm",
+              "type": "node"
+            }
+          }
+        ],
+        "headings": [
+          {
+            "subItemsHeading": {
+              "valueType": "node",
+              "key": "relatedNode"
+            },
+            "label": "Failing Elements",
+            "valueType": "node",
+            "key": "node"
+          }
+        ],
+        "type": "table"
+      }
+    },
+    "label-content-name-mismatch": {
+      "id": "label-content-name-mismatch",
+      "title": "Elements with visible text labels do not have matching accessible names.",
+      "score": 0,
+      "details": {
+        "debugData": {
+          "type": "debugdata",
+          "impact": "serious",
+          "tags": [
+            "cat.semantics",
+            "wcag21a",
+            "wcag253",
+            "EN-301-549",
+            "EN-9.2.5.3",
+            "RGAAv4",
+            "RGAA-6.1.5",
+            "experimental"
+          ]
+        },
+        "items": [
+          {
+            "node": {
+              "type": "node",
+              "boundingRect": {
+                "width": 213,
+                "top": 16,
+                "left": 40,
+                "right": 253,
+                "bottom": 48,
+                "height": 32
+              },
+              "selector": "div.min-h-screen > header.sticky > div.flex > a.flex",
+              "nodeLabel": "BuyASpot\n₹99+",
+              "path": "1,HTML,1,BODY,0,DIV,1,DIV,1,HEADER,0,DIV,0,A",
+              "lhId": "1-10-A",
+              "explanation": "Fix any of the following:\n  Text inside the element is not included in the accessible name",
+              "snippet": "<a class=\"flex items-center gap-2.5 shrink-0 group focus:outline-none focus:ring-2 f…\" aria-label=\"BuyASpot home\" href=\"/\">"
+            }
+          }
+        ],
+        "headings": [
+          {
+            "key": "node",
+            "label": "Failing Elements",
+            "subItemsHeading": {
+              "valueType": "node",
+              "key": "relatedNode"
+            },
+            "valueType": "node"
+          }
+        ],
+        "type": "table"
+      }
+    },
+    "layout-shifts": {
+      "id": "layout-shifts",
+      "title": "Avoid large layout shifts",
+      "score": 0,
+      "displayValue": "2 layout shifts found",
+      "details": {
+        "items": [
+          {
+            "node": {
+              "boundingRect": {
+                "width": 1316,
+                "top": 123,
+                "left": -160,
+                "right": 1156,
+                "bottom": 1439,
+                "height": 1316
+              },
+              "selector": "div.relative > div > div.absolute > div.absolute",
+              "type": "node",
+              "path": "1,HTML,1,BODY,0,DIV,1,DIV,2,MAIN,0,DIV,0,DIV,0,DIV,0,DIV,0,DIV,0,DIV,2,DIV,0,DIV",
+              "lhId": "page-2-DIV",
+              "nodeLabel": "div.relative > div > div.absolute > div.absolute",
+              "snippet": "<div class=\"absolute rounded-md\" style=\"left: 42px; top: 42px; width: 1316px; height: 1316px;\">"
+            },
+            "score": 0.073926
+          },
+          {
+            "score": 0.073926,
+            "node": {
+              "nodeLabel": "div.relative > div > div.absolute > div.absolute",
+              "path": "1,HTML,1,BODY,0,DIV,1,DIV,2,MAIN,0,DIV,0,DIV,0,DIV,0,DIV,0,DIV,0,DIV,2,DIV,0,DIV",
+              "lhId": "page-2-DIV",
+              "boundingRect": {
+                "height": 1316,
+                "right": 1156,
+                "bottom": 1439,
+                "left": -160,
+                "top": 123,
+                "width": 1316
+              },
+              "selector": "div.relative > div > div.absolute > div.absolute",
+              "type": "node",
+              "snippet": "<div class=\"absolute rounded-md\" style=\"left: 42px; top: 42px; width: 1316px; height: 1316px;\">"
+            }
+          }
+        ],
+        "headings": [
+          {
+            "label": "Element",
+            "subItemsHeading": {
+              "key": "extra"
+            },
+            "valueType": "node",
+            "key": "node"
+          },
+          {
+            "label": "Layout shift score",
+            "subItemsHeading": {
+              "valueType": "text",
+              "key": "cause"
+            },
+            "granularity": 0.001,
+            "valueType": "numeric",
+            "key": "score"
+          }
+        ],
+        "type": "table"
+      }
+    },
+    "largest-contentful-paint": {
+      "id": "largest-contentful-paint",
+      "title": "Largest Contentful Paint",
+      "score": 0.77,
+      "displayValue": "1.6 s"
+    },
+    "speed-index": {
+      "id": "speed-index",
+      "title": "Speed Index",
+      "score": 0.78,
+      "displayValue": "1.6 s"
+    },
+    "cache-insight": {
+      "id": "cache-insight",
+      "title": "Use efficient cache lifetimes",
+      "score": 0,
+      "displayValue": "Est savings of 58 KiB",
+      "details": {
+        "items": [
+          {
+            "url": "https://checkout.razorpay.com/v1/checkout.js",
+            "totalBytes": 58774,
+            "cacheLifetimeMs": 120000,
+            "wastedBytes": 57794.43333333333
+          },
+          {
+            "wastedBytes": 1960,
+            "cacheLifetimeMs": 0,
+            "totalBytes": 1960,
+            "url": "https://cdn.razorpay.com/static/cx/razorpay-risk-detection/bundle.js"
+          }
+        ],
+        "headings": [
+          {
+            "valueType": "url",
+            "label": "Request",
+            "key": "url"
+          },
+          {
+            "label": "Cache TTL",
+            "displayUnit": "duration",
+            "valueType": "ms",
+            "key": "cacheLifetimeMs"
+          },
+          {
+            "key": "totalBytes",
+            "label": "Transfer Size",
+            "granularity": 1,
+            "displayUnit": "kb",
+            "valueType": "bytes"
+          }
+        ],
+        "skipSumming": [
+          "cacheLifetimeMs"
+        ],
+        "debugData": {
+          "type": "debugdata",
+          "wastedBytes": 59754.43333333333
+        },
+        "sortedBy": [
+          "wastedBytes"
+        ],
+        "type": "table"
+      }
+    },
+    "legacy-javascript-insight": {
+      "id": "legacy-javascript-insight",
+      "title": "Legacy JavaScript",
+      "score": 0,
+      "displayValue": "Est savings of 20 KiB",
+      "details": {
+        "type": "table",
+        "debugData": {
+          "wastedBytes": 20764,
+          "type": "debugdata"
+        },
+        "items": [
+          {
+            "url": "https://checkout.razorpay.com/v1/checkout.js",
+            "wastedBytes": 20764,
+            "subItems": {
+              "items": [
+                {
+                  "location": {
+                    "urlProvider": "network",
+                    "line": 0,
+                    "url": "https://checkout.razorpay.com/v1/checkout.js",
+                    "type": "source-location",
+                    "column": 121823
+                  },
+                  "signal": "@babel/plugin-transform-regenerator"
+                },
+                {
+                  "signal": "@babel/plugin-transform-spread",
+                  "location": {
+                    "urlProvider": "network",
+                    "url": "https://checkout.razorpay.com/v1/checkout.js",
+                    "line": 0,
+                    "type": "source-location",
+                    "column": 129678
+                  }
+                },
+                {
+                  "signal": "Array.from",
+                  "location": {
+                    "url": "https://checkout.razorpay.com/v1/checkout.js",
+                    "line": 0,
+                    "column": 89769,
+                    "type": "source-location",
+                    "urlProvider": "network"
+                  }
+                },
+                {
+                  "signal": "Array.prototype.fill",
+                  "location": {
+                    "type": "source-location",
+                    "column": 90647,
+                    "line": 0,
+                    "url": "https://checkout.razorpay.com/v1/checkout.js",
+                    "urlProvider": "network"
+                  }
+                },
+                {
+                  "location": {
+                    "urlProvider": "network",
+                    "type": "source-location",
+                    "column": 91613,
+                    "line": 0,
+                    "url": "https://checkout.razorpay.com/v1/checkout.js"
+                  },
+                  "signal": "Array.prototype.filter"
+                },
+                {
+                  "signal": "Array.prototype.find",
+                  "location": {
+                    "urlProvider": "network",
+                    "type": "source-location",
+                    "column": 88425,
+                    "url": "https://checkout.razorpay.com/v1/checkout.js",
+                    "line": 0
+                  }
+                },
+                {
+                  "location": {
+                    "urlProvider": "network",
+                    "url": "https://checkout.razorpay.com/v1/checkout.js",
+                    "line": 0,
+                    "type": "source-location",
+                    "column": 89255
+                  },
+                  "signal": "Array.prototype.findIndex"
+                },
+                {
+                  "location": {
+                    "urlProvider": "network",
+                    "line": 0,
+                    "url": "https://checkout.razorpay.com/v1/checkout.js",
+                    "column": 88780,
+                    "type": "source-location"
+                  },
+                  "signal": "Array.prototype.flat"
+                },
+                {
+                  "signal": "Array.prototype.flatMap",
+                  "location": {
+                    "urlProvider": "network",
+                    "type": "source-location",
+                    "column": 89066,
+                    "line": 0,
+                    "url": "https://checkout.razorpay.com/v1/checkout.js"
+                  }
+                },
+                {
+                  "location": {
+                    "urlProvider": "network",
+                    "type": "source-location",
+                    "column": 88656,
+                    "line": 0,
+                    "url": "https://checkout.razorpay.com/v1/checkout.js"
+                  },
+                  "signal": "Array.prototype.includes"
+                },
+                {
+                  "location": {
+                    "urlProvider": "network",
+                    "url": "https://checkout.razorpay.com/v1/checkout.js",
+                    "line": 0,
+                    "type": "source-location",
+                    "column": 91001
+                  },
+                  "signal": "Object.assign"
+                },
+                {
+                  "location": {
+                    "url": "https://checkout.razorpay.com/v1/checkout.js",
+                    "line": 0,
+                    "type": "source-location",
+                    "column": 92164,
+                    "urlProvider": "network"
+                  },
+                  "signal": "Object.entries"
+                },
+                {
+                  "signal": "Object.values",
+                  "location": {
+                    "url": "https://checkout.razorpay.com/v1/checkout.js",
+                    "line": 0,
+                    "column": 92294,
+                    "type": "source-location",
+                    "urlProvider": "network"
+                  }
+                },
+                {
+                  "location": {
+                    "urlProvider": "network",
+                    "line": 0,
+                    "url": "https://checkout.razorpay.com/v1/checkout.js",
+                    "column": 136557,
+                    "type": "source-location"
+                  },
+                  "signal": "Promise.allSettled"
+                },
+                {
+                  "signal": "String.prototype.endsWith",
+                  "location": {
+                    "type": "source-location",
+                    "column": 92815,
+                    "line": 0,
+                    "url": "https://checkout.razorpay.com/v1/checkout.js",
+                    "urlProvider": "network"
+                  }
+                },
+                {
+                  "location": {
+                    "line": 0,
+                    "url": "https://checkout.razorpay.com/v1/checkout.js",
+                    "column": 89530,
+                    "type": "source-location",
+                    "urlProvider": "network"
+                  },
+                  "signal": "String.prototype.includes"
+                },
+                {
+                  "location": {
+                    "column": 92964,
+                    "type": "source-location",
+                    "line": 0,
+                    "url": "https://checkout.razorpay.com/v1/checkout.js",
+                    "urlProvider": "network"
+                  },
+                  "signal": "String.prototype.replaceAll"
+                },
+                {
+                  "signal": "String.prototype.startsWith",
+                  "location": {
+                    "line": 0,
+                    "url": "https://checkout.razorpay.com/v1/checkout.js",
+                    "type": "source-location",
+                    "column": 89657,
+                    "urlProvider": "network"
+                  }
+                }
+              ],
+              "type": "subitems"
+            }
+          }
+        ],
+        "headings": [
+          {
+            "valueType": "url",
+            "label": "URL",
+            "subItemsHeading": {
+              "valueType": "source-location",
+              "key": "location"
+            },
+            "key": "url"
+          },
+          {
+            "valueType": "code",
+            "subItemsHeading": {
+              "key": "signal"
+            },
+            "key": null
+          },
+          {
+            "key": "wastedBytes",
+            "valueType": "bytes",
+            "label": "Wasted bytes"
+          }
+        ]
+      }
+    },
+    "forced-reflow-insight": {
+      "id": "forced-reflow-insight",
+      "title": "Forced reflow",
+      "score": 0,
+      "details": {
+        "type": "list",
+        "items": [
+          {
+            "type": "table",
+            "items": [
+              {
+                "reflowTime": 62.465,
+                "source": {
+                  "urlProvider": "network",
+                  "column": 9404,
+                  "type": "source-location",
+                  "url": "https://buyaspot.in/assets/react-vendor-BTkds9uv.js",
+                  "line": 1
+                }
+              }
+            ],
+            "headings": [
+              {
+                "key": "source",
+                "label": "Top function call",
+                "valueType": "source-location"
+              },
+              {
+                "key": "reflowTime",
+                "label": "Total reflow time",
+                "granularity": 1,
+                "valueType": "ms"
+              }
+            ]
+          },
+          {
+            "type": "table",
+            "items": [
+              {
+                "source": {
+                  "type": "source-location",
+                  "column": 119004,
+                  "line": 0,
+                  "url": "https://buyaspot.in/assets/index-CSDYb__M.js",
+                  "urlProvider": "network"
+                },
+                "reflowTime": 62.465
+              },
+              {
+                "source": {
+                  "value": "[unattributed]",
+                  "type": "text"
+                },
+                "reflowTime": 0.534
+              },
+              {
+                "reflowTime": 0.271,
+                "source": {
+                  "urlProvider": "network",
+                  "url": "https://checkout.razorpay.com/v1/checkout.js",
+                  "line": 0,
+                  "column": 107412,
+                  "type": "source-location"
+                }
+              }
+            ],
+            "headings": [
+              {
+                "label": "Source",
+                "valueType": "source-location",
+                "key": "source"
+              },
+              {
+                "granularity": 1,
+                "valueType": "ms",
+                "label": "Total reflow time",
+                "key": "reflowTime"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "interactive": {
+      "id": "interactive",
+      "title": "Time to Interactive",
+      "score": 0.99,
+      "displayValue": "1.6 s"
+    }
+  }
+}

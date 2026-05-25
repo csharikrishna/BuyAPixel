@@ -153,31 +153,38 @@ const MarketplacePage = () => {
   // Payment bypass flag — when true, skips Razorpay entirely
   const isPaymentBypassed = import.meta.env.VITE_BYPASS_PAYMENT === 'true';
 
-  // Load Razorpay script — skip when payment is bypassed
-  useEffect(() => {
-    if (isPaymentBypassed) {
-      setRazorpayLoaded(true);
-      return;
-    }
-
-    if (window.Razorpay) {
-      setRazorpayLoaded(true);
-      return;
-    }
-
-    const script = document.createElement('script');
-    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-    script.async = true;
-    script.onload = () => setRazorpayLoaded(true);
-    script.onerror = () => console.error('Failed to load Razorpay');
-    document.body.appendChild(script);
-
-    return () => {
-      if (document.body.contains(script)) {
-        document.body.removeChild(script);
+  // Lazy-load Razorpay script on demand [perf]
+  const loadRazorpayScript = (): Promise<void> => {
+    return new Promise((resolve, reject) => {
+      if (isPaymentBypassed) {
+        setRazorpayLoaded(true);
+        resolve();
+        return;
       }
-    };
-  }, [isPaymentBypassed]);
+      if (window.Razorpay) {
+        setRazorpayLoaded(true);
+        resolve();
+        return;
+      }
+
+      const existingScript = document.querySelector('script[src*="checkout.razorpay.com"]');
+      if (existingScript) {
+        if (window.Razorpay) { setRazorpayLoaded(true); resolve(); return; }
+        existingScript.addEventListener('load', () => { setRazorpayLoaded(true); resolve(); });
+        return;
+      }
+
+      const script = document.createElement('script');
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.async = true;
+      script.onload = () => { setRazorpayLoaded(true); resolve(); };
+      script.onerror = () => {
+        console.error('Failed to load Razorpay');
+        reject(new Error('Failed to load Razorpay'));
+      };
+      document.body.appendChild(script);
+    });
+  };
 
   // Fetch marketplace statistics
   const { data: marketplaceStats } = useQuery({
@@ -335,10 +342,15 @@ const MarketplacePage = () => {
     }
 
     if (!isPaymentBypassed && !razorpayLoaded) {
-      toast.error("Payment Not Ready", {
-        description: "Please wait while payment system loads",
-      });
-      return;
+      try {
+        toast.info("Loading payment gateway...");
+        await loadRazorpayScript();
+      } catch {
+        toast.error("Payment Not Ready", {
+          description: "Payment gateway failed to load. Please try again.",
+        });
+        return;
+      }
     }
 
     setIsPurchasing(listingId);

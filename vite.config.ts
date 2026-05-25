@@ -31,7 +31,7 @@ export default defineConfig(({ mode }) => ({
    },
 
    build: {
-      modulePreload: false,
+      modulePreload: { polyfill: false },
       outDir: "dist",
       emptyOutDir: true,
       sourcemap: false,
@@ -91,6 +91,8 @@ export default defineConfig(({ mode }) => ({
                'query': ['@tanstack/react-query'],
                // Sonner (toast) - frequently used
                'sonner': ['sonner'],
+               // Helmet (SEO) - used on every page but separable
+               'helmet': ['react-helmet-async'],
             },
          },
       },
