@@ -1360,8 +1360,6 @@ export const PurchasePreview = ({
           }
         }}
       >
-        {/* Required for Radix UI accessibility - DialogTitle must be direct child of DialogContent */}
-        <DialogTitle className="sr-only">Checkout</DialogTitle>
         <DialogHeader>
           <DialogTitle id="checkout-title" className="flex items-center gap-2">
             <ShoppingCart className="w-5 h-5 text-primary" aria-hidden="true" />
