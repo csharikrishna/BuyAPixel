@@ -316,7 +316,17 @@ export const VirtualizedPixelGrid = forwardRef<
 
     const handleContainerClick = useCallback(
       (event: React.MouseEvent) => {
-        if (dragDistance > GRID_CONFIG.DRAG_THRESHOLD || !isSelecting) return;
+        if (dragDistance > GRID_CONFIG.DRAG_THRESHOLD) return;
+        
+        if (!isSelecting) {
+          toast.info(
+            <span className="text-sm">
+              To buy pixels, you should click on the <strong className="text-emerald-600 dark:text-emerald-400 font-bold">Buy Pixels</strong> button to proceed.
+            </span>, 
+            { duration: 4000 }
+          );
+          return;
+        }
 
         const rect = containerRef.current?.getBoundingClientRect();
         if (!rect) return;
@@ -591,10 +601,10 @@ export const VirtualizedPixelGrid = forwardRef<
     const tooltipStatus =
       hoveredStatus === "restricted" ? "available" : (hoveredStatus ?? "available");
 
-    const cursor = !enableInteraction
-      ? "default"
-      : isDragging
-        ? "grabbing"
+    const cursor = isDragging
+      ? "grabbing"
+      : !enableInteraction
+        ? "default"
         : isSelecting
           ? "crosshair"
           : "grab";
@@ -609,13 +619,14 @@ export const VirtualizedPixelGrid = forwardRef<
           style={{
             width: "100%",
             height: "100%",
-            touchAction: enableInteraction ? "none" : "auto",
+            touchAction: "none",
             WebkitUserSelect: "none",
             cursor,
-            backgroundColor: "#f1f5f9",
+            backgroundColor: "#e8ecf1",
             backgroundImage:
-              "radial-gradient(circle at center, #e2e8f0 1px, transparent 1px)",
+              "linear-gradient(45deg, #dfe3e8 25%, transparent 25%), linear-gradient(-45deg, #dfe3e8 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #dfe3e8 75%), linear-gradient(-45deg, transparent 75%, #dfe3e8 75%)",
             backgroundSize: "20px 20px",
+            backgroundPosition: "0 0, 0 10px, 10px -10px, -10px 0px",
           }}
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
@@ -787,9 +798,9 @@ export const VirtualizedPixelGrid = forwardRef<
               return (
                 <div
                   key={`block-${block.blockId}`}
-                  role={block.linkUrl ? "button" : undefined}
-                  tabIndex={block.linkUrl ? 0 : -1}
-                  className={block.linkUrl ? "cursor-pointer" : ""}
+                  role="button"
+                  tabIndex={0}
+                  className="cursor-pointer"
                   style={{
                     position: "absolute",
                     left: Math.floor(block.minX * scaledPixelSize),
@@ -812,6 +823,7 @@ export const VirtualizedPixelGrid = forwardRef<
                   }}
                   onClick={(e) => {
                     e.stopPropagation();
+                    if (dragDistance > GRID_CONFIG.DRAG_THRESHOLD) return;
                     if (!isSelecting) {
                       // Open pixel info modal
                       const firstPixel = visiblePurchasedPixels.find(
@@ -857,9 +869,9 @@ export const VirtualizedPixelGrid = forwardRef<
               return (
                 <div
                   key={`sold-${id}`}
-                  role={link_url || image_url ? "button" : undefined}
-                  tabIndex={link_url || image_url ? 0 : -1}
-                  className={link_url || image_url ? "cursor-pointer" : ""}
+                  role="button"
+                  tabIndex={0}
+                  className="cursor-pointer"
                   style={{
                     position: "absolute",
                     left: Math.floor(x * scaledPixelSize),
@@ -885,6 +897,7 @@ export const VirtualizedPixelGrid = forwardRef<
                   }}
                   onClick={(e) => {
                     e.stopPropagation();
+                    if (dragDistance > GRID_CONFIG.DRAG_THRESHOLD) return;
                     if (!isSelecting) {
                       // Open pixel info modal for individual pixel
                       setInfoModalPixel(pixel);

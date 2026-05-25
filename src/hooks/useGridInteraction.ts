@@ -1,6 +1,5 @@
 import { useState, useCallback, useRef, useEffect, RefObject } from "react";
 import { GRID_CONFIG } from "@/utils/gridConstants";
-import { toast } from "sonner";
 
 interface UseGridInteractionProps {
    gridWidth: number;
@@ -81,26 +80,13 @@ export function useGridInteraction({
    const clampOffsetRef = useRef(clampOffset);
    clampOffsetRef.current = clampOffset;
 
-   const handleInteractionWarning = useCallback(() => {
-      const now = Date.now();
-      if (now - lastWarningRef.current > 2000) {
-         toast.info("Interaction Paused", {
-            description: "Click 'Buy Pixels' to zoom, pan, and select!",
-            duration: 3000,
-         });
-         lastWarningRef.current = now;
-      }
-   }, []);
+
 
 
    // -- Event Handlers --
 
    const handleMouseDown = useCallback(
       (event: React.MouseEvent) => {
-         if (!enableInteraction) {
-            handleInteractionWarning();
-            return;
-         }
          if (event.button !== 0 && event.button !== 1) return;
 
          setIsDragging(true);
@@ -116,7 +102,7 @@ export function useGridInteraction({
             y: event.clientY - viewportOffset.y,
          });
       },
-      [viewportOffset, enableInteraction, handleInteractionWarning]
+      [viewportOffset]
    );
 
    const handleMouseMove = useCallback(
@@ -196,10 +182,23 @@ export function useGridInteraction({
       if (!container) return;
 
       const handleWheel = (event: WheelEvent) => {
-         if (!enableInteractionRef.current) return;
          event.preventDefault();
-         const currentZoom = zoomRef.current;
          const currentOffset = viewportOffsetRef.current;
+
+         if (!enableInteractionRef.current) {
+            // Browse mode: scroll/pan the canvas vertically (and horizontally with shift)
+            const panSpeed = 1.5;
+            const deltaX = event.shiftKey ? event.deltaY * panSpeed : event.deltaX * panSpeed;
+            const deltaY = event.shiftKey ? 0 : event.deltaY * panSpeed;
+            const newX = currentOffset.x - deltaX;
+            const newY = currentOffset.y - deltaY;
+            const clamped = clampOffsetRef.current(newX, newY, zoomRef.current);
+            setViewportOffset(clamped);
+            return;
+         }
+
+         // Purchase mode: zoom toward cursor position
+         const currentZoom = zoomRef.current;
          const zoomFactor = GRID_CONFIG.ZOOM_FACTOR;
          const newZoom = event.deltaY < 0 ? currentZoom * zoomFactor : currentZoom / zoomFactor;
          const safeZoom = Math.max(
@@ -207,7 +206,6 @@ export function useGridInteraction({
             Math.min(GRID_CONFIG.MAX_ZOOM, newZoom)
          );
 
-         // Zoom toward the cursor position
          const rect = container.getBoundingClientRect();
          const cursorX = event.clientX - rect.left;
          const cursorY = event.clientY - rect.top;
@@ -221,17 +219,6 @@ export function useGridInteraction({
       };
 
       const handleTouchStart = (e: TouchEvent) => {
-         if (!enableInteractionRef.current) {
-            const now = Date.now();
-            if (now - lastWarningRef.current > 2000) {
-               toast.info("Interaction Paused", {
-                  description: "Click 'Buy Pixels' to zoom, pan, and select!",
-                  duration: 3000,
-               });
-               lastWarningRef.current = now;
-            }
-            return;
-         }
          if (e.touches.length === 2) {
             e.preventDefault(); // Prevent browser zoom
             const dx = e.touches[0].clientX - e.touches[1].clientX;

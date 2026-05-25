@@ -1,0 +1,26 @@
+{
+  "name": "BuyASpot — Pixel Advertising Marketplace",
+  "short_name": "BuyASpot",
+  "description": "Buy permanent digital advertising space on a shared online pixel canvas. Promote your startup, app, business, or brand — forever.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#6366f1",
+  "orientation": "any",
+  "categories": ["business", "shopping"],
+  "lang": "en",
+  "icons": [
+    {
+      "src": "/logo/light_theme_nobg.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/bap_logo.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

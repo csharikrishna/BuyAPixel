@@ -797,7 +797,7 @@ const BuyPixels = () => {
                 onZoomChange={setZoom}
                 showGrid={showGrid}
                 showMyPixels={showMyPixels}
-                enableInteraction={true}
+                enableInteraction={mode === "buying"}
                 onAvailablePixelFocused={handleAvailablePixelFocused}
               />
             </div>
@@ -976,18 +976,21 @@ const BuyPixels = () => {
                         onClick={handleBuyClick}
                         disabled={isLoading || !isOnline}
                         size="lg"
-                        className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-semibold text-base h-14 rounded-2xl shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed gap-2.5"
+                        className="group relative overflow-hidden w-full bg-gradient-to-b from-emerald-400 to-emerald-600 hover:from-emerald-500 hover:to-emerald-700 text-white font-bold text-lg h-14 rounded-2xl shadow-[0_8px_20px_-6px_rgba(16,185,129,0.5),inset_0_1px_1px_rgba(255,255,255,0.4)] border border-emerald-500/50 transition-all duration-300 hover:shadow-[0_12px_25px_-6px_rgba(16,185,129,0.7),inset_0_1px_1px_rgba(255,255,255,0.5)] hover:-translate-y-1 hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:scale-100 gap-2.5"
                         aria-label="Buy pixels"
                       >
+                        {/* Premium Shine Effect */}
+                        <div className="absolute inset-0 -translate-x-[150%] group-hover:translate-x-[150%] transition-transform duration-1000 ease-in-out bg-gradient-to-r from-transparent via-white/30 to-transparent skew-x-12" />
+                        
                         {isLoading ? (
                           <>
-                            <Loader2 className="w-5 h-5 animate-spin" />
-                            Loading...
+                            <Loader2 className="w-5 h-5 animate-spin relative z-10" />
+                            <span className="relative z-10">Loading...</span>
                           </>
                         ) : (
                           <>
-                            <ShoppingCart className="w-5 h-5" />
-                            Buy Pixels
+                            <ShoppingCart className="w-5 h-5 relative z-10 drop-shadow-sm group-hover:scale-110 transition-transform duration-300" />
+                            <span className="relative z-10 drop-shadow-sm tracking-wide">Buy Pixels</span>
                           </>
                         )}
                       </Button>
@@ -1003,18 +1006,21 @@ const BuyPixels = () => {
                         onClick={handleSellClick}
                         disabled={isLoading || !isOnline}
                         size="lg"
-                        className="w-full bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 text-white font-semibold text-base h-14 rounded-2xl shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed gap-2.5"
+                        className="group relative overflow-hidden w-full bg-gradient-to-b from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 text-white font-bold text-lg h-14 rounded-2xl shadow-[0_8px_20px_-6px_rgba(225,29,72,0.5),inset_0_1px_1px_rgba(255,255,255,0.4)] border border-rose-500/50 transition-all duration-300 hover:shadow-[0_12px_25px_-6px_rgba(225,29,72,0.7),inset_0_1px_1px_rgba(255,255,255,0.5)] hover:-translate-y-1 hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:scale-100 gap-2.5"
                         aria-label="Open marketplace"
                       >
+                        {/* Premium Shine Effect */}
+                        <div className="absolute inset-0 -translate-x-[150%] group-hover:translate-x-[150%] transition-transform duration-1000 ease-in-out bg-gradient-to-r from-transparent via-white/30 to-transparent skew-x-12" />
+
                         {isLoading ? (
                           <>
-                            <Loader2 className="w-5 h-5 animate-spin" />
-                            Loading...
+                            <Loader2 className="w-5 h-5 animate-spin relative z-10" />
+                            <span className="relative z-10">Loading...</span>
                           </>
                         ) : (
                           <>
-                            <Store className="w-5 h-5" />
-                            Marketplace
+                            <Store className="w-5 h-5 relative z-10 drop-shadow-sm group-hover:scale-110 transition-transform duration-300" />
+                            <span className="relative z-10 drop-shadow-sm tracking-wide">Marketplace</span>
                           </>
                         )}
                       </Button>
@@ -1190,28 +1196,32 @@ const BuyPixels = () => {
           <Button
             onClick={handleBuyClick}
             disabled={isLoading || !isOnline}
-            className="flex-1 bg-gradient-to-r from-emerald-500 to-emerald-600 shadow-lg text-white font-semibold h-12 rounded-xl"
+            className="group relative overflow-hidden flex-1 bg-gradient-to-b from-emerald-400 to-emerald-600 shadow-[0_4px_12px_-4px_rgba(16,185,129,0.5),inset_0_1px_1px_rgba(255,255,255,0.4)] border border-emerald-500/50 text-white font-bold h-12 rounded-xl transition-all duration-300 active:scale-95"
             aria-label="Buy pixels"
           >
+            <div className="absolute inset-0 -translate-x-[150%] group-hover:translate-x-[150%] transition-transform duration-1000 ease-in-out bg-gradient-to-r from-transparent via-white/30 to-transparent skew-x-12" />
+            
             {isLoading ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
+              <Loader2 className="w-4 h-4 animate-spin relative z-10" />
             ) : (
-              <ShoppingCart className="w-5 h-5 mr-2" />
+              <ShoppingCart className="w-5 h-5 mr-1.5 relative z-10 drop-shadow-sm" />
             )}
-            Buy Pixels
+            <span className="relative z-10 drop-shadow-sm">Buy Pixels</span>
           </Button>
           <Button
             onClick={handleSellClick}
             disabled={isLoading || !isOnline}
-            className="flex-1 bg-gradient-to-r from-rose-600 to-rose-700 shadow-lg text-white font-semibold h-12 rounded-xl"
+            className="group relative overflow-hidden flex-1 bg-gradient-to-b from-rose-500 to-rose-600 shadow-[0_4px_12px_-4px_rgba(225,29,72,0.5),inset_0_1px_1px_rgba(255,255,255,0.4)] border border-rose-500/50 text-white font-bold h-12 rounded-xl transition-all duration-300 active:scale-95"
             aria-label="Open marketplace"
           >
+            <div className="absolute inset-0 -translate-x-[150%] group-hover:translate-x-[150%] transition-transform duration-1000 ease-in-out bg-gradient-to-r from-transparent via-white/30 to-transparent skew-x-12" />
+
             {isLoading ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
+              <Loader2 className="w-4 h-4 animate-spin relative z-10" />
             ) : (
-              <Store className="w-5 h-5 mr-2" />
+              <Store className="w-5 h-5 mr-1.5 relative z-10 drop-shadow-sm" />
             )}
-            Marketplace
+            <span className="relative z-10 drop-shadow-sm">Marketplace</span>
           </Button>
         </div>
       )}

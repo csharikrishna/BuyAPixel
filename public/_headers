@@ -1,83 +1,51 @@
+# ─── Security Headers (all routes) ───────────────────
 /*
-  Strict-Transport-Security:
-  max-age=63072000; includeSubDomains; preload
+  Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: geolocation=(), camera=(), microphone=(), payment=(self)
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Resource-Policy: same-origin
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://checkout.razorpay.com https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https:; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://*.supabase.co https://api.razorpay.com https://lumberjack.razorpay.com https://www.google-analytics.com https://region1.google-analytics.com; frame-src https://checkout.razorpay.com; child-src https://checkout.razorpay.com; object-src 'none'; base-uri 'self'; form-action 'self' https://api.razorpay.com; frame-ancestors 'none'; upgrade-insecure-requests;
 
-  X-Frame-Options:
-  DENY
+# ─── HTML pages: always revalidate ───────────────────
+/
+  Cache-Control: public, max-age=0, must-revalidate
+/index.html
+  Cache-Control: public, max-age=0, must-revalidate
 
-  X-Content-Type-Options:
-  nosniff
+# ─── Hashed JS/CSS assets: immutable long cache ─────
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
 
-  Referrer-Policy:
-  strict-origin-when-cross-origin
+# ─── Static images/logos: cache 1 week ───────────────
+/logo/*
+  Cache-Control: public, max-age=604800, stale-while-revalidate=86400
+/og-image.png
+  Cache-Control: public, max-age=604800, stale-while-revalidate=86400
+/bap_logo.png
+  Cache-Control: public, max-age=604800, stale-while-revalidate=86400
 
-  Permissions-Policy:
-  geolocation=(),
-  camera=(),
-  microphone=(),
-  payment=(self)
-
-  Cross-Origin-Opener-Policy:
-  same-origin
-
-  Cross-Origin-Resource-Policy:
-  same-origin
-
-  Content-Security-Policy:
-  default-src 'self';
-
-  script-src
-    'self'
-    'unsafe-inline'
-    https://checkout.razorpay.com
-    https://www.googletagmanager.com
-    https://www.google-analytics.com;
-
-  style-src
-    'self'
-    'unsafe-inline'
-    https://fonts.googleapis.com;
-
-  img-src
-    'self'
-    data:
-    blob:
-    https:;
-
-  font-src
-    'self'
-    https://fonts.gstatic.com;
-
-  connect-src
-    'self'
-    https://*.supabase.co
-    https://api.razorpay.com
-    https://lumberjack.razorpay.com
-    https://www.google-analytics.com
-    https://region1.google-analytics.com;
-
-  frame-src
-    https://checkout.razorpay.com;
-
-  child-src
-    https://checkout.razorpay.com;
-
-  object-src 'none';
-
-  base-uri 'self';
-
-  form-action
-    'self'
-    https://api.razorpay.com;
-
-  frame-ancestors 'none';
-
-  upgrade-insecure-requests;
-
-/*
-  Cache-Control:
-  public,
-  max-age=0,
-  must-revalidate,
-  stale-while-revalidate=86400
-*/
+# ─── SEO/AI discovery files: short cache, revalidate ─
+/robots.txt
+  Cache-Control: public, max-age=86400, stale-while-revalidate=3600
+  Content-Type: text/plain; charset=utf-8
+/sitemap.xml
+  Cache-Control: public, max-age=86400, stale-while-revalidate=3600
+  Content-Type: application/xml; charset=utf-8
+/llms.txt
+  Cache-Control: public, max-age=86400, stale-while-revalidate=3600
+  Content-Type: text/plain; charset=utf-8
+/llms-full.txt
+  Cache-Control: public, max-age=86400, stale-while-revalidate=3600
+  Content-Type: text/plain; charset=utf-8
+/ai.txt
+  Cache-Control: public, max-age=86400, stale-while-revalidate=3600
+  Content-Type: text/plain; charset=utf-8
+/manifest.json
+  Cache-Control: public, max-age=86400, stale-while-revalidate=3600
+  Content-Type: application/manifest+json; charset=utf-8
+/.well-known/security.txt
+  Cache-Control: public, max-age=86400
+  Content-Type: text/plain; charset=utf-8

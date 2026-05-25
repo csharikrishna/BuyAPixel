@@ -13,7 +13,9 @@ import {
   Eye,
   EyeOff,
   Minus,
-  Plus
+  Plus,
+  Settings2,
+  ChevronUp
 } from "lucide-react";
 import {
   Tooltip,
@@ -48,14 +50,54 @@ export const EnhancedCanvasControls = ({
   onResetView,
   selectedCount,
 }: EnhancedCanvasControlsProps) => {
+  const [isExpanded, setIsExpanded] = useState(false);
   const zoomPercentage = Math.round(zoom * 100);
 
   const handleZoomIn = () => onZoomChange(Math.min(8, zoom * 1.2));
   const handleZoomOut = () => onZoomChange(Math.max(0.5, zoom / 1.2));
 
+  if (!isExpanded) {
+    return (
+      <TooltipProvider delayDuration={300}>
+        <Card className="flex flex-col p-1.5 shadow-xl border-border/50 backdrop-blur-sm bg-background/95 w-[46px] items-center z-30 h-fit">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsExpanded(true)}
+                className="h-8 w-8 hover:bg-muted text-muted-foreground hover:text-foreground"
+              >
+                <Settings2 className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="right">Canvas Controls</TooltipContent>
+          </Tooltip>
+        </Card>
+      </TooltipProvider>
+    );
+  }
+
   return (
     <TooltipProvider delayDuration={300}>
       <Card className="flex flex-col p-1.5 gap-1.5 shadow-xl border-border/50 backdrop-blur-sm bg-background/95 w-[46px] items-center z-30 h-fit">
+        
+        {/* Close Button */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsExpanded(false)}
+              className="h-8 w-8 hover:bg-muted text-muted-foreground hover:text-foreground"
+            >
+              <ChevronUp className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="right">Hide Controls</TooltipContent>
+        </Tooltip>
+
+        <Separator className="w-6 opacity-50" />
 
         {/* Selection Mode */}
         <Tooltip>

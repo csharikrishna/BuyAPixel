@@ -23,7 +23,10 @@ import {
   Lock,
   Wallet,
   Building2,
-  Smartphone
+  Smartphone,
+  Palette,
+  Image as ImageIcon,
+  Loader2
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -99,6 +102,17 @@ interface PurchasePreviewProps {
 
 // Form validation step [web:140]
 type CheckoutStep = 'details' | 'payment' | 'confirmation';
+type DesignMode = 'image' | 'color';
+
+// Curated preset colors for the color picker
+const PRESET_COLORS = [
+  '#EF4444', '#F97316', '#F59E0B', '#EAB308',
+  '#84CC16', '#22C55E', '#10B981', '#14B8A6',
+  '#06B6D4', '#0EA5E9', '#3B82F6', '#6366F1',
+  '#8B5CF6', '#A855F7', '#D946EF', '#EC4899',
+  '#F43F5E', '#000000', '#374151', '#6B7280',
+  '#9CA3AF', '#D1D5DB', '#F3F4F6', '#FFFFFF',
+];
 
 export const PurchasePreview = ({
   isOpen,
@@ -127,6 +141,11 @@ export const PurchasePreview = ({
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [razorpayLoaded, setRazorpayLoaded] = useState(false);
   const [formProgress, setFormProgress] = useState(0);
+
+  // Design mode: image upload or color picker
+  const [designMode, setDesignMode] = useState<DesignMode>('image');
+  const [selectedColor, setSelectedColor] = useState('#3B82F6');
+  const [isGeneratingColor, setIsGeneratingColor] = useState(false);
 
   // Refs for accessibility [web:148]
   const firstErrorRef = useRef<HTMLInputElement>(null);
@@ -650,6 +669,64 @@ export const PurchasePreview = ({
     }
   };
 
+  // Generate a solid-color image, upload to Supabase, and set as pixel image
+  const handleApplyColor = async () => {
+    if (selectedColor.length !== 7) {
+      toast.error('Please enter a valid 6-digit hex color');
+      return;
+    }
+
+    setIsGeneratingColor(true);
+
+    try {
+      // Create a 4x4 pixel canvas with the selected color
+      const canvas = document.createElement('canvas');
+      canvas.width = 4;
+      canvas.height = 4;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) throw new Error('Canvas context unavailable');
+
+      ctx.fillStyle = selectedColor;
+      ctx.fillRect(0, 0, 4, 4);
+
+      // Convert to blob
+      const blob: Blob = await new Promise((resolve, reject) => {
+        canvas.toBlob((b) => {
+          if (b) resolve(b);
+          else reject(new Error('Failed to generate color image'));
+        }, 'image/png');
+      });
+
+      // Upload to Supabase
+      const fileName = `user-pixels/color-${selectedColor.replace('#', '')}-${Date.now()}.png`;
+      const { data, error } = await supabase.storage
+        .from('pixel-images')
+        .upload(fileName, blob, {
+          cacheControl: '3600',
+          upsert: false,
+          contentType: 'image/png',
+        });
+
+      if (error) throw error;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('pixel-images')
+        .getPublicUrl(data.path);
+
+      setImagePreview(publicUrl);
+      toast.success(`Color ${selectedColor} applied!`, {
+        description: 'Your pixel will display this color.',
+      });
+    } catch (err: unknown) {
+      console.error('Color generation error:', err);
+      toast.error('Failed to apply color', {
+        description: err instanceof Error ? err.message : 'Please try again',
+      });
+    } finally {
+      setIsGeneratingColor(false);
+    }
+  };
+
   const getPriceTierInfo = (price: number) => {
     switch (price) {
       case 499:
@@ -862,7 +939,7 @@ export const PurchasePreview = ({
         </CardContent>
       </Card>
 
-      {/* Image Upload Form */}
+      {/* Image Upload / Color Picker Form */}
       <Card className="card-premium">
         <CardHeader>
           <CardTitle className="text-base md:text-lg flex items-center gap-2">
@@ -870,28 +947,149 @@ export const PurchasePreview = ({
             Design Your Pixel
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div>
-            <Label htmlFor="image-upload" className="text-sm font-medium mb-2 block">
-              Image Upload
-              <span className="text-xs text-muted-foreground font-normal ml-1">(Optional)</span>
-            </Label>
-            <ImageUpload
-              onImageUploaded={(url) => setImagePreview(url)}
-              currentImage={imagePreview || ''}
-              folder="user-pixels"
-              bucket="pixel-images"
-              cropAspectRatio={selectionInfo ? selectionInfo.dimensions.width / selectionInfo.dimensions.height : 1}
-              placeholder="Upload Pixel Image"
-              className="w-full"
-            />
-            <p className="text-xs text-muted-foreground mt-2">
-              {selectedPixels.length > 1
-                ? `Upload ONE image — it will be displayed across all ${selectedPixels.length} pixels as a single merged ${selectionInfo?.dimensions.width}×${selectionInfo?.dimensions.height} block.`
-                : 'Any size accepted — auto-compressed. Square images work best.'
-              }
-            </p>
+        <CardContent className="space-y-4">
+          {/* Toggle: Image Upload vs Color Picker */}
+          <div className="flex rounded-lg border bg-muted/30 p-1 gap-1">
+            <button
+              type="button"
+              onClick={() => setDesignMode('image')}
+              className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all ${
+                designMode === 'image'
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <ImageIcon className="w-4 h-4" />
+              Upload Image
+            </button>
+            <button
+              type="button"
+              onClick={() => setDesignMode('color')}
+              className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all ${
+                designMode === 'color'
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <Palette className="w-4 h-4" />
+              Pick Color
+            </button>
           </div>
+
+          {/* Image Upload Section */}
+          {designMode === 'image' && (
+            <div>
+              <Label htmlFor="image-upload" className="text-sm font-medium mb-2 block">
+                Image Upload
+                <span className="text-xs text-muted-foreground font-normal ml-1">(Optional)</span>
+              </Label>
+              <ImageUpload
+                onImageUploaded={(url) => setImagePreview(url)}
+                currentImage={imagePreview || ''}
+                folder="user-pixels"
+                bucket="pixel-images"
+                cropAspectRatio={selectionInfo ? selectionInfo.dimensions.width / selectionInfo.dimensions.height : 1}
+                placeholder="Upload Pixel Image"
+                className="w-full"
+              />
+              <p className="text-xs text-muted-foreground mt-2">
+                {selectedPixels.length > 1
+                  ? `Upload ONE image — it will be displayed across all ${selectedPixels.length} pixels as a single merged ${selectionInfo?.dimensions.width}×${selectionInfo?.dimensions.height} block.`
+                  : 'Any size accepted — auto-compressed. Square images work best.'
+                }
+              </p>
+            </div>
+          )}
+
+          {/* Color Picker Section */}
+          {designMode === 'color' && (
+            <div className="space-y-4">
+              <Label className="text-sm font-medium block">
+                Choose a Color
+                <span className="text-xs text-muted-foreground font-normal ml-1">(Optional)</span>
+              </Label>
+
+              {/* Preset color swatches */}
+              <div className="grid grid-cols-8 gap-2">
+                {PRESET_COLORS.map((color) => (
+                  <button
+                    key={color}
+                    type="button"
+                    onClick={() => setSelectedColor(color)}
+                    className={`w-full aspect-square rounded-lg border-2 transition-all hover:scale-110 ${
+                      selectedColor === color
+                        ? 'border-primary ring-2 ring-primary/30 scale-110'
+                        : 'border-border/50 hover:border-border'
+                    }`}
+                    style={{ backgroundColor: color }}
+                    aria-label={`Select color ${color}`}
+                    title={color}
+                  />
+                ))}
+              </div>
+
+              {/* Hex input + preview */}
+              <div className="flex gap-3 items-end">
+                <div className="flex-1">
+                  <Label htmlFor="hex-color" className="text-xs font-medium text-muted-foreground mb-1 block">
+                    Hex Color Code
+                  </Label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm font-mono">#</span>
+                    <Input
+                      id="hex-color"
+                      type="text"
+                      value={selectedColor.replace('#', '')}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/[^0-9a-fA-F]/g, '').slice(0, 6);
+                        if (val.length <= 6) {
+                          setSelectedColor(`#${val}`);
+                        }
+                      }}
+                      placeholder="FF5733"
+                      maxLength={6}
+                      className="pl-7 font-mono text-sm uppercase"
+                    />
+                  </div>
+                </div>
+
+                {/* Live preview swatch */}
+                <div className="flex flex-col items-center gap-1">
+                  <div
+                    className="w-12 h-10 rounded-lg border-2 border-border shadow-inner"
+                    style={{ backgroundColor: selectedColor.length === 7 ? selectedColor : '#ffffff' }}
+                  />
+                  <span className="text-[10px] text-muted-foreground">Preview</span>
+                </div>
+              </div>
+
+              {/* Apply color button */}
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full gap-2"
+                disabled={selectedColor.length !== 7 || isGeneratingColor}
+                onClick={handleApplyColor}
+              >
+                {isGeneratingColor ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Generating...
+                  </>
+                ) : imagePreview && designMode === 'color' ? (
+                  <>
+                    <CheckCircle2 className="w-4 h-4 text-green-500" />
+                    Color Applied — Click to Change
+                  </>
+                ) : (
+                  <>
+                    <Palette className="w-4 h-4" />
+                    Apply Color to Pixel
+                  </>
+                )}
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
 

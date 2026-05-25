@@ -6,107 +6,204 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-  <title>BuyASpot - Buy Digital Advertising Space Online</title>
+  <title>BuyASpot — Buy Digital Advertising Space Online | Pixel Ad Marketplace</title>
 
   <meta name="description"
-    content="Buy permanent digital advertising space on BuyASpot. Promote your startup, app, business, portfolio, or brand online forever." />
+    content="BuyASpot is India's pixel advertising marketplace. Buy permanent digital ad space starting at ₹99. Promote your startup, app, business, portfolio, or brand on a shared online canvas — forever." />
+
+  <meta name="keywords"
+    content="buy pixel, pixel advertising, digital advertising space, buy ad space online, online billboard, pixel marketplace, cheap advertising India, startup promotion, buy a spot, BuyASpot" />
 
   <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1" />
 
   <meta name="author" content="BuyASpot" />
   <meta name="theme-color" content="#6366f1" />
+  <meta name="color-scheme" content="light dark" />
 
   <link rel="canonical" href="https://buyaspot.in/" />
 
+  <!-- Geographic targeting (GEO) -->
+  <meta name="geo.region" content="IN" />
+  <meta name="geo.placename" content="India" />
+  <meta name="ICBM" content="20.5937,78.9629" />
+  <meta name="language" content="English" />
+
   <!-- Favicon -->
   <link rel="icon" href="/logo/light_theme_nobg.png" type="image/png" />
-  <link rel="apple-touch-icon" href="/logo/light_theme_nobg.png" />
+  <link rel="icon" href="/logo/light_theme_nobg.png" type="image/png" sizes="32x32" />
+  <link rel="icon" href="/logo/light_theme_nobg.png" type="image/png" sizes="16x16" />
+  <link rel="apple-touch-icon" href="/logo/light_theme_nobg.png" sizes="180x180" />
+
+  <!-- Web App Manifest -->
+  <link rel="manifest" href="/manifest.json" />
 
   <!-- Performance -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
+  <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
 
   <!-- Open Graph -->
-  <meta property="og:title" content="BuyASpot - Buy Digital Advertising Space Online" />
+  <meta property="og:title" content="BuyASpot — Buy Digital Advertising Space Online" />
 
   <meta property="og:description"
-    content="Buy permanent advertising space online and promote your startup, app, portfolio, or business." />
+    content="India's pixel advertising marketplace. Buy permanent ad space starting at ₹99. Promote your startup, app, portfolio, or business on a shared online canvas." />
 
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://buyaspot.in/" />
   <meta property="og:site_name" content="BuyASpot" />
+  <meta property="og:locale" content="en_IN" />
 
   <meta property="og:image" content="https://buyaspot.in/og-image.png" />
-
-  <meta property="og:image:alt" content="BuyASpot Digital Advertising Platform" />
-
+  <meta property="og:image:type" content="image/png" />
+  <meta property="og:image:alt" content="BuyASpot — Digital Advertising Pixel Marketplace" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
 
   <!-- Twitter -->
   <meta name="twitter:card" content="summary_large_image" />
-
-  <meta name="twitter:title" content="BuyASpot - Buy Digital Advertising Space Online" />
-
-  <meta name="twitter:description" content="Buy permanent digital advertising space online." />
-
+  <meta name="twitter:title" content="BuyASpot — Buy Digital Advertising Space Online" />
+  <meta name="twitter:description"
+    content="Buy permanent digital advertising space online starting at ₹99. Pixel ads for startups, brands, and creators." />
   <meta name="twitter:image" content="https://buyaspot.in/og-image.png" />
-
   <meta name="twitter:site" content="@BuyASpot" />
 
-  <!-- WebSite Schema -->
+  <!-- WebSite Schema (with SearchAction for Google Sitelinks Search) -->
   <script type="application/ld+json">
   {
-    "@context":"https://schema.org",
-    "@type":"WebSite",
-    "name":"BuyASpot",
-    "url":"https://buyaspot.in/",
-    "potentialAction":{
-      "@type":"SearchAction",
-      "target":"https://buyaspot.in/search?q={search_term_string}",
-      "query-input":"required name=search_term_string"
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "BuyASpot",
+    "alternateName": ["Buy A Spot", "BuyAPixel"],
+    "url": "https://buyaspot.in/",
+    "inLanguage": "en",
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": "https://buyaspot.in/search?q={search_term_string}",
+      "query-input": "required name=search_term_string"
     }
   }
   </script>
 
-  <!-- Organization Schema -->
+  <!-- Organization Schema (expanded for Knowledge Panel) -->
   <script type="application/ld+json">
   {
-    "@context":"https://schema.org",
-    "@type":"Organization",
-    "name":"BuyASpot",
-    "url":"https://buyaspot.in/",
-    "logo":"https://buyaspot.in/bap_logo.png",
-    "sameAs":[
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "BuyASpot",
+    "url": "https://buyaspot.in/",
+    "logo": "https://buyaspot.in/bap_logo.png",
+    "description": "Digital advertising marketplace where users buy permanent advertising space on a shared online pixel canvas.",
+    "foundingDate": "2026",
+    "contactPoint": {
+      "@type": "ContactPoint",
+      "url": "https://buyaspot.in/contact",
+      "contactType": "customer support",
+      "availableLanguage": ["English"]
+    },
+    "sameAs": [
       "https://twitter.com/BuyASpot",
-      "https://www.linkedin.com/company/buyaspot"
+      "https://www.linkedin.com/company/buyaspot",
+      "https://github.com/csharikrishna/BuyAPixel"
     ]
   }
   </script>
 
-  <!-- Product/App Schema -->
+  <!-- WebApplication Schema (with offers for rich results) -->
   <script type="application/ld+json">
   {
-    "@context":"https://schema.org",
-    "@type":"WebApplication",
-    "name":"BuyASpot",
-    "url":"https://buyaspot.in/",
-    "applicationCategory":"BusinessApplication",
-    "operatingSystem":"Web",
-    "description":"Digital advertising platform for buying permanent online advertising space."
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "BuyASpot",
+    "url": "https://buyaspot.in/",
+    "applicationCategory": "BusinessApplication",
+    "operatingSystem": "Web",
+    "description": "Digital advertising platform for buying permanent online advertising space on a shared pixel canvas. Prices start at ₹99.",
+    "offers": {
+      "@type": "AggregateOffer",
+      "lowPrice": "99",
+      "highPrice": "999",
+      "priceCurrency": "INR",
+      "offerCount": "10000",
+      "availability": "https://schema.org/InStock"
+    },
+    "screenshot": "https://buyaspot.in/og-image.png",
+    "featureList": "Permanent ad space, Image upload, Custom links, Pixel marketplace, Leaderboard"
   }
   </script>
 
   <!-- WebPage Schema -->
   <script type="application/ld+json">
   {
-    "@context":"https://schema.org",
-    "@type":"WebPage",
-    "name":"BuyASpot - Buy Digital Advertising Space Online",
-    "url":"https://buyaspot.in/",
-    "isPartOf":{
-      "@type":"WebSite",
-      "url":"https://buyaspot.in/"
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "name": "BuyASpot — Buy Digital Advertising Space Online",
+    "description": "India's pixel advertising marketplace. Buy permanent digital ad space and promote your brand on a shared online canvas.",
+    "url": "https://buyaspot.in/",
+    "isPartOf": {
+      "@type": "WebSite",
+      "url": "https://buyaspot.in/"
+    },
+    "breadcrumb": {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://buyaspot.in/" },
+        { "@type": "ListItem", "position": 2, "name": "Canvas", "item": "https://buyaspot.in/canvas" },
+        { "@type": "ListItem", "position": 3, "name": "Marketplace", "item": "https://buyaspot.in/marketplace" },
+        { "@type": "ListItem", "position": 4, "name": "Blog", "item": "https://buyaspot.in/blog" },
+        { "@type": "ListItem", "position": 5, "name": "Help", "item": "https://buyaspot.in/help" }
+      ]
     }
+  }
+  </script>
+
+  <!-- FAQPage Schema (AEO — Answer Engine Optimization for featured snippets) -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "What is BuyASpot?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "BuyASpot is a digital advertising platform where users buy permanent advertising space on a shared online pixel canvas. Think of it as owning a small piece of the internet to promote your startup, app, business, portfolio, or brand — forever."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How much does pixel advertising cost on BuyASpot?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Pixel advertising on BuyASpot starts at just ₹99 per pixel for economy zones. Premium zones cost ₹499 and featured zones cost ₹999 per pixel. All purchases are permanent — you pay once and own the space forever."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Can I resell my advertising space on BuyASpot?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes. Owned advertising space can be listed for resale in the BuyASpot Marketplace. You set your own price, and other users can purchase your pixels directly."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "What can I advertise on BuyASpot?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "You can advertise startups, mobile apps, SaaS products, e-commerce stores, personal portfolios, creative projects, YouTube channels, social media profiles, and any brand or business. Each pixel supports a custom image and clickable link."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Is pixel advertising on BuyASpot permanent?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes, all pixel purchases on BuyASpot are permanent. Once you buy a pixel, your advertisement stays on the shared canvas forever. You can update the image and link at any time from your profile."
+        }
+      }
+    ]
   }
   </script>
 
@@ -115,6 +212,32 @@
 <body>
 
   <div id="root"></div>
+
+  <!-- Noscript fallback for crawlers that don't execute JS -->
+  <noscript>
+    <div style="padding:2rem;font-family:system-ui,sans-serif;max-width:800px;margin:0 auto">
+      <h1>BuyASpot — Buy Digital Advertising Space Online</h1>
+      <p>BuyASpot is India's pixel advertising marketplace. Buy permanent digital ad space starting at ₹99. Promote your startup, app, business, portfolio, or brand on a shared online canvas — forever.</p>
+      <h2>Quick Links</h2>
+      <ul>
+        <li><a href="https://buyaspot.in/">Home — Buy Pixels</a></li>
+        <li><a href="https://buyaspot.in/canvas">View the Pixel Canvas</a></li>
+        <li><a href="https://buyaspot.in/marketplace">Pixel Marketplace</a></li>
+        <li><a href="https://buyaspot.in/leaderboard">Leaderboard</a></li>
+        <li><a href="https://buyaspot.in/blog">Blog</a></li>
+        <li><a href="https://buyaspot.in/help">Help Center</a></li>
+        <li><a href="https://buyaspot.in/contact">Contact Us</a></li>
+        <li><a href="https://buyaspot.in/about">About BuyASpot</a></li>
+      </ul>
+      <h2>Frequently Asked Questions</h2>
+      <h3>What is BuyASpot?</h3>
+      <p>BuyASpot is a digital advertising platform where users buy permanent advertising space on a shared online pixel canvas to promote startups, apps, businesses, portfolios, and brands.</p>
+      <h3>How much does it cost?</h3>
+      <p>Pixel advertising starts at ₹99 per pixel. Premium zones cost ₹499 and featured zones cost ₹999.</p>
+      <h3>Can I resell my pixels?</h3>
+      <p>Yes. Owned pixels can be listed for resale in the Marketplace at your own price.</p>
+    </div>
+  </noscript>
 
   <script type="module" src="/src/main.tsx">
   </script>

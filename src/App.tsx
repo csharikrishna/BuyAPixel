@@ -161,7 +161,6 @@ const AppContent = () => {
             <Route path="/terms" element={<ErrorBoundary pageName="Terms"><TermsOfService /></ErrorBoundary>} />
             <Route path="/privacy" element={<ErrorBoundary pageName="Privacy"><PrivacyPolicy /></ErrorBoundary>} />
             <Route path="/seo-info" element={<ErrorBoundary pageName="SEO Info"><SeoInfo /></ErrorBoundary>} />
-            <Route path="/seo-info" element={<ErrorBoundary pageName="SEO Info"><SeoInfo /></ErrorBoundary>} />
 
             {/* Catch-all 404 - MUST BE LAST */}
             <Route path="*" element={<NotFound />} />
