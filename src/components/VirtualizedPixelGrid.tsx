@@ -234,7 +234,7 @@ export const VirtualizedPixelGrid = forwardRef<
 
         return selectedPixelsSet.has(`${x}-${y}`) ? "selected" : "available";
       },
-      [billboardConfig, selectedPixelsSet, user?.id, spatialIndex]
+      [billboardConfig, selectedPixelsSet, user?.id, spatialIndex, purchasedPixels]
     );
 
     const handlePixelClick = useCallback(
@@ -542,7 +542,7 @@ export const VirtualizedPixelGrid = forwardRef<
     const visiblePurchasedPixels = useMemo(() => {
       if (!visibleRange) return [];
       return spatialIndex.query(visibleRange.x, visibleRange.y, visibleRange.w, visibleRange.h);
-    }, [spatialIndex, visibleRange]);
+    }, [spatialIndex, visibleRange, purchasedPixels]);
 
     // Track blob URLs for cleanup (moved out of render path)
     useEffect(() => {
