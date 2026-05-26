@@ -47,7 +47,15 @@ import {
   ChevronRight,
   Info,
   ArrowUpRight,
+  Flame,
+  MapPin,
 } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { cn, getErrorMessage } from '@/lib/utils';
@@ -67,6 +75,7 @@ interface LeaderboardUser {
   total_spent: number;
   previousRank?: number;
   rankChange?: 'up' | 'down' | 'same' | 'new';
+  isHot?: boolean;
 }
 
 interface RecentPurchase {
@@ -145,6 +154,18 @@ const STAT_CARDS = [
 ] as const;
 
 // ======================
+// GAMIFICATION HELPERS
+// ======================
+
+const getPlayerTier = (pixels: number) => {
+  if (pixels >= 100) return { title: 'Whale', color: 'bg-purple-500/10 text-purple-500 border-purple-500/20', icon: '🐋' };
+  if (pixels >= 50) return { title: 'Tycoon', color: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20', icon: '🏛️' };
+  if (pixels >= 10) return { title: 'Investor', color: 'bg-blue-500/10 text-blue-500 border-blue-500/20', icon: '💼' };
+  if (pixels >= 1) return { title: 'Pioneer', color: 'bg-orange-500/10 text-orange-500 border-orange-500/20', icon: '🚀' };
+  return null;
+};
+
+// ======================
 // SKELETON COMPONENTS
 // ======================
 
@@ -214,6 +235,7 @@ const Leaderboard = () => {
   const [userRank, setUserRank] = useState<{
     pixelRank: number | null;
     spendingRank: number | null;
+    pixelsToNextRank?: number | null;
   }>({
     pixelRank: null,
     spendingRank: null,
@@ -221,6 +243,7 @@ const Leaderboard = () => {
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<LeaderboardUser | null>(null);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -269,6 +292,15 @@ const Leaderboard = () => {
 
         if (profilesError) throw profilesError;
 
+        // Fetch hot users (purchased in last 24h)
+        const yesterday = new Date();
+        yesterday.setHours(yesterday.getHours() - 24);
+        const { data: hotPixels } = await supabase
+          .from('pixels')
+          .select('owner_id')
+          .gte('purchased_at', yesterday.toISOString());
+        const hotUserIds = new Set(hotPixels?.map((p) => p.owner_id) || []);
+
         // Transform to LeaderboardUser format
         const allUsers: LeaderboardUser[] = (profilesData || []).map((profile) => ({
           id: profile.user_id,
@@ -277,6 +309,7 @@ const Leaderboard = () => {
           avatar_url: profile.avatar_url,
           pixel_count: profile.pixel_count || 0,
           total_spent: profile.total_spent || 0,
+          isHot: hotUserIds.has(profile.user_id),
         }));
 
         // Sort by pixels and spending
@@ -291,9 +324,17 @@ const Leaderboard = () => {
           const pixelRankIndex = sortedByPixels.findIndex((u) => u.user_id === user.id);
           const spendingRankIndex = sortedBySpending.findIndex((u) => u.user_id === user.id);
 
+          let pixelsToNextRank = null;
+          if (pixelRankIndex > 0 && sortedByPixels[pixelRankIndex]) {
+            const currentUserPixels = sortedByPixels[pixelRankIndex].pixel_count;
+            const nextUserPixels = sortedByPixels[pixelRankIndex - 1].pixel_count;
+            pixelsToNextRank = nextUserPixels - currentUserPixels + 1;
+          }
+
           setUserRank({
             pixelRank: pixelRankIndex >= 0 ? pixelRankIndex + 1 : null,
             spendingRank: spendingRankIndex >= 0 ? spendingRankIndex + 1 : null,
+            pixelsToNextRank,
           });
         }
 
@@ -324,7 +365,7 @@ const Leaderboard = () => {
         // Fetch profiles for recent purchases
         const recentUserIds = Array.from(new Set(recentPixels?.map((p) => p.owner_id) || []));
 
-        let profileMap = new Map();
+        const profileMap = new Map();
         if (recentUserIds.length > 0) {
           const { data: recentProfiles } = await supabase
             .from('profiles')
@@ -566,6 +607,14 @@ const Leaderboard = () => {
     [topByPixels]
   );
 
+  const breadcrumbSchema = useMemo(
+    () => generateBreadcrumbSchema([
+      { name: 'Home', url: 'https://buyaspot.in' },
+      { name: 'Leaderboard', url: 'https://buyaspot.in/leaderboard' }
+    ]),
+    []
+  );
+
   // Error State
   if (error && !loading) {
     return (
@@ -603,14 +652,6 @@ const Leaderboard = () => {
       </>
     );
   }
-
-  const breadcrumbSchema = useMemo(
-    () => generateBreadcrumbSchema([
-      { name: 'Home', url: 'https://buyaspot.in' },
-      { name: 'Leaderboard', url: 'https://buyaspot.in/leaderboard' }
-    ]),
-    []
-  );
 
   return (
     <>
@@ -700,7 +741,17 @@ const Leaderboard = () => {
                     </div>
                     <div>
                       <h2 className="font-semibold text-lg">Your Ranking</h2>
-                      <p className="text-sm text-muted-foreground">Keep climbing!</p>
+                      {userRank.pixelsToNextRank ? (
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Just <strong className="text-primary">{userRank.pixelsToNextRank}</strong> more pixel{userRank.pixelsToNextRank !== 1 ? 's' : ''} to overtake Rank #{userRank.pixelRank! - 1}!
+                        </p>
+                      ) : userRank.pixelRank === 1 ? (
+                        <p className="text-sm text-muted-foreground mt-1 text-yellow-600 font-semibold flex items-center">
+                          <Crown className="w-4 h-4 mr-1" /> You are #1!
+                        </p>
+                      ) : (
+                        <p className="text-sm text-muted-foreground mt-1">Keep climbing!</p>
+                      )}
                     </div>
                   </div>
                   <div className="flex gap-6" role="list" aria-label="Your rankings">
@@ -912,13 +963,20 @@ const Leaderboard = () => {
                           .fill(0)
                           .map((_, i) => <LeaderboardRowSkeleton key={i} />)
                       ) : filteredPixelLeaders.length > 0 ? (
-                        filteredPixelLeaders.map((leaderUser, index) => (
+                        filteredPixelLeaders.map((leaderUser, index) => {
+                          const tier = getPlayerTier(leaderUser.pixel_count);
+                          return (
                           <div
                             key={leaderUser.user_id}
+                            onClick={() => setSelectedUser(leaderUser)}
                             className={cn(
-                              'flex items-center justify-between p-4 rounded-lg border transition-all duration-200 group',
-                              index < TOP_RANK_COUNT
-                                ? 'bg-gradient-to-r from-primary/5 to-accent/5 border-primary/20 hover:border-primary/40 hover:shadow-md'
+                              'flex items-center justify-between p-4 rounded-lg border transition-all duration-200 group cursor-pointer hover:-translate-y-0.5',
+                              index === 0
+                                ? 'bg-gradient-to-r from-yellow-500/10 via-amber-500/5 to-transparent border-yellow-500/30 shadow-[0_0_15px_rgba(234,179,8,0.1)] hover:shadow-[0_0_20px_rgba(234,179,8,0.2)]'
+                                : index === 1
+                                ? 'bg-gradient-to-r from-slate-400/10 via-slate-300/5 to-transparent border-slate-300/30 shadow-[0_0_10px_rgba(203,213,225,0.1)] hover:shadow-[0_0_15px_rgba(203,213,225,0.2)]'
+                                : index === 2
+                                ? 'bg-gradient-to-r from-amber-700/10 via-orange-700/5 to-transparent border-amber-700/30 shadow-[0_0_10px_rgba(180,83,9,0.1)] hover:shadow-[0_0_15px_rgba(180,83,9,0.2)]'
                                 : 'bg-card hover:bg-accent/5',
                               leaderUser.user_id === user?.id && 'ring-2 ring-primary'
                             )}
@@ -928,7 +986,11 @@ const Leaderboard = () => {
                               <div className="relative flex-shrink-0">
                                 <Badge
                                   variant={getRankBadgeVariant(index)}
-                                  className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm"
+                                  className={cn("w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm", 
+                                    index === 0 && "bg-gradient-to-br from-yellow-400 to-amber-600 border-none text-white",
+                                    index === 1 && "bg-gradient-to-br from-slate-300 to-slate-500 border-none text-white",
+                                    index === 2 && "bg-gradient-to-br from-amber-600 to-orange-800 border-none text-white"
+                                  )}
                                   aria-label={`Rank ${index + 1}`}
                                 >
                                   {index + 1}
@@ -949,32 +1011,52 @@ const Leaderboard = () => {
                                 </AvatarFallback>
                               </Avatar>
                               <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-2 flex-wrap">
                                   <div className="font-semibold truncate">
                                     {leaderUser.full_name || 'Anonymous User'}
                                   </div>
                                   {leaderUser.user_id === user?.id && (
-                                    <Badge variant="secondary" className="text-xs">
+                                    <Badge variant="secondary" className="text-[10px] h-5">
                                       You
                                     </Badge>
                                   )}
+                                  {tier && (
+                                    <Badge variant="outline" className={cn("text-[10px] h-5", tier.color)}>
+                                      {tier.icon} {tier.title}
+                                    </Badge>
+                                  )}
+                                  {leaderUser.isHot && (
+                                    <TooltipProvider>
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <div className="flex items-center justify-center bg-orange-500/20 text-orange-500 rounded-full w-5 h-5">
+                                            <Flame className="w-3 h-3" />
+                                          </div>
+                                        </TooltipTrigger>
+                                        <TooltipContent><p>Active recently!</p></TooltipContent>
+                                      </Tooltip>
+                                    </TooltipProvider>
+                                  )}
                                 </div>
-                                <div className="text-sm text-muted-foreground flex items-center gap-1">
+                                <div className="text-sm text-muted-foreground flex items-center gap-1 mt-0.5">
                                   {leaderUser.pixel_count.toLocaleString()} pixel
                                   {leaderUser.pixel_count !== 1 ? 's' : ''} owned
                                   {leaderUser.rankChange && getRankChangeIcon(leaderUser.rankChange)}
                                 </div>
                               </div>
                             </div>
-                            <Badge
-                              variant="outline"
-                              className="ml-2 flex-shrink-0 font-bold"
-                              aria-label={`${leaderUser.pixel_count} pixels`}
-                            >
-                              {leaderUser.pixel_count.toLocaleString()}
-                            </Badge>
+                            <div className="flex items-center gap-3">
+                              <Badge
+                                variant="outline"
+                                className="flex-shrink-0 font-bold bg-background/50 backdrop-blur-sm"
+                                aria-label={`${leaderUser.pixel_count} pixels`}
+                              >
+                                {leaderUser.pixel_count.toLocaleString()}
+                              </Badge>
+                              <ChevronRight className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+                            </div>
                           </div>
-                        ))
+                        )})
                       ) : (
                         <div className="text-center py-12">
                           <div className="w-16 h-16 mx-auto bg-muted rounded-full flex items-center justify-center mb-4">
@@ -1017,13 +1099,20 @@ const Leaderboard = () => {
                           .fill(0)
                           .map((_, i) => <LeaderboardRowSkeleton key={i} />)
                       ) : filteredSpendingLeaders.length > 0 ? (
-                        filteredSpendingLeaders.map((leaderUser, index) => (
+                        filteredSpendingLeaders.map((leaderUser, index) => {
+                          const tier = getPlayerTier(leaderUser.pixel_count);
+                          return (
                           <div
                             key={leaderUser.user_id}
+                            onClick={() => setSelectedUser(leaderUser)}
                             className={cn(
-                              'flex items-center justify-between p-4 rounded-lg border transition-all duration-200 group',
-                              index < TOP_RANK_COUNT
-                                ? 'bg-gradient-to-r from-success/5 to-primary/5 border-success/20 hover:border-success/40 hover:shadow-md'
+                              'flex items-center justify-between p-4 rounded-lg border transition-all duration-200 group cursor-pointer hover:-translate-y-0.5',
+                              index === 0
+                                ? 'bg-gradient-to-r from-yellow-500/10 via-amber-500/5 to-transparent border-yellow-500/30 shadow-[0_0_15px_rgba(234,179,8,0.1)] hover:shadow-[0_0_20px_rgba(234,179,8,0.2)]'
+                                : index === 1
+                                ? 'bg-gradient-to-r from-slate-400/10 via-slate-300/5 to-transparent border-slate-300/30 shadow-[0_0_10px_rgba(203,213,225,0.1)] hover:shadow-[0_0_15px_rgba(203,213,225,0.2)]'
+                                : index === 2
+                                ? 'bg-gradient-to-r from-amber-700/10 via-orange-700/5 to-transparent border-amber-700/30 shadow-[0_0_10px_rgba(180,83,9,0.1)] hover:shadow-[0_0_15px_rgba(180,83,9,0.2)]'
                                 : 'bg-card hover:bg-accent/5',
                               leaderUser.user_id === user?.id && 'ring-2 ring-success'
                             )}
@@ -1033,7 +1122,11 @@ const Leaderboard = () => {
                               <div className="relative flex-shrink-0">
                                 <Badge
                                   variant={getRankBadgeVariant(index)}
-                                  className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm"
+                                  className={cn("w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm", 
+                                    index === 0 && "bg-gradient-to-br from-yellow-400 to-amber-600 border-none text-white",
+                                    index === 1 && "bg-gradient-to-br from-slate-300 to-slate-500 border-none text-white",
+                                    index === 2 && "bg-gradient-to-br from-amber-600 to-orange-800 border-none text-white"
+                                  )}
                                   aria-label={`Rank ${index + 1}`}
                                 >
                                   {index + 1}
@@ -1054,17 +1147,34 @@ const Leaderboard = () => {
                                 </AvatarFallback>
                               </Avatar>
                               <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-2 flex-wrap">
                                   <div className="font-semibold truncate">
                                     {leaderUser.full_name || 'Anonymous User'}
                                   </div>
                                   {leaderUser.user_id === user?.id && (
-                                    <Badge variant="secondary" className="text-xs">
+                                    <Badge variant="secondary" className="text-[10px] h-5">
                                       You
                                     </Badge>
                                   )}
+                                  {tier && (
+                                    <Badge variant="outline" className={cn("text-[10px] h-5", tier.color)}>
+                                      {tier.icon} {tier.title}
+                                    </Badge>
+                                  )}
+                                  {leaderUser.isHot && (
+                                    <TooltipProvider>
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <div className="flex items-center justify-center bg-orange-500/20 text-orange-500 rounded-full w-5 h-5">
+                                            <Flame className="w-3 h-3" />
+                                          </div>
+                                        </TooltipTrigger>
+                                        <TooltipContent><p>Active recently!</p></TooltipContent>
+                                      </Tooltip>
+                                    </TooltipProvider>
+                                  )}
                                 </div>
-                                <div className="text-sm text-muted-foreground">
+                                <div className="text-sm text-muted-foreground mt-0.5">
                                   Total spent: ₹
                                   {leaderUser.total_spent.toLocaleString('en-IN', {
                                     maximumFractionDigits: 2,
@@ -1072,15 +1182,18 @@ const Leaderboard = () => {
                                 </div>
                               </div>
                             </div>
-                            <Badge
-                              variant="outline"
-                              className="ml-2 flex-shrink-0 font-bold text-success"
-                              aria-label={`Spent ${Math.round(leaderUser.total_spent)} rupees`}
-                            >
-                              ₹{Math.round(leaderUser.total_spent).toLocaleString()}
-                            </Badge>
+                            <div className="flex items-center gap-3">
+                              <Badge
+                                variant="outline"
+                                className="flex-shrink-0 font-bold text-success bg-background/50 backdrop-blur-sm"
+                                aria-label={`Spent ${Math.round(leaderUser.total_spent)} rupees`}
+                              >
+                                ₹{Math.round(leaderUser.total_spent).toLocaleString()}
+                              </Badge>
+                              <ChevronRight className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+                            </div>
                           </div>
-                        ))
+                        )})
                       ) : (
                         <div className="text-center py-12">
                           <div className="w-16 h-16 mx-auto bg-muted rounded-full flex items-center justify-center mb-4">
@@ -1180,6 +1293,53 @@ const Leaderboard = () => {
             </Tabs>
           </div>
         </main>
+
+        <Dialog open={!!selectedUser} onOpenChange={(open) => !open && setSelectedUser(null)}>
+          <DialogContent className="sm:max-w-md bg-card border-primary/20">
+            <DialogHeader>
+              <DialogTitle className="text-center text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                Player Profile
+              </DialogTitle>
+            </DialogHeader>
+            {selectedUser && (
+              <div className="flex flex-col items-center gap-6 py-4">
+                <Avatar className="w-24 h-24 border-4 border-primary/20 shadow-xl">
+                  <AvatarImage src={selectedUser.avatar_url || undefined} />
+                  <AvatarFallback className="text-3xl font-bold">{getInitials(selectedUser.full_name)}</AvatarFallback>
+                </Avatar>
+                <div className="text-center space-y-2">
+                  <h3 className="text-xl font-bold flex items-center justify-center gap-2">
+                    {selectedUser.full_name || 'Anonymous User'}
+                    {selectedUser.isHot && <Flame className="w-5 h-5 text-orange-500 animate-pulse" />}
+                  </h3>
+                  {getPlayerTier(selectedUser.pixel_count) && (
+                    <Badge variant="outline" className={cn("text-sm py-1 px-3", getPlayerTier(selectedUser.pixel_count)?.color)}>
+                      {getPlayerTier(selectedUser.pixel_count)?.icon} {getPlayerTier(selectedUser.pixel_count)?.title}
+                    </Badge>
+                  )}
+                </div>
+                <div className="grid grid-cols-2 gap-4 w-full">
+                  <div className="bg-primary/5 rounded-xl p-4 text-center border border-primary/10">
+                    <Trophy className="w-6 h-6 text-primary mx-auto mb-2" />
+                    <div className="text-2xl font-bold text-primary">{selectedUser.pixel_count.toLocaleString()}</div>
+                    <div className="text-xs text-muted-foreground uppercase tracking-wider font-semibold mt-1">Pixels Owned</div>
+                  </div>
+                  <div className="bg-success/5 rounded-xl p-4 text-center border border-success/10">
+                    <DollarSign className="w-6 h-6 text-success mx-auto mb-2" />
+                    <div className="text-2xl font-bold text-success">₹{Math.round(selectedUser.total_spent).toLocaleString()}</div>
+                    <div className="text-xs text-muted-foreground uppercase tracking-wider font-semibold mt-1">Total Spent</div>
+                  </div>
+                </div>
+                <Button className="w-full bg-gradient-to-r from-primary to-accent hover:opacity-90" onClick={() => {
+                   navigate(`/canvas?highlightUser=${selectedUser.user_id}`);
+                }}>
+                  <MapPin className="w-4 h-4 mr-2" />
+                  View Grid
+                </Button>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
 
         <Footer />
 

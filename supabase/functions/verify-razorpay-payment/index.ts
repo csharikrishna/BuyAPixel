@@ -1,19 +1,13 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { createHmac } from 'https://deno.land/std@0.168.0/node/crypto.ts'
-import { SMTPClient } from 'https://deno.land/x/denomailer@1.6.0/mod.ts'
+import { sendEmail, buildPurchaseConfirmationEmail } from '../_shared/email.ts'
 
 const RAZORPAY_KEY_SECRET = Deno.env.get('RAZORPAY_KEY_SECRET')
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 
-// Email config — SMTP (primary) or Resend (fallback)
-const SMTP_HOSTNAME = Deno.env.get('SMTP_HOSTNAME')  // e.g. smtp.gmail.com
-const SMTP_PORT = parseInt(Deno.env.get('SMTP_PORT') || '465')
-const SMTP_USERNAME = Deno.env.get('SMTP_USERNAME')
-const SMTP_PASSWORD = Deno.env.get('SMTP_PASSWORD')
-const SMTP_FROM = Deno.env.get('SMTP_FROM') || 'BuyASpot <noreply@buyaspot.in>'
-const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
+
 
 // CORS: restrict to production domain + localhost for dev
 const ALLOWED_ORIGINS = [
@@ -100,74 +94,7 @@ function verifySignature(
    return timingSafeEqual(generatedSignature, signature)
 }
 
-// ─── Email Sending (SMTP primary, Resend fallback) ──────────────────────────
-
-async function sendViaSmtp(to: string, subject: string, html: string): Promise<boolean> {
-   if (!SMTP_HOSTNAME || !SMTP_USERNAME || !SMTP_PASSWORD) return false
-
-   try {
-      const client = new SMTPClient({
-         connection: {
-            hostname: SMTP_HOSTNAME,
-            port: SMTP_PORT,
-            tls: SMTP_PORT === 465,
-            auth: {
-               username: SMTP_USERNAME,
-               password: SMTP_PASSWORD,
-            },
-         },
-      })
-
-      await client.send({
-         from: SMTP_FROM,
-         to: to,
-         subject,
-         content: 'auto',
-         html,
-      })
-
-      await client.close()
-      console.log('✅ Email sent via SMTP')
-      return true
-   } catch (err) {
-      console.error('SMTP send failed:', err)
-      return false
-   }
-}
-
-async function sendViaResend(to: string, subject: string, html: string): Promise<boolean> {
-   if (!RESEND_API_KEY) return false
-
-   try {
-      const res = await fetch('https://api.resend.com/emails', {
-         method: 'POST',
-         headers: {
-            Authorization: `Bearer ${RESEND_API_KEY}`,
-            'Content-Type': 'application/json',
-         },
-         body: JSON.stringify({
-            from: 'BuyASpot <support@buyaspot.in>',
-            to: [to],
-            reply_to: 'support@buyaspot.in',
-            subject,
-            html,
-         }),
-      })
-
-      if (!res.ok) {
-         const error = await res.json()
-         console.error('Resend error:', error)
-         return false
-      }
-      console.log('✅ Email sent via Resend')
-      return true
-   } catch (err) {
-      console.error('Resend send failed:', err)
-      return false
-   }
-}
-
-// Send confirmation email — tries SMTP first, then Resend, then logs warning
+// Send confirmation email using shared module
 async function sendConfirmationEmail(
    email: string,
    pixelCount: number,
@@ -181,95 +108,14 @@ async function sendConfirmationEmail(
    }
 
    const subject = '🎉 Your BuyASpot Purchase Is Confirmed'
-   const html = buildEmailHtml(email, pixelCount, totalAmount, pixelName, linkUrl)
+   const html = buildPurchaseConfirmationEmail({
+      pixelName,
+      pixelCount,
+      totalCost: totalAmount,
+      linkUrl,
+   })
 
-   // Strategy 1: SMTP (Supabase custom SMTP credentials)
-   const smtpSent = await sendViaSmtp(email, subject, html)
-   if (smtpSent) return
-
-   // Strategy 2: Resend API (fallback)
-   const resendSent = await sendViaResend(email, subject, html)
-   if (resendSent) return
-
-   // No email service configured
-   console.warn(
-      '⚠️ No email service configured. To enable purchase confirmation emails, set either:\n' +
-      '   • SMTP_HOSTNAME, SMTP_PORT, SMTP_USERNAME, SMTP_PASSWORD (use your Supabase SMTP settings)\n' +
-      '   • RESEND_API_KEY (free tier: 100 emails/day at resend.com)\n' +
-      `   Skipped email for: ${email}`
-   )
-}
-
-// ✅ HTML entity escaping to prevent XSS in emails
-function escapeHtml(str: string): string {
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;')
-}
-
-function buildEmailHtml(
-   email: string,
-   pixelCount: number,
-   totalAmount: number,
-   pixelName: string,
-   linkUrl?: string
-): string {
-   const formatINR = (amount: number) =>
-      new Intl.NumberFormat('en-IN', {
-         style: 'currency',
-         currency: 'INR',
-         maximumFractionDigits: 0,
-      }).format(amount)
-
-   // ✅ Sanitize user-provided strings before HTML injection
-   const safePixelName = escapeHtml(pixelName)
-   const safeLinkUrl = linkUrl ? escapeHtml(linkUrl) : undefined
-
-   return `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Purchase Confirmation</title>
-  <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f3f4f6; margin: 0; padding: 0; }
-    .container { max-width: 600px; margin: 40px auto; background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.08); }
-    .header { background: linear-gradient(135deg, #10b981, #059669); padding: 32px; text-align: center; color: #fff; font-size: 28px; font-weight: 800; }
-    .content { padding: 36px 32px; text-align: center; }
-    h1 { margin-top: 0; color: #111827; }
-    .receipt { margin: 28px 0; padding: 24px; border-radius: 10px; background: #f9fafb; border: 1px solid #e5e7eb; text-align: left; }
-    .row { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 14px; }
-    .row.total { margin-top: 12px; padding-top: 12px; border-top: 1px solid #e5e7eb; font-weight: 700; font-size: 16px; }
-    .button { display: inline-block; margin-top: 28px; padding: 14px 32px; background: #10b981; color: #fff; border-radius: 8px; text-decoration: none; font-weight: 600; }
-    .footer { padding: 22px; font-size: 12px; color: #9ca3af; text-align: center; background: #f9fafb; border-top: 1px solid #e5e7eb; }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="header">BuyASpot</div>
-    <div class="content">
-      <h1>Payment Successful 🎉</h1>
-      <p>You now officially own a piece of the Million Dollar Canvas. Your pixels are secured forever.</p>
-       <div class="receipt">
-         <div class="row"><span>Pixel Name</span><span>${safePixelName}</span></div>
-         <div class="row"><span>Quantity</span><span>${pixelCount} pixels</span></div>
-         ${safeLinkUrl ? `<div class="row"><span>Link</span><span><a href="${safeLinkUrl}" style="color:#10b981">${safeLinkUrl}</a></span></div>` : ''}
-         <div class="row total"><span>Total Paid</span><span>${formatINR(totalAmount)}</span></div>
-       </div>
-      <a href="https://buyaspot.in/profile" class="button">View Your Pixels</a>
-    </div>
-    <div class="footer">
-      <p>BuyASpot — The Modern Million Dollar Homepage</p>
-      <p>Reply to this email if you need help.</p>
-    </div>
-  </div>
-</body>
-</html>
-`
+   await sendEmail(email, subject, html)
 }
 
 serve(async (req: Request) => {

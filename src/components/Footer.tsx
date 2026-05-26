@@ -23,8 +23,11 @@ const Footer = () => {
       links: [
         { name: "Help Center", href: "/help" },
         { name: "Contact Us", href: "/contact" },
+        { name: "Payment Help", href: "/payment-help" },
         { name: "Terms of Service", href: "/terms" },
         { name: "Privacy Policy", href: "/privacy" },
+        { name: "Refund Policy", href: "/refund-policy" },
+        { name: "Content Guidelines", href: "/content-guidelines" },
       ]
     },
     {

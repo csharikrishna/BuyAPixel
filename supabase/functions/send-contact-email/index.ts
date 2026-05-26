@@ -1,14 +1,8 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import * as supabaseJs2 from 'https://esm.sh/@supabase/supabase-js@2'
-import { SMTPClient } from 'https://deno.land/x/denomailer@1.6.0/mod.ts'
+import { sendEmail, buildContactFormEmail } from '../_shared/email.ts'
 
 // Environment variables
-const SMTP_HOSTNAME = Deno.env.get('SMTP_HOSTNAME')
-const SMTP_PORT = parseInt(Deno.env.get('SMTP_PORT') || '465')
-const SMTP_USERNAME = Deno.env.get('SMTP_USERNAME')
-const SMTP_PASSWORD = Deno.env.get('SMTP_PASSWORD')
-const SMTP_FROM = Deno.env.get('SMTP_FROM') || 'BuyASpot <noreply@buyaspot.in>'
-const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
 const CONTACT_EMAIL = Deno.env.get('CONTACT_EMAIL') || 'support@buyaspot.in'
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
@@ -18,48 +12,8 @@ const ALLOWED_ORIGINS = [
   'http://localhost:8080'
 ]
 
-// Validate required environment variables
-if (!RESEND_API_KEY && (!SMTP_HOSTNAME || !SMTP_USERNAME || !SMTP_PASSWORD)) {
-  throw new Error('Either SMTP credentials or RESEND_API_KEY must be set')
-}
 if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
   throw new Error('Supabase credentials are required')
-}
-
-/* ─── Email Sending (SMTP primary, Resend fallback) ─── */
-
-async function sendViaSmtp(to: string, replyTo: string, subject: string, html: string): Promise<boolean> {
-   if (!SMTP_HOSTNAME || !SMTP_USERNAME || !SMTP_PASSWORD) return false
-
-   try {
-      const client = new SMTPClient({
-         connection: {
-            hostname: SMTP_HOSTNAME,
-            port: SMTP_PORT,
-            tls: SMTP_PORT === 465,
-            auth: {
-               username: SMTP_USERNAME,
-               password: SMTP_PASSWORD,
-            },
-         },
-      })
-
-      await client.send({
-         from: SMTP_FROM,
-         to,
-         replyTo,
-         subject,
-         content: 'auto',
-         html,
-      })
-
-      await client.close()
-      console.log('✅ Contact email sent via SMTP')
-      return true
-   } catch (err) {
-      console.error('SMTP send failed for contact form:', err)
-      return false
-   }
 }
 
 interface ContactFormData {
@@ -67,7 +21,9 @@ interface ContactFormData {
   email: string
   subject: string
   message: string
-  honeypot?: string // Spam prevention
+  category?: string
+  honeypot?: string
+  file_url?: string
 }
 
 interface RateLimitEntry {
@@ -82,16 +38,6 @@ const RATE_LIMIT_WINDOW = 60 * 60 * 1000 // 1 hour in milliseconds
 
 // Email validation regex
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-
-// Sanitize HTML to prevent XSS
-function sanitizeHtml(text: string): string {
-  return text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;')
-}
 
 // Check rate limit
 function checkRateLimit(identifier: string): { allowed: boolean; remaining: number } {
@@ -139,23 +85,38 @@ function getCorsHeaders(origin: string | null): HeadersInit {
   }
 }
 
-// Log contact submission to database
-async function logContactSubmission(data: ContactFormData, metadata: { ip: string; userAgent: string }) {
+// Log contact submission to database and return the generated ticket_id
+async function logContactSubmission(
+  data: ContactFormData,
+  metadata: { ip: string; userAgent: string }
+): Promise<string | null> {
   try {
     const supabase = supabaseJs2.createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!)
 
-    await supabase.from('contact_messages').insert({
-      name: data.name,
-      email: data.email,
-      subject: data.subject,
-      message: data.message,
-      ip_address: metadata.ip,
-      user_agent: metadata.userAgent,
-      // submitted_at removed as created_at is default now()
-    })
+    const { data: inserted, error } = await supabase
+      .from('contact_messages')
+      .insert({
+        name: data.name,
+        email: data.email,
+        subject: data.subject,
+        message: data.message,
+        category: data.category || null,
+        file_url: data.file_url || null,
+        ip_address: metadata.ip,
+        user_agent: metadata.userAgent,
+      })
+      .select('ticket_id')
+      .single()
+
+    if (error) {
+      console.error('Failed to log contact submission:', error)
+      return null
+    }
+
+    return inserted?.ticket_id || null
   } catch (error) {
     console.error('Failed to log contact submission:', error)
-    // Don't fail the request if logging fails
+    return null
   }
 }
 
@@ -297,251 +258,45 @@ serve(async (req: Request) => {
       )
     }
 
+    // Log to database FIRST to get ticket_id
+    const ticketId = await logContactSubmission(formData, { ip, userAgent })
+
     console.log('📧 Initiating contact form email...')
     console.log('From:', name, `<${email}>`)
     console.log('Subject:', subject)
+    console.log('Ticket ID:', ticketId)
     console.log('To:', CONTACT_EMAIL)
-    console.log('IP:', ip)
 
-    // Sanitize inputs for HTML
-    const safeName = sanitizeHtml(name)
-    const safeEmail = sanitizeHtml(email)
-    const safeSubject = sanitizeHtml(subject)
-    const safeMessage = sanitizeHtml(message)
+    // Build the Gmail-compatible HTML email
+    const mailSubject = ticketId
+      ? `[${ticketId}] ${subject}`
+      : `[Contact Form] ${subject}`
 
-    const mailSubject = `[Contact Form] ${subject}`
-    const mailHtml = `
-      <!DOCTYPE html>
-      <html lang="en">
-        <head>
-          <meta charset="UTF-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <style>
-            * {
-              margin: 0;
-              padding: 0;
-              box-sizing: border-box;
-            }
-            body { 
-              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-              line-height: 1.6; 
-              color: #333; 
-              background-color: #f5f5f5;
-            }
-            .container { 
-              max-width: 600px; 
-              margin: 20px auto; 
-              background: white;
-              border-radius: 8px;
-              overflow: hidden;
-              box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            }
-            .header { 
-              background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-              color: white; 
-              padding: 30px 20px; 
-              text-align: center;
-            }
-            .header h1 {
-              margin: 0 0 10px 0;
-              font-size: 24px;
-              font-weight: 600;
-            }
-            .header p {
-              margin: 0;
-              opacity: 0.9;
-              font-size: 14px;
-            }
-            .content { 
-              padding: 30px; 
-            }
-            .field { 
-              margin-bottom: 20px; 
-            }
-            .label { 
-              display: block;
-              font-weight: 600; 
-              color: #555; 
-              font-size: 12px;
-              text-transform: uppercase;
-              letter-spacing: 0.5px;
-              margin-bottom: 8px;
-            }
-            .value { 
-              color: #333; 
-              font-size: 15px;
-            }
-            .message-box {
-              white-space: pre-wrap; 
-              background: #f9fafb; 
-              padding: 20px; 
-              border-radius: 6px; 
-              border: 1px solid #e5e7eb;
-              font-size: 15px;
-              line-height: 1.6;
-              word-wrap: break-word;
-            }
-            .metadata {
-              background: #f3f4f6;
-              padding: 15px;
-              border-radius: 6px;
-              font-size: 12px;
-              color: #6b7280;
-              margin-top: 20px;
-            }
-            .metadata strong {
-              color: #374151;
-            }
-            .footer { 
-              text-align: center; 
-              margin-top: 30px; 
-              padding-top: 20px;
-              border-top: 1px solid #e5e7eb;
-              font-size: 12px; 
-              color: #888; 
-            }
-            .footer p {
-              margin: 5px 0;
-            }
-            .email-link {
-              color: #667eea;
-              text-decoration: none;
-            }
-            .email-link:hover {
-              text-decoration: underline;
-            }
-            .reply-button {
-              display: inline-block;
-              margin-top: 20px;
-              padding: 12px 24px;
-              background: #667eea;
-              color: white;
-              text-decoration: none;
-              border-radius: 6px;
-              font-weight: 600;
-            }
-            .reply-button:hover {
-              background: #5568d3;
-            }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <div class="header">
-              <h1>📬 New Contact Form Submission</h1>
-              <p>buyaspot.in</p>
-            </div>
-            <div class="content">
-              <div class="field">
-                <div class="label">From</div>
-                <div class="value">${safeName}</div>
-              </div>
-              <div class="field">
-                <div class="label">Email Address</div>
-                <div class="value">
-                  <a href="mailto:${safeEmail}" class="email-link">${safeEmail}</a>
-                </div>
-              </div>
-              <div class="field">
-                <div class="label">Subject</div>
-                <div class="value">${safeSubject}</div>
-              </div>
-              <div class="field">
-                <div class="label">Message</div>
-                <div class="value">
-                  <div class="message-box">${safeMessage}</div>
-                </div>
-              </div>
-              
-              <div class="metadata">
-                <strong>📊 Request Metadata:</strong><br>
-                IP Address: ${ip}<br>
-                User Agent: ${userAgent}<br>
-                Submitted: ${new Date().toLocaleString('en-IN', {
-                  timeZone: 'Asia/Kolkata',
-                  dateStyle: 'long',
-                  timeStyle: 'medium'
-                })} IST
-              </div>
+    const mailHtml = buildContactFormEmail({
+      name,
+      email,
+      subject,
+      message,
+      category: formData.category,
+      ticketId: ticketId || undefined,
+      fileUrl: formData.file_url || undefined,
+      ip,
+      userAgent,
+    })
 
-              <div style="text-align: center;">
-                <a href="mailto:${safeEmail}?subject=Re: ${encodeURIComponent(subject)}" class="reply-button">
-                  Reply to ${safeName}
-                </a>
-              </div>
-              
-              <div class="footer">
-                <p>This email was sent from the buyaspot.in contact form</p>
-                <p>🔒 Authenticated and verified submission</p>
-              </div>
-            </div>
-          </div>
-        </body>
-      </html>
-    `
-
-    let emailSent = false
-    let isTestMode = false
-    let emailId = 'smtp-success'
-
-    // Try SMTP first
-    if (SMTP_HOSTNAME && SMTP_USERNAME && SMTP_PASSWORD) {
-       emailSent = await sendViaSmtp(CONTACT_EMAIL, email, mailSubject, mailHtml)
-    }
-
-    // Try Resend fallback if SMTP didn't work / wasn't configured
-    if (!emailSent && RESEND_API_KEY) {
-       console.log('Trying Resend API as fallback...')
-       try {
-          const res = await fetch('https://api.resend.com/emails', {
-             method: 'POST',
-             headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${RESEND_API_KEY}`,
-             },
-             body: JSON.stringify({
-                from: 'BuyASpot Contact <support@buyaspot.in>',
-                to: [CONTACT_EMAIL],
-                reply_to: email,
-                subject: mailSubject,
-                html: mailHtml,
-             }),
-          })
-
-          const data = await res.json()
-
-          if (!res.ok) {
-             if (res.status === 403 && data.message?.includes('testing')) {
-                console.log('⚠️  Resend Test Mode: Email sent to verified address only')
-                emailSent = true
-                isTestMode = true
-             } else {
-                console.error('❌ Resend API error:', data)
-                throw new Error(data.message || 'Failed to send email via Resend')
-             }
-          } else {
-             emailSent = true
-             emailId = data.id
-             console.log('✅ Email sent successfully via Resend!')
-          }
-       } catch (err) {
-          console.error('Resend fallback failed:', err)
-       }
-    }
+    // Send using shared email utility (SMTP → Resend fallback)
+    const emailSent = await sendEmail(CONTACT_EMAIL, mailSubject, mailHtml, email)
 
     if (!emailSent) {
-       throw new Error('All configured email methods failed')
+      // Email failed but the DB record was created — still return ticket
+      console.warn('⚠️ Email sending failed, but ticket was created')
     }
-
-    // Log to database
-    await logContactSubmission(formData, { ip, userAgent })
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: 'Email sent successfully',
-        emailId,
-        ...(isTestMode ? { note: 'Test mode - emails sent to verified address only' } : {})
+        message: 'Support request submitted successfully',
+        ticket_id: ticketId,
       }),
       {
         headers: {

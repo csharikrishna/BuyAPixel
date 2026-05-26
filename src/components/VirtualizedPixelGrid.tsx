@@ -88,6 +88,7 @@ export const VirtualizedPixelGrid = forwardRef<
     const hasInitializedRef = useRef(false);
     const handledPixelParam = useRef<string | null>(null);
     const [searchParams] = useSearchParams();
+    const highlightUser = searchParams.get('highlightUser');
     const imageUrlsRef = useRef<Set<string>>(new Set());
 
     // ── Data & Interaction Hooks ──────────────────────────────
@@ -119,7 +120,7 @@ export const VirtualizedPixelGrid = forwardRef<
         const gridPixelWidth = gridWidth * pixelSize;
         const gridPixelHeight = gridHeight * pixelSize;
         const isMobileDevice = clientWidth < 768;
-        const padding = isMobileDevice ? 4 : 16;
+        const padding = 0;
         const fitZoomX = (clientWidth - padding * 2) / gridPixelWidth;
         const fitZoomY = (clientHeight - padding * 2) / gridPixelHeight;
         const fitZoom = Math.min(fitZoomX, fitZoomY);
@@ -142,9 +143,9 @@ export const VirtualizedPixelGrid = forwardRef<
           zoom: clampedZoom,
           offset: {
             x: (clientWidth - renderedGridWidth) / 2,
-            // Top-align when grid overflows, center when it fits
+            // Top-align with 0 gap when grid overflows, center perfectly when it fits
             y: renderedGridHeight > clientHeight
-              ? padding
+              ? 0
               : (clientHeight - renderedGridHeight) / 2,
           },
         };
@@ -795,12 +796,13 @@ export const VirtualizedPixelGrid = forwardRef<
             {blockData.map((block) => {
               if (showMyPixels && block.ownerId !== user?.id) return null;
               const isOwner = block.ownerId === user?.id;
+              const isHighlight = highlightUser === block.ownerId;
               return (
                 <div
                   key={`block-${block.blockId}`}
                   role="button"
                   tabIndex={0}
-                  className="cursor-pointer"
+                  className="cursor-pointer transition-all duration-300"
                   style={{
                     position: "absolute",
                     left: Math.floor(block.minX * scaledPixelSize),
@@ -812,13 +814,17 @@ export const VirtualizedPixelGrid = forwardRef<
                     backgroundPosition: "center",
                     backgroundRepeat: "no-repeat",
                     backgroundColor: "#1e1e2e",
-                    opacity: isOwner ? 1 : 0.9,
-                    boxShadow: isOwner
+                    opacity: isHighlight ? 1 : isOwner ? 1 : 0.9,
+                    boxShadow: isHighlight 
+                      ? "0 0 15px rgba(249,115,22,1)" 
+                      : isOwner
                       ? "0 0 8px rgba(16,185,129,0.7)"
                       : "0 2px 8px rgba(0,0,0,0.15)",
-                    border: isOwner ? "2px solid #10b981" : "1px solid #cbd5e1",
+                    border: isHighlight 
+                      ? "3px solid #f97316" 
+                      : isOwner ? "2px solid #10b981" : "1px solid #cbd5e1",
                     borderRadius: "2px",
-                    zIndex: isOwner ? 15 : 5,
+                    zIndex: isHighlight ? 20 : isOwner ? 15 : 5,
                     imageRendering: zoom < 1 ? "auto" : "pixelated",
                   }}
                   onClick={(e) => {
@@ -866,12 +872,13 @@ export const VirtualizedPixelGrid = forwardRef<
               if (showMyPixels && pixel.owner_id !== user?.id) return null;
               const { x, y, id, owner_id, image_url, link_url, alt_text } = pixel;
               const isOwner = owner_id === user?.id;
+              const isHighlight = highlightUser === owner_id;
               return (
                 <div
                   key={`sold-${id}`}
                   role="button"
                   tabIndex={0}
-                  className="cursor-pointer"
+                  className="cursor-pointer transition-all duration-300"
                   style={{
                     position: "absolute",
                     left: Math.floor(x * scaledPixelSize),
@@ -889,10 +896,14 @@ export const VirtualizedPixelGrid = forwardRef<
                     backgroundSize: "contain",
                     backgroundPosition: "center",
                     backgroundRepeat: "no-repeat",
-                    opacity: isOwner ? 1 : 0.85,
-                    boxShadow: isOwner ? "0 0 6px rgba(16,185,129,0.6)" : "none",
-                    border: isOwner ? "1px solid #10b981" : "1px solid #cbd5e1",
-                    zIndex: isOwner ? 10 : 0,
+                    opacity: isHighlight ? 1 : isOwner ? 1 : 0.85,
+                    boxShadow: isHighlight 
+                      ? "0 0 12px rgba(249,115,22,1)" 
+                      : isOwner ? "0 0 6px rgba(16,185,129,0.6)" : "none",
+                    border: isHighlight 
+                      ? "2px solid #f97316" 
+                      : isOwner ? "1px solid #10b981" : "1px solid #cbd5e1",
+                    zIndex: isHighlight ? 20 : isOwner ? 10 : 0,
                     imageRendering: zoom < 1 ? "auto" : "pixelated",
                   }}
                   onClick={(e) => {

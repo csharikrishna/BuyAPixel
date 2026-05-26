@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { sendEmail, buildPurchaseConfirmationEmail } from '../_shared/email.ts'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
@@ -202,55 +203,21 @@ serve(async (req: Request) => {
     console.log(`✅ [BYPASS] Purchase completed for user ${user.id}: ${body.pixels.length} pixels`)
 
     // Send confirmation email (fire-and-forget, don't block purchase response)
-    const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
-    if (RESEND_API_KEY && user.email) {
+    if (user.email) {
       try {
-        const formatINR = (amount: number) =>
-          new Intl.NumberFormat('en-IN', {
-            style: 'currency',
-            currency: 'INR',
-            maximumFractionDigits: 0,
-          }).format(amount)
-
-        const escapeHtml = (str: string) =>
-          str.replace(/[&<>"']/g, (m) =>
-            ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]!)
-          )
-
-        const safePixelName = escapeHtml(validatedAltText || 'My Pixels')
-        const safeLinkUrl = validatedLinkUrl ? escapeHtml(validatedLinkUrl) : null
-        const totalAmountINR = body.totalAmount
-
-        const emailHtml = `<!DOCTYPE html>
-<html><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
-<style>body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f3f4f6;margin:0;padding:0;}.container{max-width:600px;margin:40px auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 10px 25px rgba(0,0,0,0.08);}.header{background:linear-gradient(135deg,#10b981,#059669);padding:32px;text-align:center;color:#fff;font-size:28px;font-weight:800;}.content{padding:36px 32px;text-align:center;}h1{margin-top:0;color:#111827;}.receipt{margin:28px 0;padding:24px;border-radius:10px;background:#f9fafb;border:1px solid #e5e7eb;text-align:left;}.row{display:flex;justify-content:space-between;margin-bottom:12px;font-size:14px;}.row.total{margin-top:12px;padding-top:12px;border-top:1px solid #e5e7eb;font-weight:700;font-size:16px;}.button{display:inline-block;margin-top:28px;padding:14px 32px;background:#10b981;color:#fff;border-radius:8px;text-decoration:none;font-weight:600;}.footer{padding:22px;font-size:12px;color:#9ca3af;text-align:center;background:#f9fafb;border-top:1px solid #e5e7eb;}.dev-badge{background:#f59e0b;color:#000;padding:6px 16px;border-radius:6px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;display:inline-block;margin-bottom:16px;}</style></head>
-<body><div class="container"><div class="header">BuyASpot</div>
-<div class="content"><div class="dev-badge">⚠️ Test Mode Purchase</div><h1>Purchase Confirmed 🎉</h1>
-<p>Your pixels are secured on the canvas.</p>
-<div class="receipt">
-<div class="row"><span>Pixel Name</span><span>${safePixelName}</span></div>
-<div class="row"><span>Quantity</span><span>${body.pixels.length} pixels</span></div>
-<div class="row"><span>Transaction ID</span><span style="font-family:monospace;font-size:12px">${bypassPaymentId}</span></div>
-${safeLinkUrl ? `<div class="row"><span>Link</span><span><a href="${safeLinkUrl}" style="color:#10b981">${safeLinkUrl}</a></span></div>` : ''}
-<div class="row total"><span>Total</span><span>${formatINR(totalAmountINR)}</span></div>
-</div>
-<a href="https://buyaspot.in/profile" class="button">View Your Pixels</a></div>
-<div class="footer"><p>BuyASpot — The Modern Million Dollar Homepage</p><p>Reply to this email if you need help.</p></div></div></body></html>`
-
-        await fetch('https://api.resend.com/emails', {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${RESEND_API_KEY}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            from: 'BuyASpot <support@buyaspot.in>',
-            to: [user.email],
-            reply_to: 'support@buyaspot.in',
-            subject: '🎉 Your BuyASpot Purchase Is Confirmed',
-            html: emailHtml,
-          }),
+        const emailHtml = buildPurchaseConfirmationEmail({
+          pixelName: validatedAltText || 'My Pixels',
+          pixelCount: body.pixels.length,
+          totalCost: body.totalAmount,
+          linkUrl: validatedLinkUrl || undefined,
+          isTestMode: true,
         })
+
+        await sendEmail(
+          user.email,
+          '🎉 Your BuyASpot Purchase Is Confirmed',
+          emailHtml
+        )
         console.log('[BYPASS] Confirmation email sent to', user.email)
       } catch (emailErr) {
         // Don't fail the purchase if email fails

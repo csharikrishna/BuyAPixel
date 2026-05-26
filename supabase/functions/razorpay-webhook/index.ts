@@ -1,12 +1,13 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { createHmac } from 'https://deno.land/std@0.168.0/node/crypto.ts'
+import { sendEmail, buildPaymentNotificationEmail } from '../_shared/email.ts'
 
 const RAZORPAY_KEY_ID = Deno.env.get('RAZORPAY_KEY_ID')
 const RAZORPAY_KEY_SECRET = Deno.env.get('RAZORPAY_KEY_SECRET')
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
-const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
+
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -98,72 +99,9 @@ async function sendReconciliationEmail(
   amount: number,
   reason: string
 ) {
-  if (!RESEND_API_KEY) {
-    console.warn('RESEND_API_KEY not set, skipping email')
-    return
-  }
-
-  try {
-    const statusBadge = status === 'resolved' ? '✅' : status === 'failed' ? '❌' : '⚠️'
-    const res = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${RESEND_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        from: 'BuyASpot Support <support@buyaspot.in>',
-        to: [email],
-        reply_to: 'support@buyaspot.in',
-        subject: `${statusBadge} Payment Notification - ${paymentId.slice(-8)}`,
-        html: `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Payment Notification</title>
-  <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f3f4f6; margin: 0; padding: 0; }
-    .container { max-width: 600px; margin: 40px auto; background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.08); }
-    .header { background: linear-gradient(135deg, #10b981, #059669); padding: 32px; text-align: center; color: #fff; font-size: 24px; font-weight: 800; }
-    .content { padding: 36px 32px; text-align: center; }
-    .receipt { margin: 28px 0; padding: 24px; border-radius: 10px; background: #f9fafb; border: 1px solid #e5e7eb; text-align: left; }
-    .row { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 14px; }
-    .footer { padding: 22px; font-size: 12px; color: #9ca3af; text-align: center; background: #f9fafb; border-top: 1px solid #e5e7eb; }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="header">BuyASpot</div>
-    <div class="content">
-      <h1>Payment Notification</h1>
-      <div class="receipt">
-        <div class="row"><span>Status</span><span>${status.toUpperCase()}</span></div>
-        <div class="row"><span>Payment ID</span><span>${paymentId}</span></div>
-        <div class="row"><span>Amount</span><span>₹${(amount / 100).toFixed(2)}</span></div>
-        <div class="row"><span>Details</span><span>${reason}</span></div>
-      </div>
-      ${status === 'failed' ? '<p style="color: #dc2626;">If your payment was deducted but not reflected, please contact support immediately.</p>' : ''}
-    </div>
-    <div class="footer">
-      <p>BuyASpot — The Modern Million Dollar Homepage</p>
-      <p>Reply to this email if you need help.</p>
-    </div>
-  </div>
-</body>
-</html>
-        `,
-      }),
-    })
-
-    if (!res.ok) {
-      const error = await res.json()
-      console.error('Resend error:', error)
-    }
-  } catch (err) {
-    console.error('Email send error:', err)
-  }
+  const html = buildPaymentNotificationEmail({ status, paymentId, amount, reason })
+  const statusBadge = status === 'resolved' ? '✅' : status === 'failed' ? '❌' : '⚠️'
+  await sendEmail(email, `${statusBadge} Payment Notification - ${paymentId.slice(-8)}`, html)
 }
 
 serve(async (req: Request) => {

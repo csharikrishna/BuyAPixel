@@ -1,10 +1,11 @@
 import React from 'react';
-import { CheckCircle2, AlertCircle, Loader2, Heart, Zap, Trophy } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { CheckCircle2, AlertCircle, Loader2, Heart, Zap, Trophy, Clock, RefreshCw, HelpCircle } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
 interface PaymentNotificationProps {
-  status: 'processing' | 'success' | 'error';
+  status: 'processing' | 'success' | 'error' | 'pending_verification' | 'refund_initiated';
   pixelCount: number;
   pixelName: string;
   totalAmount: number;
@@ -38,6 +39,101 @@ export const PaymentNotification: React.FC<PaymentNotificationProps> = ({
                 Please wait while we verify your payment...
               </p>
             </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (status === 'pending_verification') {
+    return (
+      <Card className="border border-amber-500/30 bg-gradient-to-br from-amber-50/50 to-yellow-50/50 dark:from-amber-950/20 dark:to-yellow-950/20 overflow-hidden">
+        <CardContent className="p-6">
+          <div className="flex items-start gap-4 mb-4">
+            <div className="flex-shrink-0">
+              <Clock className="w-10 h-10 text-amber-600 dark:text-amber-400 animate-pulse" />
+            </div>
+            <div className="flex-1">
+              <h2 className="text-xl font-bold text-amber-700 dark:text-amber-300 mb-1">
+                Pending Verification
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                Your payment has been received and is being verified. This usually takes 2-5 minutes.
+              </p>
+            </div>
+          </div>
+
+          <div className="bg-amber-100/50 dark:bg-amber-900/20 rounded-lg p-4 mb-4 border border-amber-200/50 dark:border-amber-800/50">
+            <ul className="text-sm text-amber-800 dark:text-amber-200 space-y-1 list-disc list-inside">
+              <li>Your payment is being processed by our payment gateway</li>
+              <li>Do NOT attempt to make a duplicate payment</li>
+              <li>You'll receive an email confirmation once verified</li>
+            </ul>
+          </div>
+
+          <div className="flex gap-3">
+            {onClose && (
+              <Button onClick={onClose} variant="outline" className="flex-1">
+                Close
+              </Button>
+            )}
+            <Button variant="outline" className="flex-1" asChild>
+              <Link to="/payment-help">
+                <HelpCircle className="w-4 h-4 mr-2" />
+                Payment Help
+              </Link>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (status === 'refund_initiated') {
+    return (
+      <Card className="border border-blue-500/30 bg-gradient-to-br from-blue-50/50 to-indigo-50/50 dark:from-blue-950/20 dark:to-indigo-950/20 overflow-hidden">
+        <CardContent className="p-6">
+          <div className="flex items-start gap-4 mb-4">
+            <div className="flex-shrink-0">
+              <RefreshCw className="w-10 h-10 text-blue-600 dark:text-blue-400" />
+            </div>
+            <div className="flex-1">
+              <h2 className="text-xl font-bold text-blue-700 dark:text-blue-300 mb-1">
+                Refund Initiated
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                Your refund has been processed. It will reflect in your account within 5-7 business days.
+              </p>
+            </div>
+          </div>
+
+          <div className="bg-blue-100/50 dark:bg-blue-900/20 rounded-lg p-4 mb-4 border border-blue-200/50 dark:border-blue-800/50">
+            <div className="text-xs font-semibold text-blue-900 dark:text-blue-100 mb-2 uppercase tracking-wide">
+              Refund Details
+            </div>
+            <div className="space-y-2">
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-muted-foreground">Refund Amount:</span>
+                <span className="font-medium">₹{totalAmount.toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-muted-foreground">Expected Timeline:</span>
+                <span className="font-medium">5-7 business days</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex gap-3">
+            {onClose && (
+              <Button onClick={onClose} variant="outline" className="flex-1">
+                Close
+              </Button>
+            )}
+            <Button variant="outline" className="flex-1" asChild>
+              <Link to="/refund-policy">
+                Refund Policy
+              </Link>
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -196,6 +292,16 @@ export const PaymentNotification: React.FC<PaymentNotificationProps> = ({
           >
             <Zap className="w-4 h-4 mr-2" />
             Try Again
+          </Button>
+          <Button
+            variant="outline"
+            className="flex-1"
+            asChild
+          >
+            <Link to="/payment-help">
+              <HelpCircle className="w-4 h-4 mr-2" />
+              Payment Help
+            </Link>
           </Button>
         </div>
       </CardContent>

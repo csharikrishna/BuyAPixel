@@ -47,6 +47,9 @@ const Contact = lazy(() => import("./pages/Contact"));
 const Help = lazy(() => import("./pages/Help"));
 const TermsOfService = lazy(() => import("./pages/TermsOfService"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
+const RefundPolicy = lazy(() => import("./pages/RefundPolicy"));
+const ContentGuidelines = lazy(() => import("./pages/ContentGuidelines"));
+const PaymentHelp = lazy(() => import("./pages/PaymentHelp"));
 const SeoInfo = lazy(() => import("./pages/SeoInfo"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
@@ -165,6 +168,9 @@ const AppContent = () => {
             {/* Legal Pages */}
             <Route path="/terms" element={<ErrorBoundary pageName="Terms"><TermsOfService /></ErrorBoundary>} />
             <Route path="/privacy" element={<ErrorBoundary pageName="Privacy"><PrivacyPolicy /></ErrorBoundary>} />
+            <Route path="/refund-policy" element={<ErrorBoundary pageName="Refund Policy"><RefundPolicy /></ErrorBoundary>} />
+            <Route path="/content-guidelines" element={<ErrorBoundary pageName="Content Guidelines"><ContentGuidelines /></ErrorBoundary>} />
+            <Route path="/payment-help" element={<ErrorBoundary pageName="Payment Help"><PaymentHelp /></ErrorBoundary>} />
             <Route path="/seo-info" element={<ErrorBoundary pageName="SEO Info"><SeoInfo /></ErrorBoundary>} />
 
             {/* Catch-all 404 - MUST BE LAST */}

@@ -744,7 +744,7 @@ const MarketplacePage = () => {
                                       const altText = pixel.alt_text || pixel.pixel_blocks?.alt_text || `Pixel at (${pixel.x}, ${pixel.y})`;
                                       
                                       return (
-                                        <SelectItem key={pixel.id} value={pixel.id} className="py-2 cursor-pointer focus:bg-muted">
+                                        <SelectItem key={pixel.id} value={pixel.id} className="py-2 cursor-pointer">
                                           <div className="flex items-center gap-3">
                                             {imageUrl ? (
                                               <img 
@@ -768,7 +768,7 @@ const MarketplacePage = () => {
                                   </SelectContent>
                                 </Select>
                               </div>
-                              <div className="space-y-2">
+                              <div className="space-y-3">
                                 <Label htmlFor="price" className="text-sm font-medium">
                                   Asking Price (₹)
                                 </Label>
@@ -778,13 +778,57 @@ const MarketplacePage = () => {
                                   placeholder="Enter your price"
                                   value={listingPrice}
                                   onChange={(e) => setListingPrice(e.target.value)}
-                                  min="1"
+                                  min="10"
                                   step="1"
-                                  className="mt-2 h-11 text-base"
+                                  className="mt-2 h-11 text-base font-semibold"
                                 />
-                                <p className="text-xs text-muted-foreground mt-1">
-                                  Average market price: ₹{stats.average_price.toLocaleString()}
-                                </p>
+                                
+                                {/* Quick Price Buttons */}
+                                {selectedPixelId && userPixels?.find(p => p.id === selectedPixelId)?.price_paid && (
+                                  <div className="flex flex-wrap gap-2 mt-2">
+                                    <Badge 
+                                      variant="secondary" 
+                                      className="cursor-pointer hover:bg-primary/20 transition-colors"
+                                      onClick={() => setListingPrice(userPixels.find(p => p.id === selectedPixelId)!.price_paid!.toString())}
+                                    >
+                                      Break Even (₹{userPixels.find(p => p.id === selectedPixelId)!.price_paid})
+                                    </Badge>
+                                    <Badge 
+                                      variant="secondary" 
+                                      className="cursor-pointer hover:bg-primary/20 transition-colors"
+                                      onClick={() => setListingPrice(Math.round(userPixels.find(p => p.id === selectedPixelId)!.price_paid! * 1.5).toString())}
+                                    >
+                                      +50% Profit
+                                    </Badge>
+                                    <Badge 
+                                      variant="secondary" 
+                                      className="cursor-pointer hover:bg-primary/20 transition-colors"
+                                      onClick={() => setListingPrice(Math.round(userPixels.find(p => p.id === selectedPixelId)!.price_paid! * 2).toString())}
+                                    >
+                                      2x Value
+                                    </Badge>
+                                  </div>
+                                )}
+
+                                {/* Profit Breakdown */}
+                                {listingPrice && !isNaN(parseFloat(listingPrice)) && parseFloat(listingPrice) > 0 ? (
+                                  <div className="flex flex-col gap-1.5 mt-4 p-3 bg-muted/40 rounded-lg border border-border text-sm">
+                                    <div className="flex justify-between text-muted-foreground">
+                                      <span>Platform Fee (5%)</span>
+                                      <span className="text-destructive/80">-₹{(parseFloat(listingPrice) * 0.05).toFixed(2)}</span>
+                                    </div>
+                                    <div className="flex justify-between font-semibold text-foreground pt-1.5 mt-1 border-t border-border/50">
+                                      <span>You Receive</span>
+                                      <span className="text-emerald-600 dark:text-emerald-400">
+                                        ₹{(parseFloat(listingPrice) * 0.95).toFixed(2)}
+                                      </span>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <p className="text-xs text-muted-foreground mt-1">
+                                    Average market price: ₹{stats.average_price.toLocaleString()}
+                                  </p>
+                                )}
                               </div>
                               <Button
                                 onClick={handleListPixel}
