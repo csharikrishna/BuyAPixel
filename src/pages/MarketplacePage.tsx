@@ -104,7 +104,6 @@ interface MarketplaceListing {
   asking_price: number;
   created_at: string;
   status: string;
-  view_count: number;
   featured: boolean;
   pixels: {
     x: number;
@@ -232,7 +231,6 @@ const MarketplacePage = () => {
           asking_price,
           created_at,
           status,
-          view_count,
           featured,
           pixels (
             x, 
