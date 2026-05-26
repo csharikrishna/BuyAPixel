@@ -1,19 +1,22 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
 const WELCOME_EMAIL_SENT_KEY = 'buyaspot_welcome_email_sent';
 
+// Module-level flag to prevent duplicate calls across all hook instances
+let globalWelcomeEmailSent = false;
+
 export const useAuth = () => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const welcomeEmailSentRef = useRef(false);
 
-  // Send welcome email for first-time users
+  // Send welcome email for first-time users (called exactly once)
   const sendWelcomeEmail = async (currentUser: User) => {
-    // Prevent duplicate sends within the same session
-    if (welcomeEmailSentRef.current) return;
+    // Prevent duplicate sends across all hook instances in the same page load
+    if (globalWelcomeEmailSent) return;
+    globalWelcomeEmailSent = true;
 
     // Check localStorage to avoid resending across page reloads
     const sentKey = `${WELCOME_EMAIL_SENT_KEY}_${currentUser.id}`;
@@ -29,8 +32,6 @@ export const useAuth = () => {
       localStorage.setItem(sentKey, 'true');
       return;
     }
-
-    welcomeEmailSentRef.current = true;
 
     try {
       console.log('📧 Sending welcome email to new user...');
