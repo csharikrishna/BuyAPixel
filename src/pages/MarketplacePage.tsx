@@ -315,7 +315,13 @@ const MarketplacePage = () => {
 
       const { data, error } = await supabase
         .from("pixels")
-        .select("*")
+        .select(`
+          *,
+          pixel_blocks (
+            image_url,
+            alt_text
+          )
+        `)
         .eq("owner_id", session.user.id)
         .eq("is_active", true);
 
@@ -728,19 +734,39 @@ const MarketplacePage = () => {
                                 <Label htmlFor="pixel-select" className="text-sm font-medium">
                                   Select Pixel
                                 </Label>
-                                <select
-                                  id="pixel-select"
-                                  className="w-full mt-2 p-3 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
-                                  value={selectedPixelId || ""}
-                                  onChange={(e) => setSelectedPixelId(e.target.value)}
-                                >
-                                  <option value="">Choose a pixel...</option>
-                                  {userPixels.map((pixel) => (
-                                    <option key={pixel.id} value={pixel.id}>
-                                      Pixel at ({pixel.x}, {pixel.y})
-                                    </option>
-                                  ))}
-                                </select>
+                                <Select value={selectedPixelId || ""} onValueChange={setSelectedPixelId}>
+                                  <SelectTrigger className="w-full mt-2 h-auto min-h-[56px] px-3 py-2 bg-background border-border hover:bg-muted/30 transition-colors">
+                                    <SelectValue placeholder="Choose a pixel to list..." />
+                                  </SelectTrigger>
+                                  <SelectContent className="max-h-[300px]">
+                                    {userPixels.map((pixel) => {
+                                      const imageUrl = pixel.image_url || pixel.pixel_blocks?.image_url;
+                                      const altText = pixel.alt_text || pixel.pixel_blocks?.alt_text || `Pixel at (${pixel.x}, ${pixel.y})`;
+                                      
+                                      return (
+                                        <SelectItem key={pixel.id} value={pixel.id} className="py-2 cursor-pointer focus:bg-muted">
+                                          <div className="flex items-center gap-3">
+                                            {imageUrl ? (
+                                              <img 
+                                                src={getThumbnailUrl(imageUrl, 40, 40)} 
+                                                alt={altText} 
+                                                className="w-10 h-10 rounded shadow-sm object-cover bg-white" 
+                                              />
+                                            ) : (
+                                              <div className="w-10 h-10 rounded shadow-sm bg-primary/10 flex items-center justify-center border border-border">
+                                                <span className="text-[10px] font-medium text-primary">N/A</span>
+                                              </div>
+                                            )}
+                                            <div className="flex flex-col text-left">
+                                              <span className="font-semibold text-sm truncate max-w-[200px]">{altText}</span>
+                                              <span className="text-xs text-muted-foreground font-medium">({pixel.x}, {pixel.y})</span>
+                                            </div>
+                                          </div>
+                                        </SelectItem>
+                                      );
+                                    })}
+                                  </SelectContent>
+                                </Select>
                               </div>
                               <div className="space-y-2">
                                 <Label htmlFor="price" className="text-sm font-medium">
