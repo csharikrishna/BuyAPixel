@@ -164,7 +164,7 @@ serve(async (req: Request) => {
       })
       await sendEmail(
          user.email || '',
-         '🎉 Marketplace Purchase Confirmed!',
+         'Marketplace Purchase Confirmed',
          buyerHtml
       )
 
@@ -180,7 +180,7 @@ serve(async (req: Request) => {
             })
             await sendEmail(
                sellerData.user.email,
-               '💰 Your Pixel Has Been Sold!',
+               'Your Pixel Has Been Sold',
                sellerHtml
             )
          }

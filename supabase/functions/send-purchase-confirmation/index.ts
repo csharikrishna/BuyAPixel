@@ -1,10 +1,22 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { sendEmail, buildPurchaseConfirmationEmail } from '../_shared/email.ts'
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+const ALLOWED_ORIGINS = [
+  'https://buyaspot.in',
+  'https://www.buyaspot.in',
+  'http://localhost:5173',
+  'http://localhost:5174',
+  'http://localhost:3000',
+]
+
+function getCorsHeaders(req: Request) {
+  const origin = req.headers.get('origin') || ''
+  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0]
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  }
 }
 
 interface PurchaseEmailData {
@@ -16,6 +28,8 @@ interface PurchaseEmailData {
 }
 
 serve(async (req: Request) => {
+  const corsHeaders = getCorsHeaders(req)
+
   if (req.method === 'OPTIONS') {
     return new Response('ok', { status: 200, headers: corsHeaders })
   }
@@ -48,7 +62,7 @@ serve(async (req: Request) => {
       throw new Error('Invalid request payload')
     }
 
-    const subject = '🎉 Your BuyASpot Purchase Is Confirmed'
+    const subject = 'Purchase Confirmed — Order Receipt'
     const html = buildPurchaseConfirmationEmail({
       pixelName: body.pixelName,
       pixelCount: body.pixelCount,

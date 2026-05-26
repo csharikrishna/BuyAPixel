@@ -100,19 +100,23 @@ async function sendConfirmationEmail(
    pixelCount: number,
    totalAmount: number,
    pixelName: string,
-   linkUrl?: string
+   linkUrl?: string,
+   transactionId?: string,
+   receiptUrl?: string
 ) {
    if (!email) {
-      console.warn('No email address provided, skipping confirmation email')
+      console.warn('[Verify] No email address provided, skipping confirmation email')
       return
    }
 
-   const subject = '🎉 Your BuyASpot Purchase Is Confirmed'
+   const subject = 'Purchase Confirmed — Order Receipt'
    const html = buildPurchaseConfirmationEmail({
       pixelName,
       pixelCount,
       totalCost: totalAmount,
       linkUrl,
+      transactionId,
+      receiptUrl,
    })
 
    await sendEmail(email, subject, html)
@@ -354,12 +358,17 @@ serve(async (req: Request) => {
       const pixelCount = paymentOrder.purchase_metadata?.pixels?.length || 0
       const totalAmount = paymentOrder.amount / 100 // Convert from paise to INR
 
+      // Extract Razorpay receipt URL if available
+      const receiptUrl = razorpayPaymentDetails?.short_url || null
+
       await sendConfirmationEmail(
          user.email || '',
          pixelCount,
          totalAmount,
          body.alt_text || 'My Pixels',
-         body.link_url
+         body.link_url,
+         body.razorpay_payment_id,
+         receiptUrl
       )
 
       return new Response(

@@ -100,8 +100,8 @@ async function sendReconciliationEmail(
   reason: string
 ) {
   const html = buildPaymentNotificationEmail({ status, paymentId, amount, reason })
-  const statusBadge = status === 'resolved' ? '✅' : status === 'failed' ? '❌' : '⚠️'
-  await sendEmail(email, `${statusBadge} Payment Notification - ${paymentId.slice(-8)}`, html)
+  const statusLabel = status === 'resolved' ? 'Resolved' : status === 'failed' ? 'Failed' : 'Update'
+  await sendEmail(email, `Payment ${statusLabel} — ${paymentId.slice(-8)}`, html)
 }
 
 serve(async (req: Request) => {

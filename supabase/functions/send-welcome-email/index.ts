@@ -56,13 +56,41 @@ serve(async (req: Request) => {
       throw new Error('User has no email address')
     }
 
-    // Check if welcome email was already sent (prevent duplicates)
-    // We use a simple profiles metadata approach
-    const { data: profile } = await supabaseAdmin
+    // ── SERVER-SIDE DEDUP: Check if welcome email was already sent ──
+    // This is the ONLY reliable dedup mechanism. Client-side localStorage
+    // is unreliable (clears on browser change, incognito, etc.)
+    const { data: profile, error: profileError } = await supabaseAdmin
       .from('profiles')
-      .select('full_name')
+      .select('full_name, welcome_email_sent')
       .eq('user_id', user.id)
       .single()
+
+    if (profileError) {
+      console.error('[Welcome] Failed to fetch profile:', profileError)
+      throw new Error('Could not verify user profile')
+    }
+
+    // If already sent, return success without sending again
+    if (profile?.welcome_email_sent) {
+      console.log(`[Welcome] Already sent for user ${user.id}, skipping`)
+      return new Response(
+        JSON.stringify({ success: true, message: 'Welcome email already sent', skipped: true }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Atomically mark as sent BEFORE sending to prevent race conditions
+    // If two requests arrive simultaneously, only one will succeed in updating
+    const { error: updateError } = await supabaseAdmin
+      .from('profiles')
+      .update({ welcome_email_sent: true })
+      .eq('user_id', user.id)
+      .eq('welcome_email_sent', false) // Only update if still false (atomic check)
+
+    if (updateError) {
+      console.error('[Welcome] Failed to set flag:', updateError)
+      // Don't block — try sending anyway
+    }
 
     const fullName =
       profile?.full_name ||
@@ -70,21 +98,30 @@ serve(async (req: Request) => {
       user.user_metadata?.name ||
       user.email.split('@')[0]
 
-    console.log(`📧 Sending welcome email to ${user.email} (${fullName})`)
+    console.log(`[Welcome] Sending welcome email to ${user.email} (${fullName})`)
 
     const html = buildWelcomeEmail({ fullName })
     const sent = await sendEmail(
       user.email,
-      '🎉 Welcome to BuyASpot — Your Pixel Journey Starts Now!',
+      'Welcome to BuyASpot',
       html
     )
+
+    if (!sent) {
+      // Email failed — roll back the flag so it can be retried later
+      await supabaseAdmin
+        .from('profiles')
+        .update({ welcome_email_sent: false })
+        .eq('user_id', user.id)
+        .catch(e => console.error('[Welcome] Failed to rollback flag:', e))
+    }
 
     return new Response(
       JSON.stringify({ success: sent, message: sent ? 'Welcome email sent' : 'Email service unavailable' }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   } catch (err) {
-    console.error('Welcome email error:', err)
+    console.error('[Welcome] Error:', err)
     return new Response(
       JSON.stringify({
         success: false,

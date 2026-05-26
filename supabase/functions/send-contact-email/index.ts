@@ -1,6 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import * as supabaseJs2 from 'https://esm.sh/@supabase/supabase-js@2'
-import { sendEmail, buildContactFormEmail } from '../_shared/email.ts'
+import { sendEmail, buildContactFormEmail, buildContactAcknowledgmentEmail } from '../_shared/email.ts'
 
 // Environment variables
 const CONTACT_EMAIL = Deno.env.get('CONTACT_EMAIL') || 'support@buyaspot.in'
@@ -8,6 +8,7 @@ const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 const ALLOWED_ORIGINS = [
   'https://buyaspot.in',
+  'https://www.buyaspot.in',
   'http://localhost:5173',
   'http://localhost:8080'
 ]
@@ -33,13 +34,11 @@ interface RateLimitEntry {
 
 // In-memory rate limiting (resets on function cold start)
 const rateLimitMap = new Map<string, RateLimitEntry>()
-const RATE_LIMIT = 3 // Max requests per time window
-const RATE_LIMIT_WINDOW = 60 * 60 * 1000 // 1 hour in milliseconds
+const RATE_LIMIT = 3
+const RATE_LIMIT_WINDOW = 60 * 60 * 1000 // 1 hour
 
-// Email validation regex
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
-// Check rate limit
 function checkRateLimit(identifier: string): { allowed: boolean; remaining: number } {
   const now = Date.now()
   const entry = rateLimitMap.get(identifier)
@@ -49,29 +48,24 @@ function checkRateLimit(identifier: string): { allowed: boolean; remaining: numb
     return { allowed: true, remaining: RATE_LIMIT - 1 }
   }
 
-  // Reset if window has passed
   if (now - entry.lastReset > RATE_LIMIT_WINDOW) {
     rateLimitMap.set(identifier, { count: 1, lastReset: now })
     return { allowed: true, remaining: RATE_LIMIT - 1 }
   }
 
-  // Check if limit exceeded
   if (entry.count >= RATE_LIMIT) {
     return { allowed: false, remaining: 0 }
   }
 
-  // Increment count
   entry.count++
   return { allowed: true, remaining: RATE_LIMIT - entry.count }
 }
 
-// Validate email format
 function isValidEmail(email: string): boolean {
   if (!email || email.length > 254) return false
   return EMAIL_REGEX.test(email)
 }
 
-// Get CORS headers
 function getCorsHeaders(origin: string | null): HeadersInit {
   const allowedOrigin = origin && ALLOWED_ORIGINS.includes(origin)
     ? origin
@@ -109,13 +103,13 @@ async function logContactSubmission(
       .single()
 
     if (error) {
-      console.error('Failed to log contact submission:', error)
+      console.error('[Contact] Failed to log submission:', error)
       return null
     }
 
     return inserted?.ticket_id || null
   } catch (error) {
-    console.error('Failed to log contact submission:', error)
+    console.error('[Contact] Failed to log submission:', error)
     return null
   }
 }
@@ -124,31 +118,25 @@ serve(async (req: Request) => {
   const origin = req.headers.get('origin')
   const corsHeaders = getCorsHeaders(origin)
 
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
-  // Only allow POST requests
   if (req.method !== 'POST') {
     return new Response(
       JSON.stringify({ error: 'Method not allowed' }),
-      {
-        status: 405,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      }
+      { status: 405, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }
 
   try {
-    // Get request metadata
     const ip = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown'
     const userAgent = req.headers.get('user-agent') || 'unknown'
 
-    // Rate limiting based on IP
+    // Rate limiting
     const { allowed, remaining } = checkRateLimit(ip)
     if (!allowed) {
-      console.warn(`⚠️  Rate limit exceeded for IP: ${ip}`)
+      console.warn(`[Contact] Rate limit exceeded for IP: ${ip}`)
       return new Response(
         JSON.stringify({
           error: 'Too many requests. Please try again later.',
@@ -167,26 +155,22 @@ serve(async (req: Request) => {
       )
     }
 
-    // Parse request body
+    // Parse body
     let formData: ContactFormData
     try {
       formData = await req.json()
     } catch {
       return new Response(
         JSON.stringify({ error: 'Invalid JSON body' }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
     const { name, email, subject, message, honeypot } = formData
 
-    // Honeypot spam check (invisible field that bots fill)
+    // Honeypot
     if (honeypot) {
-      console.warn('🚫 Spam detected via honeypot field')
-      // Return success to not reveal spam detection
+      console.warn('[Contact] Spam detected via honeypot')
       return new Response(
         JSON.stringify({ success: true, message: 'Email sent successfully' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -205,14 +189,11 @@ serve(async (req: Request) => {
             message: !message ? 'Message is required' : undefined,
           }
         }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    // Validate field lengths
+    // Validate lengths
     if (name.length < 2 || name.length > 100) {
       return new Response(
         JSON.stringify({ error: 'Name must be between 2 and 100 characters' }),
@@ -234,7 +215,6 @@ serve(async (req: Request) => {
       )
     }
 
-    // Validate email format
     if (!isValidEmail(email)) {
       return new Response(
         JSON.stringify({ error: 'Invalid email address format' }),
@@ -242,7 +222,7 @@ serve(async (req: Request) => {
       )
     }
 
-    // Check for suspicious patterns (spam keywords)
+    // Spam keyword check
     const spamKeywords = ['viagra', 'casino', 'crypto', 'bitcoin', 'lottery', 'prize']
     const messageLower = message.toLowerCase()
     const subjectLower = subject.toLowerCase()
@@ -250,29 +230,24 @@ serve(async (req: Request) => {
     if (spamKeywords.some(keyword =>
       messageLower.includes(keyword) || subjectLower.includes(keyword)
     )) {
-      console.warn('🚫 Potential spam detected via keywords')
-      // Return success to not reveal spam detection
+      console.warn('[Contact] Spam detected via keywords')
       return new Response(
         JSON.stringify({ success: true, message: 'Email sent successfully' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    // Log to database FIRST to get ticket_id
+    // Log to DB to get ticket_id
     const ticketId = await logContactSubmission(formData, { ip, userAgent })
 
-    console.log('📧 Initiating contact form email...')
-    console.log('From:', name, `<${email}>`)
-    console.log('Subject:', subject)
-    console.log('Ticket ID:', ticketId)
-    console.log('To:', CONTACT_EMAIL)
+    console.log(`[Contact] Processing request from ${name} <${email}>, ticket: ${ticketId}`)
 
-    // Build the Gmail-compatible HTML email
-    const mailSubject = ticketId
+    // ── Email 1: Admin notification ──
+    const adminSubject = ticketId
       ? `[${ticketId}] ${subject}`
-      : `[Contact Form] ${subject}`
+      : `[Support] ${subject}`
 
-    const mailHtml = buildContactFormEmail({
+    const adminHtml = buildContactFormEmail({
       name,
       email,
       subject,
@@ -284,12 +259,28 @@ serve(async (req: Request) => {
       userAgent,
     })
 
-    // Send using shared email utility (SMTP → Resend fallback)
-    const emailSent = await sendEmail(CONTACT_EMAIL, mailSubject, mailHtml, email)
+    const adminEmailSent = await sendEmail(CONTACT_EMAIL, adminSubject, adminHtml, email)
 
-    if (!emailSent) {
-      // Email failed but the DB record was created — still return ticket
-      console.warn('⚠️ Email sending failed, but ticket was created')
+    if (!adminEmailSent) {
+      console.warn('[Contact] Admin notification email failed')
+    }
+
+    // ── Email 2: User acknowledgment ──
+    const userSubject = ticketId
+      ? `We've Received Your Request — ${ticketId}`
+      : `We've Received Your Request`
+
+    const userHtml = buildContactAcknowledgmentEmail({
+      name,
+      ticketId,
+      subject,
+      category: formData.category,
+    })
+
+    const userEmailSent = await sendEmail(email, userSubject, userHtml)
+
+    if (!userEmailSent) {
+      console.warn('[Contact] User acknowledgment email failed')
     }
 
     return new Response(
@@ -308,7 +299,7 @@ serve(async (req: Request) => {
       }
     )
   } catch (error: unknown) {
-    console.error('❌ Error in contact form handler:', error)
+    console.error('[Contact] Error:', error)
 
     return new Response(
       JSON.stringify({
@@ -317,10 +308,7 @@ serve(async (req: Request) => {
       }),
       {
         status: 500,
-        headers: {
-          ...corsHeaders,
-          'Content-Type': 'application/json',
-        },
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
     )
   }
