@@ -29,12 +29,13 @@ serve(async (req) => {
       if (error) throw error
 
       // Map DB fields (snake_case from RPC) to Edge Function response API (expected by frontend)
+      // FIX #6: Add defensive fallbacks in case RPC returns unexpected shape
       const stats = {
-         active_listings: data.active_listings,
-         total_sold: data.total_sold,
-         average_price: data.avg_price,   // RPC returns avg_price
-         highest_price: data.max_price,   // RPC returns max_price
-         lowest_price: data.min_price,    // RPC returns min_price
+         active_listings: data?.active_listings ?? 0,
+         total_sold: data?.total_sold ?? 0,
+         average_price: data?.avg_price ?? 0,   // RPC returns avg_price
+         highest_price: data?.max_price ?? 0,    // RPC returns max_price
+         lowest_price: data?.min_price ?? 0,     // RPC returns min_price
       }
 
       return new Response(JSON.stringify(stats), {

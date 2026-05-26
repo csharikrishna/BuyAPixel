@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { getThumbnailUrl } from "@/utils/imageOptimization";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -21,6 +21,17 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import {
   Select,
   SelectContent,
@@ -147,7 +158,8 @@ const MarketplacePage = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [sortBy, setSortBy] = useState<"newest" | "price-low" | "price-high">("newest");
   const [searchQuery, setSearchQuery] = useState("");
-  const [isPurchasing, setIsPurchasing] = useState<string | null>(null); // Track which listing is being purchased
+  const [isPurchasing, setIsPurchasing] = useState<string | null>(null);
+  const [isListing, setIsListing] = useState(false);
   const [razorpayLoaded, setRazorpayLoaded] = useState(false);
 
   // Payment bypass flag — when true, skips Razorpay entirely
@@ -237,22 +249,26 @@ const MarketplacePage = () => {
 
       if (error) throw error;
 
-      const listingsWithProfiles = await Promise.all(
-        (data || []).map(async (listing: any) => {
-          const { data: profileData } = await supabase
-            .from("profiles")
-            .select("full_name")
-            .eq("user_id", listing.seller_id)
-            .maybeSingle();
+      // FIX #11: Batch query instead of N+1 per-listing profile fetch
+      const listings = data || [];
+      const sellerIds = [...new Set(listings.map((l: any) => l.seller_id))];
+      
+      let profileMap = new Map<string, { full_name: string | null }>();
+      if (sellerIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("user_id, full_name")
+          .in("user_id", sellerIds);
+        
+        (profiles || []).forEach((p: any) => {
+          profileMap.set(p.user_id, { full_name: p.full_name });
+        });
+      }
 
-          return {
-            ...listing,
-            seller_profile: profileData,
-          };
-        })
-      );
-
-      return listingsWithProfiles as MarketplaceListing[];
+      return listings.map((listing: any) => ({
+        ...listing,
+        seller_profile: profileMap.get(listing.seller_id) || null,
+      })) as MarketplaceListing[];
     },
   });
 
@@ -383,7 +399,9 @@ const MarketplacePage = () => {
           description: `You have acquired a pixel for ₹${price.toLocaleString()}. Dev mode — no real charge.`,
         });
 
+        // FIX #10: Refetch all related data after purchase
         refetchListings();
+        refetchUserPixels();
       } catch (error: unknown) {
         toast.error("Error", {
           description: getErrorMessage(error) || "An unexpected error occurred",
@@ -440,7 +458,9 @@ const MarketplacePage = () => {
               description: `You have acquired a pixel for ₹${price.toLocaleString()}. A confirmation email has been sent.`,
             });
 
+            // FIX #10: Refetch all related data after purchase
             refetchListings();
+            refetchUserPixels();
           } catch (verifyErr: unknown) {
             toast.error("Verification Failed", {
               description: getErrorMessage(verifyErr) || "Payment verification failed. Contact support if charged.",
@@ -494,15 +514,34 @@ const MarketplacePage = () => {
       return;
     }
 
+    // FIX #7/#8: Price range validation
+    if (price < 10) {
+      toast.error("Price Too Low", {
+        description: "Minimum listing price is ₹10",
+      });
+      return;
+    }
+    if (price > 99999) {
+      toast.error("Price Too High", {
+        description: "Maximum listing price is ₹99,999",
+      });
+      return;
+    }
+
+    setIsListing(true);
     try {
-      const { error } = await supabase.from("marketplace_listings").insert({
-        pixel_id: selectedPixelId,
-        seller_id: session.user.id,
-        asking_price: price,
-        status: "active",
+      // FIX #1: Use list_pixel_for_sale RPC instead of raw insert
+      // This ensures: ownership check, duplicate listing prevention,
+      // original_price tracking, block pixel handling (from_block_id)
+      const { data, error } = await supabase.rpc('list_pixel_for_sale', {
+        p_pixel_id: selectedPixelId,
+        p_asking_price: price,
       });
 
       if (error) throw error;
+      if (data && !data.success) {
+        throw new Error(data.error || 'Failed to create listing');
+      }
 
       toast.success("Listing Created Successfully ✅", {
         description: `Your pixel is now available for ₹${price.toLocaleString()}`,
@@ -517,6 +556,8 @@ const MarketplacePage = () => {
       toast.error("Error", {
         description: getErrorMessage(error) || "Unable to create listing",
       });
+    } finally {
+      setIsListing(false);
     }
   };
 
@@ -724,9 +765,13 @@ const MarketplacePage = () => {
                               <Button
                                 onClick={handleListPixel}
                                 className="w-full h-11 text-base font-semibold"
+                                disabled={isListing}
                               >
-                                <CheckCircle2 className="w-4 h-4 mr-2" />
-                                Create Listing
+                                {isListing ? (
+                                  <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Creating...</>
+                                ) : (
+                                  <><CheckCircle2 className="w-4 h-4 mr-2" />Create Listing</>
+                                )}
                               </Button>
                             </>
                           ) : (
@@ -859,14 +904,35 @@ const MarketplacePage = () => {
 
                               {/* Action Button */}
                               {userOwnsListing ? (
-                                <Button
-                                  className="w-full h-11 font-semibold"
-                                  variant="destructive"
-                                  onClick={() => handleRemoveListing(listing.id)}
-                                >
-                                  <AlertCircle className="w-4 h-4 mr-2" />
-                                  Remove Listing
-                                </Button>
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button
+                                      className="w-full h-11 font-semibold"
+                                      variant="destructive"
+                                    >
+                                      <AlertCircle className="w-4 h-4 mr-2" />
+                                      Remove Listing
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>Remove Listing?</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        This will remove your pixel at ({listing.pixels?.x}, {listing.pixels?.y}) from the marketplace.
+                                        You can re-list it later at any price.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                      <AlertDialogAction
+                                        onClick={() => handleRemoveListing(listing.id)}
+                                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                      >
+                                        Yes, Remove
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
                               ) : (
                                 <Button
                                   className="w-full h-11 font-semibold"
