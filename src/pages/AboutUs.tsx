@@ -6,6 +6,7 @@ import { Link } from "react-router-dom";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import SEO from "@/components/SEO";
+import HowItWorks from "@/components/HowItWorks";
 import { supabase } from "@/integrations/supabase/client";
 import {
   ArrowRight,
@@ -186,6 +187,39 @@ const AboutUs = memo(() => {
         </div>
       </section>
 
+      {/* How It Works & What It Is (Merged from previous About content) */}
+      <section className="py-16 bg-muted/10">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
+          <div className="prose prose-lg dark:prose-invert mx-auto">
+            <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-6">
+              What is BuyASpot?
+            </h2>
+            <p className="text-base md:text-lg text-foreground leading-relaxed">
+              BuyASpot sells pixel-based advertising tiles on a shared global canvas. Buyers select pixels, upload creatives, and attach a URL. Each ad is addressable, shareable, and discoverable by search engines and modern AI crawlers.
+            </p>
+            <p className="text-base md:text-lg text-foreground leading-relaxed">
+              It is a simple, transparent marketplace that lets you buy small units of advertising space on an interactive public canvas. Each purchase gives you permanent visibility on the web: an image, a headline, and a link you control. Our platform makes it easy for startups, creators, and businesses to get noticed without recurring fees or complex ad systems.
+            </p>
+
+            <h3 className="text-2xl font-bold tracking-tight mt-10 mb-4">
+              How BuyASpot Works
+            </h3>
+            <ol className="space-y-2 text-base md:text-lg text-foreground">
+              <li><strong>Select:</strong> Choose pixels on the canvas using our visual grid and preview tools.</li>
+              <li><strong>Create:</strong> Upload your image or create a simple creative with our tools.</li>
+              <li><strong>Publish:</strong> Set a destination URL and optional alt text, then checkout.</li>
+            </ol>
+
+            <h3 className="text-2xl font-bold tracking-tight mt-10 mb-4">
+              Benefits & Use Cases
+            </h3>
+            <p className="text-base md:text-lg text-foreground leading-relaxed">
+              Use BuyASpot to promote product launches, portfolio links, event pages, and other high-value landing pages. Pixel advertising is affordable and permanent — ideal for long-term discoverability. We include semantic HTML, structured data (JSON-LD), and an open sitemap so search engines and modern AI crawlers can index and surface ads.
+            </p>
+          </div>
+        </div>
+      </section>
+
       {/* Timeline */}
       <section className="py-16 bg-muted/20">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
@@ -355,6 +389,9 @@ const AboutUs = memo(() => {
           </div>
         </div>
       </section>
+
+      {/* How it Works & Pricing */}
+      <HowItWorks />
 
       {/* Contact / CTA */}
       <section className="py-16 bg-gradient-to-b from-primary/5 to-background">
