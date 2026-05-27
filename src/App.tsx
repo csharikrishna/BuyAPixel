@@ -43,6 +43,7 @@ const AuthCallback = lazy(() => import("./pages/AuthCallback"));
 
 // Info Pages (rarely accessed)
 const Index = lazy(() => import("./pages/Index"));
+const AboutUs = lazy(() => import("./pages/AboutUs"));
 const Contact = lazy(() => import("./pages/Contact"));
 const Help = lazy(() => import("./pages/Help"));
 const TermsOfService = lazy(() => import("./pages/TermsOfService"));
@@ -142,7 +143,7 @@ const AppContent = () => {
 
             {/* Main Pages */}
             <Route path="/" element={<ErrorBoundary pageName="BuyPixels"><BuyPixels /></ErrorBoundary>} />
-            <Route path="/about" element={<ErrorBoundary pageName="About"><Index /></ErrorBoundary>} />
+            <Route path="/about" element={<ErrorBoundary pageName="About"><AboutUs /></ErrorBoundary>} />
             <Route path="/canvas" element={<ErrorBoundary pageName="Canvas"><Canvas /></ErrorBoundary>} />
             <Route path="/scan" element={<ErrorBoundary pageName="Scan Pixel"><ScanPixel /></ErrorBoundary>} />
 

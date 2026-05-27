@@ -1,6 +1,7 @@
 import EnhancedHeroSection from "@/components/EnhancedHeroSection";
 import StaticPixelPreview from "@/components/StaticPixelPreview";
 import HowItWorks from "@/components/HowItWorks";
+import SocialProof from "@/components/SocialProof";
 import Marketplace from "@/components/Marketplace";
 import Footer from "@/components/Footer";
 import Header from "@/components/Header";
@@ -71,6 +72,7 @@ const Index = () => {
       {/* Main Content - Grid First */}
       <StaticPixelPreview />
       <EnhancedHeroSection />
+      <SocialProof />
       <HowItWorks />
       <Marketplace />
       <Footer />

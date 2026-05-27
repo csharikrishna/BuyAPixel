@@ -1,9 +1,30 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowRight, Sparkles, TrendingUp } from "lucide-react";
+import { ArrowRight, Sparkles, TrendingUp, ShieldCheck, Users, BarChart3 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 const EnhancedHeroSection = () => {
+  const [stats, setStats] = useState({ pixelsSold: 0, uniqueOwners: 0 });
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const { data: gridStats } = await supabase.rpc('get_grid_stats');
+        if (gridStats) {
+          setStats({
+            pixelsSold: gridStats.sold_count || 0,
+            uniqueOwners: gridStats.unique_owners || 0,
+          });
+        }
+      } catch (err) {
+        console.error('Failed to fetch stats:', err);
+      }
+    };
+    fetchStats();
+  }, []);
+
   return (
     <div className="relative min-h-screen bg-gradient-hero flex items-center justify-center overflow-hidden py-20">
       {/* Background Elements */}
@@ -52,7 +73,7 @@ const EnhancedHeroSection = () => {
         </div>
 
         {/* CTA Buttons */}
-        <div className="animate-slide-up delay-600 flex flex-col sm:flex-row gap-4 justify-center items-center mb-16">
+        <div className="animate-slide-up delay-600 flex flex-col sm:flex-row gap-4 justify-center items-center mb-10">
           <Link to="/buy-pixels" className="w-full sm:w-auto">
             <Button
               size="lg"
@@ -72,6 +93,24 @@ const EnhancedHeroSection = () => {
               View Full Canvas
             </Button>
           </Link>
+        </div>
+
+        {/* Social Proof Stats Strip */}
+        <div className="animate-fade-in delay-700 flex flex-wrap items-center justify-center gap-4 md:gap-8 mb-16">
+          <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-card border border-border/50 shadow-sm">
+            <BarChart3 className="w-4 h-4 text-primary" />
+            <span className="text-sm font-semibold">{stats.pixelsSold.toLocaleString()}</span>
+            <span className="text-sm text-muted-foreground">Pixels Sold</span>
+          </div>
+          <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-card border border-border/50 shadow-sm">
+            <Users className="w-4 h-4 text-green-600" />
+            <span className="text-sm font-semibold">{stats.uniqueOwners.toLocaleString()}</span>
+            <span className="text-sm text-muted-foreground">Owners</span>
+          </div>
+          <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-green-500/10 border border-green-500/20 shadow-sm">
+            <ShieldCheck className="w-4 h-4 text-green-600" />
+            <span className="text-sm font-medium text-green-700 dark:text-green-400">Powered by Razorpay</span>
+          </div>
         </div>
 
         {/* Feature Cards */}
