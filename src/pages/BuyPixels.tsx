@@ -465,7 +465,7 @@ const BuyPixels = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col overflow-y-auto">
       <SEO
         title="BuyASpot - Buy & Own Pixels Forever | Digital Real Estate Marketplace"
         description="Own a piece of internet history on BuyASpot. Buy pixels from ₹1-₹299, upload your image/brand, and reach millions globally. Permanent digital real estate for startups, businesses & creators."
@@ -583,11 +583,11 @@ const BuyPixels = () => {
       </AlertDialog>
 
       {/* MAIN LAYOUT */}
-      <main className="flex-1 w-full flex flex-col lg:flex-row lg:overflow-hidden">
+      <main className={`flex-1 w-full flex flex-col lg:flex-row ${mode === "buying" ? "" : ""}`}>
         {/* LEFT COLUMN: CANVAS */}
-        <div className="order-1 flex-1 min-w-0 flex flex-col gap-1 lg:gap-0 lg:overflow-hidden transition-all duration-300">
+        <div className={`order-1 flex-1 min-w-0 flex flex-col gap-1 lg:gap-0 transition-all duration-300 ${mode === "buying" ? "lg:overflow-hidden" : ""}`}>
           {/* Canvas Wrapper with Overlay Controls */}
-          <div className="w-full relative h-[56vh] sm:h-[60vh] lg:flex-1 lg:overflow-hidden">
+          <div className="w-full relative h-screen sm:h-[75vh] lg:flex-1 lg:overflow-hidden">
             {/* Desktop Toolbar */}
             {mode === "buying" && (
               <div
@@ -956,10 +956,8 @@ const BuyPixels = () => {
         </div>
       </main>
 
-      {/* Footer hidden on desktop — full-viewport canvas experience */}
-      <div className="lg:hidden">
-        <Footer />
-      </div>
+      {/* Footer visible on all screens */}
+      <Footer />
 
       {/* --- MODALS & DIALOGS --- */}
 

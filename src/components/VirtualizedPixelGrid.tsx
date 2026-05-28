@@ -177,10 +177,7 @@ export const VirtualizedPixelGrid = forwardRef<
           zoom: clampedZoom,
           offset: {
             x: (clientWidth - renderedGridWidth) / 2,
-            // Top-align with 0 gap when grid overflows, center perfectly when it fits
-            y: renderedGridHeight > clientHeight
-              ? 0
-              : (clientHeight - renderedGridHeight) / 2,
+            y: (clientHeight - renderedGridHeight) / 2,
           },
         };
       },
@@ -669,7 +666,7 @@ export const VirtualizedPixelGrid = forwardRef<
           style={{
             width: "100%",
             height: "100%",
-            touchAction: "none",
+            touchAction: enableInteraction ? "none" : "pan-y",
             WebkitUserSelect: "none",
             cursor,
             backgroundColor: "#e8ecf1",
@@ -683,8 +680,12 @@ export const VirtualizedPixelGrid = forwardRef<
           onMouseUp={handleMouseUp}
           onMouseLeave={handleMouseUp}
           onClick={handleContainerClick}
-          role="application"
-          aria-label={`Pixel grid canvas, ${purchasedPixels.length} pixels sold, ${selectedPixels.length} selected`}
+          role={enableInteraction ? "application" : "region"}
+          aria-label={
+            enableInteraction
+              ? `Interactive pixel grid canvas, ${purchasedPixels.length} pixels sold, ${selectedPixels.length} selected`
+              : `Pixel grid preview, ${purchasedPixels.length} pixels sold`
+          }
           aria-live="polite"
           tabIndex={0}
         >

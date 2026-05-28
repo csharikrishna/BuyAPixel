@@ -2,6 +2,7 @@ import { memo, useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
+import { parseGridStats } from "@/utils/platformStats";
 import {
   Users,
   TrendingUp,
@@ -51,12 +52,13 @@ const SocialProof = memo(() => {
     const fetchStats = async () => {
       try {
         const { data: gridStats } = await supabase.rpc("get_grid_stats");
-        if (gridStats) {
+        const parsedStats = parseGridStats(gridStats);
+        if (parsedStats) {
           setStats({
-            pixelsSold: gridStats.sold_count || 0,
-            uniqueOwners: gridStats.unique_owners || 0,
-            totalPixels: gridStats.total_pixels || 10000,
-            averagePrice: Math.round(gridStats.average_price || 0),
+            pixelsSold: parsedStats.pixelsSold,
+            uniqueOwners: parsedStats.uniqueOwners,
+            totalPixels: parsedStats.totalPixels,
+            averagePrice: parsedStats.averagePrice,
           });
         }
       } catch (err) {

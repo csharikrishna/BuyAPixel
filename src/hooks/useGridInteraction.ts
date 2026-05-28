@@ -32,7 +32,6 @@ export function useGridInteraction({
 
    const animationFrameRef = useRef<number>();
    const hoverTimeoutRef = useRef<NodeJS.Timeout>();
-   const lastWarningRef = useRef<number>(0);
 
    // -- Refs for stable event handler values --
    // These prevent the wheel/touch effect from re-registering on every frame
@@ -40,7 +39,6 @@ export function useGridInteraction({
    const viewportOffsetRef = useRef(viewportOffset);
    const isDraggingRef = useRef(isDragging);
    const dragStartRef = useRef(dragStart);
-   const enableInteractionRef = useRef(enableInteraction);
    const initialZoomRef = useRef(zoom);
    const touchStartRef = useRef<{ x: number; y: number; dist: number } | null>(null);
 
@@ -49,7 +47,6 @@ export function useGridInteraction({
    viewportOffsetRef.current = viewportOffset;
    isDraggingRef.current = isDragging;
    dragStartRef.current = dragStart;
-   enableInteractionRef.current = enableInteraction;
 
    // -- Memoized Calculations --
    // Must match render-time pixel sizing in VirtualizedPixelGrid to avoid hover offset drift.
@@ -61,16 +58,25 @@ export function useGridInteraction({
          const fittedPixelSize = Math.max(1, Math.floor(pixelSize * currentScale));
          const totalGridWidth = gridWidth * fittedPixelSize;
          const totalGridHeight = gridHeight * fittedPixelSize;
-         const buffer = GRID_CONFIG.PAN_CLAMP_BUFFER;
+         const margin = GRID_CONFIG.PAN_VIEWPORT_MARGIN;
 
-         const max_X = containerSize.width - buffer;
-         const min_X = -totalGridWidth + buffer;
-         const max_Y = containerSize.height - buffer;
-         const min_Y = -totalGridHeight + buffer;
+         const clampAxis = (
+            next: number,
+            contentSize: number,
+            viewportSize: number
+         ) => {
+            if (contentSize <= viewportSize - margin * 2) {
+               return (viewportSize - contentSize) / 2;
+            }
+
+            const min = viewportSize - contentSize - margin;
+            const max = margin;
+            return Math.min(Math.max(next, min), max);
+         };
 
          return {
-            x: Math.min(Math.max(x, min_X), max_X),
-            y: Math.min(Math.max(y, min_Y), max_Y),
+            x: clampAxis(x, totalGridWidth, containerSize.width),
+            y: clampAxis(y, totalGridHeight, containerSize.height),
          };
       },
       [containerSize, gridWidth, gridHeight, pixelSize]
@@ -87,6 +93,7 @@ export function useGridInteraction({
 
    const handleMouseDown = useCallback(
       (event: React.MouseEvent) => {
+         if (!enableInteraction) return;
          if (event.button !== 0 && event.button !== 1) return;
 
          setIsDragging(true);
@@ -102,7 +109,7 @@ export function useGridInteraction({
             y: event.clientY - viewportOffset.y,
          });
       },
-      [viewportOffset]
+      [enableInteraction, viewportOffset]
    );
 
    const handleMouseMove = useCallback(
@@ -129,6 +136,7 @@ export function useGridInteraction({
          }
 
          // Drag logic
+         if (!enableInteraction) return;
          if (dragStart && !animationFrameRef.current) {
             animationFrameRef.current = requestAnimationFrame(() => {
                const newX = event.clientX - dragStart.x;
@@ -146,7 +154,7 @@ export function useGridInteraction({
             });
          }
       },
-      [isDragging, dragStart, scaledPixelSize, viewportOffset, gridWidth, gridHeight, clampOffset, zoom, containerRef]
+      [isDragging, dragStart, scaledPixelSize, viewportOffset, gridWidth, gridHeight, clampOffset, zoom, containerRef, enableInteraction]
    );
 
    const handleMouseUp = useCallback(() => {
@@ -176,28 +184,36 @@ export function useGridInteraction({
       return () => ro.disconnect();
    }, [containerRef]);
 
-   // Wheel & Touch — uses refs so this effect only registers ONCE
+   useEffect(() => {
+      setViewportOffset((current) => {
+         const clamped = clampOffset(current.x, current.y, zoom);
+         if (clamped.x === current.x && clamped.y === current.y) return current;
+         viewportOffsetRef.current = clamped;
+         return clamped;
+      });
+   }, [clampOffset, zoom]);
+
+   useEffect(() => {
+      if (enableInteraction) return;
+      setIsDragging(false);
+      isDraggingRef.current = false;
+      dragStartRef.current = null;
+      setDragStart(null);
+      touchStartRef.current = null;
+   }, [enableInteraction]);
+
+   // Wheel and touch handlers are only attached while canvas interaction is enabled.
    useEffect(() => {
       const container = containerRef.current;
-      if (!container) return;
+      if (!container || !enableInteraction) return;
 
       const handleWheel = (event: WheelEvent) => {
+         if (!event.ctrlKey && !event.metaKey) return;
+
          event.preventDefault();
          const currentOffset = viewportOffsetRef.current;
 
-         if (!enableInteractionRef.current) {
-            // Browse mode: scroll/pan the canvas vertically (and horizontally with shift)
-            const panSpeed = 1.5;
-            const deltaX = event.shiftKey ? event.deltaY * panSpeed : event.deltaX * panSpeed;
-            const deltaY = event.shiftKey ? 0 : event.deltaY * panSpeed;
-            const newX = currentOffset.x - deltaX;
-            const newY = currentOffset.y - deltaY;
-            const clamped = clampOffsetRef.current(newX, newY, zoomRef.current);
-            setViewportOffset(clamped);
-            return;
-         }
-
-         // Purchase mode: zoom toward cursor position
+         // Zoom toward cursor position only with explicit modifier intent.
          const currentZoom = zoomRef.current;
          const zoomFactor = GRID_CONFIG.ZOOM_FACTOR;
          const newZoom = event.deltaY < 0 ? currentZoom * zoomFactor : currentZoom / zoomFactor;
@@ -306,9 +322,9 @@ export function useGridInteraction({
          container.removeEventListener("touchend", handleTouchEnd);
          container.removeEventListener("touchcancel", handleTouchEnd);
       };
-   // Only re-register when the container element or onZoomChange callback changes
-   // All other values are read from refs inside the handlers
-   }, [containerRef, onZoomChange]);
+   // Re-register when interaction mode changes so view mode has no touch/wheel hijackers.
+   // All mutable values are read from refs inside the handlers.
+   }, [containerRef, onZoomChange, enableInteraction]);
 
    return {
       viewportOffset,

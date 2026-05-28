@@ -1,4 +1,4 @@
-import { LOGO, getFullLogoUrl } from "./branding";
+import { LOGO, SCHEMA_LOGO, getFullLogoUrl } from "./branding";
 
 export const generateWebsiteSchema = () => ({
    '@context': 'https://schema.org',
@@ -17,7 +17,7 @@ export const generateOrganizationSchema = () => ({
    '@type': 'Organization',
    name: 'BuyASpot',
    url: 'https://buyaspot.in',
-   logo: getFullLogoUrl(LOGO), // Replace with actual logo URL
+   logo: getFullLogoUrl(SCHEMA_LOGO), // Using 180px logo for Google visibility
    sameAs: [
       'https://github.com/csharikrishna/BuyAPixel',
       'https://twitter.com/BuyASpot',
@@ -68,7 +68,7 @@ export const generateArticleSchema = (article: {
       name: 'BuyASpot',
       logo: {
          '@type': 'ImageObject',
-         url: getFullLogoUrl(LOGO),
+         url: getFullLogoUrl(SCHEMA_LOGO),
       },
    },
    datePublished: article.publishedAt,
@@ -147,7 +147,7 @@ export const generateLocalBusinessSchema = () => ({
    name: 'BuyASpot',
    description: 'Digital pixel real estate marketplace. Own pixels on the global 100x100 pixel grid forever.',
    url: 'https://buyaspot.in',
-   logo: getFullLogoUrl(LOGO),
+   logo: getFullLogoUrl(SCHEMA_LOGO),
    foundingDate: '2024',
    address: {
       '@type': 'PostalAddress',

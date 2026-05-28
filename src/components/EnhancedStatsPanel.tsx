@@ -18,6 +18,7 @@ import {
   RefreshCw
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { parseGridStats } from "@/utils/platformStats";
 
 interface EnhancedStatsPanelProps {
   selectedPixelsCount: number;
@@ -39,8 +40,9 @@ export const EnhancedStatsPanel = memo(function EnhancedStatsPanel({ selectedPix
     try {
       // Try using RPC function for better performance (uses materialized view)
       const { data: gridStats, error: rpcError } = await supabase.rpc('get_grid_stats');
+      const parsedStats = parseGridStats(gridStats);
 
-      if (!rpcError && gridStats) {
+      if (!rpcError && parsedStats) {
         // Get user pixels separately if logged in
         let userPixels = 0;
         if (user?.id) {
@@ -52,12 +54,12 @@ export const EnhancedStatsPanel = memo(function EnhancedStatsPanel({ selectedPix
         }
 
         setStats({
-          totalPixels: gridStats.total_pixels || 10000,
-          pixelsSold: gridStats.sold_count || 0,
-          pixelsAvailable: gridStats.available_count || 10000,
-          uniqueOwners: gridStats.unique_owners || 0,
+          totalPixels: parsedStats.totalPixels,
+          pixelsSold: parsedStats.pixelsSold,
+          pixelsAvailable: parsedStats.pixelsAvailable,
+          uniqueOwners: parsedStats.uniqueOwners,
           userPixels,
-          averagePrice: Math.round(gridStats.average_price || 0),
+          averagePrice: parsedStats.averagePrice,
         });
         return;
       }
@@ -83,13 +85,13 @@ export const EnhancedStatsPanel = memo(function EnhancedStatsPanel({ selectedPix
         .from('pixels')
         .select('owner_id')
         .not('owner_id', 'is', null);
-      const uniqueOwners = ownersData ? new Set(ownersData.map((r: any) => r.owner_id)).size : 0;
+      const uniqueOwners = ownersData ? new Set(ownersData.map((r) => r.owner_id)).size : 0;
 
       const { data: pricesData } = await supabase
         .from('pixels')
         .select('price_paid')
         .not('owner_id', 'is', null);
-      const paid = (pricesData || []).map((p: any) => Number(p.price_paid) || 0);
+      const paid = (pricesData || []).map((p) => Number(p.price_paid) || 0);
       const avg = paid.length ? Math.round(paid.reduce((a: number, b: number) => a + b, 0) / paid.length) : 0;
 
       setStats({

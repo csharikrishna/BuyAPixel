@@ -128,6 +128,8 @@ export const PurchasePreview = ({
   const [currentStep, setCurrentStep] = useState<CheckoutStep>('details');
   const [paymentStatus, setPaymentStatus] = useState<'idle' | 'processing' | 'success' | 'error'>('idle');
   const [paymentError, setPaymentError] = useState<string | null>(null);
+  const [orderId, setOrderId] = useState<string | null>(null);
+  const [paymentId, setPaymentId] = useState<string | null>(null);
 
   // Form fields with validation states [web:145][web:148]
   const [linkUrl, setLinkUrl] = useState("");
@@ -160,6 +162,8 @@ export const PurchasePreview = ({
       setCurrentStep('details');
       setPaymentStatus('idle');
       setPaymentError(null);
+      setOrderId(null);
+      setPaymentId(null);
       setFormProgress(0);
 
       // Preload Razorpay script to enable button immediately [perf]
@@ -488,6 +492,11 @@ export const PurchasePreview = ({
         throw new Error(errorMsg);
       }
 
+      // Capture order ID for receipt display
+      if (orderData.order?.id) {
+        setOrderId(orderData.order.id);
+      }
+
       // ── BYPASS MODE: skip Razorpay, call bypass-purchase directly ──
       if (isPaymentBypassed) {
         try {
@@ -563,6 +572,9 @@ export const PurchasePreview = ({
         handler: async (response: RazorpayResponse) => {
           setCurrentStep('confirmation');
           setPaymentStatus('processing');
+
+          // Capture payment ID for receipt display
+          setPaymentId(response.razorpay_payment_id);
 
           // Step 3: Verify payment [web:147]
           try {
@@ -794,6 +806,8 @@ export const PurchasePreview = ({
           pixelCount={selectedPixels.length}
           pixelName={pixelName}
           totalAmount={totalCost}
+          orderId={orderId || undefined}
+          paymentId={paymentId || undefined}
           errorMessage={paymentError || undefined}
           onClose={() => {
             setPaymentStatus('idle');

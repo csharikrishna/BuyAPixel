@@ -4,6 +4,7 @@ import { ArrowRight, Sparkles, TrendingUp, ShieldCheck, Users, BarChart3 } from 
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { parseGridStats } from "@/utils/platformStats";
 
 const EnhancedHeroSection = () => {
   const [stats, setStats] = useState({ pixelsSold: 0, uniqueOwners: 0 });
@@ -12,10 +13,11 @@ const EnhancedHeroSection = () => {
     const fetchStats = async () => {
       try {
         const { data: gridStats } = await supabase.rpc('get_grid_stats');
-        if (gridStats) {
+        const parsedStats = parseGridStats(gridStats);
+        if (parsedStats) {
           setStats({
-            pixelsSold: gridStats.sold_count || 0,
-            uniqueOwners: gridStats.unique_owners || 0,
+            pixelsSold: parsedStats.pixelsSold,
+            uniqueOwners: parsedStats.uniqueOwners,
           });
         }
       } catch (err) {

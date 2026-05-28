@@ -8,6 +8,7 @@ import Footer from "@/components/Footer";
 import SEO from "@/components/SEO";
 import HowItWorks from "@/components/HowItWorks";
 import { supabase } from "@/integrations/supabase/client";
+import { parseGridStats } from "@/utils/platformStats";
 import {
   ArrowRight,
   Shield,
@@ -43,11 +44,12 @@ const AboutUs = memo(() => {
     const fetchStats = async () => {
       try {
         const { data: gridStats } = await supabase.rpc("get_grid_stats");
-        if (gridStats) {
+        const parsedStats = parseGridStats(gridStats);
+        if (parsedStats) {
           setStats({
-            pixelsSold: gridStats.sold_count || 0,
-            uniqueOwners: gridStats.unique_owners || 0,
-            totalPixels: gridStats.total_pixels || 10000,
+            pixelsSold: parsedStats.pixelsSold,
+            uniqueOwners: parsedStats.uniqueOwners,
+            totalPixels: parsedStats.totalPixels,
           });
         }
       } catch (err) {

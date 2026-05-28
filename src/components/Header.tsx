@@ -391,7 +391,7 @@ const Header = () => {
             width={32}
             height={32}
             className="w-8 h-8 object-contain transition-all group-hover:scale-105 drop-shadow-sm"
-            fetchpriority="high"
+            fetchPriority="high"
             decoding="async"
             loading="eager"
           />

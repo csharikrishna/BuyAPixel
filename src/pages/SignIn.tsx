@@ -372,7 +372,7 @@ const SignIn = () => {
     const now = Date.now();
     const newCount = loginAttempts.count + 1;
 
-    let newAttempts: LoginAttempt = {
+    const newAttempts: LoginAttempt = {
       count: newCount,
       lastAttempt: now,
       lockedUntil: null,

@@ -300,7 +300,7 @@ const BlogPost = () => {
       ADD_ATTR: ['target', 'rel', 'allowfullscreen'],
       ADD_TAGS: ['iframe'],
       ALLOW_UNKNOWN_PROTOCOLS: false,
-      ALLOWED_URI_REGEXP: /^(?:(?:https?|mailto):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i,
+      ALLOWED_URI_REGEXP: /^(?:(?:https?|mailto):|[^a-z]|[a-z+.-]+(?:[^a-z+.:-]|$))/i,
       WHOLE_DOCUMENT: false,
     });
   }, [post?.content]);

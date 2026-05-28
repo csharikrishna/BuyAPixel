@@ -1,6 +1,9 @@
 // Centralized branding configurations loaded from client-side environment variables
 export const LOGO = import.meta.env.VITE_LOGO_PATH || "/logo/logo-32.webp";
 
+// Large logo for schema.org markup (Google requires minimum 112x112px)
+export const SCHEMA_LOGO = import.meta.env.VITE_SCHEMA_LOGO_PATH || "/logo/logo-180.webp";
+
 /**
  * Builds a fully qualified URL for SEO and schema crawlers.
  * Gracefully handles relative paths or absolute external CDN URLs.

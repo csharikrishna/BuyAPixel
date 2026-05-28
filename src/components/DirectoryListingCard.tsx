@@ -40,7 +40,11 @@ export const DirectoryListingCard = ({ listing, featured = false }: DirectoryLis
 
   const handleClick = () => {
     // Track view
-    supabase.rpc('increment_listing_views', { listing_id: listing.id }).catch(() => {});
+    void supabase
+      .rpc('increment_listing_views', { listing_id: listing.id })
+      .then(({ error }) => {
+        if (error) console.warn('Failed to track listing view:', error);
+      });
   };
 
   const handleVisitLink = (e: React.MouseEvent) => {

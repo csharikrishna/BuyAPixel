@@ -6,7 +6,6 @@
 
 const IS_DEV = import.meta.env.DEV;
 
-/* eslint-disable no-console */
 export const logger = {
    log: (...args: unknown[]) => {
       if (IS_DEV) console.log(...args);
@@ -25,4 +24,3 @@ export const logger = {
       if (IS_DEV) console.debug(...args);
    },
 };
-/* eslint-enable no-console */

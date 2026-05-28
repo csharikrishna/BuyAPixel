@@ -32,6 +32,13 @@ interface RefundHistoryItem {
   status: string;
 }
 
+const toTransactionStatus = (status: string | null): Transaction['status'] => {
+  if (status === 'completed' || status === 'pending' || status === 'failed') {
+    return status;
+  }
+  return status === 'paid' ? 'completed' : 'pending';
+};
+
 export const AdminRefundTab = () => {
   const [activeTab, setActiveTab] = useState('marketplace');
   const [searchId, setSearchId] = useState('');
@@ -133,9 +140,9 @@ export const AdminRefundTab = () => {
           id: transaction.id,
           type: 'marketplace',
           user_email: transaction.buyer_id, // Would need to join auth.users
-          amount: transaction.amount,
+          amount: transaction.sale_price,
           created_at: transaction.created_at,
-          status: transaction.status as any,
+          status: toTransactionStatus(transaction.status),
         });
       }
       // Search in payment orders
@@ -162,7 +169,7 @@ export const AdminRefundTab = () => {
           user_email: paymentOrder.user_id,
           amount: paymentOrder.amount,
           created_at: paymentOrder.created_at,
-          status: paymentOrder.status,
+          status: toTransactionStatus(paymentOrder.status),
         });
       }
 

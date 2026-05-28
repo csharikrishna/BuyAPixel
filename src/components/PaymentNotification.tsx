@@ -9,6 +9,8 @@ interface PaymentNotificationProps {
   pixelCount: number;
   pixelName: string;
   totalAmount: number;
+  orderId?: string;
+  paymentId?: string;
   errorMessage?: string;
   onClose?: () => void;
   onViewProfile?: () => void;
@@ -19,6 +21,8 @@ export const PaymentNotification: React.FC<PaymentNotificationProps> = ({
   pixelCount,
   pixelName,
   totalAmount,
+  orderId,
+  paymentId,
   errorMessage,
   onClose,
   onViewProfile,
@@ -183,6 +187,36 @@ export const PaymentNotification: React.FC<PaymentNotificationProps> = ({
             </div>
           </div>
 
+          {/* Order ID & Receipt Section */}
+          {(orderId || paymentId) && (
+            <div className="bg-slate-50 dark:bg-slate-900/50 rounded-lg p-4 mb-6 border border-slate-200 dark:border-slate-800">
+              <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+                Receipt Information
+              </div>
+              <div className="space-y-2">
+                {orderId && (
+                  <div className="flex items-start justify-between gap-3">
+                    <span className="text-sm text-muted-foreground">Order ID:</span>
+                    <code className="text-sm font-mono bg-muted px-2 py-1 rounded select-all text-foreground">
+                      {orderId}
+                    </code>
+                  </div>
+                )}
+                {paymentId && (
+                  <div className="flex items-start justify-between gap-3">
+                    <span className="text-sm text-muted-foreground">Payment ID:</span>
+                    <code className="text-sm font-mono bg-muted px-2 py-1 rounded select-all text-foreground">
+                      {paymentId}
+                    </code>
+                  </div>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground mt-3">
+                💡 Save these IDs for your records. A confirmation email has been sent to your registered email address.
+              </p>
+            </div>
+          )}
+
           {/* Achievement Badge */}
           <div className="bg-gradient-to-r from-amber-100 to-yellow-100 dark:from-amber-900/30 dark:to-yellow-900/30 rounded-lg p-4 mb-6">
             <div className="flex items-center gap-3">
@@ -209,15 +243,17 @@ export const PaymentNotification: React.FC<PaymentNotificationProps> = ({
           </div>
 
           {/* Action Buttons */}
-          <div className="flex gap-3">
-            <Button
-              onClick={onViewProfile}
-              variant="default"
-              className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
-            >
-              <Heart className="w-4 h-4 mr-2" />
-              View in Profile
-            </Button>
+          <div className="flex flex-col sm:flex-row gap-3">
+            {onViewProfile && (
+              <Button
+                onClick={onViewProfile}
+                variant="default"
+                className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
+              >
+                <Heart className="w-4 h-4 mr-2" />
+                View in Profile
+              </Button>
+            )}
             {onClose && (
               <Button onClick={onClose} variant="outline" className="flex-1">
                 Continue
@@ -268,8 +304,14 @@ export const PaymentNotification: React.FC<PaymentNotificationProps> = ({
           <div className="flex justify-between items-center text-sm">
             <span className="text-muted-foreground">Total Amount:</span>
             <span className="font-medium">₹{totalAmount.toLocaleString()}</span>
-          </div>
-        </div>
+          </div>          {orderId && (
+            <div className=\"flex justify-between items-center text-sm\">
+              <span className=\"text-muted-foreground\">Order ID:</span>
+              <code className=\"text-sm font-mono bg-background px-2 py-1 rounded select-all\">
+                {orderId}
+              </code>
+            </div>
+          )}        </div>
 
         {/* Troubleshooting Tips */}
         <div className="bg-blue-50/50 dark:bg-blue-950/20 rounded-lg p-4 mb-6 border border-blue-200/50 dark:border-blue-800/50">
@@ -280,7 +322,12 @@ export const PaymentNotification: React.FC<PaymentNotificationProps> = ({
             <li>Check your internet connection</li>
             <li>Ensure your payment method has sufficient balance</li>
             <li>Try a different payment method</li>
-            <li>Contact support if the problem persists</li>
+            {orderId && (
+              <li>Contact support with Order ID: <code className=\"bg-background/50 px-1 rounded\">{orderId}</code></li>
+            )}
+            {!orderId && (
+              <li>Contact support if the problem persists</li>
+            )}
           </ul>
         </div>
 

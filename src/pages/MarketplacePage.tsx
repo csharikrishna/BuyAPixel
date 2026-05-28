@@ -58,13 +58,6 @@ import {
 import SEO from "@/components/SEO";
 import { generateOrganizationSchema, generateWebsiteSchema } from "@/lib/seo-utils";
 
-// Razorpay type declarations
-declare global {
-  interface Window {
-    Razorpay: new (options: RazorpayOptions) => RazorpayInstance;
-  }
-}
-
 interface RazorpayOptions {
   key: string;
   amount: number;
@@ -95,6 +88,17 @@ interface RazorpayResponse {
   razorpay_order_id: string;
   razorpay_payment_id: string;
   razorpay_signature: string;
+}
+
+type RazorpayWindow = Window & {
+  Razorpay?: new (options: RazorpayOptions) => RazorpayInstance;
+};
+
+type MarketplaceListingRow = Omit<MarketplaceListing, "seller_profile">;
+
+interface ListPixelForSaleResult {
+  success?: boolean;
+  error?: string;
 }
 
 interface MarketplaceListing {
@@ -167,12 +171,13 @@ const MarketplacePage = () => {
   // Lazy-load Razorpay script on demand [perf]
   const loadRazorpayScript = (): Promise<void> => {
     return new Promise((resolve, reject) => {
+      const razorpayWindow = window as RazorpayWindow;
       if (isPaymentBypassed) {
         setRazorpayLoaded(true);
         resolve();
         return;
       }
-      if (window.Razorpay) {
+      if (razorpayWindow.Razorpay) {
         setRazorpayLoaded(true);
         resolve();
         return;
@@ -180,7 +185,7 @@ const MarketplacePage = () => {
 
       const existingScript = document.querySelector('script[src*="checkout.razorpay.com"]');
       if (existingScript) {
-        if (window.Razorpay) { setRazorpayLoaded(true); resolve(); return; }
+        if (razorpayWindow.Razorpay) { setRazorpayLoaded(true); resolve(); return; }
         existingScript.addEventListener('load', () => { setRazorpayLoaded(true); resolve(); });
         return;
       }
@@ -248,22 +253,22 @@ const MarketplacePage = () => {
       if (error) throw error;
 
       // FIX #11: Batch query instead of N+1 per-listing profile fetch
-      const listings = data || [];
-      const sellerIds = [...new Set(listings.map((l: any) => l.seller_id))];
+      const listings = (data || []) as MarketplaceListingRow[];
+      const sellerIds = [...new Set(listings.map((listing) => listing.seller_id))];
       
-      let profileMap = new Map<string, { full_name: string | null }>();
+      const profileMap = new Map<string, { full_name: string | null }>();
       if (sellerIds.length > 0) {
         const { data: profiles } = await supabase
           .from("profiles")
           .select("user_id, full_name")
           .in("user_id", sellerIds);
         
-        (profiles || []).forEach((p: any) => {
-          profileMap.set(p.user_id, { full_name: p.full_name });
+        (profiles || []).forEach((profile) => {
+          profileMap.set(profile.user_id, { full_name: profile.full_name });
         });
       }
 
-      return listings.map((listing: any) => ({
+      return listings.map((listing) => ({
         ...listing,
         seller_profile: profileMap.get(listing.seller_id) || null,
       })) as MarketplaceListing[];
@@ -387,10 +392,12 @@ const MarketplacePage = () => {
           let errMsg = bypassData?.error || 'Bypass marketplace purchase failed';
           if (bypassError && !bypassData?.error) {
             try {
-              const ctx = (bypassError as any)?.context;
+              const ctx = (bypassError as { context?: { body?: unknown } }).context;
               if (ctx?.body) {
-                const parsed = typeof ctx.body === 'string' ? JSON.parse(ctx.body) : ctx.body;
-                errMsg = parsed?.error || parsed?.message || errMsg;
+                const parsed = typeof ctx.body === 'string'
+                  ? JSON.parse(ctx.body) as { error?: string; message?: string }
+                  : ctx.body as { error?: string; message?: string };
+                errMsg = parsed.error || parsed.message || errMsg;
               }
             } catch {
               errMsg = bypassError.message || errMsg;
@@ -491,7 +498,11 @@ const MarketplacePage = () => {
         },
       };
 
-      const razorpay = new window.Razorpay(options);
+      const Razorpay = (window as RazorpayWindow).Razorpay;
+      if (!Razorpay) {
+        throw new Error('Payment gateway failed to load');
+      }
+      const razorpay = new Razorpay(options);
       razorpay.open();
 
     } catch (error: unknown) {
@@ -541,10 +552,11 @@ const MarketplacePage = () => {
         p_pixel_id: selectedPixelId,
         p_asking_price: price,
       });
+      const result = data as ListPixelForSaleResult | null;
 
       if (error) throw error;
-      if (data && !data.success) {
-        throw new Error(data.error || 'Failed to create listing');
+      if (result && !result.success) {
+        throw new Error(result.error || 'Failed to create listing');
       }
 
       toast.success("Listing Created Successfully ✅", {
@@ -748,7 +760,7 @@ const MarketplacePage = () => {
                                           <div className="flex items-center gap-3">
                                             {imageUrl ? (
                                               <img 
-                                                src={getThumbnailUrl(imageUrl, 40, 40)} 
+                                                src={getThumbnailUrl(imageUrl)} 
                                                 alt={altText} 
                                                 className="w-10 h-10 rounded shadow-sm object-cover bg-white" 
                                               />
@@ -873,7 +885,7 @@ const MarketplacePage = () => {
                         className="pl-10 h-11 text-base"
                       />
                     </div>
-                    <Select value={sortBy} onValueChange={(value: any) => setSortBy(value)}>
+                    <Select value={sortBy} onValueChange={(value) => setSortBy(value as typeof sortBy)}>
                       <SelectTrigger className="w-full sm:w-[180px] h-11">
                         <SortAsc className="w-4 h-4 mr-2" />
                         <SelectValue placeholder="Sort by" />

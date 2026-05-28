@@ -439,7 +439,7 @@ export const ImageUpload = ({
             onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
-                !uploading && fileInputRef.current?.click();
+                if (!uploading) fileInputRef.current?.click();
               }
             }}
             role="button"

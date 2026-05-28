@@ -61,6 +61,7 @@ import Footer from '@/components/Footer';
 import { cn, getErrorMessage } from '@/lib/utils';
 import { RealtimeChannel } from '@supabase/supabase-js';
 import { toast } from 'sonner';
+import { Helmet } from 'react-helmet-async';
 
 // ======================
 // TYPES & INTERFACES

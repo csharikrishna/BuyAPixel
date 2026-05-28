@@ -1,8 +1,9 @@
 import { Toaster as Sonner, toast } from "sonner";
-import { useState, useEffect, lazy, Suspense } from "react";
+import { useState, useEffect, useRef, lazy, Suspense } from "react";
 import { useNetworkStatus } from "@/hooks/useNetworkStatus";
 import { OfflineBanner } from "@/components/OfflineBanner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { CheckCircle2 } from "lucide-react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
@@ -101,6 +102,7 @@ const App = () => (
               richColors 
               closeButton
               duration={3000}
+              swipeDirection="right"
             />
             <BrowserRouter>
               <AppContent />
@@ -117,7 +119,9 @@ const App = () => (
 const AppContent = () => {
   const { isOnline, connectionQuality } = useNetworkStatus();
   const [hasWarnedWeakConnection, setHasWarnedWeakConnection] = useState(false);
+  const previousOnlineStatusRef = useRef(navigator.onLine);
 
+  // Handle weak connection warning
   useEffect(() => {
     if (isOnline && (connectionQuality === '2g' || connectionQuality === 'slow-2g') && !hasWarnedWeakConnection) {
       toast.warning("Weak internet connection detected", {
@@ -127,6 +131,23 @@ const AppContent = () => {
       setHasWarnedWeakConnection(true);
     }
   }, [isOnline, connectionQuality, hasWarnedWeakConnection]);
+
+  // Handle reconnection
+  useEffect(() => {
+    const wasOffline = !previousOnlineStatusRef.current;
+    const isNowOnline = isOnline;
+
+    // If user was offline and is now online, show success message
+    if (wasOffline && isNowOnline) {
+      toast.success("✓ You're back online!", {
+        description: "Your selections and drafts have been saved. Ready to continue.",
+        duration: 4000,
+        icon: <CheckCircle2 className="w-5 h-5" />,
+      });
+    }
+
+    previousOnlineStatusRef.current = isOnline;
+  }, [isOnline]);
 
   return (
     <>

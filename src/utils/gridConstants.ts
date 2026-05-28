@@ -8,7 +8,7 @@ export const GRID_CONFIG = {
    BILLBOARD_WIDTH: 40,
    BILLBOARD_HEIGHT: 24,
    ZOOM_FACTOR: 1.05,
-   PAN_CLAMP_BUFFER: 100,
+   PAN_VIEWPORT_MARGIN: 24,
 
    // Canvas dimensions
    CANVAS_WIDTH: 100,
