@@ -112,8 +112,8 @@ export function getAdTierByPrice(price: number): AdTierType {
 export function calculatePixelPrice(
    x: number,
    y: number,
-   canvasWidth = GRID_CONFIG.CANVAS_WIDTH,
-   canvasHeight = GRID_CONFIG.CANVAS_HEIGHT
+   canvasWidth: number = GRID_CONFIG.CANVAS_WIDTH,
+   canvasHeight: number = GRID_CONFIG.CANVAS_HEIGHT
 ): number {
    // Distance from the nearest edge (minimum of all 4 sides)
    const distFromEdge = Math.min(x, y, canvasWidth - 1 - x, canvasHeight - 1 - y);

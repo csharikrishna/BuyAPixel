@@ -20,10 +20,13 @@ import {
    Facebook,
    Mail,
    QrCode,
-   Download
+   Download,
+   CreditCard,
+   Users,
 } from "lucide-react";
 import { useState, useCallback, useMemo } from "react";
 import { toast } from "sonner";
+import { PremiumShareCard } from "./PremiumShareCard";
 
 interface SharePixelDialogProps {
    isOpen: boolean;
@@ -32,12 +35,19 @@ interface SharePixelDialogProps {
       x: number;
       y: number;
       url?: string;
+      imageUrl?: string | null;
+      linkUrl?: string | null;
+      pricePaid?: number;
+      pixelName?: string;
    } | null;
 }
+
+type ShareTab = 'social' | 'card';
 
 export const SharePixelDialog = ({ isOpen, onClose, pixel }: SharePixelDialogProps) => {
    const [copied, setCopied] = useState(false);
    const [showQr, setShowQr] = useState(false);
+   const [activeTab, setActiveTab] = useState<ShareTab>('card');
 
    // Memoize share content
    const shareContent = useMemo(() => {
@@ -167,9 +177,9 @@ export const SharePixelDialog = ({ isOpen, onClose, pixel }: SharePixelDialogPro
 
    return (
       <Dialog open={isOpen} onOpenChange={onClose}>
-         <DialogContent className="sm:max-w-[425px] p-0 overflow-hidden bg-background/95 backdrop-blur-2xl border-border/50 shadow-2xl rounded-2xl">
+         <DialogContent className="sm:max-w-[480px] p-0 overflow-hidden bg-background/95 backdrop-blur-2xl border-border/50 shadow-2xl rounded-2xl max-h-[90vh] overflow-y-auto">
             {/* Header Area */}
-            <div className="px-6 pt-6 pb-4 text-center space-y-1">
+            <div className="px-6 pt-6 pb-3 text-center space-y-1">
                <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-4">
                   <Share2 className="w-6 h-6 text-primary" />
                </div>
@@ -181,108 +191,156 @@ export const SharePixelDialog = ({ isOpen, onClose, pixel }: SharePixelDialogPro
                </DialogDescription>
             </div>
 
-            <div className="px-6 pb-6 space-y-6">
-               {/* Premium Coordinates Card */}
-               <div className="relative overflow-hidden group rounded-2xl p-5 bg-gradient-to-br from-primary/5 to-accent/5 border border-primary/10 transition-all hover:border-primary/20 hover:shadow-lg hover:shadow-primary/5">
-                  <div className="flex justify-between items-center relative z-10">
-                     <div>
-                        <p className="text-[10px] font-bold tracking-widest text-primary uppercase mb-1">
-                           Your Coordinates
-                        </p>
-                        <div className="text-3xl font-black tracking-tighter text-foreground flex items-center gap-1">
-                           <span className="text-muted-foreground/40 font-light">(</span>
-                           {pixel.x}, {pixel.y}
-                           <span className="text-muted-foreground/40 font-light">)</span>
-                        </div>
-                     </div>
-                     <Button
-                        variant="ghost"
-                        size="icon"
-                        className={`rounded-full h-10 w-10 transition-all ${showQr ? 'bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground' : 'bg-background/50 hover:bg-background shadow-sm'}`}
-                        onClick={() => setShowQr(!showQr)}
-                        title="Toggle QR Code"
-                     >
-                        <QrCode className="w-5 h-5" />
-                     </Button>
-                  </div>
-                  
-                  {/* Subtle background glow effect inside the card */}
-                  <div className="absolute -right-6 -top-6 w-24 h-24 bg-primary/10 rounded-full blur-2xl group-hover:bg-primary/20 transition-all duration-500" />
+            {/* Tab Switcher */}
+            <div className="px-6 pb-2">
+               <div className="flex rounded-xl bg-muted/50 p-1 gap-1">
+                  <button
+                     onClick={() => setActiveTab('card')}
+                     className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                        activeTab === 'card'
+                           ? 'bg-background shadow-sm text-foreground'
+                           : 'text-muted-foreground hover:text-foreground'
+                     }`}
+                  >
+                     <CreditCard className="w-4 h-4" />
+                     Premium Card
+                  </button>
+                  <button
+                     onClick={() => setActiveTab('social')}
+                     className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                        activeTab === 'social'
+                           ? 'bg-background shadow-sm text-foreground'
+                           : 'text-muted-foreground hover:text-foreground'
+                     }`}
+                  >
+                     <Users className="w-4 h-4" />
+                     Social Share
+                  </button>
                </div>
+            </div>
 
-               {/* QR Code Reveal Section */}
-               {showQr && (
-                  <div className="flex flex-col items-center justify-center p-5 bg-card rounded-2xl border shadow-sm animate-in fade-in slide-in-from-top-4 duration-300">
-                     <div className="p-3 bg-white rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 mb-4">
-                        <img
-                           src={`https://api.qrserver.com/v1/create-qr-code/?size=240x240&margin=10&data=${encodeURIComponent(shareContent.url)}`}
-                           alt="QR Code"
-                           className="w-40 h-40 rounded-lg"
-                        />
-                     </div>
-                     <Button variant="outline" className="w-full gap-2 rounded-xl h-10" onClick={handleDownloadQr}>
-                        <Download className="w-4 h-4" /> Download QR Code
-                     </Button>
+            <div className="px-6 pb-6">
+               {/* Premium Card Tab */}
+               {activeTab === 'card' && (
+                  <div className="pt-2 animate-in fade-in slide-in-from-bottom-4 duration-300">
+                     <PremiumShareCard
+                        pixelName={pixel.pixelName || `Pixel (${pixel.x}, ${pixel.y})`}
+                        x={pixel.x}
+                        y={pixel.y}
+                        imageUrl={pixel.imageUrl}
+                        linkUrl={pixel.linkUrl}
+                        pricePaid={pixel.pricePaid || 99}
+                        floating
+                     />
                   </div>
                )}
 
-               {/* Quick Share Grid */}
-               <div className="space-y-3">
-                  <div className="flex items-center gap-4">
-                     <div className="h-px flex-1 bg-border" />
-                     <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Share via</span>
-                     <div className="h-px flex-1 bg-border" />
-                  </div>
-                  
-                  <div className="grid grid-cols-4 gap-2">
-                     {socialButtons.map((btn) => (
-                        <button
-                           key={btn.id}
-                           onClick={btn.action}
-                           className={`flex flex-col items-center justify-center gap-2 p-3 rounded-xl border border-transparent hover:border-border bg-muted/30 hover:bg-card transition-all duration-200 text-muted-foreground ${btn.colorClass}`}
-                           title={btn.name}
-                        >
-                           {btn.icon}
-                           <span className="text-[10px] font-medium leading-none">{btn.name}</span>
-                        </button>
-                     ))}
-                  </div>
+               {/* Social Share Tab */}
+               {activeTab === 'social' && (
+                  <div className="space-y-6 pt-2 animate-in fade-in slide-in-from-bottom-4 duration-300">
+                     {/* Premium Coordinates Card */}
+                     <div className="relative overflow-hidden group rounded-2xl p-5 bg-gradient-to-br from-primary/5 to-accent/5 border border-primary/10 transition-all hover:border-primary/20 hover:shadow-lg hover:shadow-primary/5">
+                        <div className="flex justify-between items-center relative z-10">
+                           <div>
+                              <p className="text-[10px] font-bold tracking-widest text-primary uppercase mb-1">
+                                 Your Coordinates
+                              </p>
+                              <div className="text-3xl font-black tracking-tighter text-foreground flex items-center gap-1">
+                                 <span className="text-muted-foreground/40 font-light">(</span>
+                                 {pixel.x}, {pixel.y}
+                                 <span className="text-muted-foreground/40 font-light">)</span>
+                              </div>
+                           </div>
+                           <Button
+                              variant="ghost"
+                              size="icon"
+                              className={`rounded-full h-10 w-10 transition-all ${showQr ? 'bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground' : 'bg-background/50 hover:bg-background shadow-sm'}`}
+                              onClick={() => setShowQr(!showQr)}
+                              title="Toggle QR Code"
+                           >
+                              <QrCode className="w-5 h-5" />
+                           </Button>
+                        </div>
+                        
+                        {/* Subtle background glow effect inside the card */}
+                        <div className="absolute -right-6 -top-6 w-24 h-24 bg-primary/10 rounded-full blur-2xl group-hover:bg-primary/20 transition-all duration-500" />
+                     </div>
 
-                  {typeof navigator !== 'undefined' && navigator.share && (
-                     <Button
-                        variant="secondary"
-                        className="w-full gap-2 rounded-xl h-11 bg-muted/50 hover:bg-muted"
-                        onClick={handleNativeShare}
-                     >
-                        <Share2 className="w-4 h-4" />
-                        More options...
-                     </Button>
-                  )}
-               </div>
+                     {/* QR Code Reveal Section */}
+                     {showQr && (
+                        <div className="flex flex-col items-center justify-center p-5 bg-card rounded-2xl border shadow-sm animate-in fade-in slide-in-from-top-4 duration-300">
+                           <div className="p-3 bg-white rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 mb-4">
+                              <img
+                                 src={`https://api.qrserver.com/v1/create-qr-code/?size=240x240&margin=10&data=${encodeURIComponent(shareContent.url)}`}
+                                 alt="QR Code"
+                                 className="w-40 h-40 rounded-lg"
+                              />
+                           </div>
+                           <Button variant="outline" className="w-full gap-2 rounded-xl h-10" onClick={handleDownloadQr}>
+                              <Download className="w-4 h-4" /> Download QR Code
+                           </Button>
+                        </div>
+                     )}
 
-               {/* Direct Link */}
-               <div className="space-y-2 pt-2">
-                  <Label htmlFor="link" className="text-xs font-semibold text-foreground uppercase tracking-wider ml-1">
-                     Direct Link
-                  </Label>
-                  <div className="flex items-center gap-2 p-1.5 bg-muted/40 border rounded-xl focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary/50 transition-all">
-                     <Input
-                        id="link"
-                        value={shareContent.url}
-                        readOnly
-                        className="h-9 border-0 bg-transparent shadow-none focus-visible:ring-0 font-mono text-xs px-3 text-muted-foreground"
-                        onClick={(e) => (e.target as HTMLInputElement).select()}
-                     />
-                     <Button
-                        size="sm"
-                        className="shrink-0 h-9 px-4 rounded-lg gap-2"
-                        onClick={handleCopyLink}
-                     >
-                        {copied ? <Check className="w-4 h-4" /> : <LinkIcon className="w-4 h-4" />}
-                        {copied ? "Copied" : "Copy"}
-                     </Button>
+                     {/* Quick Share Grid */}
+                     <div className="space-y-3">
+                        <div className="flex items-center gap-4">
+                           <div className="h-px flex-1 bg-border" />
+                           <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Share via</span>
+                           <div className="h-px flex-1 bg-border" />
+                        </div>
+                        
+                        <div className="grid grid-cols-4 gap-2">
+                           {socialButtons.map((btn) => (
+                              <button
+                                 key={btn.id}
+                                 onClick={btn.action}
+                                 className={`flex flex-col items-center justify-center gap-2 p-3 rounded-xl border border-transparent hover:border-border bg-muted/30 hover:bg-card transition-all duration-200 text-muted-foreground ${btn.colorClass}`}
+                                 title={btn.name}
+                              >
+                                 {btn.icon}
+                                 <span className="text-[10px] font-medium leading-none">{btn.name}</span>
+                              </button>
+                           ))}
+                        </div>
+
+                        {typeof navigator !== 'undefined' && navigator.share && (
+                           <Button
+                              variant="secondary"
+                              className="w-full gap-2 rounded-xl h-11 bg-muted/50 hover:bg-muted"
+                              onClick={handleNativeShare}
+                           >
+                              <Share2 className="w-4 h-4" />
+                              More options...
+                           </Button>
+                        )}
+                     </div>
+
+                     {/* Direct Link */}
+                     <div className="space-y-2 pt-2">
+                        <Label htmlFor="link" className="text-xs font-semibold text-foreground uppercase tracking-wider ml-1">
+                           Direct Link
+                        </Label>
+                        <div className="flex items-center gap-2 p-1.5 bg-muted/40 border rounded-xl focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary/50 transition-all">
+                           <Input
+                              id="link"
+                              value={shareContent.url}
+                              readOnly
+                              className="h-9 border-0 bg-transparent shadow-none focus-visible:ring-0 font-mono text-xs px-3 text-muted-foreground"
+                              onClick={(e) => (e.target as HTMLInputElement).select()}
+                           />
+                           <Button
+                              size="sm"
+                              className="shrink-0 h-9 px-4 rounded-lg gap-2"
+                              onClick={handleCopyLink}
+                           >
+                              {copied ? <Check className="w-4 h-4" /> : <LinkIcon className="w-4 h-4" />}
+                              {copied ? "Copied" : "Copy"}
+                           </Button>
+                        </div>
+                     </div>
                   </div>
-               </div>
+               )}
             </div>
          </DialogContent>
       </Dialog>

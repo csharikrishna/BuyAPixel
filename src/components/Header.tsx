@@ -15,6 +15,8 @@ import {
   ScanLine,
   HelpCircle,
   MessageCircle,
+  BarChart3,
+  Rocket,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
@@ -86,6 +88,7 @@ const Header = () => {
   // State
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [headerHidden, setHeaderHidden] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
   // Cleanup on unmount
@@ -104,23 +107,51 @@ const Header = () => {
 
   // Scroll detection for header shadow — uses ref to avoid listener re-registration
   const isScrolledRef = useRef(false);
+  const hideTimerRef = useRef<NodeJS.Timeout | null>(null);
+  
   useEffect(() => {
+    let lastY = window.scrollY;
+    
     const handleScroll = () => {
-      const scrolled = window.scrollY > SCROLL_THRESHOLD;
+      const currentY = window.scrollY;
+      const scrolled = currentY > SCROLL_THRESHOLD;
+
+      // update shadow state
       if (scrolled !== isScrolledRef.current) {
         isScrolledRef.current = scrolled;
         setIsScrolled(scrolled);
       }
+
+      // Handle header visibility based on scroll direction
+      if (currentY < lastY) {
+        // Scrolling up - show header immediately
+        if (hideTimerRef.current) {
+          clearTimeout(hideTimerRef.current);
+          hideTimerRef.current = null;
+        }
+        setHeaderHidden(false);
+      } else if (currentY > lastY && currentY > SCROLL_THRESHOLD + 20) {
+        // Scrolling down past threshold - hide with debounce
+        if (hideTimerRef.current) {
+          clearTimeout(hideTimerRef.current);
+        }
+        hideTimerRef.current = setTimeout(() => {
+          setHeaderHidden(true);
+        }, 150);
+      }
+
+      lastY = currentY;
     };
 
-    // Use passive listener for better scroll performance
     window.addEventListener('scroll', handleScroll, { passive: true });
     
-    // Check initial state
-    handleScroll();
-
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      if (hideTimerRef.current) {
+        clearTimeout(hideTimerRef.current);
+      }
+    };
+  }, [headerHidden]);
 
   // Lock body scroll when mobile menu is open
   useEffect(() => {
@@ -134,6 +165,15 @@ const Header = () => {
       document.body.style.overflow = '';
     };
   }, [mobileMenuOpen]);
+
+  // Respect reduced motion for transitions
+  const prefersReducedMotion = useMemo(() => {
+    try {
+      return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    } catch (e) {
+      return false;
+    }
+  }, []);
 
   // ======================
   // PREFETCH HANDLERS (Optimized with debouncing)
@@ -183,6 +223,9 @@ const Header = () => {
       }),
     [queryClient, user?.id, createPrefetchHandler]
   );
+
+  // memoized home prefetch (no network cost, placeholder for future)
+  const prefetchHome = useMemo(() => createPrefetchHandler('home', () => {}), [createPrefetchHandler]);
 
   const prefetchMarketplace = useMemo(
     () =>
@@ -240,7 +283,9 @@ const Header = () => {
       { label: 'Buy Pixels', to: '/', icon: Home },
       { label: 'Scan', to: '/scan', icon: ScanLine },
       { label: 'Marketplace', to: '/marketplace', icon: Store, onPrefetch: prefetchMarketplace },
+      { label: 'Directory', to: '/directory', icon: Rocket },
       { label: 'Leaderboard', to: '/leaderboard', icon: Trophy, onPrefetch: prefetchLeaderboard },
+      { label: 'Live Stats', to: '/stats', icon: BarChart3 },
       { label: 'Blog', to: '/blog', icon: BookOpen },
       { label: 'About', to: '/about', icon: Info },
       { label: 'Help', to: '/help', icon: HelpCircle },
@@ -314,21 +359,31 @@ const Header = () => {
     <header
       ref={headerRef}
       className={cn(
-        'sticky top-0 z-50 w-full border-b border-border/40 backdrop-blur-xl transition-all duration-300',
+        'sticky top-0 z-50 w-full border-b border-border/40 backdrop-blur-xl',
         'bg-background/85 supports-[backdrop-filter]:bg-background/70',
+        // transition handling (respect reduced motion)
+        prefersReducedMotion ? 'transition-none' : 'transition-transform duration-300',
+        // translate header for hide/show on scroll
+        headerHidden ? '-translate-y-full' : 'translate-y-0',
+        // shadow when scrolled
         isScrolled && 'shadow-lg shadow-black/[0.04]'
       )}
       role="banner"
     >
+      {/* Skip link for keyboard users */}
+      <a
+        href="#content"
+        className="sr-only focus:absolute focus:top-3 focus:left-3 focus:z-50 focus:bg-background focus:text-primary px-3 py-2 rounded-md"
+      >
+        Skip to content
+      </a>
       <div className="flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8 xl:px-10 w-full">
         {/* LOGO */}
         <Link
           to="/"
           className="flex items-center gap-2.5 shrink-0 group focus:outline-none focus:ring-2 focus:ring-primary/20 rounded-md"
           aria-label="BuyASpot"
-          onMouseEnter={createPrefetchHandler('home', () => {
-            // Prefetch home page data if needed
-          })}
+          onMouseEnter={prefetchHome}
         >
           <img 
             src={logoSrc} 
@@ -337,6 +392,8 @@ const Header = () => {
             height={32}
             className="w-8 h-8 object-contain transition-all group-hover:scale-105 drop-shadow-sm"
             fetchpriority="high"
+            decoding="async"
+            loading="eager"
           />
           <div className="text-xl md:text-2xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent tracking-tight transition-all group-hover:scale-105">
             BuyASpot

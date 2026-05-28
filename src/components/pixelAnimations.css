@@ -1,0 +1,70 @@
+/* ========================================================
+ * Pixel Tier Animations for Canvas Grid
+ * ========================================================
+ * Gold pixels glow amber, Premium pixels shimmer violet.
+ * Economy pixels remain static for performance.
+ * Animations are injected only when pixels are large enough
+ * to be visually distinct (scaledPixelSize >= 6).
+ * ======================================================== */
+
+/* Gold tier — warm amber glow pulse */
+@keyframes pixelGoldGlow {
+  0%, 100% {
+    box-shadow: 0 0 4px 1px rgba(234, 179, 8, 0.4),
+                0 0 12px 2px rgba(234, 179, 8, 0.15);
+  }
+  50% {
+    box-shadow: 0 0 8px 2px rgba(234, 179, 8, 0.6),
+                0 0 20px 4px rgba(234, 179, 8, 0.25);
+  }
+}
+
+/* Premium tier — violet shimmer border */
+@keyframes pixelPremiumShimmer {
+  0%, 100% {
+    box-shadow: 0 0 3px 1px rgba(139, 92, 246, 0.3),
+                0 0 10px 2px rgba(139, 92, 246, 0.1);
+  }
+  50% {
+    box-shadow: 0 0 6px 2px rgba(139, 92, 246, 0.5),
+                0 0 16px 3px rgba(139, 92, 246, 0.2);
+  }
+}
+
+/* Featured billboard pulse */
+@keyframes pixelFeaturedPulse {
+  0%, 100% {
+    box-shadow: 0 0 6px 2px rgba(234, 179, 8, 0.5),
+                0 0 24px 6px rgba(234, 179, 8, 0.15);
+  }
+  50% {
+    box-shadow: 0 0 12px 4px rgba(234, 179, 8, 0.7),
+                0 0 36px 8px rgba(234, 179, 8, 0.25);
+  }
+}
+
+/* Apply classes */
+.pixel-gold-glow {
+  animation: pixelGoldGlow 3s ease-in-out infinite;
+  border-color: rgba(234, 179, 8, 0.6) !important;
+  z-index: 6 !important;
+}
+
+.pixel-premium-shimmer {
+  animation: pixelPremiumShimmer 4s ease-in-out infinite;
+  border-color: rgba(139, 92, 246, 0.5) !important;
+  z-index: 4 !important;
+}
+
+.pixel-featured-pulse {
+  animation: pixelFeaturedPulse 2.5s ease-in-out infinite;
+}
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  .pixel-gold-glow,
+  .pixel-premium-shimmer,
+  .pixel-featured-pulse {
+    animation: none;
+  }
+}

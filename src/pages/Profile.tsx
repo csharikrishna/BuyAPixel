@@ -23,6 +23,8 @@ import { ProfileDetails } from '@/components/profile/ProfileDetails';
 import { MyPixels } from '@/components/profile/MyPixels';
 import { ChangePasswordSection } from '@/components/profile/ChangePasswordSection';
 import { TrophyCase } from '@/components/TrophyCase';
+import { PixelAnalytics } from '@/components/profile/PixelAnalytics';
+import { ReferralSection } from '@/components/profile/ReferralSection';
 import { Profile as UserProfile, UserPixel, PixelStats, ProfileField, ProfileCompletionData } from '@/types/profile';
 
 // Wrapper for ProfileSkeleton with page layout
@@ -477,7 +479,10 @@ const Profile = () => {
         <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 md:mb-8">
           <div className="flex items-center space-x-3 md:space-x-4">
             <Link to="/" aria-label="Back to home">
-              <Button variant="ghost" size="sm" className="group hover:bg-white dark:hover:bg-gray-800 border border-transparent hover:border-gray-200 dark:hover:border-gray-700">
+              <Button
+  variant="ghost"
+  size="sm"
+  className="group hover:bg-slate-100 dark:hover:bg-slate-800">
                 <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" aria-hidden="true" />
                 <span className="hidden sm:inline">Back to Home</span>
                 <span className="sm:hidden">Back</span>
@@ -542,6 +547,16 @@ const Profile = () => {
           <div className="lg:col-span-8 xl:col-span-8 space-y-6">
             {/* Trophy Case */}
             <TrophyCase userId={targetUserId || ""} />
+
+            {/* Analytics Dashboard — Only for Own Profile */}
+            {isOwnProfile && targetUserId && (
+              <PixelAnalytics userId={targetUserId} />
+            )}
+
+            {/* Referral Section — Only for Own Profile */}
+            {isOwnProfile && (
+              <ReferralSection />
+            )}
 
             {/* My Pixels */}
             <MyPixels
@@ -653,7 +668,14 @@ const Profile = () => {
       <SharePixelDialog
         isOpen={!!sharePixel}
         onClose={() => setSharePixel(null)}
-        pixel={sharePixel ? { x: sharePixel.x, y: sharePixel.y } : null}
+        pixel={sharePixel ? {
+          x: sharePixel.x,
+          y: sharePixel.y,
+          imageUrl: sharePixel.image_url,
+          linkUrl: sharePixel.link_url,
+          pricePaid: sharePixel.price_paid,
+          pixelName: sharePixel.alt_text,
+        } : null}
       />
 
       {/* Edit Pixel Dialog */}

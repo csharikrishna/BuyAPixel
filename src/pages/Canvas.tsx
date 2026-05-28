@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { VirtualizedPixelGrid } from "@/components/VirtualizedPixelGrid";
 import { supabase } from "@/integrations/supabase/client";
 import Header from "@/components/Header";
+import { MysteryPixelBanner } from "@/components/MysteryPixelBanner";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -176,6 +177,11 @@ const Canvas = () => {
     <div className="flex flex-col min-h-screen bg-slate-100">
       {pageSeo}
       <Header />
+      
+      {/* Mystery Pixel Drop Banner */}
+      <div className="container mx-auto px-4 mt-4 w-full z-10 relative">
+        <MysteryPixelBanner />
+      </div>
 
       {/* Main Canvas Container - Scrollable page */}
       <div className="flex-1 relative w-full">

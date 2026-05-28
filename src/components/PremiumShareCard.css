@@ -1,0 +1,381 @@
+/* ========================================================
+ * Premium Share Card — 3D CSS Animations
+ * ======================================================== */
+
+/* Holographic gradient shimmer */
+@keyframes holographic {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Metallic shine sweep */
+@keyframes shineSweep {
+  0% { transform: translateX(-100%) rotate(25deg); }
+  100% { transform: translateX(200%) rotate(25deg); }
+}
+
+/* Card entrance */
+@keyframes cardEntrance {
+  0% {
+    opacity: 0;
+    transform: perspective(1200px) rotateY(-15deg) scale(0.9) translateY(30px);
+  }
+  100% {
+    opacity: 1;
+    transform: perspective(1200px) rotateY(0deg) scale(1) translateY(0);
+  }
+}
+
+/* Floating animation */
+@keyframes cardFloat {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-6px); }
+}
+
+/* Glow pulse */
+@keyframes glowPulse {
+  0%, 100% { box-shadow: 0 0 20px rgba(139, 92, 246, 0.3), 0 0 60px rgba(139, 92, 246, 0.1); }
+  50% { box-shadow: 0 0 30px rgba(139, 92, 246, 0.5), 0 0 80px rgba(139, 92, 246, 0.2); }
+}
+
+/* Gold glow */
+@keyframes goldGlowPulse {
+  0%, 100% { box-shadow: 0 0 20px rgba(234, 179, 8, 0.3), 0 0 60px rgba(234, 179, 8, 0.1); }
+  50% { box-shadow: 0 0 30px rgba(234, 179, 8, 0.5), 0 0 80px rgba(234, 179, 8, 0.2); }
+}
+
+/* Sparkle animation */
+@keyframes sparkle {
+  0%, 100% { opacity: 0; transform: scale(0) rotate(0deg); }
+  50% { opacity: 1; transform: scale(1) rotate(180deg); }
+}
+
+/* ─── Card Container ──────────────────────────────────── */
+
+.premium-card-scene {
+  perspective: 1200px;
+  width: 380px;
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+.premium-card {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 0.63; /* Credit card ratio */
+  border-radius: 20px;
+  overflow: hidden;
+  transform-style: preserve-3d;
+  animation: cardEntrance 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  transition: transform 0.15s ease-out;
+  cursor: grab;
+}
+
+.premium-card:active {
+  cursor: grabbing;
+}
+
+/* ─── Tier-specific borders and glows ─────────────────── */
+
+.premium-card--economy {
+  background: linear-gradient(135deg, #064e3b 0%, #065f46 30%, #047857 70%, #059669 100%);
+  animation: cardEntrance 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.premium-card--premium {
+  background: linear-gradient(135deg, #2e1065 0%, #4c1d95 30%, #6d28d9 70%, #7c3aed 100%);
+  animation: cardEntrance 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards, glowPulse 3s ease-in-out infinite;
+}
+
+.premium-card--gold {
+  background: linear-gradient(135deg, #451a03 0%, #78350f 30%, #a16207 70%, #ca8a04 100%);
+  animation: cardEntrance 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards, goldGlowPulse 3s ease-in-out infinite;
+}
+
+/* ─── Holographic overlay ─────────────────────────────── */
+
+.premium-card__holo {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    125deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.05) 20%,
+    rgba(139, 92, 246, 0.08) 40%,
+    rgba(59, 130, 246, 0.08) 50%,
+    rgba(16, 185, 129, 0.08) 60%,
+    rgba(234, 179, 8, 0.08) 80%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  background-size: 200% 200%;
+  animation: holographic 6s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 2;
+  mix-blend-mode: overlay;
+}
+
+/* ─── Shine sweep effect ──────────────────────────────── */
+
+.premium-card__shine {
+  position: absolute;
+  inset: -50%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.08) 45%,
+    rgba(255, 255, 255, 0.15) 50%,
+    rgba(255, 255, 255, 0.08) 55%,
+    transparent 100%
+  );
+  transform: translateX(-100%) rotate(25deg);
+  pointer-events: none;
+  z-index: 3;
+}
+
+.premium-card:hover .premium-card__shine {
+  animation: shineSweep 1.5s ease-in-out;
+}
+
+/* ─── Content layout ──────────────────────────────────── */
+
+.premium-card__content {
+  position: relative;
+  z-index: 1;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 24px;
+  color: white;
+}
+
+.premium-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.premium-card__tier-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 100px;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.premium-card__tier-badge--economy {
+  background: rgba(16, 185, 129, 0.3);
+  color: #a7f3d0;
+}
+
+.premium-card__tier-badge--premium {
+  background: rgba(139, 92, 246, 0.3);
+  color: #ddd6fe;
+}
+
+.premium-card__tier-badge--gold {
+  background: rgba(234, 179, 8, 0.3);
+  color: #fef08a;
+}
+
+.premium-card__logo {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* ─── Middle section (image + name) ───────────────────── */
+
+.premium-card__middle {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 8px 0;
+}
+
+.premium-card__image-container {
+  width: 100px;
+  height: 100px;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.premium-card__image-container img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.premium-card__name {
+  font-size: 1.15rem;
+  font-weight: 800;
+  text-align: center;
+  line-height: 1.3;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  max-width: 100%;
+  word-break: break-word;
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.premium-card__link {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.6);
+  text-align: center;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ─── Footer section ──────────────────────────────────── */
+
+.premium-card__footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+
+.premium-card__coords {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.premium-card__coords-label {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.premium-card__coords-value {
+  font-size: 1.1rem;
+  font-weight: 900;
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  letter-spacing: -0.02em;
+}
+
+.premium-card__qr {
+  width: 64px;
+  height: 64px;
+  border-radius: 10px;
+  background: white;
+  padding: 4px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+.premium-card__qr img {
+  width: 100%;
+  height: 100%;
+  border-radius: 6px;
+}
+
+/* ─── Sparkle particles ───────────────────────────────── */
+
+.premium-card__sparkle {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: white;
+  pointer-events: none;
+  z-index: 4;
+}
+
+.premium-card__sparkle:nth-child(1) {
+  top: 15%; left: 20%;
+  animation: sparkle 3s ease-in-out 0s infinite;
+}
+.premium-card__sparkle:nth-child(2) {
+  top: 30%; right: 15%;
+  animation: sparkle 3s ease-in-out 0.8s infinite;
+}
+.premium-card__sparkle:nth-child(3) {
+  bottom: 25%; left: 30%;
+  animation: sparkle 3s ease-in-out 1.6s infinite;
+}
+.premium-card__sparkle:nth-child(4) {
+  top: 60%; right: 25%;
+  animation: sparkle 3s ease-in-out 2.4s infinite;
+}
+
+/* ─── Noise texture overlay ───────────────────────────── */
+
+.premium-card__noise {
+  position: absolute;
+  inset: 0;
+  opacity: 0.03;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 1;
+  mix-blend-mode: overlay;
+}
+
+/* ─── Floating animation for display mode ─────────────── */
+
+.premium-card--floating {
+  animation: cardEntrance 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards,
+             cardFloat 4s ease-in-out 1s infinite;
+}
+
+/* ─── Download canvas (hidden, used for html2canvas) ──── */
+
+.premium-card--capture {
+  animation: none !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* ─── Responsive ──────────────────────────────────────── */
+
+@media (max-width: 420px) {
+  .premium-card-scene {
+    width: 320px;
+  }
+
+  .premium-card__content {
+    padding: 18px;
+  }
+
+  .premium-card__image-container {
+    width: 80px;
+    height: 80px;
+  }
+
+  .premium-card__name {
+    font-size: 1.1rem;
+  }
+
+  .premium-card__qr {
+    width: 52px;
+    height: 52px;
+  }
+}

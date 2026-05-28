@@ -2,7 +2,6 @@ import {
   useState,
   useCallback,
   useEffect,
-  useMemo,
   useRef,
   lazy,
   Suspense,
@@ -22,7 +21,7 @@ import { toast } from "sonner";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { ShoppingCart, Store, Loader2, WifiOff, Undo2, X, GripVertical, PanelRightClose, PanelRightOpen } from "lucide-react";
 import {
   Tooltip,
@@ -44,21 +43,11 @@ import { SharePixelDialog } from "@/components/SharePixelDialog";
 
 import { useLayout } from "@/contexts/LayoutContext";
 import { useNetworkStatus } from "@/hooks/useNetworkStatus";
+import { usePixelSelectionWorkflow } from "@/hooks/usePixelSelectionWorkflow";
 import SEO from "@/components/SEO";
 import { generateOrganizationSchema, generateWebsiteSchema, generateFAQSchema, generateServiceSchema, generateLocalBusinessSchema, generateBreadcrumbSchema } from "@/lib/seo-utils";
 import { SelectedPixel } from "@/types/grid";
-import { GRID_CONFIG, PIXEL_PRICING, calculatePixelPrice } from "@/utils/gridConstants";
-
-// Inline debounce to avoid lodash dependency (~25KB savings)
-function debounce<T extends (...args: unknown[]) => void>(fn: T, ms: number): T & { cancel: () => void } {
-  let timer: ReturnType<typeof setTimeout> | null = null;
-  const debounced = (...args: unknown[]) => {
-    if (timer) clearTimeout(timer);
-    timer = setTimeout(() => fn(...args), ms);
-  };
-  debounced.cancel = () => { if (timer) clearTimeout(timer); };
-  return debounced as T & { cancel: () => void };
-}
+import { GRID_CONFIG, calculatePixelPrice } from "@/utils/gridConstants";
 
 // --- Constants ---
 const CANVAS_WIDTH = GRID_CONFIG.CANVAS_WIDTH;
@@ -80,48 +69,12 @@ const SIDEBAR_STORAGE_KEY = "sidebarWidth";
 
 // --- Interfaces ---
 
-interface PixelDraft {
-  pixels: SelectedPixel[];
-  timestamp: number;
-  version: number; // Add versioning for future compatibility
-}
-
-type Mode = "idle" | "buying" | "selling";
-
-// --- Utility Functions ---
-
-/**
- * Safely parse localStorage draft with error handling
- */
-function parseDraft(draftString: string | null): PixelDraft | null {
-  if (!draftString) return null;
-
-  try {
-    const draft = JSON.parse(draftString) as PixelDraft;
-
-    // Validate draft structure
-    if (
-      !draft.pixels ||
-      !Array.isArray(draft.pixels) ||
-      typeof draft.timestamp !== "number"
-    ) {
-      return null;
-    }
-
-    return draft;
-  } catch (error: unknown) {
-    console.error("Failed to parse draft:", error);
-    return null;
-  }
-}
-
-/**
- * Check if draft is expired
- */
-function isDraftExpired(draft: PixelDraft): boolean {
-  const expiryTime = Date.now() - DRAFT_EXPIRY_HOURS * 60 * 60 * 1000;
-  return draft.timestamp <= expiryTime;
-}
+type SharePixel = SelectedPixel & {
+  imageUrl: string | null;
+  linkUrl: string | null;
+  pricePaid: number;
+  pixelName: string;
+};
 
 const BuyPixels = () => {
   const { user } = useAuth();
@@ -130,31 +83,54 @@ const BuyPixels = () => {
 
   // Refs for cleanup and optimization
   const isMountedRef = useRef(true);
-  const autosaveTimeoutRef = useRef<NodeJS.Timeout>();
   const transitionTimeoutRef = useRef<NodeJS.Timeout>();
   const gridRef = useRef<GridHandle>(null);
 
   // Network status
   const { isOnline } = useNetworkStatus();
 
-
-
   // --- State ---
-  const [selectedPixels, setSelectedPixels] = useState<SelectedPixel[]>([]);
   const [zoom, setZoom] = useState(1);
-  const [isSelecting, setIsSelecting] = useState(false);
   const [showGrid, setShowGrid] = useState(true);
   const [showMyPixels, setShowMyPixels] = useState(false);
   const [showPurchasePreview, setShowPurchasePreview] = useState(false);
-  const [mode, setMode] = useState<Mode>("idle");
   const [isLoading, setIsLoading] = useState(false);
-  const [isPurchasing, setIsPurchasing] = useState(false);
 
-  const [showClearDialog, setShowClearDialog] = useState(false);
-  const [selectionHistory, setSelectionHistory] = useState<SelectedPixel[][]>([]);
-  const [sharePixel, setSharePixel] = useState<{ x: number; y: number } | null>(null);
-  const [showDraftRestorePrompt, setShowDraftRestorePrompt] = useState(false);
-  const [draftToRestore, setDraftToRestore] = useState<PixelDraft | null>(null);
+  const [sharePixel, setSharePixel] = useState<SharePixel | null>(null);
+
+  const {
+    selectedPixels,
+    totalCost,
+    mode,
+    isSelecting,
+    toggleSelecting,
+    selectionHistory,
+    showClearDialog,
+    setShowClearDialog,
+    showDraftRestorePrompt,
+    setShowDraftRestorePrompt,
+    draftToRestore,
+    handleSelectionChange,
+    handleUndoLastSelection,
+    confirmClearSelection,
+    handleExitBuyingMode,
+    handleClearSelection,
+    handleRestoreDraft,
+    handleDismissDraft,
+    enterBuyingMode,
+    resetAfterPurchase,
+    selectFocusedPixel,
+  } = usePixelSelectionWorkflow({
+    gridRef,
+    canvasWidth: CANVAS_WIDTH,
+    canvasHeight: CANVAS_HEIGHT,
+    maxPixelsPerPurchase: MAX_PIXELS_PER_PURCHASE,
+    draftStorageKey: DRAFT_STORAGE_KEY,
+    draftExpiryHours: DRAFT_EXPIRY_HOURS,
+    selectionHistoryLimit: SELECTION_HISTORY_LIMIT,
+    autosaveDebounceMs: AUTOSAVE_DEBOUNCE_MS,
+  });
+
   // --- Resizable Sidebar State ---
   const [sidebarWidth, setSidebarWidth] = useState(() => {
     const saved = localStorage.getItem(SIDEBAR_STORAGE_KEY);
@@ -227,62 +203,11 @@ const BuyPixels = () => {
   useEffect(() => {
     return () => {
       isMountedRef.current = false;
-      if (autosaveTimeoutRef.current) {
-        clearTimeout(autosaveTimeoutRef.current);
-      }
       if (transitionTimeoutRef.current) {
         clearTimeout(transitionTimeoutRef.current);
       }
-      saveDraft.cancel?.();
     };
   }, []);
-
-  const totalCost = useMemo(() => {
-    return selectedPixels.reduce((sum, pixel) => sum + pixel.price, 0);
-  }, [selectedPixels]);
-
-  const priceBreakdown = useMemo(() => {
-    const gold = selectedPixels.filter((p) => p.price === PIXEL_PRICING.GOLD_PRICE).length;
-    const premium = selectedPixels.filter((p) => p.price === PIXEL_PRICING.PREMIUM_PRICE).length;
-    const economy = selectedPixels.filter((p) => p.price === PIXEL_PRICING.ECONOMY_PRICE).length;
-
-    return { gold, premium, economy };
-  }, [selectedPixels]);
-
-  // --- Auto-save to localStorage with debouncing ---
-  const saveDraft = useCallback(
-    debounce((pixels: SelectedPixel[]) => {
-      if (pixels.length === 0) {
-        localStorage.removeItem(DRAFT_STORAGE_KEY);
-        return;
-      }
-
-      const draft: PixelDraft = {
-        pixels,
-        timestamp: Date.now(),
-        version: 1,
-      };
-
-      try {
-        localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draft));
-      } catch (error: unknown) {
-        console.error("Failed to save draft:", error);
-        // Handle quota exceeded error
-        if (error instanceof DOMException && error.name === "QuotaExceededError") {
-          toast.error("Storage limit reached", {
-            description: "Unable to auto-save selection",
-          });
-        }
-      }
-    }, AUTOSAVE_DEBOUNCE_MS),
-    []
-  );
-
-  useEffect(() => {
-    if (mode === "buying" && selectedPixels.length > 0) {
-      saveDraft(selectedPixels);
-    }
-  }, [selectedPixels, mode, saveDraft]);
 
   // --- Sync Ticker Visibility ---
   useEffect(() => {
@@ -294,48 +219,6 @@ const BuyPixels = () => {
       }
     };
   }, [showPurchasePreview, setTickerVisible]);
-
-  // --- Restore draft on mount ---
-  useEffect(() => {
-    const draftString = localStorage.getItem(DRAFT_STORAGE_KEY);
-    const draft = parseDraft(draftString);
-
-    if (!draft) {
-      localStorage.removeItem(DRAFT_STORAGE_KEY);
-      return;
-    }
-
-    if (isDraftExpired(draft)) {
-      localStorage.removeItem(DRAFT_STORAGE_KEY);
-      return;
-    }
-
-    if (draft.pixels.length > 0) {
-      setDraftToRestore(draft);
-      setShowDraftRestorePrompt(true);
-    }
-  }, []);
-
-  // --- Handle draft restore ---
-  const handleRestoreDraft = useCallback(() => {
-    if (!draftToRestore) return;
-
-    const normalizedDraftPixels = draftToRestore.pixels;
-    setSelectedPixels(normalizedDraftPixels);
-    setMode("buying");
-    setIsSelecting(true);
-
-    setShowDraftRestorePrompt(false);
-    toast.success("Draft restored!", {
-      description: `${draftToRestore.pixels.length} pixels from your last session`,
-    });
-  }, [draftToRestore]);
-
-  const handleDismissDraft = useCallback(() => {
-    localStorage.removeItem(DRAFT_STORAGE_KEY);
-    setShowDraftRestorePrompt(false);
-    setDraftToRestore(null);
-  }, []);
 
   // --- Keyboard Shortcuts ---
   useEffect(() => {
@@ -400,7 +283,14 @@ const BuyPixels = () => {
 
     window.addEventListener("keydown", handleKeyPress);
     return () => window.removeEventListener("keydown", handleKeyPress);
-  }, [mode, selectedPixels.length, showPurchasePreview]);
+  }, [
+    mode,
+    selectedPixels.length,
+    showPurchasePreview,
+    setShowClearDialog,
+    handleExitBuyingMode,
+    handleUndoLastSelection,
+  ]);
 
   // --- Event Handlers ---
   const handleBuyClick = useCallback(() => {
@@ -429,15 +319,14 @@ const BuyPixels = () => {
     transitionTimeoutRef.current = setTimeout(() => {
       if (!isMountedRef.current) return;
 
-      setMode("buying");
-      setIsSelecting(true);
+      enterBuyingMode();
       setIsLoading(false);
 
       toast.success("Start selecting pixels", {
         description: "Click and drag on the canvas. Press ESC to cancel.",
       });
     }, 200);
-  }, [user, navigate, isOnline]);
+  }, [user, navigate, isOnline, enterBuyingMode]);
 
   const handleSellClick = useCallback(() => {
     if (!isOnline) {
@@ -462,76 +351,6 @@ const BuyPixels = () => {
     toast.info("Opening marketplace...");
     navigate("/marketplace");
   }, [user, navigate, isOnline]);
-
-  const handleSelectionChange = useCallback(
-    (pixels: SelectedPixel[]) => {
-      if (mode !== "buying") return;
-
-      // Check max limit
-      if (pixels.length > MAX_PIXELS_PER_PURCHASE) {
-        toast.warning(`Maximum ${MAX_PIXELS_PER_PURCHASE} pixels per purchase`, {
-          description: "Please reduce your selection",
-        });
-        return;
-      }
-
-      // Save current state to history before updating (limit history size)
-      if (pixels.length !== selectedPixels.length) {
-        setSelectionHistory((prev) => {
-          const newHistory = [...prev, selectedPixels].slice(-SELECTION_HISTORY_LIMIT);
-          return newHistory;
-        });
-      }
-
-      setSelectedPixels(pixels);
-    },
-    [selectedPixels, mode]
-  );
-
-  const handleUndoLastSelection = useCallback(() => {
-    if (selectionHistory.length === 0) {
-      toast.info("Nothing to undo");
-      return;
-    }
-
-    const previousState = selectionHistory[selectionHistory.length - 1];
-
-    setSelectedPixels(previousState);
-    setSelectionHistory((prev) => prev.slice(0, -1));
-
-    toast.success("Undo successful", {
-      description: "Previous selection restored",
-    });
-  }, [selectionHistory]);
-
-  const confirmClearSelection = useCallback(() => {
-    // Save to history before clearing
-    if (selectedPixels.length > 0) {
-      setSelectionHistory((prev) => [...prev, selectedPixels].slice(-SELECTION_HISTORY_LIMIT));
-    }
-
-    setSelectedPixels([]);
-
-    setShowClearDialog(false);
-    localStorage.removeItem(DRAFT_STORAGE_KEY);
-
-    toast.success("Selection cleared");
-  }, [selectedPixels]);
-
-  const handleExitBuyingMode = useCallback(() => {
-    setMode("idle");
-    setIsSelecting(false);
-    localStorage.removeItem(DRAFT_STORAGE_KEY);
-    toast.info("Selection mode exited");
-  }, []);
-
-  const handleClearSelection = useCallback(() => {
-    if (selectedPixels.length > 0) {
-      setShowClearDialog(true);
-    } else {
-      handleExitBuyingMode();
-    }
-  }, [selectedPixels, handleExitBuyingMode]);
 
   const handleResetView = useCallback(() => {
     gridRef.current?.resetViewport();
@@ -585,13 +404,7 @@ const BuyPixels = () => {
 
       // Reset UI state with transition
       setShowPurchasePreview(false);
-
-      setSelectedPixels([]);
-      setSelectionHistory([]);
-      setMode("idle");
-      setIsSelecting(false);
-
-      localStorage.removeItem(DRAFT_STORAGE_KEY);
+      resetAfterPurchase();
 
       // Force an immediate background refresh of the grid data
       // so it updates before the user sees the share dialog
@@ -605,7 +418,13 @@ const BuyPixels = () => {
 
         // Open share dialog for the first pixel
         if (purchasedPixels.length > 0) {
-          setSharePixel(purchasedPixels[0]);
+          setSharePixel({
+            ...purchasedPixels[0],
+            pixelName: pixelName,
+            linkUrl: linkUrl,
+            imageUrl: imageUrl,
+            pricePaid: purchasedPixels[0].price
+          });
         }
 
         toast.success("Purchase complete! 🎉", {
@@ -617,15 +436,8 @@ const BuyPixels = () => {
         });
       }, 1000);
     },
-    [selectedPixels, navigate]
+    [selectedPixels, navigate, resetAfterPurchase]
   );
-
-  const handleAvailablePixelFocused = useCallback((x: number, y: number) => {
-    setMode("buying");
-    setIsSelecting(true);
-    const pixelId = `${x}-${y}`;
-    setSelectedPixels([{ x, y, price: calculatePixelPrice(x, y), id: pixelId }]);
-  }, []);
 
   // --- Network Status Change Handler ---
   useEffect(() => {
@@ -787,7 +599,7 @@ const BuyPixels = () => {
                   zoom={zoom}
                   onZoomChange={setZoom}
                   isSelecting={isSelecting}
-                  onToggleSelecting={() => setIsSelecting(!isSelecting)}
+                  onToggleSelecting={toggleSelecting}
                   showGrid={showGrid}
                   onToggleGrid={() => setShowGrid(!showGrid)}
                   showMyPixels={showMyPixels}
@@ -813,7 +625,7 @@ const BuyPixels = () => {
                 showGrid={showGrid}
                 showMyPixels={showMyPixels}
                 enableInteraction={mode === "buying"}
-                onAvailablePixelFocused={handleAvailablePixelFocused}
+                onAvailablePixelFocused={selectFocusedPixel}
               />
             </div>
           </div>
@@ -891,7 +703,7 @@ const BuyPixels = () => {
               aria-label="Mobile canvas controls"
             >
               <button
-                onClick={() => setIsSelecting(!isSelecting)}
+                onClick={toggleSelecting}
                 className={`col-span-2 flex items-center justify-center gap-2 h-10 rounded-md text-sm font-medium transition-colors ${isSelecting
                   ? "bg-primary text-primary-foreground"
                   : "bg-muted text-muted-foreground"
@@ -1176,7 +988,7 @@ const BuyPixels = () => {
       {/* Purchase Preview Modal */}
       <PurchasePreview
         isOpen={showPurchasePreview}
-        onClose={() => !isPurchasing && setShowPurchasePreview(false)}
+        onClose={() => setShowPurchasePreview(false)}
         selectedPixels={selectedPixels}
         onConfirmPurchase={handleConfirmPurchase}
       />

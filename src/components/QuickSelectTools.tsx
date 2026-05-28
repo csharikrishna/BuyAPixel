@@ -13,7 +13,6 @@ import {
   CircleDot,
   Zap,
   Package,
-  Brush,
   RotateCw,
   FlipHorizontal,
   ChevronDown,
@@ -21,9 +20,17 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { SelectedPixel } from "@/types/grid";
+import {
+  createSelectedPixel,
+  getPixelId,
+  isInGridBounds,
+  summarizeSelectionRejections,
+  validatePixelSelection,
+} from "@/utils/gridDomain";
+import type { PixelSelectionValidationResult } from "@/utils/gridDomain";
 
 interface QuickSelectToolsProps {
-  onPixelsSelected: (pixels: SelectedPixel[]) => void;
+  onPixelsSelected: (pixels: SelectedPixel[]) => PixelSelectionValidationResult | void;
   gridWidth: number;
   gridHeight: number;
   calculatePixelPrice: (x: number, y: number) => number;
@@ -227,28 +234,38 @@ export const QuickSelectTools = ({
     const cy = anchorPixel.y;
 
     const transformedPattern = transformPattern(pattern);
-    const pixels: SelectedPixel[] = [];
-
-    transformedPattern.forEach(([dx, dy]) => {
-      const x = cx + dx;
-      const y = cy + dy;
-
-      if (x >= 0 && x < gridWidth && y >= 0 && y < gridHeight) {
-        pixels.push({
-          x,
-          y,
-          price: calculatePixelPrice(x, y),
-          id: `${x}-${y}`
-        });
-      }
+    const candidates = transformedPattern.map(([dx, dy]) =>
+      createSelectedPixel(cx + dx, cy + dy, calculatePixelPrice)
+    );
+    const prevalidated = validatePixelSelection(candidates, {
+      gridWidth,
+      gridHeight,
+      getPixelPrice: calculatePixelPrice,
     });
+    const pixels = prevalidated.accepted;
 
     if (pixels.length > 0) {
-      onPixelsSelected(pixels);
-      const totalCost = pixels.reduce((sum, p) => sum + p.price, 0);
-      toast.success(`Selected ${pixels.length} pixels (₹${totalCost})`);
+      const result = onPixelsSelected(pixels);
+      const accepted = result ? result.accepted : pixels;
+      const rejected = [...prevalidated.rejected, ...(result ? result.rejected : [])];
+      const totalCost = accepted.reduce((sum, p) => sum + p.price, 0);
+      if (accepted.length > 0) {
+        toast.success(`Selected ${accepted.length} pixels (₹${totalCost})`, {
+          description: rejected.length
+            ? `Skipped ${rejected.length}: ${summarizeSelectionRejections(rejected)}`
+            : undefined,
+        });
+      } else {
+        toast.error("No available pixels selected", {
+          description: rejected.length ? summarizeSelectionRejections(rejected) : undefined,
+        });
+      }
     } else {
-      toast.error("Pattern doesn't fit within grid bounds");
+      toast.error("Pattern doesn't fit within available grid space", {
+        description: prevalidated.rejected.length
+          ? summarizeSelectionRejections(prevalidated.rejected)
+          : undefined,
+      });
     }
   };
 
@@ -259,7 +276,7 @@ export const QuickSelectTools = ({
     return pattern.reduce((sum, [dx, dy]) => {
       const x = centerX + dx;
       const y = centerY + dy;
-      if (x >= 0 && x < gridWidth && y >= 0 && y < gridHeight) {
+      if (isInGridBounds(x, y, gridWidth, gridHeight)) {
         return sum + calculatePixelPrice(x, y);
       }
       return sum;
@@ -273,22 +290,40 @@ export const QuickSelectTools = ({
     while (pixels.length < count && usedPositions.size < gridWidth * gridHeight) {
       const x = Math.floor(Math.random() * gridWidth);
       const y = Math.floor(Math.random() * gridHeight);
-      const key = `${x}-${y}`;
+      const key = getPixelId(x, y);
 
       if (!usedPositions.has(key)) {
         usedPositions.add(key);
-        pixels.push({
-          x,
-          y,
-          price: calculatePixelPrice(x, y),
-          id: key
+        const result = validatePixelSelection(
+          [createSelectedPixel(x, y, calculatePixelPrice)],
+          {
+            gridWidth,
+            gridHeight,
+            getPixelPrice: calculatePixelPrice,
+          }
+        );
+
+        result.accepted.forEach((pixel) => {
+          pixels.push(pixel);
         });
       }
     }
 
-    onPixelsSelected(pixels);
-    const totalCost = pixels.reduce((sum, p) => sum + p.price, 0);
-    toast.success(`Randomly selected ${pixels.length} pixels (₹${totalCost})`);
+    const result = onPixelsSelected(pixels);
+    const accepted = result ? result.accepted : pixels;
+    const rejected = result ? result.rejected : [];
+    const totalCost = accepted.reduce((sum, p) => sum + p.price, 0);
+    if (accepted.length > 0) {
+      toast.success(`Randomly selected ${accepted.length} pixels (₹${totalCost})`, {
+        description: rejected.length
+          ? `Skipped ${rejected.length}: ${summarizeSelectionRejections(rejected)}`
+          : undefined,
+      });
+    } else {
+      toast.error("No available pixels selected", {
+        description: rejected.length ? summarizeSelectionRejections(rejected) : undefined,
+      });
+    }
   };
 
   const resetTransforms = () => {

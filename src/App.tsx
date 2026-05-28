@@ -52,6 +52,8 @@ const RefundPolicy = lazy(() => import("./pages/RefundPolicy"));
 const ContentGuidelines = lazy(() => import("./pages/ContentGuidelines"));
 const PaymentHelp = lazy(() => import("./pages/PaymentHelp"));
 const SeoInfo = lazy(() => import("./pages/SeoInfo"));
+const StatsPage = lazy(() => import("./pages/StatsPage"));
+const DirectoryPage = lazy(() => import("./pages/DirectoryPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // LiveTicker (not critical for first paint)
@@ -173,6 +175,10 @@ const AppContent = () => {
             <Route path="/content-guidelines" element={<ErrorBoundary pageName="Content Guidelines"><ContentGuidelines /></ErrorBoundary>} />
             <Route path="/payment-help" element={<ErrorBoundary pageName="Payment Help"><PaymentHelp /></ErrorBoundary>} />
             <Route path="/seo-info" element={<ErrorBoundary pageName="SEO Info"><SeoInfo /></ErrorBoundary>} />
+
+            {/* Platform Pages */}
+            <Route path="/stats" element={<ErrorBoundary pageName="Stats"><StatsPage /></ErrorBoundary>} />
+            <Route path="/directory" element={<ErrorBoundary pageName="Directory"><DirectoryPage /></ErrorBoundary>} />
 
             {/* Catch-all 404 - MUST BE LAST */}
             <Route path="*" element={<NotFound />} />

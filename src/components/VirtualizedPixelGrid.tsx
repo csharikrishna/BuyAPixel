@@ -14,12 +14,26 @@ import { PixelTooltip } from "./PixelTooltip";
 import { PixelInfoModal } from "./PixelInfoModal";
 import { toast } from "sonner";
 import { Star, ExternalLink, Loader2 } from "lucide-react";
+import { openAdvertiserUrl } from "@/utils/utmUtils";
 import { useSearchParams } from "react-router-dom";
 import { usePixelGridData } from "@/hooks/usePixelGridData";
 import { useGridInteraction } from "@/hooks/useGridInteraction";
 import { GRID_CONFIG, ZONE_SIZES, AD_TIER_CONFIG, getAdTierByPrice, calculatePixelPrice } from "@/utils/gridConstants";
 import { SelectedPixel, PurchasedPixel, PixelBlock } from "@/types/grid";
 import { getGridImageUrl, getBillboardImageUrl } from "@/utils/imageOptimization";
+import {
+  createSelectedPixel,
+  getBillboardBounds,
+  getPixelFocusViewportOffset,
+  getPixelId,
+  getPixelSelectionStatus,
+  isInGridBounds,
+  summarizeSelectionRejections,
+  validatePixelSelection,
+} from "@/utils/gridDomain";
+import type { PixelSelectionValidationResult } from "@/utils/gridDomain";
+import { trackPixelClick } from "@/utils/pixelAnalytics";
+import "./pixelAnimations.css";
 
 // ============================================================
 // Types
@@ -43,18 +57,22 @@ interface VirtualizedPixelGridProps {
 export interface GridHandle {
   resetViewport: () => void;
   refetchData: () => void;
+  validateSelection: (pixels: SelectedPixel[]) => PixelSelectionValidationResult;
 }
 
 // ============================================================
 // Helpers
 // ============================================================
 
-function openUrl(url: string) {
-  const validUrl =
-    url.startsWith("http://") || url.startsWith("https://")
-      ? url
-      : `https://${url}`;
-  window.open(validUrl, "_blank", "noopener,noreferrer");
+/** @deprecated Use openAdvertiserUrl from utmUtils instead */
+function openUrl(url: string, campaign = 'pixel_ad') {
+  openAdvertiserUrl(url, campaign);
+}
+
+function getTierAnimationClass(pricePaid = 0): string {
+  if (pricePaid >= AD_TIER_CONFIG.GOLD.price) return " pixel-gold-glow";
+  if (pricePaid >= AD_TIER_CONFIG.PREMIUM.price) return " pixel-premium-shimmer";
+  return "";
 }
 
 // ============================================================
@@ -115,6 +133,22 @@ export const VirtualizedPixelGrid = forwardRef<
       enableInteraction,
     });
 
+    const getPurchasedPixel = useCallback(
+      (x: number, y: number) => spatialIndex.get(x, y),
+      [spatialIndex]
+    );
+
+    const validateSelection = useCallback(
+      (pixels: SelectedPixel[]) =>
+        validatePixelSelection(pixels, {
+          gridWidth,
+          gridHeight,
+          getPurchasedPixel,
+          getPixelPrice: calculatePixelPrice,
+        }),
+      [gridWidth, gridHeight, getPurchasedPixel]
+    );
+
     const calculateFittedViewport = useCallback(
       (clientWidth: number, clientHeight: number) => {
         const gridPixelWidth = gridWidth * pixelSize;
@@ -169,8 +203,9 @@ export const VirtualizedPixelGrid = forwardRef<
         refetchData: () => {
           refetch();
         },
+        validateSelection,
       }),
-      [calculateFittedViewport, onZoomChange, setViewportOffset, refetch]
+      [calculateFittedViewport, onZoomChange, setViewportOffset, refetch, validateSelection]
     );
 
     // ── Concurrency ───────────────────────────────────────────
@@ -199,16 +234,10 @@ export const VirtualizedPixelGrid = forwardRef<
       [scaledPixelSize]
     );
 
-    const billboardConfig = useMemo(() => {
-      const width = GRID_CONFIG.BILLBOARD_WIDTH;
-      const height = GRID_CONFIG.BILLBOARD_HEIGHT;
-      return {
-        x: Math.floor((gridWidth - width) / 2),
-        y: Math.floor((gridHeight - height) / 2),
-        width,
-        height,
-      };
-    }, [gridWidth, gridHeight]);
+    const billboardConfig = useMemo(
+      () => getBillboardBounds(gridWidth, gridHeight),
+      [gridWidth, gridHeight]
+    );
 
     const selectedPixelsSet = useMemo(() => {
       const set = new Set<string>();
@@ -227,15 +256,15 @@ export const VirtualizedPixelGrid = forwardRef<
 
     const getPixelStatus = useCallback(
       (x: number, y: number) => {
-        const { x: bx, y: by, width: bw, height: bh } = billboardConfig;
-        if (x >= bx && x < bx + bw && y >= by && y < by + bh) return "restricted";
-
-        const purchased = spatialIndex.get(x, y);
-        if (purchased) return purchased.owner_id === user?.id ? "yours" : "sold";
-
-        return selectedPixelsSet.has(`${x}-${y}`) ? "selected" : "available";
+        return getPixelSelectionStatus(x, y, {
+          gridWidth,
+          gridHeight,
+          selectedPixelIds: selectedPixelsSet,
+          getPurchasedPixel,
+          currentUserId: user?.id,
+        });
       },
-      [billboardConfig, selectedPixelsSet, user?.id, spatialIndex, purchasedPixels]
+      [gridWidth, gridHeight, selectedPixelsSet, getPurchasedPixel, user?.id]
     );
 
     const handlePixelClick = useCallback(
@@ -255,12 +284,14 @@ export const VirtualizedPixelGrid = forwardRef<
           });
           return;
         }
-        if (status === "sold") {
-          toast.error("This pixel is already owned!");
+        if (status === "sold" || status === "yours") {
+          toast.error(
+            status === "yours" ? "You already own this pixel!" : "This pixel is already owned!"
+          );
           return;
         }
 
-        const pixelId = `${x}-${y}`;
+        const pixelId = getPixelId(x, y);
 
         // Range selection via Shift+Click
         if ("shiftKey" in event && (event as React.MouseEvent).shiftKey && rangeStart) {
@@ -281,9 +312,9 @@ export const VirtualizedPixelGrid = forwardRef<
           for (let px = startX; px <= endX; px++) {
             for (let py = startY; py <= endY; py++) {
               if (getPixelStatus(px, py) === "available") {
-                const id = `${px}-${py}`;
+                const id = getPixelId(px, py);
                 if (!existingIds.has(id)) {
-                  newPixels.push({ x: px, y: py, price: calculatePixelPrice(px, py), id });
+                  newPixels.push(createSelectedPixel(px, py));
                 }
               }
             }
@@ -305,14 +336,13 @@ export const VirtualizedPixelGrid = forwardRef<
           startTransition(() =>
             onSelectionChange([
               ...selectedPixels,
-              { x, y, price: calculatePixelPrice(x, y), id: pixelId },
+              createSelectedPixel(x, y),
             ])
           );
         }
         setRangeStart({ x, y });
       },
       [isSelecting, getPixelStatus, selectedPixels, onSelectionChange, rangeStart]
-      // calculatePixelPrice is a stable import — intentionally excluded
     );
 
     const handleContainerClick = useCallback(
@@ -427,11 +457,12 @@ export const VirtualizedPixelGrid = forwardRef<
     }, [featuredPixelsList, currentFeaturedIndex]);
 
     useEffect(() => {
+      const imageUrls = imageUrlsRef.current;
       return () => {
-        imageUrlsRef.current.forEach((url) => {
+        imageUrls.forEach((url) => {
           if (url.startsWith("blob:")) URL.revokeObjectURL(url);
         });
-        imageUrlsRef.current.clear();
+        imageUrls.clear();
       };
     }, []);
 
@@ -458,7 +489,7 @@ export const VirtualizedPixelGrid = forwardRef<
       const px = parseInt(xStr, 10);
       const py = parseInt(yStr, 10);
 
-      if (isNaN(px) || isNaN(py) || px < 0 || px >= gridWidth || py < 0 || py >= gridHeight) {
+      if (isNaN(px) || isNaN(py) || !isInGridBounds(px, py, gridWidth, gridHeight)) {
          toast.error("Invalid pixel coordinates in URL");
          return;
       }
@@ -467,11 +498,17 @@ export const VirtualizedPixelGrid = forwardRef<
       const targetZoom = Math.min(8, GRID_CONFIG.MAX_ZOOM);
       onZoomChange(targetZoom);
       const scaled = Math.max(1, Math.floor(pixelSize * targetZoom));
-      const offsetX = (containerSize.width / 2) - (px * scaled) - (scaled / 2);
-      const offsetY = (containerSize.height / 2) - (py * scaled) - (scaled / 2);
-      setViewportOffset({ x: offsetX, y: offsetY });
+      setViewportOffset(
+        getPixelFocusViewportOffset({
+          x: px,
+          y: py,
+          containerWidth: containerSize.width,
+          containerHeight: containerSize.height,
+          scaledPixelSize: scaled,
+        })
+      );
 
-      const purchased = spatialIndex.get(px, py);
+      const purchased = getPurchasedPixel(px, py);
       if (purchased) {
         let block: PixelBlock | null = null;
         if (purchased.block_id) {
@@ -504,6 +541,15 @@ export const VirtualizedPixelGrid = forwardRef<
         setTimeout(() => setInfoModalOpen(true), 100);
         
       } else {
+        const selectionValidation = validateSelection([createSelectedPixel(px, py)]);
+        if (selectionValidation.accepted.length === 0) {
+          toast.info(`Pixel at (${px}, ${py}) can't be selected`, {
+            description: summarizeSelectionRejections(selectionValidation.rejected),
+            duration: 5000,
+          });
+          return;
+        }
+
         toast.success(`Pixel at (${px}, ${py}) is available!`, {
            description: "We've selected it for you. Buy it now to own a piece of internet history.",
            duration: 5000,
@@ -518,14 +564,15 @@ export const VirtualizedPixelGrid = forwardRef<
       isLoading, 
       containerSize.width, 
       containerSize.height, 
-      spatialIndex, 
       purchasedPixels, 
+      getPurchasedPixel,
       gridWidth, 
       gridHeight, 
       pixelSize, 
       onZoomChange, 
       setViewportOffset,
-      onAvailablePixelFocused
+      onAvailablePixelFocused,
+      validateSelection
     ]);
 
     // ── Render Pre-calculations ───────────────────────────────
@@ -542,6 +589,7 @@ export const VirtualizedPixelGrid = forwardRef<
 
     const visiblePurchasedPixels = useMemo(() => {
       if (!visibleRange) return [];
+      if (purchasedPixels.length === 0) return [];
       return spatialIndex.query(visibleRange.x, visibleRange.y, visibleRange.w, visibleRange.h);
     }, [spatialIndex, visibleRange, purchasedPixels]);
 
@@ -580,6 +628,7 @@ export const VirtualizedPixelGrid = forwardRef<
           linkUrl: first.link_url,
           altText: first.alt_text,
           ownerId: first.owner_id,
+          tierAnimationClass: getTierAnimationClass(first.price_paid),
         };
       });
 
@@ -761,7 +810,8 @@ export const VirtualizedPixelGrid = forwardRef<
                         className="bg-white/95 hover:bg-white text-black text-sm md:text-base font-bold px-5 py-2.5 rounded-full shadow-lg transition-transform hover:scale-105 active:scale-95 flex items-center gap-2"
                         onClick={(e) => {
                           e.stopPropagation();
-                          openUrl(currentFeaturedPixel.link_url!);
+                          openAdvertiserUrl(currentFeaturedPixel.link_url!, 'billboard');
+                          trackPixelClick(null, currentFeaturedPixel.block_id, 'billboard');
                         }}
                         aria-label={`Visit ${currentFeaturedPixel.alt_text || "featured partner"}`}
                       >
@@ -802,7 +852,7 @@ export const VirtualizedPixelGrid = forwardRef<
                   key={`block-${block.blockId}`}
                   role="button"
                   tabIndex={0}
-                  className="cursor-pointer transition-all duration-300"
+                  className={`cursor-pointer transition-all duration-300${scaledPixelSize >= 6 && !isOwner && !isHighlight ? block.tierAnimationClass : ""}`}
                   style={{
                     position: "absolute",
                     left: Math.floor(block.minX * scaledPixelSize),
@@ -859,7 +909,10 @@ export const VirtualizedPixelGrid = forwardRef<
                   onKeyDown={(e) => {
                     if (e.key === "Enter" || e.key === " ") {
                       e.preventDefault();
-                      if (block.linkUrl) openUrl(block.linkUrl);
+                      if (block.linkUrl) {
+                        openUrl(block.linkUrl);
+                        trackPixelClick(null, block.blockId, 'grid');
+                      }
                     }
                   }}
                   aria-label={block.altText || `Pixel block at (${block.minX}, ${block.minY})`}
@@ -873,12 +926,16 @@ export const VirtualizedPixelGrid = forwardRef<
               const { x, y, id, owner_id, image_url, link_url, alt_text } = pixel;
               const isOwner = owner_id === user?.id;
               const isHighlight = highlightUser === owner_id;
+              const tierAnimationClass =
+                scaledPixelSize >= 6 && !isOwner && !isHighlight
+                  ? getTierAnimationClass(pixel.price_paid)
+                  : "";
               return (
                 <div
                   key={`sold-${id}`}
                   role="button"
                   tabIndex={0}
-                  className="cursor-pointer transition-all duration-300"
+                  className={`cursor-pointer transition-all duration-300${tierAnimationClass}`}
                   style={{
                     position: "absolute",
                     left: Math.floor(x * scaledPixelSize),
@@ -919,7 +976,10 @@ export const VirtualizedPixelGrid = forwardRef<
                   onKeyDown={(e) => {
                     if ((link_url || image_url) && (e.key === "Enter" || e.key === " ")) {
                       e.preventDefault();
-                      if (link_url) openUrl(link_url);
+                      if (link_url) {
+                        openUrl(link_url);
+                        trackPixelClick(id, null, 'grid');
+                      }
                     }
                   }}
                   aria-label={alt_text || `Pixel at ${x}, ${y}`}

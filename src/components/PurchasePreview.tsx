@@ -1159,7 +1159,11 @@ export const PurchasePreview = ({
               aria-required="true"
               aria-invalid={!!pixelNameError}
               aria-describedby={pixelNameError ? "pixel-name-error" : "pixel-name-help"}
-              className={`text-base ${pixelNameError && pixelNameTouched ? 'border-destructive focus-visible:ring-destructive' : ''}`}
+              className={`text-base bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-50 hover:border-primary/50 focus:bg-white dark:focus:bg-slate-950 shadow-sm transition-all duration-200 ${
+                pixelNameError && pixelNameTouched 
+                  ? 'border-destructive focus-visible:ring-destructive' 
+                  : 'focus-visible:ring-primary/40 focus-visible:border-primary'
+              }`}
             />
             {!pixelNameError && (
               <p id="pixel-name-help" className="text-xs text-muted-foreground mt-1">
@@ -1200,7 +1204,11 @@ export const PurchasePreview = ({
               autoCorrect="off"
               aria-invalid={!!linkUrlError}
               aria-describedby={linkUrlError ? "link-url-error" : "link-url-help"}
-              className={`text-base ${linkUrlError && linkUrlTouched ? 'border-destructive focus-visible:ring-destructive' : ''}`}
+              className={`text-base bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-50 hover:border-primary/50 focus:bg-white dark:focus:bg-slate-950 shadow-sm transition-all duration-200 ${
+                linkUrlError && linkUrlTouched 
+                  ? 'border-destructive focus-visible:ring-destructive' 
+                  : 'focus-visible:ring-primary/40 focus-visible:border-primary'
+              }`}
             />
             {!linkUrlError && (
               <p id="link-url-help" className="text-xs text-muted-foreground mt-1 flex items-center gap-1">

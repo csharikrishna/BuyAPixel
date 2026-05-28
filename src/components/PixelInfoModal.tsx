@@ -23,6 +23,7 @@ import {
 import { toast } from 'sonner';
 import { PurchasedPixel, PixelBlock } from '@/types/grid';
 import { calculatePixelPrice } from '@/utils/gridConstants';
+import { appendUtmParams } from '@/utils/utmUtils';
 
 interface PixelInfoModalProps {
   isOpen: boolean;
@@ -169,7 +170,7 @@ export const PixelInfoModal = ({ isOpen, onClose, pixel, block }: PixelInfoModal
           <h3 className="text-lg font-bold text-foreground truncate">{altText}</h3>
           {linkUrl && (
             <a
-              href={linkUrl}
+              href={appendUtmParams(linkUrl, 'pixel_info')}
               target="_blank"
               rel="noopener noreferrer"
               className="text-sm text-primary hover:underline flex items-center gap-1 mt-1 truncate"
@@ -262,7 +263,7 @@ export const PixelInfoModal = ({ isOpen, onClose, pixel, block }: PixelInfoModal
         {linkUrl && (
           <Button
             className="flex-1 gap-2"
-            onClick={() => window.open(linkUrl, '_blank', 'noopener,noreferrer')}
+            onClick={() => window.open(appendUtmParams(linkUrl, 'pixel_info'), '_blank', 'noopener,noreferrer')}
           >
             <ExternalLink className="w-4 h-4" />
             Visit Link

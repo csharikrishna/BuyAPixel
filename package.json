@@ -48,6 +48,7 @@
       "date-fns": "^3.6.0",
       "dompurify": "^3.3.1",
       "embla-carousel-react": "^8.3.0",
+      "html2canvas": "^1.4.1",
       "html5-qrcode": "^2.3.8",
       "input-otp": "^1.2.4",
       "lucide-react": "^0.462.0",
