@@ -1,61 +1,872 @@
-Viewed text.txt:1-25
+Optimized tool selection
 
-If we want to move beyond gamification and focus strictly on **professional, high-ROI B2B strategies** that drive massive viewership and convince businesses to buy, we need to treat BuyASpot like a serious advertising network. 
+Read skill [supabase](file:///c%3A/Users/cshar/Desktop/BuyASpot/.agents/skills/supabase/SKILL.md?vscodeLinkType%3Dskill)
 
-Here are the most solid, professional strategies to boost both traffic (viewership) and advertiser sign-ups:
+Searched for regex `razorpay|payment|checkout|order|receipt|webhook|subscription|invoice|paywall|pricing` (`**/*.{ts,tsx,js,jsx,sql,md}`), 200 results
 
-### 1. Viewership Multipliers (Driving Traffic to the Canvas)
-*   **The "Live Billboard" Embed Widget:** Create a small HTML snippet that anyone can embed on their own website/blog. It shows a live, mini-version of the canvas. You could offer free pixels to high-traffic blogs in exchange for them embedding the canvas on their site. This creates a massive web of backlinks and drives thousands of external eyeballs to your advertisers.
-*   **"Pixel of the Day" Automated Newsletter:** Launch a Substack or weekly email round-up. Every week, feature 3 interesting startups or creators who bought a pixel. Advertisers will suddenly buy pixels *just* for the chance to get featured in your email blast and social media.
-*   **Public Canvas API:** Expose a read-only API of the canvas. Developers love playing with data. If you let them query the canvas to build heatmaps or "canvas history" bots, they will share their projects on Hacker News and Reddit, driving massive organic nerd-cred and traffic to your site.
+Searched for regex `VITE_|NEXT_PUBLIC|SUPABASE|PAYMENT|RAZOR|STRIPE|PAY` (`**/*.{env,ts,tsx,js,jsx,md}`), 200 results
 
-### 2. Advertiser Boosting (Getting More Businesses to Buy)
-*   **"Verified Advertiser" Directory Pages:** Instead of *just* getting a square on the grid, every purchase also generates a dedicated, SEO-optimized profile page on your site (e.g., `buyaspot.in/advertisers/their-startup`). This turns BuyASpot into a high-quality Startup Directory. Businesses will gladly pay ₹500 just for the SEO backlink on that dedicated profile page alone.
-*   **Industry-Specific "Neighborhoods":** Dedicate specific sections of the grid to specific industries. For example, announce: *"The top-right 10x10 block is now the AI Startup Neighborhood."* This creates intense FOMO. If an AI founder sees 5 of their competitors in that block, they will buy the remaining pixels immediately so they don't look left out.
-*   **Wholesale / Agency Accounts:** Create a feature where marketing agencies can buy a massive block (e.g., 500 pixels at a discount) and sub-divide it to upload different ads for their various clients. This attracts buyers who will spend ₹25,000+ at once instead of just ₹99.
-*   **The "SEO Value" Pitch:** Explicitly market the SEO benefits. Once BuyASpot gets a high Domain Authority (DA) on Google, that backlink is incredibly valuable. You can add a live stat to the homepage: *"Current Domain Authority: 42. Get a permanent do-follow backlink for just ₹99."* SEO agencies will flock to buy spots for their clients.
+Searched for regex `feature flag|flag|enable|disable|env|boolean` (`**/src/**/*.{ts,tsx,js,jsx}`), 200 results
 
-**My top recommendation for immediate impact:** 
-The **"Verified Advertiser" Directory Pages**. It's incredibly easy to build since we already have their link, image, and name in the database. It adds massive professional value to the purchase and naturally boosts your own site's SEO! 
+Searched for regex `payment|razor|checkout|order|subscription|invoice` (`**/supabase/**/*.{sql,ts,js,md}`), 200 results
 
-What do you think of building out the Advertiser Directory?
+Searched for regex `payment|razor|checkout|order|subscription|invoice` (`**/docs/**/*.{md,txt}`), no results
 
-Beyond the ideas we've already outlined from the text file, here are some high-impact, modern features we could add to make BuyASpot more engaging, viral, and valuable for advertisers. 
+Searched for files matching `**/src/**/*Checkout*.{ts,tsx,js,jsx}`, no matches
 
-Here are some fresh ideas categorized by their impact:
+Searched for files matching `**/src/**/*payment*.{ts,tsx,js,jsx}`, 2 matches
 
-### 1. Virality & Social Sharing (To drive organic growth)
-*   **"Bragging Rights" Social Cards:** When a user buys a pixel, we automatically generate a beautiful, branded image that says *"I just bought a piece of the internet on BuyASpot!"* with a preview of their pixel. They get a 1-click button to share this to X (Twitter) or LinkedIn.
-*   **Embeddable Ownership Badges:** Give users a snippet of HTML they can paste on their own personal websites or startup pages saying *"Proud owner of BuyASpot Pixel #404"*, driving traffic back to your site.
-*   **Time-Lapse Canvas History:** A slider that lets visitors drag back in time to see how the canvas looked on Day 1 vs Today. People love seeing the progression of collaborative spaces (like r/place).
+Searched for files matching `**/supabase/functions/**/index.ts`, 13 matches
 
-### 2. Premium Advertiser Value (To justify higher prices)
-*   **Auto UTM Tagging:** Automatically append `?utm_source=buyaspot` to all outgoing links so advertisers can easily see your traffic in their Google Analytics. This proves the value of your platform to them.
-*   **Rich Media / Animated Pixels:** Allow the "Featured" or "Premium" tier pixels to use `.gif` files or subtle CSS animations (like pulsing or glowing) so they stand out from the static economy pixels.
-*   **Pixel "Boosting":** Allow owners to pay a small one-time fee (e.g., ₹49) to "Boost" their pixel, making it temporarily glow or appear in a "Featured Spot of the Day" sidebar for 24 hours.
+Searched for files matching `**/supabase/migrations/*.sql`, 72 matches
 
-### 3. Gamification & Engagement (To keep people coming back)
-*   **Collector Badges:** Show badges on user profiles like *“Whale”* (owns 100+ pixels), *“Early Adopter”* (bought in the first 1,000), or *“Flipper”* (successfully sold on the marketplace).
-*   **Canvas "Easter Eggs":** Make clicking on unsold/empty pixels do something fun, like revealing a random startup quote or playing a micro-animation. It makes the empty space feel alive while it waits to be bought.
+Read [](file:///c%3A/Users/cshar/Desktop/BuyASpot/README.md)
 
-Do any of these catch your eye as something you'd want to prioritize? The **Social Sharing Cards** or **Auto UTM Tagging** would probably be the easiest to build with the highest immediate impact!
+Read [](file:///c%3A/Users/cshar/Desktop/BuyASpot/walkthrough.md)
 
-Viewed implementation_plan.md:1-171
-Searched for "Secure Payment"
+Read [](file:///c%3A/Users/cshar/Desktop/BuyASpot/.env)
 
-Based on our roadmap and the analysis of your `text.txt` file, we've completely finished **Phase 1 (The Trust Foundation)**! 
+Read [](file:///c%3A/Users/cshar/Desktop/BuyASpot/supabase/functions)
 
-Here is exactly what's left from the text file suggestions, organized into our next two phases:
+Searched for regex `razorpay|payment|checkout|order|webhook|refund|bypass` (`**/src/**/*.{ts,tsx,js,jsx}`), 200 results
 
-### Phase 2: Value Demonstration (Recommended Next Steps)
-1. **Analytics Dashboard for Pixel Owners:** We need to track impressions (views) and clicks for each pixel ad so advertisers can actually measure their ROI. This will show up on their Profile page.
-2. **Marketplace Categories:** Adding category tags (e.g., AI, Startups, Student Projects, Gaming) so buyers can filter and sort pixels in the marketplace, making it easier to discover relevant ads.
-3. **Testimonials / Success Stories Section:** Creating an admin-managed section to easily add and display real user success stories (beyond the placeholder social proof we currently have).
+Searched for regex `razorpay|payment|order|webhook|refund|bypass` (`**/supabase/functions/**/*.{ts,js}`), 200 results
 
-### Phase 3: The Growth Engine
-4. **Referral System:** Creating unique invite links so users can invite friends and earn bonuses or discounts, helping the platform grow organically.
-5. **Dedicated Pricing Page (`/pricing`):** A standalone page specifically breaking down the tiers (Economy vs Premium vs Featured) with clear feature comparisons. (Though we just added pricing to the About page, a dedicated page is great for SEO).
-6. **Targeted SEO Landing Pages:** Specialized landing pages like `/advertise-startup` or `/promote-project` to capture specific Google search traffic.
+Read [](file:///c%3A/Users/cshar/Desktop/BuyASpot/src/components/VirtualizedPixelGrid.tsx#900-900), lines 900 to 1057
 
-Would you like to kick off **Phase 2** by building the **Analytics Dashboard** so your users can see how much traffic their pixels are getting?
+Read [](file:///c%3A/Users/cshar/Desktop/BuyASpot/src/components/PaymentNotification.tsx#1-1), lines 1 to 260
 
+Read [](file:///c%3A/Users/cshar/Desktop/BuyASpot/src/pages/MarketplacePage.tsx#1-1), lines 1 to 400
+
+Read [](file:///c%3A/Users/cshar/Desktop/BuyASpot/src/pages/BuyPixels.tsx#1-1), lines 1 to 400
+
+Read [](file:///c%3A/Users/cshar/Desktop/BuyASpot/src/pages/PaymentHelp.tsx#1-1), lines 1 to 260
+
+Searched for files matching `**/src/components/PurchasePreview.tsx`, 1 match
+
+Read [](file:///c%3A/Users/cshar/Desktop/BuyASpot/src/pages/MarketplacePage.tsx#400-400), lines 400 to 900
+
+Read [](file:///c%3A/Users/cshar/Desktop/BuyASpot/src/pages/BuyPixels.tsx#400-400), lines 400 to 900
+
+Read [](file:///c%3A/Users/cshar/Desktop/BuyASpot/src/components/PurchasePreview.tsx#1-1), lines 1 to 320
+
+Read [](file:///c%3A/Users/cshar/Desktop/BuyASpot/src/hooks/usePixelSelectionWorkflow.ts#1-1), lines 1 to 320
+
+Read [](file:///c%3A/Users/cshar/Desktop/BuyASpot/src/components/admin/AdminRefundTab.tsx#1-1), lines 1 to 360
+
+Read [](file:///c%3A/Users/cshar/Desktop/BuyASpot/src/components/admin/AdminRefundTab.tsx#360-360), lines 360 to 394
+
+Created 4 todos
+
+Read [](file:///c%3A/Users/cshar/Desktop/BuyASpot/src/components/PurchasePreview.tsx#320-320), lines 320 to 760
+
+Read [](file:///c%3A/Users/cshar/Desktop/BuyASpot/supabase/functions/create-razorpay-order/index.ts#1-1), lines 1 to 260
+
+Read [](file:///c%3A/Users/cshar/Desktop/BuyASpot/supabase/functions/create-razorpay-order/index.ts#260-260), lines 260 to 414
+
+Read [](file:///c%3A/Users/cshar/Desktop/BuyASpot/supabase/functions/verify-razorpay-payment/index.ts#1-1), lines 1 to 400
+
+Read [](file:///c%3A/Users/cshar/Desktop/BuyASpot/supabase/functions/bypass-purchase/index.ts)
+
+Read [](file:///c%3A/Users/cshar/Desktop/BuyASpot/supabase/functions/bypass-marketplace-purchase/index.ts)
+
+Read [](file:///c%3A/Users/cshar/Desktop/BuyASpot/supabase/functions/create-marketplace-order/index.ts)
+
+Read [](file:///c%3A/Users/cshar/Desktop/BuyASpot/supabase/functions/verify-marketplace-payment/index.ts)
+
+Read [](file:///c%3A/Users/cshar/Desktop/BuyASpot/supabase/functions/razorpay-webhook/index.ts#1-1), lines 1 to 360
+
+Read [](file:///c%3A/Users/cshar/Desktop/BuyASpot/supabase/functions/send-purchase-confirmation/index.ts)
+
+Read [](file:///c%3A/Users/cshar/Desktop/BuyASpot/supabase/functions/_shared/email.ts#500-500), lines 500 to 702
+
+Read [](file:///c%3A/Users/cshar/Desktop/BuyASpot/supabase/functions/_shared/email.ts#600-600), lines 600 to 702
+
+Updated todo list
+
+Read [](file:///c%3A/Users/cshar/Desktop/BuyASpot/supabase/functions/razorpay-webhook/index.ts#360-360), lines 360 to 419
+
+Read [](file:///c%3A/Users/cshar/Desktop/BuyASpot/supabase/functions/razorpay-webhook/index.ts#419-419), lines 419 to 419
+
+Searched for regex `BYPASS|bypass|payment|razorpay|order|refund|webhook` (`**/supabase/migrations/*.sql`), 200 results
+
+Read [](file:///c%3A/Users/cshar/Desktop/BuyASpot/supabase/migrations/015_payment_integration.sql)
+
+Read [](file:///c%3A/Users/cshar/Desktop/BuyASpot/supabase/migrations/017_enhanced_payment_validation.sql)
+
+Read [](file:///c%3A/Users/cshar/Desktop/BuyASpot/supabase/migrations/018_marketplace_payment.sql)
+
+Read [](file:///c%3A/Users/cshar/Desktop/BuyASpot/supabase/migrations/023_webhook_support.sql)
+
+Read [](file:///c%3A/Users/cshar/Desktop/BuyASpot/supabase/migrations/024_idempotency_keys.sql)
+
+Read [](file:///c%3A/Users/cshar/Desktop/BuyASpot/supabase/migrations/028_refund_management.sql)
+
+Read [](file:///c%3A/Users/cshar/Desktop/BuyASpot/supabase/migrations/031_fix_marketplace_purchase_rpc.sql)
+
+Read [](file:///c%3A/Users/cshar/Desktop/BuyASpot/supabase/migrations/032_audit_fix_idempotency_and_orphaned_orders.sql)
+
+Read [](file:///c%3A/Users/cshar/Desktop/BuyASpot/supabase/migrations/043_purge_idempotency_and_orphans.sql)
+
+Updated todo list
+
+Read [](file:///c%3A/Users/cshar/Desktop/BuyASpot/supabase/migrations/003_marketplace.sql)
+
+Read [](file:///c%3A/Users/cshar/Desktop/BuyASpot/supabase/migrations/039_clear_info_lint_warnings.sql)
+
+Read [](file:///c%3A/Users/cshar/Desktop/BuyASpot/supabase/migrations/021_revoke_unsafe_purchase_rpcs.sql)
+
+Read [](file:///c%3A/Users/cshar/Desktop/BuyASpot/supabase/migrations/022_cron_expiry_triggers.sql)
+
+Read [](file:///c%3A/Users/cshar/Desktop/BuyASpot/supabase/migrations/040_revoke_public_role.sql)
+
+I reviewed the payment entry points, edge functions, database migrations, and admin tooling to build a complete picture of how payment flows and flags interact. Below is a structured map of the current implementation with the key integration points and flag behavior.
+
+**Payment Entry Points (Frontend)**
+- Direct pixel purchase entry is in BuyPixels.tsx and the checkout flow is in PurchasePreview.tsx.
+- Marketplace purchase entry is in MarketplacePage.tsx.
+- Payment status UI and helper content live in PaymentNotification.tsx and PaymentHelp.tsx.
+
+**Environment Flags and Their Effects**
+- Frontend bypass flag is `VITE_BYPASS_PAYMENT` in .env; it short-circuits Razorpay and calls bypass functions directly in PurchasePreview.tsx and MarketplacePage.tsx.
+- When `VITE_BYPASS_PAYMENT` is true, the UI shows a “Test Mode” badge in VirtualizedPixelGrid.tsx.
+- Server-side bypass is separately guarded by `BYPASS_PAYMENT_ENABLED` in index.ts and index.ts; both must be enabled to bypass end-to-end.
+- Client Razorpay key is `VITE_RAZORPAY_KEY_ID` (used by the frontend checkout); server-side uses `RAZORPAY_KEY_ID` and `RAZORPAY_KEY_SECRET` for API calls in index.ts and index.ts.
+
+---
+
+**Direct Pixel Purchase Flow (End-to-End)**
+- UI entry: user selects pixels in BuyPixels.tsx, then opens checkout in PurchasePreview.tsx.
+- Order creation: checkout invokes `create-razorpay-order` in index.ts.
+  - Server validates auth, recalculates price, enforces max pixels, validates inputs, creates Razorpay order, and inserts a `payment_orders` row.
+- Payment verification: Razorpay modal callback invokes `verify-razorpay-payment` in index.ts.
+  - HMAC signature verification, amount verification via Razorpay API, then `complete_pixel_purchase` RPC.
+- Database transaction: `complete_pixel_purchase` updates `payment_orders`, assigns pixels/pixel_blocks, updates profiles, and logs events in 015_payment_integration.sql and 017_enhanced_payment_validation.sql.
+- Confirmation emails use templates in email.ts.
+
+---
+
+**Marketplace Purchase Flow (End-to-End)**
+- UI entry: “Purchase Now” in MarketplacePage.tsx.
+- Order creation: `create-marketplace-order` in index.ts creates a Razorpay order and a `payment_orders` record.
+- Payment verification: `verify-marketplace-payment` in index.ts validates HMAC then calls `complete_marketplace_purchase`.
+- Database transaction: `complete_marketplace_purchase` transfers ownership, marks listing sold, records transaction and platform fee in 031_fix_marketplace_purchase_rpc.sql. Marketplace tables are defined in 003_marketplace.sql.
+- Buyer/seller emails are generated via email.ts.
+
+---
+
+**Bypass Flow (Development/Test Mode)**
+- Direct purchase bypass: PurchasePreview.tsx calls index.ts when `VITE_BYPASS_PAYMENT` is true.
+  - Server validates BYPASS_PAYMENT_ENABLED, recalculates price, inserts `payment_orders`, then calls `complete_pixel_purchase` directly.
+- Marketplace bypass: MarketplacePage.tsx calls index.ts.
+  - Server checks BYPASS_PAYMENT_ENABLED, inserts `payment_orders`, then calls `complete_marketplace_purchase`.
+
+---
+
+**Webhook Reconciliation and Failure Handling**
+- index.ts handles `payment.authorized`, `payment.captured`, and `payment.failed`.
+  - If an order is missing, it records an orphaned order and attempts auto-refund.
+  - If found, it marks `payment_orders` paid and runs reconciliation via RPCs as a safety net.
+- Event logging and reconciliation support are in 023_webhook_support.sql.
+- Orphaned orders and idempotency log are in 032_audit_fix_idempotency_and_orphaned_orders.sql.
+- Purge jobs are in 043_purge_idempotency_and_orphans.sql.
+- Auto-expiry cron is configured in 022_cron_expiry_triggers.sql.
+
+---
+
+**Refund and Admin Controls**
+- Admin refund UI is AdminRefundTab.tsx.
+- Refund RPCs are defined in 028_refund_management.sql for both marketplace and direct purchase refunds.
+- Access restrictions and unsafe RPC revokes are enforced in 021_revoke_unsafe_purchase_rpcs.sql and 040_revoke_public_role.sql.
+
+---
+
+**Interaction Map (Mermaid)**
+```mermaid
+sequenceDiagram
+    participant User
+    participant UI as Frontend
+    participant Edge as Supabase Edge Functions
+    participant DB as Supabase DB
+    participant RZ as Razorpay
+
+    User->>UI: Select pixels / marketplace listing
+    UI->>Edge: create-razorpay-order or create-marketplace-order
+    Edge->>DB: Insert payment_orders
+    Edge->>RZ: Create Razorpay order
+    RZ-->>UI: Order token
+    UI->>RZ: Open checkout modal
+    RZ-->>UI: Payment response
+    UI->>Edge: verify-razorpay-payment or verify-marketplace-payment
+    Edge->>RZ: Verify signature + payment amount
+    Edge->>DB: complete_pixel_purchase / complete_marketplace_purchase
+    DB-->>Edge: Success + IDs
+    Edge-->>UI: Success
+```
+
+---
+
+**Key Takeaways on Flag Behavior**
+- `VITE_BYPASS_PAYMENT` is purely client-side; it changes the frontend flow and hides Razorpay, but it does not automatically enable server bypass. Server bypass still requires `BYPASS_PAYMENT_ENABLED`.
+- Bypass flows still create `payment_orders` and run the same RPCs as real payments, so all downstream logic (pixel ownership, profiles, events) behaves consistently.
+
+If you want, I can next produce a concise “change impact map” for where to modify behavior safely. Options:
+1) Generate a checklist of safe change points for payment behavior.
+2) Create a diagram that separates direct purchase vs marketplace flows with error branches.
+3) Inventory all env flags and secrets with their runtime scope (frontend vs edge).
+
+Completed: *Analyze payment flow integration* (1/4)
+
+
+
+You are acting as a Principal Payments Architect and Security Auditor.
+
+Your task is to perform a complete production-grade audit of the payment system in this codebase.
+
+Do not assume the current implementation is correct. Validate every payment-related path, edge case, fallback, environment flag, database operation, webhook flow, refund flow, and state transition.
+
+The primary objective is to ensure that no payment-related bug, exploit, inconsistency, duplicate charge, unauthorized purchase, refund issue, race condition, or configuration mistake can occur in production.
+
+Critical Requirements
+Treat this as a real-money system.
+
+Assume:
+
+Real customers
+Real transactions
+Real refunds
+Real chargebacks
+Production traffic
+Concurrent purchases
+Malicious users
+Network failures
+Razorpay outages
+Partial failures
+Duplicate requests
+Replay attacks
+Your audit must be extremely thorough.
+
+1. Payment Architecture Analysis
+Create a complete architecture map showing:
+
+All payment entry points
+All payment-related frontend components
+All Edge Functions
+All RPCs
+All database tables
+All triggers
+All webhooks
+All background jobs
+All scheduled cleanup jobs
+All refund flows
+All bypass flows
+All environment flags
+Generate a dependency graph showing how they interact.
+
+2. Environment Flag Audit
+Identify every payment-related flag.
+
+Examples:
+
+VITE_BYPASS_PAYMENT
+BYPASS_PAYMENT_ENABLED
+Razorpay keys
+Any test mode flags
+Any feature flags
+For every flag:
+
+Explain:
+
+Purpose
+Where it is read
+Where it affects execution
+Security implications
+Production risks
+Whether it can accidentally bypass payment
+Specifically validate:
+
+Can any combination of flags accidentally allow a user to receive assets without payment?
+
+Can frontend flags and backend flags become inconsistent?
+
+Can deployment mistakes enable payment bypass in production?
+
+Recommend a safer architecture if necessary.
+
+3. Order Creation Audit
+Validate:
+
+Order creation flow
+Amount calculation
+Currency handling
+Price validation
+User ownership validation
+Marketplace ownership validation
+Inventory validation
+Pixel availability validation
+Check for:
+
+Amount tampering
+Client-side trust
+Duplicate orders
+Race conditions
+Concurrent purchases
+Invalid state transitions
+4. Payment Verification Audit
+Validate every verification step.
+
+Confirm:
+
+Razorpay signature verification
+Payment ID validation
+Order ID validation
+Amount verification
+Currency verification
+Ownership verification
+Check if an attacker can:
+
+Reuse a payment
+Replay a payment
+Reuse an order
+Swap order IDs
+Swap payment IDs
+Bypass verification
+Identify every possible exploit path.
+
+5. Webhook Audit
+Review webhook architecture.
+
+Validate:
+
+Signature validation
+Idempotency
+Retry handling
+Duplicate webhook events
+Event ordering issues
+Missing events
+Delayed events
+Determine:
+
+What happens if frontend verification fails but webhook succeeds
+What happens if webhook succeeds but frontend verification fails
+What happens if both execute simultaneously
+Verify system consistency.
+
+6. Idempotency Audit
+Validate all idempotency protections.
+
+Determine:
+
+Can the same payment be processed twice?
+Can the same order be processed twice?
+Can the same webhook execute twice?
+Can duplicate ownership transfers occur?
+Can duplicate pixel allocations occur?
+Trace all protections from frontend to database.
+
+7. Refund Audit
+Analyze:
+
+Full refunds
+Partial refunds
+Manual refunds
+Failed refunds
+Refund retries
+Validate:
+
+Ownership rollback logic
+Marketplace rollback logic
+Audit trails
+Refund authorization
+Determine whether refunded purchases can leave data in an inconsistent state.
+
+8. Failure Recovery Audit
+Analyze all failure scenarios.
+
+Examples:
+
+Razorpay timeout
+Webhook timeout
+Edge Function crash
+DB transaction failure
+Network interruption
+User closes checkout
+Payment succeeds but verification fails
+Payment succeeds but DB write fails
+For every scenario:
+
+Explain:
+
+Current behavior
+Recovery mechanism
+Data consistency risk
+Recommended fix
+9. Security Audit
+Perform a payment-specific security review.
+
+Check for:
+
+Privilege escalation
+Payment bypass
+Replay attacks
+Race conditions
+Double spending
+Client-side trust
+Secret leakage
+Environment variable exposure
+Unsafe RPC access
+Missing authorization checks
+Assign severity:
+
+Critical
+High
+Medium
+Low
+10. Production Readiness Review
+Evaluate whether this payment system is production-ready.
+
+Provide:
+
+Production Readiness Score
+0-100
+
+Critical Issues
+Blocking production launch.
+
+High-Risk Issues
+Should be fixed before launch.
+
+Recommended Improvements
+Nice-to-Have Improvements
+11. Final Verification Matrix
+Create a table showing:
+
+Feature | Verified | Risk Level | Notes
+Payment Creation
+Payment Verification
+Marketplace Purchases
+Pixel Purchases
+Webhooks
+Refunds
+Idempotency
+Race Conditions
+Flag Safety
+Environment Configuration
+Database Consistency
+Failure Recovery
+Security Controls
+
+12. Required Deliverable
+Do not provide a high-level summary only.
+
+Provide:
+
+Exact files involved
+Exact functions involved
+Exact RPCs involved
+Exact tables involved
+Exact vulnerabilities
+Exact fixes
+Think like a payments auditor preparing a report before a production launch where real money is involved.
+
+Assume any overlooked issue could cause financial loss.
+
+
+Read [](file:///c%3A/Users/cshar/Desktop/BuyASpot/src/utils/gridConstants.ts)
+
+Read [](file:///c%3A/Users/cshar/Desktop/BuyASpot/src/utils/gridDomain.ts)
+
+Read [](file:///c%3A/Users/cshar/Desktop/BuyASpot/supabase/migrations/009_triggers.sql)
+
+Read [](file:///c%3A/Users/cshar/Desktop/BuyASpot/supabase/migrations/008_rpc_functions.sql#1-1), lines 1 to 260
+
+Read [](file:///c%3A/Users/cshar/Desktop/BuyASpot/supabase/migrations/014_final_policy_fixes.sql)
+
+Read [](file:///c%3A/Users/cshar/Desktop/BuyASpot/supabase/migrations/020_lint_foreign_keys.sql)
+
+Read [](file:///c%3A/Users/cshar/Desktop/BuyASpot/supabase/migrations/025_admin_security_hardening.sql)
+
+Read [](file:///c%3A/Users/cshar/Desktop/BuyASpot/supabase/migrations/030_fix_pricing_zones.sql)
+
+Read [](file:///c%3A/Users/cshar/Desktop/BuyASpot/supabase/migrations/033_audit_fix_rate_limiting.sql)
+
+Read [](file:///c%3A/Users/cshar/Desktop/BuyASpot/supabase/migrations/034_audit_fix_admin_rls_policies.sql)
+
+Read [](file:///c%3A/Users/cshar/Desktop/BuyASpot/supabase/migrations/019_admin_rpc_fixes.sql)
+
+Read [](file:///c%3A/Users/cshar/Desktop/BuyASpot/supabase/migrations/026_unlock_block_pixels_marketplace.sql)
+
+Read [](file:///c%3A/Users/cshar/Desktop/BuyASpot/supabase/migrations/036_comprehensive_postgres_optimization.sql#1-1), lines 1 to 260
+
+Read [](file:///c%3A/Users/cshar/Desktop/BuyASpot/supabase/migrations/038_security_lint_fixes.sql)
+
+Added 11 todos
+
+Read [](file:///c%3A/Users/cshar/Desktop/BuyASpot/supabase/migrations/036_comprehensive_postgres_optimization.sql#260-260), lines 260 to 380
+
+Read [](file:///c%3A/Users/cshar/Desktop/BuyASpot/supabase/migrations/037_pixel_info_and_performance.sql)
+
+Read [](file:///c%3A/Users/cshar/Desktop/BuyASpot/supabase/migrations/041_grant_admin_to_email.sql)
+
+Read [](file:///c%3A/Users/cshar/Desktop/BuyASpot/supabase/migrations/042_fix_admin_function_permissions.sql)
+
+I completed a production‑grade audit of the payment system with adversarial assumptions. Below is a structured report with architecture map, flag audit, verification matrix, and prioritized findings with exact files/functions/RPCs/tables.
+
+**1) Payment Architecture Map (Entry Points → Edge → DB)**
+- **Frontend entry points**
+  - Direct pixel purchase flow UI: BuyPixels.tsx
+  - Checkout orchestration + Razorpay init: PurchasePreview.tsx
+  - Marketplace purchase flow UI: MarketplacePage.tsx
+  - Payment UI states + help: PaymentNotification.tsx, PaymentHelp.tsx
+- **Edge Functions**
+  - `create-razorpay-order`: index.ts
+  - `verify-razorpay-payment`: index.ts
+  - `create-marketplace-order`: index.ts
+  - `verify-marketplace-payment`: index.ts
+  - `razorpay-webhook`: index.ts
+  - `bypass-purchase`: index.ts
+  - `bypass-marketplace-purchase`: index.ts
+  - Email confirmation helper: index.ts
+- **Core RPCs**
+  - `complete_pixel_purchase`: 015_payment_integration.sql, 017_enhanced_payment_validation.sql, 024_idempotency_keys.sql
+  - `complete_marketplace_purchase`: 031_fix_marketplace_purchase_rpc.sql
+  - `purchase_from_marketplace_verified` (legacy): 018_marketplace_payment.sql, 026_unlock_block_pixels_marketplace.sql
+  - `mark_payment_failed`: 015_payment_integration.sql
+  - Reconciliation helpers: `get_payment_reconciliation_status` 023_webhook_support.sql, `safely_update_payment_status` 036_comprehensive_postgres_optimization.sql
+- **Tables / Views / Triggers**
+  - `payment_orders`: 015_payment_integration.sql, constraints in 036_comprehensive_postgres_optimization.sql
+  - `payment_audit_log` + trigger `payment_status_change_trigger`: 036_comprehensive_postgres_optimization.sql, RLS adjustments in 038_security_lint_fixes.sql
+  - `marketplace_transactions`, `marketplace_listings`: 003_marketplace.sql
+  - `orphaned_orders`, `idempotency_log`: 032_audit_fix_idempotency_and_orphaned_orders.sql
+  - `event_log`: 023_webhook_support.sql
+  - `vw_payment_analytics`, `mv_daily_revenue`: 036_comprehensive_postgres_optimization.sql
+- **Background / Cron Jobs**
+  - `expire_old_payment_orders`, `expire_old_listings`: 022_cron_expiry_triggers.sql
+  - Purge jobs for idempotency/orphans: 043_purge_idempotency_and_orphans.sql (commented schedule)
+- **Refund Flows**
+  - Admin refund RPCs: 028_refund_management.sql
+  - Admin UI: AdminRefundTab.tsx
+
+**Dependency Graph**
+```mermaid
+graph TD
+  UI_Buy[BuyPixels.tsx] --> UI_Checkout[PurchasePreview.tsx]
+  UI_Market[MarketplacePage.tsx] --> EF_CreateMkt[create-marketplace-order]
+  UI_Checkout --> EF_Create[create-razorpay-order]
+  UI_Checkout --> EF_Verify[verify-razorpay-payment]
+  UI_Market --> EF_VerifyMkt[verify-marketplace-payment]
+  UI_Checkout --> EF_Bypass[bypass-purchase]
+  UI_Market --> EF_BypassMkt[bypass-marketplace-purchase]
+
+  EF_Create --> DB_PaymentOrders[(payment_orders)]
+  EF_Create --> RZ_Order[Razorpay Orders API]
+
+  EF_Verify --> RZ_Payment[Razorpay Payments API]
+  EF_Verify --> RPC_Purchase[complete_pixel_purchase]
+  EF_VerifyMkt --> RPC_Mkt[complete_marketplace_purchase]
+
+  EF_Webhook[razorpay-webhook] --> DB_PaymentOrders
+  EF_Webhook --> RPC_Purchase
+  EF_Webhook --> RPC_Mkt
+  EF_Webhook --> DB_Orphans[(orphaned_orders)]
+  EF_Webhook --> RZ_Refund[Razorpay Refund API]
+
+  RPC_Purchase --> DB_Pixels[(pixels)]
+  RPC_Purchase --> DB_Blocks[(pixel_blocks)]
+  RPC_Purchase --> DB_Profiles[(profiles)]
+  RPC_Mkt --> DB_Listings[(marketplace_listings)]
+  RPC_Mkt --> DB_Transactions[(marketplace_transactions)]
+
+  DB_PaymentOrders --> TR_Audit[payment_status_change_trigger]
+  TR_Audit --> DB_Audit[(payment_audit_log)]
+```
+
+---
+
+## 2) Environment Flag Audit
+**Flags / Secrets**
+- `VITE_BYPASS_PAYMENT` (client)
+  - **Read in:** PurchasePreview.tsx, MarketplacePage.tsx, VirtualizedPixelGrid.tsx
+  - **Effect:** Skips Razorpay, calls bypass Edge Functions directly; shows test badge.
+  - **Risk:** If accidentally set in production builds, users can hit bypass endpoints (server guard still required).
+- `BYPASS_PAYMENT_ENABLED` (server)
+  - **Read in:** index.ts, index.ts
+  - **Effect:** Allows bypass functions to execute and allocate assets without Razorpay.
+  - **Risk:** If enabled in prod, any authenticated user can purchase without payment. No admin allow‑list or environment allow‑list.
+- `VITE_RAZORPAY_KEY_ID` (client publishable)
+  - **Read in:** PurchasePreview.tsx, MarketplacePage.tsx
+  - **Effect:** Razorpay Checkout key.
+  - **Risk:** Must be publishable; exposure is expected. Ensure it is not secret.
+- `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET` (server)
+  - **Read in:** index.ts, index.ts, index.ts, index.ts
+  - **Effect:** Order creation, payment verification, refunds.
+  - **Risk:** Incorrect secret causes signature verification failures and false negatives; missing secret breaks payments.
+- `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` (server)
+  - **Read in:** All payment Edge Functions.
+  - **Risk:** Service role misuse is high impact if leaked.
+
+**Flag Safety Analysis**
+- **Client/server inconsistency is possible.** If `VITE_BYPASS_PAYMENT=true` but `BYPASS_PAYMENT_ENABLED` is not set, checkout fails (safe but user‑visible error).
+- **Production bypass risk:** `BYPASS_PAYMENT_ENABLED=true` alone is sufficient to allow purchases without payment.
+- **Recommended architecture:** 
+  - Remove all bypass endpoints in prod deploy, or gate with an allow‑list of admin user IDs + environment allow‑list (`NODE_ENV=development`/`DEPLOY_ENV=staging`) on the server.
+  - Remove `VITE_BYPASS_PAYMENT` from production builds by enforcing build‑time validation.
+
+---
+
+# Audit Findings (Ordered by Severity)
+
+## **Critical**
+1) **Authenticated users can mint pixels without payment by directly calling DB RPCs**
+   - **Why:** `payment_orders_insert_own` allows authenticated inserts into `payment_orders`, and `complete_pixel_purchase` is granted to authenticated users (re‑granted in 040/042 era).
+   - **Exploit path:** Authenticated user inserts a `payment_orders` row with arbitrary `purchase_metadata` and then calls `complete_pixel_purchase` with fake payment IDs to claim pixels.
+   - **Files:**  
+     - Insert policy: 036_comprehensive_postgres_optimization.sql  
+     - RPC grant: 040_revoke_public_role.sql
+     - RPC definition: 024_idempotency_keys.sql
+   - **Fix:**  
+     - Remove authenticated INSERT policy on `payment_orders`.  
+     - Revoke `complete_pixel_purchase` from authenticated.  
+     - Move `payment_orders` into a private schema or restrict via PostgREST settings.  
+     - Only Edge Functions (service role) should write or call purchase completion.
+
+2) **Webhook reconciliation flow is broken and can mark paid without allocating assets**
+   - **Why:** Webhook updates `payment_orders` to `paid` *before* calling `complete_pixel_purchase` / `complete_marketplace_purchase`. Those RPCs require `status='created'`, so they no‑op in webhook mode.
+   - **Impact:** If frontend verify fails but webhook succeeds, payment can be marked paid without asset allocation.  
+   - **Files:** index.ts, 024_idempotency_keys.sql
+   - **Fix:**  
+     - Do not pre‑update `payment_orders` in webhook.  
+     - Call the relevant RPC first, let it transition status to `paid`.  
+     - Add idempotency checks in webhook path.
+
+3) **Webhook `paid` status update likely violates DB constraint**
+   - **Why:** Constraint requires `razorpay_signature` when status = `paid`, but webhook sets status to `paid` without signature.
+   - **Impact:** Webhook updates fail, reconciliation silently fails; orphaned paid payments.
+   - **Files:** Constraint in 036_comprehensive_postgres_optimization.sql; webhook update in index.ts
+   - **Fix:**  
+     - Store signature from webhook if provided (Razorpay webhooks do not include checkout signature).  
+     - Or relax constraint to allow `paid` when source = webhook and signature absent; store `webhook_*` fields.
+
+4) **Marketplace verification lacks payment amount validation**
+   - **Why:** `verify-marketplace-payment` only verifies signature and then calls DB RPC; it does not re‑fetch Razorpay payment to validate amount/currency/status.
+   - **Impact:** Underpayment or manipulated payment could still transfer assets.
+   - **Files:** index.ts
+   - **Fix:** Mirror the `verify-razorpay-payment` flow: fetch payment details from Razorpay and verify amount + status.
+
+5) **Payment bypass can be enabled in production without admin guard**
+   - **Why:** `BYPASS_PAYMENT_ENABLED` enables bypass endpoints for any authenticated user.
+   - **Impact:** Complete payment bypass in prod.
+   - **Files:** index.ts, index.ts
+   - **Fix:** Hard‑block bypass in production; add explicit admin allow‑list + environment allow‑list.
+
+---
+
+## **High**
+6) **Webhook reconciliation does not preserve buyer’s content**
+   - **Why:** Webhook calls `complete_pixel_purchase` without image/link/alt_text; RPC does not fall back to stored metadata.
+   - **Impact:** Paid orders can be fulfilled without user content if webhook is the only path.
+   - **Files:** index.ts, 024_idempotency_keys.sql
+   - **Fix:** Modify `complete_pixel_purchase` to use `payment_orders.purchase_metadata` when params are null.
+
+7) **In‑memory rate limits are still used despite DB limiter**
+   - **Why:** Edge functions still use in‑memory maps; DB rate limit function exists but is unused.
+   - **Impact:** Cold starts reset limits; easy to spam order creation/verification.
+   - **Files:** index.ts, index.ts, DB limiter in 033_audit_fix_rate_limiting.sql
+   - **Fix:** Call `check_and_record_rate_limit` RPC from Edge.
+
+8) **`payment_orders` insert policy allows client‑side manipulation of `purchase_metadata`**
+   - **Why:** Authenticated users can insert arbitrary metadata that later drives asset allocation.
+   - **Impact:** If RPC access is misconfigured (it is), the metadata can be abused for free assets or malicious content injection.
+   - **Files:** 036_comprehensive_postgres_optimization.sql
+   - **Fix:** Disallow direct inserts from clients; only Edge functions should insert with validated payloads.
+
+---
+
+## **Medium**
+9) **Webhook reconciliation columns (`webhook_received_at`, `webhook_processed_at`) are unused**
+   - **Impact:** Incomplete audit trail and reconciliation status.
+   - **Files:** 023_webhook_support.sql, index.ts
+   - **Fix:** Update columns when webhook is processed.
+
+10) **`complete_marketplace_purchase` has no idempotency key**
+    - **Impact:** Concurrent calls could race; status check prevents double transfer, but no stored idempotent response for retries.
+    - **Files:** 031_fix_marketplace_purchase_rpc.sql
+    - **Fix:** Add idempotency key and log similar to `complete_pixel_purchase`.
+
+11) **CORS wildcard on marketplace functions**
+    - **Impact:** Not a direct auth bypass, but broadens CSRF surface if token is exposed.
+    - **Files:** index.ts, index.ts
+    - **Fix:** Align to explicit allow‑list like direct purchase functions.
+
+---
+
+## **Low**
+12) **Webhook uses reconciliation email before completion**
+    - **Impact:** User may receive “resolved” email before assets are allocated.
+    - **Files:** index.ts
+    - **Fix:** Send after successful RPC completion.
+
+---
+
+# Audit by Requirement
+
+## 3) Order Creation Audit
+- **Direct purchase:** `create-razorpay-order` recalculates price server‑side and limits pixels. It does **not** check availability before creating Razorpay order; the check happens later in `complete_pixel_purchase`. This allows paid orders to be created for pixels that later become unavailable, leading to refunds.  
+  File: index.ts
+- **Marketplace:** `create-marketplace-order` validates listing is active and uses asking price from DB. No amount tampering.  
+  File: index.ts
+
+**Risks**
+- High probability of “paid but unavailable” scenario on hot pixels.  
+- Mitigate by reserving pixels during order creation (short hold + expiration).
+
+---
+
+## 4) Payment Verification Audit
+- **Direct purchase:**  
+  - Signature verified, amount verified via Razorpay API, payment status checked.  
+  - Ownership locked in DB via `complete_pixel_purchase` (with `FOR UPDATE` in 017).  
+  Files: index.ts, 017_enhanced_payment_validation.sql
+- **Marketplace:**  
+  - Signature verified, **amount not validated**.  
+  File: index.ts
+
+**Exploit paths**
+- Underpayment on marketplace orders.  
+- Direct RPC invocation (see Critical #1) bypasses verification entirely.
+
+---
+
+## 5) Webhook Audit
+- Signature verified via `x-razorpay-signature`.  
+- Handles `payment.authorized`, `payment.captured`, `payment.failed`.  
+- **Ordering problem:** webhook updates status to paid before RPC, which prevents RPC from allocating assets.  
+- No explicit idempotency or replay protection on webhook; relies on DB status.
+
+**Concurrent Paths**
+- **Frontend succeeds, webhook fires:** webhook sees status paid, returns early (safe).  
+- **Frontend fails, webhook fires:** status updated to paid but asset transfer likely does not occur (critical).  
+- **Both fire simultaneously:** race on status update; with current flow, webhook can preempt.
+
+Files: index.ts
+
+---
+
+## 6) Idempotency Audit
+- **Direct purchase:** `complete_pixel_purchase` uses `idempotency_log` (good), but only when `p_idempotency_key` provided.  
+  Files: 032_audit_fix_idempotency_and_orphaned_orders.sql, 017_enhanced_payment_validation.sql
+- **Marketplace:** `complete_marketplace_purchase` has no idempotency key or log.  
+  File: 031_fix_marketplace_purchase_rpc.sql
+
+**Key risk:** duplicate webhook or retry of marketplace verify can re‑enter logic without a cached response, though status check prevents double transfer.
+
+---
+
+## 7) Refund Audit
+- Admin refunds are handled in DB and UI.  
+  Files: 028_refund_management.sql, AdminRefundTab.tsx
+- **Risk:** DB refund flow does not automatically trigger Razorpay refund; no external refund call is performed in DB functions.  
+- **Marketplace refund:** ownership rollback is handled, but listing reset does not verify current owner conflicts.
+
+---
+
+## 8) Failure Recovery Audit
+- **Razorpay timeout:** order creation has timeout; verification has timeout; no persistent retry for creation.  
+- **Webhook failure:** no retry logic and reconciliation is currently broken (Critical).  
+- **DB write fails after payment:** orphaned_orders table exists; webhook tries auto‑refund.  
+- **User closes checkout:** payment order remains `created`, cron expires.
+
+Files: index.ts, index.ts, index.ts, 022_cron_expiry_triggers.sql
+
+---
+
+## 9) Security Audit (Payment‑Specific)
+**Critical**
+- Direct RPC + insert policy allows free purchases (see Critical #1).
+- Webhook reconciliation can mark paid without asset allocation (Critical #2).
+- Marketplace verification skips amount validation (Critical #4).
+
+**High**
+- Bypass enabled in prod allows free purchases (Critical #5).
+- Webhook loses content data (High #6).
+- In‑memory rate limit (High #7).
+
+**Medium**
+- Missing webhook timestamps.
+- No marketplace idempotency key.
+- Wide CORS on marketplace functions.
+
+---
+
+# 10) Production Readiness Review
+**Score: 52 / 100**
+
+**Critical Issues (Block Launch)**
+- Authenticated RPC purchase bypass via `payment_orders` insert + `complete_pixel_purchase` access.
+- Webhook reconciliation breaks allocation and can violate DB constraints.
+- Marketplace verification does not validate amount against Razorpay.
+
+**High‑Risk Issues**
+- Bypass endpoints can be enabled in prod without admin guard.
+- Webhook path discards user content.
+- Rate limiting not persistent.
+
+**Recommended Improvements**
+- Lock down `payment_orders` write access and `complete_pixel_purchase` RPC to service role only.
+- Fix webhook flow ordering (RPC first, status update inside RPC).
+- Add amount/currency verification for marketplace payment using Razorpay API.
+- Implement DB-backed rate limiting in Edge functions.
+- Add webhook timestamps, idempotency keys, and replay protection.
+
+**Nice‑to‑Have**
+- Consolidate payment state transitions into a single DB function with explicit allowed transitions.
+- Add explicit pixel reservation table during order creation.
+
+---
+
+# 11) Verification Matrix
+
+| Feature | Verified | Risk Level | Notes |
+|---|---|---|---|
+| Payment Creation | Partial | Medium | No pixel reservation on create |
+| Payment Verification | Partial | High | Marketplace lacks amount validation |
+| Marketplace Purchases | Partial | High | Missing amount validation |
+| Pixel Purchases | Partial | Critical | RPC access + insert policy |
+| Webhooks | No | Critical | Order of operations breaks allocation |
+| Refunds | Partial | Medium | No Razorpay refund API for admin refunds |
+| Idempotency | Partial | Medium | Marketplace lacks idempotency key |
+| Race Conditions | Partial | Medium | Direct purchases lock; marketplace relies on status |
+| Flag Safety | No | Critical | Bypass can be enabled in prod |
+| Env Configuration | Partial | Medium | Frontend/backend flags can diverge |
+| DB Consistency | Partial | High | Webhook can set paid without signature |
+| Failure Recovery | Partial | High | Orphan handling exists, but reconciliation broken |
+| Security Controls | Partial | Critical | RPC access creates payment bypass |
+
+---
+
+# 12) Exact Fixes (Targeted)
+
+**A. Lock down RPC access + insert policy**
+- Remove authenticated insert policy on `payment_orders` in 036_comprehensive_postgres_optimization.sql.
+- Revoke authenticated execute on `complete_pixel_purchase` and `complete_marketplace_purchase` in 040_revoke_public_role.sql.
+- Ensure only service role Edge Functions call these RPCs.
+
+**B. Webhook ordering + constraint fix**
+- In index.ts:
+  - Call `complete_pixel_purchase` / `complete_marketplace_purchase` first.
+  - Do not update status to paid separately.
+  - Add `webhook_received_at`/`webhook_processed_at`.
+- Consider relaxing `check_paid_requires_signature` for webhook‑originated payments, or store a separate “webhook_signature” field.
+
+**C. Marketplace verification parity**
+- In index.ts, fetch Razorpay payment details and verify amount/status/currency.
+
+**D. Bypass hardening**
+- Reject bypass unless `DEPLOY_ENV` is non‑prod and requester is admin.  
+  Files: index.ts, index.ts
+
+---
+
+If you want, I can produce a patch plan or implement the fixes in code next.
+
+Completed: *Create payment architecture map* (5/15)

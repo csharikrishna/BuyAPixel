@@ -7,14 +7,28 @@ import {
   buildMarketplaceSellerEmail,
 } from '../_shared/email.ts'
 
+const RAZORPAY_KEY_ID = Deno.env.get('RAZORPAY_KEY_ID')
 const RAZORPAY_KEY_SECRET = Deno.env.get('RAZORPAY_KEY_SECRET')
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 
-const corsHeaders = {
-   'Access-Control-Allow-Origin': '*',
-   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-   'Access-Control-Allow-Methods': 'POST, OPTIONS',
+// ✅ FIX M11: Restrict CORS to explicit allow-list (was wildcard)
+const ALLOWED_ORIGINS = [
+  'https://buyaspot.in',
+  'https://www.buyaspot.in',
+  'http://localhost:5173',
+  'http://localhost:5174',
+  'http://localhost:3000',
+]
+
+function getCorsHeaders(req: Request) {
+  const origin = req.headers.get('origin') || ''
+  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0]
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  }
 }
 
 interface VerifyMarketplacePaymentRequest {
@@ -49,6 +63,8 @@ function verifySignature(
 }
 
 serve(async (req: Request) => {
+   const corsHeaders = getCorsHeaders(req)
+
    // Handle CORS preflight
    if (req.method === 'OPTIONS') {
       return new Response('ok', { status: 200, headers: corsHeaders })
@@ -65,6 +81,10 @@ serve(async (req: Request) => {
       // Validate environment variables
       if (!RAZORPAY_KEY_SECRET) {
          throw new Error('Razorpay secret not configured')
+      }
+
+      if (!RAZORPAY_KEY_ID) {
+         throw new Error('Razorpay key ID not configured')
       }
 
       if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
@@ -120,6 +140,52 @@ serve(async (req: Request) => {
          throw new Error('Payment verification failed - invalid signature')
       }
 
+      // ✅ FIX CRITICAL #4: Verify payment amount from Razorpay API
+      // Previously this was missing — an attacker could underpay and still
+      // get the marketplace listing transferred to them.
+      console.log('💰 Fetching payment details from Razorpay API for amount verification...')
+      const razorpayAuth = btoa(`${RAZORPAY_KEY_ID}:${RAZORPAY_KEY_SECRET}`)
+
+      let razorpayPaymentDetails
+      try {
+        const controller = new AbortController()
+        const timeoutId = setTimeout(() => controller.abort(), 5000)
+
+        try {
+          const paymentDetailsResponse = await fetch(
+            `https://api.razorpay.com/v1/payments/${body.razorpay_payment_id}`,
+            {
+              method: 'GET',
+              signal: controller.signal,
+              headers: {
+                'Authorization': `Basic ${razorpayAuth}`,
+              }
+            }
+          )
+
+          if (!paymentDetailsResponse.ok) {
+            const errBody = await paymentDetailsResponse.text().catch(() => 'no body')
+            console.error('Razorpay payment details API error:', {
+              status: paymentDetailsResponse.status,
+              body: errBody,
+            })
+            throw new Error(`Razorpay API error: ${paymentDetailsResponse.status}`)
+          }
+
+          razorpayPaymentDetails = await paymentDetailsResponse.json()
+          console.log('✅ Payment details fetched', {
+            status: razorpayPaymentDetails.status,
+            amount: razorpayPaymentDetails.amount,
+            currency: razorpayPaymentDetails.currency,
+          })
+        } finally {
+          clearTimeout(timeoutId)
+        }
+      } catch (err) {
+        console.error('Failed to fetch payment details from Razorpay:', err)
+        throw new Error('Could not verify payment amount. Please try again.')
+      }
+
       // Get payment order to verify ownership and get metadata
       const { data: paymentOrder, error: orderError } = await supabaseAdmin
          .from('payment_orders')
@@ -136,12 +202,55 @@ serve(async (req: Request) => {
          throw new Error('Payment order already processed')
       }
 
+      // ✅ FIX CRITICAL #4: Verify amounts match (was completely missing)
+      const expectedAmount = paymentOrder.amount // in paise
+      const actualAmount = razorpayPaymentDetails.amount // in paise
+      const paymentStatus = razorpayPaymentDetails.status
+
+      if (actualAmount !== expectedAmount) {
+        console.error(
+          `Amount mismatch for marketplace payment ${body.razorpay_payment_id}: expected ${expectedAmount}, got ${actualAmount}`
+        )
+
+        await supabaseAdmin
+          .from('payment_orders')
+          .update({ status: 'failed', updated_at: new Date().toISOString() })
+          .eq('id', body.payment_order_id)
+
+        throw new Error('Payment amount does not match order amount')
+      }
+
+      // ✅ FIX CRITICAL #4: Verify payment status from Razorpay
+      if (!['captured', 'authorized'].includes(paymentStatus)) {
+        console.error(`Payment status is ${paymentStatus}, expected 'captured' or 'authorized'`)
+
+        await supabaseAdmin
+          .from('payment_orders')
+          .update({ status: 'failed', updated_at: new Date().toISOString() })
+          .eq('id', body.payment_order_id)
+
+        throw new Error(`Payment status is ${paymentStatus}`)
+      }
+
+      // ✅ FIX CRITICAL #4: Verify currency matches
+      if (razorpayPaymentDetails.currency !== 'INR') {
+        console.error(`Currency mismatch: expected INR, got ${razorpayPaymentDetails.currency}`)
+
+        await supabaseAdmin
+          .from('payment_orders')
+          .update({ status: 'failed', updated_at: new Date().toISOString() })
+          .eq('id', body.payment_order_id)
+
+        throw new Error('Payment currency does not match expected currency')
+      }
+
       // Complete the marketplace purchase using the RPC function
       const { data: purchaseResult, error: purchaseError } = await supabaseAdmin
          .rpc('complete_marketplace_purchase', {
             p_payment_order_id: body.payment_order_id,
             p_razorpay_payment_id: body.razorpay_payment_id,
             p_razorpay_signature: body.razorpay_signature,
+            p_idempotency_key: `verify-mkt-${body.razorpay_payment_id}-${user.id}`,
          })
 
       if (purchaseError) {

@@ -22,22 +22,22 @@ const BRAND = {
   url: 'https://buyaspot.in',
   supportEmail: 'support@buyaspot.in',
   // Colors — solid only (no gradients, Gmail strips them)
-  headerBg: '#111827',       // Near-black — works everywhere
-  headerText: '#ffffff',
-  accentGreen: '#16a34a',
-  accentBlue: '#2563eb',
-  accentAmber: '#d97706',
-  accentRed: '#dc2626',
-  accentIndigo: '#4f46e5',
-  textPrimary: '#111827',
-  textSecondary: '#4b5563',
-  textMuted: '#6b7280',
-  textLight: '#9ca3af',
-  bgPage: '#f8fafc',
+  headerBg: '#ffffff',       // Premium white header
+  headerText: '#09090b',     // Zinc 950
+  accentGreen: '#10b981',    // Emerald 500
+  accentBlue: '#3b82f6',     // Blue 500
+  accentAmber: '#f59e0b',    // Amber 500
+  accentRed: '#ef4444',      // Red 500
+  accentIndigo: '#6366f1',   // Indigo 500
+  textPrimary: '#09090b',    // Zinc 950
+  textSecondary: '#3f3f46',  // Zinc 700
+  textMuted: '#71717a',      // Zinc 500
+  textLight: '#a1a1aa',      // Zinc 400
+  bgPage: '#f4f4f5',         // Zinc 100
   bgCard: '#ffffff',
-  bgMuted: '#f1f5f9',
-  border: '#e2e8f0',
-  borderLight: '#f1f5f9',
+  bgMuted: '#fafafa',        // Zinc 50
+  border: '#e4e4e7',         // Zinc 200
+  borderLight: '#f4f4f5',    // Zinc 100
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -274,19 +274,17 @@ function emailWrapper(accentColor: string, headerText: string, bodyContent: stri
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:${BRAND.bgPage};">
     <tr>
       <td align="center" style="padding:40px 16px;">
-        <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background-color:${BRAND.bgCard};border-radius:8px;overflow:hidden;border:1px solid ${BRAND.border};">
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background-color:${BRAND.bgCard};border-radius:12px;overflow:hidden;border:1px solid ${BRAND.border};box-shadow:0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);">
           <!-- Header -->
           <tr>
-            <td style="background-color:${BRAND.headerBg};padding:28px 32px;text-align:center;">
+            <td style="background-color:${BRAND.headerBg};padding:32px 40px;text-align:left;border-bottom:1px solid ${BRAND.borderLight};">
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
                 <tr>
-                  <td style="text-align:center;">
-                    <span style="font-size:22px;font-weight:800;color:${BRAND.headerText};letter-spacing:-0.5px;">${BRAND.name}</span>
+                  <td style="text-align:left;">
+                    <span style="font-size:24px;font-weight:800;color:${BRAND.headerText};letter-spacing:-0.5px;">${BRAND.name}</span>
                   </td>
-                </tr>
-                <tr>
-                  <td style="text-align:center;padding-top:4px;">
-                    <span style="font-size:12px;color:rgba(255,255,255,0.6);letter-spacing:0.5px;text-transform:uppercase;">${escapeHtml(headerText)}</span>
+                  <td style="text-align:right;">
+                    <span style="font-size:13px;font-weight:500;color:${BRAND.textMuted};text-transform:uppercase;letter-spacing:0.5px;">${escapeHtml(headerText)}</span>
                   </td>
                 </tr>
               </table>
@@ -294,33 +292,33 @@ function emailWrapper(accentColor: string, headerText: string, bodyContent: stri
           </tr>
           <!-- Accent Bar -->
           <tr>
-            <td style="height:3px;background-color:${accentColor};font-size:0;line-height:0;">&nbsp;</td>
+            <td style="height:4px;background-color:${accentColor};font-size:0;line-height:0;">&nbsp;</td>
           </tr>
           <!-- Body -->
           <tr>
-            <td style="padding:36px 32px;">
+            <td style="padding:40px;">
               ${bodyContent}
             </td>
           </tr>
           <!-- Footer -->
           <tr>
-            <td style="padding:24px 32px;text-align:center;background-color:${BRAND.bgMuted};border-top:1px solid ${BRAND.border};">
+            <td style="padding:32px 40px;text-align:center;background-color:${BRAND.bgMuted};border-top:1px solid ${BRAND.border};">
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
                 <tr>
-                  <td style="text-align:center;padding-bottom:12px;">
-                    <a href="${BRAND.url}/help" style="color:${BRAND.textMuted};text-decoration:none;font-size:12px;padding:0 8px;">Help</a>
+                  <td style="text-align:center;padding-bottom:16px;">
+                    <a href="${BRAND.url}/help" style="color:${BRAND.textMuted};text-decoration:none;font-size:13px;font-weight:500;padding:0 12px;">Help</a>
                     <span style="color:${BRAND.border};">|</span>
-                    <a href="${BRAND.url}/privacy" style="color:${BRAND.textMuted};text-decoration:none;font-size:12px;padding:0 8px;">Privacy</a>
+                    <a href="${BRAND.url}/privacy" style="color:${BRAND.textMuted};text-decoration:none;font-size:13px;font-weight:500;padding:0 12px;">Privacy</a>
                     <span style="color:${BRAND.border};">|</span>
-                    <a href="${BRAND.url}/terms" style="color:${BRAND.textMuted};text-decoration:none;font-size:12px;padding:0 8px;">Terms</a>
+                    <a href="${BRAND.url}/terms" style="color:${BRAND.textMuted};text-decoration:none;font-size:13px;font-weight:500;padding:0 12px;">Terms</a>
                     <span style="color:${BRAND.border};">|</span>
-                    <a href="${BRAND.url}/contact" style="color:${BRAND.textMuted};text-decoration:none;font-size:12px;padding:0 8px;">Contact</a>
+                    <a href="${BRAND.url}/contact" style="color:${BRAND.textMuted};text-decoration:none;font-size:13px;font-weight:500;padding:0 12px;">Contact</a>
                   </td>
                 </tr>
                 <tr>
                   <td style="text-align:center;">
-                    <p style="margin:0 0 4px;font-size:12px;color:${BRAND.textLight};">${BRAND.name} &mdash; ${BRAND.tagline}</p>
-                    <p style="margin:0;font-size:11px;color:${BRAND.textLight};">&copy; ${new Date().getFullYear()} ${BRAND.name}. All rights reserved.</p>
+                    <p style="margin:0 0 6px;font-size:13px;color:${BRAND.textLight};">${BRAND.name} &mdash; ${BRAND.tagline}</p>
+                    <p style="margin:0;font-size:12px;color:${BRAND.textLight};">&copy; ${new Date().getFullYear()} ${BRAND.name}. All rights reserved.</p>
                   </td>
                 </tr>
               </table>
@@ -335,53 +333,54 @@ function emailWrapper(accentColor: string, headerText: string, bodyContent: stri
 }
 
 function receiptRow(label: string, value: string, isBold = false): string {
-  const weight = isBold ? 'font-weight:700;font-size:16px;' : 'font-size:14px;'
+  const weight = isBold ? 'font-weight:600;font-size:16px;color:' + BRAND.textPrimary + ';' : 'font-size:14px;color:' + BRAND.textSecondary + ';'
+  const labelWeight = isBold ? 'font-weight:600;font-size:16px;color:' + BRAND.textPrimary + ';' : 'font-size:14px;color:' + BRAND.textMuted + ';'
   const topBorder = isBold
-    ? `border-top:2px solid ${BRAND.border};padding-top:14px;margin-top:14px;`
+    ? `border-top:1px solid ${BRAND.border};padding-top:16px;margin-top:16px;`
     : ''
   return `
     <tr>
-      <td style="padding:10px 0;${topBorder}${weight}color:${BRAND.textMuted};">${label}</td>
-      <td style="padding:10px 0;${topBorder}${weight}color:${BRAND.textPrimary};text-align:right;">${value}</td>
+      <td style="padding:12px 0;${topBorder}${labelWeight}">${label}</td>
+      <td style="padding:12px 0;${topBorder}${weight}text-align:right;">${value}</td>
     </tr>`
 }
 
 function receiptTable(rows: string): string {
   return `
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:24px 0;padding:20px 24px;border-radius:8px;background-color:${BRAND.bgMuted};border:1px solid ${BRAND.border};">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:32px 0;padding:24px 32px;border-radius:8px;background-color:${BRAND.bgMuted};border:1px solid ${BRAND.borderLight};">
     ${rows}
   </table>`
 }
 
 function ctaButton(href: string, text: string, bg: string): string {
   return `
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:28px;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:32px;">
     <tr>
-      <td align="center">
-        <a href="${href}" target="_blank" style="display:inline-block;padding:14px 36px;background-color:${bg};color:#ffffff;border-radius:6px;text-decoration:none;font-weight:600;font-size:15px;letter-spacing:0.2px;">${text}</a>
+      <td align="left">
+        <a href="${href}" target="_blank" style="display:inline-block;padding:14px 28px;background-color:${bg};color:#ffffff;border-radius:8px;text-decoration:none;font-weight:600;font-size:15px;letter-spacing:0.3px;box-shadow:0 1px 2px 0 rgba(0, 0, 0, 0.05);">${text}</a>
       </td>
     </tr>
   </table>`
 }
 
 function sectionHeading(text: string): string {
-  return `<h2 style="margin:0 0 16px;font-size:20px;font-weight:700;color:${BRAND.textPrimary};line-height:1.3;">${text}</h2>`
+  return `<h2 style="margin:0 0 16px;font-size:22px;font-weight:700;color:${BRAND.textPrimary};line-height:1.4;letter-spacing:-0.3px;">${text}</h2>`
 }
 
 function bodyText(text: string): string {
-  return `<p style="margin:0 0 20px;font-size:15px;color:${BRAND.textSecondary};line-height:1.7;">${text}</p>`
+  return `<p style="margin:0 0 20px;font-size:16px;color:${BRAND.textSecondary};line-height:1.6;">${text}</p>`
 }
 
 function infoCard(emoji: string, title: string, description: string, bgColor: string, borderColor: string): string {
   return `
   <tr>
-    <td style="padding:14px 16px;background-color:${bgColor};border:1px solid ${borderColor};border-radius:8px;">
+    <td style="padding:16px 20px;background-color:${bgColor};border:1px solid ${borderColor};border-radius:8px;">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
         <tr>
-          <td style="width:36px;vertical-align:top;font-size:20px;">${emoji}</td>
+          <td style="width:40px;vertical-align:top;font-size:24px;padding-right:12px;">${emoji}</td>
           <td style="vertical-align:top;">
-            <p style="margin:0 0 4px;font-size:14px;font-weight:700;color:${BRAND.textPrimary};">${title}</p>
-            <p style="margin:0;font-size:13px;color:${BRAND.textSecondary};line-height:1.5;">${description}</p>
+            <p style="margin:0 0 4px;font-size:15px;font-weight:600;color:${BRAND.textPrimary};">${title}</p>
+            <p style="margin:0;font-size:14px;color:${BRAND.textSecondary};line-height:1.5;">${description}</p>
           </td>
         </tr>
       </table>

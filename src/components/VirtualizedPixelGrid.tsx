@@ -345,12 +345,12 @@ export const VirtualizedPixelGrid = forwardRef<
     const handleContainerClick = useCallback(
       (event: React.MouseEvent) => {
         if (dragDistance > GRID_CONFIG.DRAG_THRESHOLD) return;
-        
+
         if (!isSelecting) {
           toast.info(
             <span className="text-sm">
               To buy pixels, you should click on the <strong className="text-emerald-600 dark:text-emerald-400 font-bold">Buy Pixels</strong> button to proceed.
-            </span>, 
+            </span>,
             { duration: 4000 }
           );
           return;
@@ -376,7 +376,7 @@ export const VirtualizedPixelGrid = forwardRef<
         // Don't intercept keys when user is typing in an input/textarea
         const tag = (event.target as HTMLElement)?.tagName;
         if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" ||
-            (event.target as HTMLElement)?.isContentEditable) {
+          (event.target as HTMLElement)?.isContentEditable) {
           return;
         }
 
@@ -487,8 +487,8 @@ export const VirtualizedPixelGrid = forwardRef<
       const py = parseInt(yStr, 10);
 
       if (isNaN(px) || isNaN(py) || !isInGridBounds(px, py, gridWidth, gridHeight)) {
-         toast.error("Invalid pixel coordinates in URL");
-         return;
+        toast.error("Invalid pixel coordinates in URL");
+        return;
       }
 
       // Found a valid pixel to focus
@@ -512,31 +512,31 @@ export const VirtualizedPixelGrid = forwardRef<
           // Find all pixels in this block
           const blockPixels = purchasedPixels.filter(p => p.block_id === purchased.block_id);
           if (blockPixels.length > 0) {
-             const xs = blockPixels.map(p => p.x);
-             const ys = blockPixels.map(p => p.y);
-             block = {
-                id: purchased.block_id,
-                owner_id: purchased.owner_id,
-                image_url: purchased.image_url || null,
-                link_url: purchased.link_url || null,
-                alt_text: purchased.alt_text || null,
-                min_x: Math.min(...xs),
-                max_x: Math.max(...xs),
-                min_y: Math.min(...ys),
-                max_y: Math.max(...ys),
-                pixel_count: blockPixels.length,
-                total_price: blockPixels.reduce((sum, p) => sum + (p.price_paid || 0), 0),
-                created_at: purchased.purchased_at || new Date().toISOString(),
-                updated_at: purchased.purchased_at || new Date().toISOString()
-             };
+            const xs = blockPixels.map(p => p.x);
+            const ys = blockPixels.map(p => p.y);
+            block = {
+              id: purchased.block_id,
+              owner_id: purchased.owner_id,
+              image_url: purchased.image_url || null,
+              link_url: purchased.link_url || null,
+              alt_text: purchased.alt_text || null,
+              min_x: Math.min(...xs),
+              max_x: Math.max(...xs),
+              min_y: Math.min(...ys),
+              max_y: Math.max(...ys),
+              pixel_count: blockPixels.length,
+              total_price: blockPixels.reduce((sum, p) => sum + (p.price_paid || 0), 0),
+              created_at: purchased.purchased_at || new Date().toISOString(),
+              updated_at: purchased.purchased_at || new Date().toISOString()
+            };
           }
         }
         setInfoModalPixel(purchased);
         setInfoModalBlock(block);
-        
+
         // Add a slight delay to open the modal so the zoom animation feels smooth
         setTimeout(() => setInfoModalOpen(true), 100);
-        
+
       } else {
         const selectionValidation = validateSelection([createSelectedPixel(px, py)]);
         if (selectionValidation.accepted.length === 0) {
@@ -548,25 +548,25 @@ export const VirtualizedPixelGrid = forwardRef<
         }
 
         toast.success(`Pixel at (${px}, ${py}) is available!`, {
-           description: "We've selected it for you. Buy it now to own a piece of internet history.",
-           duration: 5000,
+          description: "We've selected it for you. Buy it now to own a piece of internet history.",
+          duration: 5000,
         });
-        
+
         if (onAvailablePixelFocused) {
-           onAvailablePixelFocused(px, py);
+          onAvailablePixelFocused(px, py);
         }
       }
     }, [
-      searchParams, 
-      isLoading, 
-      containerSize.width, 
-      containerSize.height, 
-      purchasedPixels, 
+      searchParams,
+      isLoading,
+      containerSize.width,
+      containerSize.height,
+      purchasedPixels,
       getPurchasedPixel,
-      gridWidth, 
-      gridHeight, 
-      pixelSize, 
-      onZoomChange, 
+      gridWidth,
+      gridHeight,
+      pixelSize,
+      onZoomChange,
       setViewportOffset,
       onAvailablePixelFocused,
       validateSelection
@@ -866,13 +866,13 @@ export const VirtualizedPixelGrid = forwardRef<
                     backgroundRepeat: "no-repeat",
                     backgroundColor: "#1e1e2e",
                     opacity: isHighlight ? 1 : isOwner ? 1 : 0.9,
-                    boxShadow: isHighlight 
-                      ? "0 0 15px rgba(249,115,22,1)" 
+                    boxShadow: isHighlight
+                      ? "0 0 15px rgba(249,115,22,1)"
                       : isOwner
-                      ? "0 0 8px rgba(16,185,129,0.7)"
-                      : "0 2px 8px rgba(0,0,0,0.15)",
-                    border: isHighlight 
-                      ? "3px solid #f97316" 
+                        ? "0 0 8px rgba(16,185,129,0.7)"
+                        : "0 2px 8px rgba(0,0,0,0.15)",
+                    border: isHighlight
+                      ? "3px solid #f97316"
                       : isOwner ? "2px solid #10b981" : "1px solid #cbd5e1",
                     borderRadius: "2px",
                     zIndex: isHighlight ? 20 : isOwner ? 15 : 5,
@@ -955,11 +955,11 @@ export const VirtualizedPixelGrid = forwardRef<
                     backgroundPosition: "center",
                     backgroundRepeat: "no-repeat",
                     opacity: isHighlight ? 1 : isOwner ? 1 : 0.85,
-                    boxShadow: isHighlight 
-                      ? "0 0 12px rgba(249,115,22,1)" 
+                    boxShadow: isHighlight
+                      ? "0 0 12px rgba(249,115,22,1)"
                       : isOwner ? "0 0 6px rgba(16,185,129,0.6)" : "none",
-                    border: isHighlight 
-                      ? "2px solid #f97316" 
+                    border: isHighlight
+                      ? "2px solid #f97316"
                       : isOwner ? "1px solid #10b981" : "1px solid #cbd5e1",
                     zIndex: isHighlight ? 20 : isOwner ? 10 : 0,
                     imageRendering: zoom < 1 ? "auto" : "pixelated",

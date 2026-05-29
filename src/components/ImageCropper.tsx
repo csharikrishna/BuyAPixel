@@ -88,6 +88,18 @@ const createImage = (url: string): Promise<HTMLImageElement> =>
 /**
  * Get cropped image using canvas with optimization
  */
+const getRadianAngle = (degreeValue: number) => {
+   return (degreeValue * Math.PI) / 180;
+};
+
+const rotateSize = (width: number, height: number, rotation: number) => {
+   const rotRad = getRadianAngle(rotation);
+   return {
+      width: Math.abs(Math.cos(rotRad) * width) + Math.abs(Math.sin(rotRad) * height),
+      height: Math.abs(Math.sin(rotRad) * width) + Math.abs(Math.cos(rotRad) * height),
+   };
+};
+
 const getCroppedImg = async (
    imageSrc: string,
    pixelCrop: Area,
@@ -98,61 +110,40 @@ const getCroppedImg = async (
    format: 'image/jpeg' | 'image/png' | 'image/webp' = 'image/jpeg'
 ): Promise<Blob> => {
    const image = await createImage(imageSrc);
-
-   // Try to use OffscreenCanvas for better performance (2026 - excellent support)
    const supportsOffscreenCanvas = typeof OffscreenCanvas !== 'undefined';
 
+   // Create intermediate canvas for the rotated image
    let canvas: HTMLCanvasElement | OffscreenCanvas;
    let ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D | null;
 
    if (supportsOffscreenCanvas) {
       canvas = new OffscreenCanvas(1, 1);
-      ctx = canvas.getContext('2d', {
-         alpha: format === 'image/png',
-         willReadFrequently: false,
-      });
+      ctx = canvas.getContext('2d', { alpha: format === 'image/png' });
    } else {
       canvas = document.createElement('canvas');
-      ctx = canvas.getContext('2d', {
-         alpha: format === 'image/png',
-         willReadFrequently: false,
-      });
+      ctx = canvas.getContext('2d', { alpha: format === 'image/png' });
    }
 
-   if (!ctx) {
-      throw new Error('Failed to get canvas context');
-   }
+   if (!ctx) throw new Error('Failed to get canvas context');
 
-   // Calculate safe area for rotation
-   const maxSize = Math.max(image.width, image.height);
-   const safeArea = 2 * ((maxSize / 2) * Math.sqrt(2));
+   const { width: bBoxWidth, height: bBoxHeight } = rotateSize(image.width, image.height, rotation);
 
-   // Set canvas size to safe area
-   canvas.width = safeArea;
-   canvas.height = safeArea;
+   // Set canvas to the bounding box of the rotated image
+   canvas.width = bBoxWidth;
+   canvas.height = bBoxHeight;
 
-   // Translate and rotate canvas
-   ctx.translate(safeArea / 2, safeArea / 2);
-   ctx.rotate((rotation * Math.PI) / 180);
-   ctx.translate(-safeArea / 2, -safeArea / 2);
-
-   // Fill background with white for JPEGs if zooming out reveals empty canvas space
    if (format !== 'image/png') {
       ctx.fillStyle = '#ffffff';
-      ctx.fillRect(-safeArea / 2, -safeArea / 2, safeArea, safeArea);
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
    }
 
-   // Draw rotated image
-   ctx.drawImage(
-      image,
-      safeArea / 2 - image.width * 0.5,
-      safeArea / 2 - image.height * 0.5
-   );
+   // Translate context to center, rotate, and draw image
+   ctx.translate(bBoxWidth / 2, bBoxHeight / 2);
+   ctx.rotate(getRadianAngle(rotation));
+   ctx.translate(-image.width / 2, -image.height / 2);
+   ctx.drawImage(image, 0, 0);
 
-   // Get image data for cropping
-   const data = ctx.getImageData(0, 0, safeArea, safeArea);
-
-   // Calculate final dimensions respecting max constraints
+   // Calculate final dimensions
    let finalWidth = pixelCrop.width;
    let finalHeight = pixelCrop.height;
 
@@ -162,41 +153,48 @@ const getCroppedImg = async (
       finalHeight = Math.floor(finalHeight * ratio);
    }
 
-   // Set final canvas size (use whole numbers for performance)
-   canvas.width = finalWidth;
-   canvas.height = finalHeight;
+   // Create final canvas for the crop and scale
+   let finalCanvas: HTMLCanvasElement | OffscreenCanvas;
+   let finalCtx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D | null;
 
-   // If dimensions changed, scale the context
-   if (finalWidth !== pixelCrop.width || finalHeight !== pixelCrop.height) {
-      ctx.scale(finalWidth / pixelCrop.width, finalHeight / pixelCrop.height);
+   if (supportsOffscreenCanvas) {
+      finalCanvas = new OffscreenCanvas(finalWidth, finalHeight);
+      finalCtx = finalCanvas.getContext('2d', { alpha: format === 'image/png' });
+   } else {
+      finalCanvas = document.createElement('canvas');
+      finalCanvas.width = finalWidth;
+      finalCanvas.height = finalHeight;
+      finalCtx = finalCanvas.getContext('2d', { alpha: format === 'image/png' });
    }
 
-   // Put cropped image data
-   ctx.putImageData(
-      data,
-      Math.floor(0 - safeArea / 2 + image.width * 0.5 - pixelCrop.x),
-      Math.floor(0 - safeArea / 2 + image.height * 0.5 - pixelCrop.y)
+   if (!finalCtx) throw new Error('Failed to get final canvas context');
+
+   if (format !== 'image/png') {
+      finalCtx.fillStyle = '#ffffff';
+      finalCtx.fillRect(0, 0, finalWidth, finalHeight);
+   }
+
+   // Draw the cropped portion from the first canvas into the final canvas
+   finalCtx.drawImage(
+      canvas as any, // Typecast to work around TS issue with OffscreenCanvas mixed types
+      pixelCrop.x,
+      pixelCrop.y,
+      pixelCrop.width,
+      pixelCrop.height,
+      0,
+      0,
+      finalWidth,
+      finalHeight
    );
 
-   // Convert to blob
    return new Promise((resolve, reject) => {
-      if (canvas instanceof OffscreenCanvas) {
-         canvas
-            .convertToBlob({ type: format, quality })
-            .then(resolve)
-            .catch(() => reject(new Error('Failed to convert canvas to blob')));
+      if (finalCanvas instanceof OffscreenCanvas) {
+         finalCanvas.convertToBlob({ type: format, quality }).then(resolve).catch(reject);
       } else {
-         canvas.toBlob(
-            (blob) => {
-               if (!blob) {
-                  reject(new Error('Canvas is empty'));
-                  return;
-               }
-               resolve(blob);
-            },
-            format,
-            quality
-         );
+         finalCanvas.toBlob((blob) => {
+            if (!blob) reject(new Error('Canvas is empty'));
+            else resolve(blob);
+         }, format, quality);
       }
    });
 };

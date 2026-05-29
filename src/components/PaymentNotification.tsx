@@ -304,14 +304,16 @@ export const PaymentNotification: React.FC<PaymentNotificationProps> = ({
           <div className="flex justify-between items-center text-sm">
             <span className="text-muted-foreground">Total Amount:</span>
             <span className="font-medium">₹{totalAmount.toLocaleString()}</span>
-          </div>          {orderId && (
-            <div className=\"flex justify-between items-center text-sm\">
-              <span className=\"text-muted-foreground\">Order ID:</span>
-              <code className=\"text-sm font-mono bg-background px-2 py-1 rounded select-all\">
+          </div>
+          {orderId && (
+            <div className="flex justify-between items-center text-sm">
+              <span className="text-muted-foreground">Order ID:</span>
+              <code className="text-sm font-mono bg-background px-2 py-1 rounded select-all">
                 {orderId}
               </code>
             </div>
-          )}        </div>
+          )}
+        </div>
 
         {/* Troubleshooting Tips */}
         <div className="bg-blue-50/50 dark:bg-blue-950/20 rounded-lg p-4 mb-6 border border-blue-200/50 dark:border-blue-800/50">
@@ -323,7 +325,7 @@ export const PaymentNotification: React.FC<PaymentNotificationProps> = ({
             <li>Ensure your payment method has sufficient balance</li>
             <li>Try a different payment method</li>
             {orderId && (
-              <li>Contact support with Order ID: <code className=\"bg-background/50 px-1 rounded\">{orderId}</code></li>
+              <li>Contact support with Order ID: <code className="bg-background/50 px-1 rounded">{orderId}</code></li>
             )}
             {!orderId && (
               <li>Contact support if the problem persists</li>

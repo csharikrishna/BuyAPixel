@@ -587,7 +587,7 @@ const BuyPixels = () => {
         {/* LEFT COLUMN: CANVAS */}
         <div className={`order-1 flex-1 min-w-0 flex flex-col gap-1 lg:gap-0 transition-all duration-300 ${mode === "buying" ? "lg:overflow-hidden" : ""}`}>
           {/* Canvas Wrapper with Overlay Controls */}
-          <div className="w-full relative h-screen sm:h-[75vh] lg:flex-1 lg:overflow-hidden">
+          <div className="w-full relative h-[56vh] sm:h-[60vh] lg:flex-1 lg:overflow-hidden">
             {/* Desktop Toolbar */}
             {mode === "buying" && (
               <div

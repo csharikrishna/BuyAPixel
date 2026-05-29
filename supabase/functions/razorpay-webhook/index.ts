@@ -174,6 +174,13 @@ serve(async (req: Request) => {
             break
           }
 
+          // ✅ FIX M9: Record webhook_received_at immediately
+          await supabaseAdmin
+            .from('payment_orders')
+            .update({ webhook_received_at: new Date().toISOString() })
+            .eq('razorpay_order_id', orderId)
+            .catch((e: Error) => console.error('Error updating webhook_received_at:', e))
+
           // Find the payment order
           const { data: paymentOrder, error: orderError } = await supabaseAdmin
             .from('payment_orders')
@@ -230,7 +237,7 @@ serve(async (req: Request) => {
                   resolved_at: new Date().toISOString()
                 })
                 .eq('id', orphanedOrder.id)
-                .catch(e => console.error('Error updating orphaned order:', e))
+                .catch((e: Error) => console.error('Error updating orphaned order:', e))
 
               console.log(`✅ Automatic refund initiated: ${refundResult.refundId}`)
             } else {
@@ -242,7 +249,7 @@ serve(async (req: Request) => {
                   notes: `Automatic refund failed: ${refundResult.error}. Manual intervention required.`
                 })
                 .eq('id', orphanedOrder?.id)
-                .catch(e => console.error('Error updating orphaned order:', e))
+                .catch((e: Error) => console.error('Error updating orphaned order:', e))
 
               console.error(`❌ Automatic refund failed: ${refundResult.error}`)
             }
@@ -258,7 +265,7 @@ serve(async (req: Request) => {
                 refund_id: refundResult.refundId || null,
                 refund_error: refundResult.error || null,
               },
-            }).catch(e => console.error('Error logging orphaned payment:', e))
+            }).catch((e: Error) => console.error('Error logging orphaned payment:', e))
 
             break
           }
@@ -266,52 +273,33 @@ serve(async (req: Request) => {
           // Check if already processed
           if (paymentOrder.status === 'paid') {
             console.log(`✅ Payment already processed: ${paymentId}`)
+            // ✅ FIX M9: Still update webhook_processed_at even if already paid
+            await supabaseAdmin
+              .from('payment_orders')
+              .update({ webhook_processed_at: new Date().toISOString() })
+              .eq('id', paymentOrder.id)
+              .catch((e: Error) => console.error('Error updating webhook_processed_at:', e))
             break
           }
 
-          // Complete the purchase
-          const { data: user, error: userError } = await supabaseAdmin
-            .from('profiles')
-            .select('email')
-            .eq('user_id', paymentOrder.user_id)
-            .single()
-
-          if (!userError && user?.email) {
-            // Send confirmation email
-            const pixelCount = paymentOrder.purchase_metadata?.pixels?.length || 0
-            const totalAmount = paymentOrder.amount / 100 // Convert from paise to INR
-
-            await sendReconciliationEmail(
-              user.email,
-              'resolved',
-              paymentId,
-              paymentOrder.amount,
-              `Payment successfully received. ${pixelCount} pixels secured.`
-            )
-          }
-
-          // Update payment order status
-          await supabaseAdmin
-            .from('payment_orders')
-            .update({
-              status: 'paid',
-              razorpay_payment_id: paymentId,
-              paid_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-            })
-            .eq('id', paymentOrder.id)
-
-          // ── SERVER-SIDE RECONCILIATION ────────────────────────────
-          // Call the appropriate RPC to actually assign pixels/complete
-          // the marketplace transfer. This is the safety net for cases
-          // where the client's verify call failed (network timeout, etc.).
+          // ── ✅ FIX CRITICAL #2: Call RPC FIRST, then send email ────────────
+          // Previously, this code updated status to 'paid' BEFORE calling the RPC.
+          // The RPCs require status = 'created' to proceed, so the webhook path
+          // was silently failing to allocate assets. Now we call the RPC first
+          // (which transitions status to 'paid' internally), then send emails.
           try {
             if (paymentOrder.purchase_type === 'pixel_purchase') {
+              // ✅ FIX HIGH #6: Extract buyer's content from purchase_metadata
+              const metadata = paymentOrder.purchase_metadata || {}
               const { data: rpcResult, error: rpcError } = await supabaseAdmin
                 .rpc('complete_pixel_purchase', {
                   p_payment_order_id: paymentOrder.id,
                   p_razorpay_payment_id: paymentId,
-                  p_razorpay_signature: '',
+                  p_razorpay_signature: signature, // Use webhook signature instead of empty string
+                  p_image_url: metadata.image_url || null,
+                  p_link_url: metadata.link_url || null,
+                  p_alt_text: metadata.alt_text || null,
+                  p_idempotency_key: `webhook-${paymentId}-${paymentOrder.user_id}`,
                 })
               if (rpcError) {
                 console.error('⚠️ Webhook pixel reconciliation failed:', rpcError)
@@ -323,7 +311,8 @@ serve(async (req: Request) => {
                 .rpc('complete_marketplace_purchase', {
                   p_payment_order_id: paymentOrder.id,
                   p_razorpay_payment_id: paymentId,
-                  p_razorpay_signature: '',
+                  p_razorpay_signature: signature, // Use webhook signature
+                  p_idempotency_key: `webhook-mkt-${paymentId}-${paymentOrder.user_id}`,
                 })
               if (rpcError) {
                 console.error('⚠️ Webhook marketplace reconciliation failed:', rpcError)
@@ -333,6 +322,32 @@ serve(async (req: Request) => {
             }
           } catch (reconcileErr) {
             console.error('❌ Webhook reconciliation error:', reconcileErr)
+          }
+
+          // ✅ FIX M9: Update webhook_processed_at after RPC completes
+          await supabaseAdmin
+            .from('payment_orders')
+            .update({ webhook_processed_at: new Date().toISOString() })
+            .eq('id', paymentOrder.id)
+            .catch((e: Error) => console.error('Error updating webhook_processed_at:', e))
+
+          // ✅ FIX LOW #12: Send email AFTER RPC completion, not before
+          const { data: user, error: userError } = await supabaseAdmin
+            .from('profiles')
+            .select('email')
+            .eq('user_id', paymentOrder.user_id)
+            .single()
+
+          if (!userError && user?.email) {
+            const pixelCount = paymentOrder.purchase_metadata?.pixels?.length || 0
+
+            await sendReconciliationEmail(
+              user.email,
+              'resolved',
+              paymentId,
+              paymentOrder.amount,
+              `Payment successfully received. ${pixelCount} pixels secured.`
+            )
           }
 
           console.log(`✅ Payment reconciled: ${paymentId}`)
@@ -353,6 +368,8 @@ serve(async (req: Request) => {
               status: 'failed',
               razorpay_payment_id: paymentId,
               updated_at: new Date().toISOString(),
+              webhook_received_at: new Date().toISOString(),
+              webhook_processed_at: new Date().toISOString(),
             })
             .eq('razorpay_order_id', orderId)
 

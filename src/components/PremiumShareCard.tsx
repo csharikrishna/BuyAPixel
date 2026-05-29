@@ -43,6 +43,8 @@ export const PremiumShareCard = ({
   const cardRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<HTMLDivElement>(null);
   const [tilt, setTilt] = useState({ x: 0, y: 0 });
+  const [pointer, setPointer] = useState({ x: 50, y: 50 });
+
   const [isDownloading, setIsDownloading] = useState(false);
 
   const tier = getAdTierByPrice(pricePaid).toLowerCase() as TierKey;
@@ -62,13 +64,18 @@ export const PremiumShareCard = ({
       const centerY = rect.top + rect.height / 2;
       const rotateY = ((e.clientX - centerX) / (rect.width / 2)) * 12;
       const rotateX = -((e.clientY - centerY) / (rect.height / 2)) * 12;
+      const pointerX = ((e.clientX - rect.left) / rect.width) * 100;
+      const pointerY = ((e.clientY - rect.top) / rect.height) * 100;
+      
       setTilt({ x: rotateX, y: rotateY });
+      setPointer({ x: pointerX, y: pointerY });
     },
     []
   );
 
   const handleMouseLeave = useCallback(() => {
     setTilt({ x: 0, y: 0 });
+    setPointer({ x: 50, y: 50 });
   }, []);
 
   // Touch tilt for mobile
@@ -80,7 +87,12 @@ export const PremiumShareCard = ({
       const centerY = rect.top + rect.height / 2;
       const rotateY = ((e.touches[0].clientX - centerX) / (rect.width / 2)) * 8;
       const rotateX = -((e.touches[0].clientY - centerY) / (rect.height / 2)) * 8;
+      
+      const pointerX = ((e.touches[0].clientX - rect.left) / rect.width) * 100;
+      const pointerY = ((e.touches[0].clientY - rect.top) / rect.height) * 100;
+
       setTilt({ x: rotateX, y: rotateY });
+      setPointer({ x: pointerX, y: pointerY });
     },
     []
   );
@@ -246,7 +258,9 @@ export const PremiumShareCard = ({
           className={`premium-card premium-card--${tier} ${floating ? 'premium-card--floating' : ''}`}
           style={{
             transform: `perspective(1200px) rotateX(${tilt.x}deg) rotateY(${tilt.y}deg)`,
-          }}
+            '--pointer-x': `${pointer.x}%`,
+            '--pointer-y': `${pointer.y}%`,
+          } as React.CSSProperties}
         >
           {/* Noise texture */}
           <div className="premium-card__noise" />

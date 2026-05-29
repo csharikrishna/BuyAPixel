@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import SEO from '@/components/SEO';
+import { WorkInProgress } from '@/components/WorkInProgress';
 import { DirectoryListingCard } from '@/components/DirectoryListingCard';
 import { CreateListingDialog } from '@/components/CreateListingDialog';
 import { Button } from '@/components/ui/button';
@@ -20,6 +21,9 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import { toast } from 'sonner';
+
+
+const SHOW_PUBLIC = false;
 
 // ── Types ─────────────────────────────────────────────────
 export interface DirectoryListing {
@@ -111,6 +115,19 @@ const DirectoryPage = () => {
     const r = listings.filter((l) => l.listing_tier !== 'premium' && !l.is_featured);
     return { featured: f, regular: r };
   }, [listings]);
+
+  // TEMPORARY HIDE: Set to true when ready to launch the directory to the public
+
+  if (!SHOW_PUBLIC) {
+    return (
+      <WorkInProgress 
+        title="Work in Progress"
+        description="We are building something amazing! The BuyASpot Startup Directory will be launching soon."
+        seoTitle="Startup Directory — BuyASpot"
+        seoDescription="Discover innovative startups, SaaS products, and projects."
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-purple-50/30 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 pb-20 lg:pb-0">

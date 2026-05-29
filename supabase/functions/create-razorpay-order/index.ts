@@ -6,32 +6,9 @@ const RAZORPAY_KEY_SECRET = Deno.env.get('RAZORPAY_KEY_SECRET')
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 
-// ✅ FIXED C8: In-memory rate limiting as first defense
-interface RateLimitEntry {
-  count: number
-  resetTime: number
-}
-
-const rateLimitMap = new Map<string, RateLimitEntry>()
+// ✅ FIX HIGH #7: DB-backed rate limiting (replaces in-memory maps that reset on cold starts)
 const RATE_LIMIT_REQUESTS = 5 // Max 5 order creation attempts per window
-const RATE_LIMIT_WINDOW = 2 * 60 * 1000 // 2 minute window
-
-function checkRateLimit(userId: string): { allowed: boolean; remaining: number } {
-  const now = Date.now()
-  const entry = rateLimitMap.get(userId)
-
-  if (!entry || now > entry.resetTime) {
-    rateLimitMap.set(userId, { count: 1, resetTime: now + RATE_LIMIT_WINDOW })
-    return { allowed: true, remaining: RATE_LIMIT_REQUESTS - 1 }
-  }
-
-  if (entry.count >= RATE_LIMIT_REQUESTS) {
-    return { allowed: false, remaining: 0 }
-  }
-
-  entry.count++
-  return { allowed: true, remaining: RATE_LIMIT_REQUESTS - entry.count }
-}
+const RATE_LIMIT_WINDOW_SECONDS = 120 // 2 minute window
 
 // CORS: restrict to production domain + localhost for dev
 const ALLOWED_ORIGINS = [
@@ -184,22 +161,33 @@ serve(async (req: Request) => {
 
     console.log(`✅ Authenticated user: ${user.id}`)
 
-    // ✅ Rate limiting check
-    const { allowed, remaining } = checkRateLimit(user.id)
-    if (!allowed) {
+    // ✅ FIX HIGH #7: DB-backed rate limiting (persistent across cold starts)
+    const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+    const { data: rateLimitResult, error: rateLimitError } = await supabaseAdmin
+      .rpc('check_and_record_rate_limit', {
+        p_user_id: user.id,
+        p_endpoint: 'create_order',
+        p_max_requests: RATE_LIMIT_REQUESTS,
+        p_window_seconds: RATE_LIMIT_WINDOW_SECONDS,
+      })
+
+    if (rateLimitError) {
+      console.error('Rate limit check error:', rateLimitError)
+      // Fail open — allow request but log the error
+    } else if (rateLimitResult && !rateLimitResult[0]?.allowed) {
       console.warn(`⚠️ Rate limit exceeded for user: ${user.id}`)
       return new Response(
         JSON.stringify({
           success: false,
           error: 'Too many order attempts. Please wait before trying again.',
-          retryAfter: Math.ceil(RATE_LIMIT_WINDOW / 1000) + ' seconds'
+          retryAfter: RATE_LIMIT_WINDOW_SECONDS + ' seconds'
         }),
         {
           status: 429,
           headers: {
             ...corsHeaders,
             'Content-Type': 'application/json',
-            'Retry-After': Math.ceil(RATE_LIMIT_WINDOW / 1000).toString(),
+            'Retry-After': RATE_LIMIT_WINDOW_SECONDS.toString(),
           },
         }
       )
@@ -309,7 +297,7 @@ serve(async (req: Request) => {
 
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       try {
-        const { data, error: dbError } = await supabase
+        const { data, error: dbError } = await supabaseAdmin
           .from('payment_orders')
           .insert({
             user_id: user.id,
@@ -341,7 +329,8 @@ serve(async (req: Request) => {
           dbError.message.includes('connection')
         
         if (!isRetryable) {
-          throw lastError // Non-retryable error, fail immediately
+          // Break the loop on non-retryable errors
+          break
         }
 
         if (attempt < maxRetries - 1) {
@@ -351,6 +340,12 @@ serve(async (req: Request) => {
         }
       } catch (err) {
         lastError = err instanceof Error ? err : new Error(String(err))
+        const errMsg = lastError.message
+        if (!errMsg.includes('timeout') && 
+            !errMsg.includes('pool') && 
+            !errMsg.includes('connection')) {
+           break
+        }
       }
     }
 
@@ -371,7 +366,7 @@ serve(async (req: Request) => {
         console.error('Failed to log orphaned order:', logErr)
       }
 
-      throw new Error('Failed to create payment order after retries')
+      throw new Error(`DB Error: ${lastError?.message || 'Failed to create payment order'}`)
     }
 
     // Return order details for frontend

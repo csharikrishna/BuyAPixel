@@ -35,6 +35,7 @@ import { AdTierPreview } from "@/components/AdTierPreview";
 import { PaymentNotification } from "@/components/PaymentNotification";
 import { Helmet } from "react-helmet-async";
 import { SelectedPixel } from "@/types/grid";
+import { cn } from "@/lib/utils";
 
 // Razorpay type declarations (existing)
 declare global {
@@ -458,37 +459,27 @@ export const PurchasePreview = ({
       }
 
       // Step 1: Create Razorpay order [web:144]
-      const { data: orderData, error: orderError } = await supabase.functions.invoke(
-        'create-razorpay-order',
-        {
-          body: {
-            pixels: selectedPixels.map(p => ({ x: p.x, y: p.y, price: p.price })),
-            totalAmount: totalCost,
-            imageUrl: imagePreview,
-            linkUrl: linkUrl.trim() || null,
-            altText: pixelName.trim(),
-          },
-        }
-      );
+      // Use raw fetch to ensure we can read the exact error body from the edge function
+      const orderResponse = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-razorpay-order`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({
+          pixels: selectedPixels.map(p => ({ x: p.x, y: p.y, price: p.price })),
+          totalAmount: totalCost,
+          imageUrl: imagePreview,
+          linkUrl: linkUrl.trim() || null,
+          altText: pixelName.trim(),
+        })
+      });
 
-      if (orderError || !orderData?.success) {
-        // Extract actual error from FunctionsHttpError context
-        let errorMsg = orderData?.error || orderData?.details || 'Failed to create payment order';
-        if (orderError && !orderData?.error) {
-          // Try to get the response body from FunctionsHttpError
-          try {
-            const errorContext = (orderError as any)?.context;
-            if (errorContext?.body) {
-              const parsed = typeof errorContext.body === 'string' 
-                ? JSON.parse(errorContext.body) 
-                : errorContext.body;
-              errorMsg = parsed?.error || parsed?.message || errorMsg;
-            }
-          } catch {
-            errorMsg = orderError.message || errorMsg;
-          }
-        }
-        console.error('Create order failed:', { orderError, orderData, errorMsg });
+      const orderData = await orderResponse.json().catch(() => ({ error: 'Invalid JSON response from server' }));
+
+      if (!orderResponse.ok || !orderData?.success) {
+        const errorMsg = orderData?.error || orderData?.message || orderData?.details || `Server returned ${orderResponse.status}`;
+        console.error('Create order failed:', { status: orderResponse.status, orderData, errorMsg });
         throw new Error(errorMsg);
       }
 
@@ -497,36 +488,30 @@ export const PurchasePreview = ({
         setOrderId(orderData.order.id);
       }
 
-      // ── BYPASS MODE: skip Razorpay, call bypass-purchase directly ──
+          // ── BYPASS MODE: skip Razorpay, call bypass-purchase directly ──
       if (isPaymentBypassed) {
         try {
-          const { data: bypassData, error: bypassError } = await supabase.functions.invoke(
-            'bypass-purchase',
-            {
-              body: {
-                pixels: selectedPixels.map(p => ({ x: p.x, y: p.y, price: p.price })),
-                totalAmount: totalCost,
-                imageUrl: imagePreview,
-                linkUrl: linkUrl.trim() || null,
-                altText: pixelName.trim(),
-              },
-            }
-          );
+          const bypassResponse = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/bypass-purchase`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${session.access_token}`
+            },
+            body: JSON.stringify({
+              pixels: selectedPixels.map(p => ({ x: p.x, y: p.y, price: p.price })),
+              totalAmount: totalCost,
+              imageUrl: imagePreview,
+              linkUrl: linkUrl.trim() || null,
+              altText: pixelName.trim(),
+            })
+          });
 
-          if (bypassError || !bypassData?.success) {
-            let errMsg = bypassData?.error || 'Bypass purchase failed';
-            if (bypassError && !bypassData?.error) {
-              try {
-                const ctx = (bypassError as any)?.context;
-                if (ctx?.body) {
-                  const parsed = typeof ctx.body === 'string' ? JSON.parse(ctx.body) : ctx.body;
-                  errMsg = parsed?.error || parsed?.message || errMsg;
-                }
-              } catch {
-                errMsg = bypassError.message || errMsg;
-              }
-            }
-            throw new Error(errMsg);
+          const bypassData = await bypassResponse.json().catch(() => ({ error: 'Invalid JSON response from server' }));
+
+          if (!bypassResponse.ok || !bypassData?.success) {
+            const errorMsg = bypassData?.error || bypassData?.message || bypassData?.details || `Server returned ${bypassResponse.status}`;
+            console.error('Bypass error:', { status: bypassResponse.status, bypassData, errorMsg });
+            throw new Error(errorMsg);
           }
 
           // Success! Call the original onConfirmPurchase
@@ -1173,11 +1158,12 @@ export const PurchasePreview = ({
               aria-required="true"
               aria-invalid={!!pixelNameError}
               aria-describedby={pixelNameError ? "pixel-name-error" : "pixel-name-help"}
-              className={`text-base bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-50 hover:border-primary/50 focus:bg-white dark:focus:bg-slate-950 shadow-sm transition-all duration-200 ${
+              className={cn(
+                "text-base transition-all duration-200",
                 pixelNameError && pixelNameTouched 
                   ? 'border-destructive focus-visible:ring-destructive' 
-                  : 'focus-visible:ring-primary/40 focus-visible:border-primary'
-              }`}
+                  : 'hover:border-primary/50 focus-visible:ring-primary/40 focus-visible:border-primary'
+              )}
             />
             {!pixelNameError && (
               <p id="pixel-name-help" className="text-xs text-muted-foreground mt-1">
@@ -1218,11 +1204,12 @@ export const PurchasePreview = ({
               autoCorrect="off"
               aria-invalid={!!linkUrlError}
               aria-describedby={linkUrlError ? "link-url-error" : "link-url-help"}
-              className={`text-base bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-50 hover:border-primary/50 focus:bg-white dark:focus:bg-slate-950 shadow-sm transition-all duration-200 ${
+              className={cn(
+                "text-base transition-all duration-200",
                 linkUrlError && linkUrlTouched 
                   ? 'border-destructive focus-visible:ring-destructive' 
-                  : 'focus-visible:ring-primary/40 focus-visible:border-primary'
-              }`}
+                  : 'hover:border-primary/50 focus-visible:ring-primary/40 focus-visible:border-primary'
+              )}
             />
             {!linkUrlError && (
               <p id="link-url-help" className="text-xs text-muted-foreground mt-1 flex items-center gap-1">

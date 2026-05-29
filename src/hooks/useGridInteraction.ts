@@ -322,8 +322,8 @@ export function useGridInteraction({
          container.removeEventListener("touchend", handleTouchEnd);
          container.removeEventListener("touchcancel", handleTouchEnd);
       };
-   // Re-register when interaction mode changes so view mode has no touch/wheel hijackers.
-   // All mutable values are read from refs inside the handlers.
+      // Re-register when interaction mode changes so view mode has no touch/wheel hijackers.
+      // All mutable values are read from refs inside the handlers.
    }, [containerRef, onZoomChange, enableInteraction]);
 
    return {

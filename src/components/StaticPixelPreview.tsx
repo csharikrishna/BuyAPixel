@@ -86,9 +86,9 @@ const StaticPixelPreview = () => {
   const canvasHeight = 160; // Preview canvas height
 
   return (
-    <section className="pt-6 sm:pt-12 pb-16 sm:pb-20 bg-gradient-to-b from-background to-muted/30">
+    <section className="pt-0 pb-16 sm:pb-20 bg-gradient-to-b from-background to-muted/30">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl">
-        <div className="text-center mb-8 sm:mb-16">
+        <div className="text-center mb-4 sm:mb-6">
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 sm:mb-6 text-foreground tracking-tight">
             Live Pixel <span className="bg-gradient-primary bg-clip-text text-transparent">Canvas</span>
           </h2>

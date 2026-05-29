@@ -1,5 +1,5 @@
 /* ========================================================
- * Premium Share Card — 3D CSS Animations
+ * Premium Share Card — 3D CSS Animations & Aesthetics
  * ======================================================== */
 
 /* Holographic gradient shimmer */
@@ -7,12 +7,6 @@
   0% { background-position: 0% 50%; }
   50% { background-position: 100% 50%; }
   100% { background-position: 0% 50%; }
-}
-
-/* Metallic shine sweep */
-@keyframes shineSweep {
-  0% { transform: translateX(-100%) rotate(25deg); }
-  100% { transform: translateX(200%) rotate(25deg); }
 }
 
 /* Card entrance */
@@ -35,14 +29,14 @@
 
 /* Glow pulse */
 @keyframes glowPulse {
-  0%, 100% { box-shadow: 0 0 20px rgba(139, 92, 246, 0.3), 0 0 60px rgba(139, 92, 246, 0.1); }
-  50% { box-shadow: 0 0 30px rgba(139, 92, 246, 0.5), 0 0 80px rgba(139, 92, 246, 0.2); }
+  0%, 100% { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2), 0 10px 40px -10px rgba(139, 92, 246, 0.4); }
+  50% { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.3), 0 15px 50px -10px rgba(139, 92, 246, 0.6); }
 }
 
 /* Gold glow */
 @keyframes goldGlowPulse {
-  0%, 100% { box-shadow: 0 0 20px rgba(234, 179, 8, 0.3), 0 0 60px rgba(234, 179, 8, 0.1); }
-  50% { box-shadow: 0 0 30px rgba(234, 179, 8, 0.5), 0 0 80px rgba(234, 179, 8, 0.2); }
+  0%, 100% { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.4), 0 10px 40px -10px rgba(234, 179, 8, 0.4); }
+  50% { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.6), 0 15px 50px -10px rgba(234, 179, 8, 0.6); }
 }
 
 /* Sparkle animation */
@@ -55,8 +49,9 @@
 
 .premium-card-scene {
   perspective: 1200px;
-  width: 380px;
-  max-width: 100%;
+  /* Fluid width to fix mobile cutoff */
+  width: 100%;
+  max-width: 380px;
   margin: 0 auto;
 }
 
@@ -70,6 +65,11 @@
   animation: cardEntrance 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
   transition: transform 0.15s ease-out;
   cursor: grab;
+  /* Premium edge highlight */
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.15), 0 10px 30px -10px rgba(0,0,0,0.5);
+  /* Interactive pointer variables with defaults */
+  --pointer-x: 50%;
+  --pointer-y: 50%;
 }
 
 .premium-card:active {
@@ -79,21 +79,35 @@
 /* ─── Tier-specific borders and glows ─────────────────── */
 
 .premium-card--economy {
-  background: linear-gradient(135deg, #064e3b 0%, #065f46 30%, #047857 70%, #059669 100%);
-  animation: cardEntrance 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  background: radial-gradient(circle at top left, #059669 0%, #064e3b 60%, #022c22 100%);
 }
 
 .premium-card--premium {
-  background: linear-gradient(135deg, #2e1065 0%, #4c1d95 30%, #6d28d9 70%, #7c3aed 100%);
-  animation: cardEntrance 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards, glowPulse 3s ease-in-out infinite;
+  background: radial-gradient(circle at top right, #8b5cf6 0%, #4c1d95 60%, #2e1065 100%);
+  animation: cardEntrance 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards, glowPulse 4s ease-in-out infinite;
 }
 
 .premium-card--gold {
-  background: linear-gradient(135deg, #451a03 0%, #78350f 30%, #a16207 70%, #ca8a04 100%);
-  animation: cardEntrance 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards, goldGlowPulse 3s ease-in-out infinite;
+  background: radial-gradient(circle at bottom left, #facc15 0%, #ca8a04 40%, #78350f 80%, #451a03 100%);
+  animation: cardEntrance 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards, goldGlowPulse 4s ease-in-out infinite;
 }
 
-/* ─── Holographic overlay ─────────────────────────────── */
+/* ─── Interactive Holographic Glare (Pokemon Card Effect) ─── */
+
+.premium-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    circle at var(--pointer-x) var(--pointer-y),
+    rgba(255, 255, 255, 0.4) 0%,
+    rgba(255, 255, 255, 0) 50%
+  );
+  mix-blend-mode: overlay;
+  z-index: 5;
+  pointer-events: none;
+  transition: background 0.1s;
+}
 
 .premium-card__holo {
   position: absolute;
@@ -102,46 +116,44 @@
     125deg,
     rgba(255, 255, 255, 0) 0%,
     rgba(255, 255, 255, 0.05) 20%,
-    rgba(139, 92, 246, 0.08) 40%,
-    rgba(59, 130, 246, 0.08) 50%,
-    rgba(16, 185, 129, 0.08) 60%,
-    rgba(234, 179, 8, 0.08) 80%,
+    rgba(139, 92, 246, 0.15) 40%,
+    rgba(59, 130, 246, 0.15) 50%,
+    rgba(16, 185, 129, 0.15) 60%,
+    rgba(234, 179, 8, 0.15) 80%,
     rgba(255, 255, 255, 0) 100%
   );
   background-size: 200% 200%;
   animation: holographic 6s ease-in-out infinite;
   pointer-events: none;
   z-index: 2;
-  mix-blend-mode: overlay;
+  mix-blend-mode: color-dodge;
 }
 
-/* ─── Shine sweep effect ──────────────────────────────── */
+/* ─── Interactive Shine Sweep ─────────────────────────── */
 
 .premium-card__shine {
   position: absolute;
-  inset: -50%;
+  inset: 0;
   background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(255, 255, 255, 0.08) 45%,
-    rgba(255, 255, 255, 0.15) 50%,
-    rgba(255, 255, 255, 0.08) 55%,
-    transparent 100%
+    105deg,
+    transparent 20%,
+    rgba(255, 255, 255, 0.3) 25%,
+    rgba(255, 255, 255, 0.6) 30%,
+    transparent 35%
   );
-  transform: translateX(-100%) rotate(25deg);
+  /* Use pointer-x to move the shine physically */
+  transform: translateX(calc((var(--pointer-x) - 50%) * 2));
+  mix-blend-mode: overlay;
   pointer-events: none;
   z-index: 3;
-}
-
-.premium-card:hover .premium-card__shine {
-  animation: shineSweep 1.5s ease-in-out;
+  transition: transform 0.1s ease-out;
 }
 
 /* ─── Content layout ──────────────────────────────────── */
 
 .premium-card__content {
   position: relative;
-  z-index: 1;
+  z-index: 10;
   height: 100%;
   display: flex;
   flex-direction: column;
@@ -162,43 +174,44 @@
   gap: 6px;
   padding: 6px 14px;
   border-radius: 100px;
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  text-shadow: 0 1px 2px rgba(0,0,0,0.2);
 }
 
 .premium-card__tier-badge--economy {
-  background: rgba(16, 185, 129, 0.3);
-  color: #a7f3d0;
+  background: rgba(16, 185, 129, 0.4);
+  color: #fff;
 }
 
 .premium-card__tier-badge--premium {
-  background: rgba(139, 92, 246, 0.3);
-  color: #ddd6fe;
+  background: rgba(139, 92, 246, 0.4);
+  color: #fff;
 }
 
 .premium-card__tier-badge--gold {
-  background: rgba(234, 179, 8, 0.3);
-  color: #fef08a;
+  background: rgba(234, 179, 8, 0.4);
+  color: #fff;
 }
 
 .premium-card__logo {
   width: 44px;
   height: 44px;
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1), 0 4px 12px rgba(0,0,0,0.1);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 900;
-  font-size: 0.75rem;
-  letter-spacing: 0.05em;
-  color: rgba(255, 255, 255, 0.9);
 }
 
 /* ─── Middle section (image + name) ───────────────────── */
@@ -209,32 +222,36 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 12px;
+  gap: 16px;
   padding: 8px 0;
 }
 
 .premium-card__image-container {
-  width: 100px;
-  height: 100px;
+  width: 110px;
+  height: 110px;
   border-radius: 16px;
   overflow: hidden;
-  border: 2px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  padding: 4px;
 }
 
 .premium-card__image-container img {
   width: 100%;
   height: 100%;
+  border-radius: 12px;
   object-fit: cover;
 }
 
 .premium-card__name {
-  font-size: 1.15rem;
+  font-size: 1.25rem;
   font-weight: 800;
   text-align: center;
   line-height: 1.3;
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
   max-width: 100%;
   word-break: break-word;
   white-space: normal;
@@ -242,16 +259,21 @@
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  letter-spacing: -0.02em;
 }
 
 .premium-card__link {
-  font-size: 0.75rem;
-  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.8);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
   text-align: center;
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-weight: 500;
+  line-height: 1.5;
+  padding-bottom: 4px;
 }
 
 /* ─── Footer section ──────────────────────────────────── */
@@ -265,49 +287,55 @@
 .premium-card__coords {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
 }
 
 .premium-card__coords-label {
-  font-size: 0.6rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.15em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.4);
+  color: rgba(255, 255, 255, 0.6);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
 }
 
 .premium-card__coords-value {
-  font-size: 1.1rem;
+  font-size: 1.25rem;
   font-weight: 900;
   font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
   letter-spacing: -0.02em;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
 }
 
 .premium-card__qr {
   width: 64px;
   height: 64px;
-  border-radius: 10px;
-  background: white;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   padding: 4px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.4);
 }
 
 .premium-card__qr img {
   width: 100%;
   height: 100%;
-  border-radius: 6px;
+  border-radius: 8px;
 }
 
 /* ─── Sparkle particles ───────────────────────────────── */
 
 .premium-card__sparkle {
   position: absolute;
-  width: 4px;
-  height: 4px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   background: white;
   pointer-events: none;
   z-index: 4;
+  box-shadow: 0 0 10px 2px rgba(255,255,255,0.8);
 }
 
 .premium-card__sparkle:nth-child(1) {
@@ -332,7 +360,7 @@
 .premium-card__noise {
   position: absolute;
   inset: 0;
-  opacity: 0.03;
+  opacity: 0.04;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
   pointer-events: none;
   z-index: 1;
@@ -356,22 +384,20 @@
 
 /* ─── Responsive ──────────────────────────────────────── */
 
-@media (max-width: 420px) {
-  .premium-card-scene {
-    width: 320px;
-  }
+/* Completely removed the hardcoded .premium-card-scene widths here since we are now fluid! */
 
+@media (max-width: 420px) {
   .premium-card__content {
     padding: 18px;
   }
 
   .premium-card__image-container {
-    width: 80px;
-    height: 80px;
+    width: 90px;
+    height: 90px;
   }
 
   .premium-card__name {
-    font-size: 1.1rem;
+    font-size: 1.15rem;
   }
 
   .premium-card__qr {
