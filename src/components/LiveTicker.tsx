@@ -13,6 +13,11 @@ const VIEWER_UPDATE_MAX = 7000;
 const RESIZE_DEBOUNCE_MS = 150;
 const MOBILE_BREAKPOINT = 768;
 
+// TOGGLE THIS BOOLEAN:
+// true = pull from Supabase DB and Realtime
+// false = simulate a very active marketplace with fake data
+const USE_REAL_DATA = true;
+
 
 interface TickerMessage {
   id: number;
@@ -63,27 +68,49 @@ const LiveTicker: React.FC<LiveTickerProps> = ({ isPurchaseOpen = false }) => {
 
   const [messages, setMessages] = useState<TickerMessage[]>([]);
 
-  // Load recent real purchases on mount
+  // Load initial purchases on mount
   useEffect(() => {
     const loadRecentActivity = async () => {
+      if (!USE_REAL_DATA) {
+        setMessages([
+          { id: 1, message: 'Rahul just purchased 10 pixels for ₹990', emoji: '🔥', type: 'buy' },
+          { id: 2, message: 'CryptoBros just purchased 100 pixels for ₹9,900', emoji: '💎', type: 'premium' },
+          { id: 3, message: 'Someone just purchased 5 pixels for ₹495', emoji: '✨', type: 'buy' },
+          { id: 4, message: 'Priya resold 20 pixels for ₹2,500', emoji: '🚀', type: 'resale' },
+          { id: 5, message: 'StartupInc purchased 50 pixels for ₹4,950', emoji: '🎯', type: 'buy' },
+        ]);
+        return;
+      }
+
       try {
         const { data } = await supabase
           .from('pixel_blocks')
-          .select('id, pixel_count, total_price, created_at')
+          .select('id, pixel_count, total_price, created_at, owner_id')
           .order('created_at', { ascending: false })
           .limit(10);
 
         if (data && data.length > 0) {
-          const realMessages: TickerMessage[] = data.map((block: any, i: number) => {
+          const sortedData = [...data].reverse(); // Oldest first so newest is at the end of the array
+          const realMessages: TickerMessage[] = await Promise.all(sortedData.map(async (block: any, i: number) => {
+            let name = 'Someone';
+            if (block.owner_id) {
+              const { data: profile } = await supabase
+                .from('profiles')
+                .select('full_name')
+                .eq('user_id', block.owner_id)
+                .maybeSingle();
+              if (profile?.full_name) name = profile.full_name;
+            }
+            
             const count = block.pixel_count || 1;
             const price = Math.round(block.total_price || 0);
             return {
               id: Date.now() + i,
-              message: `Someone purchased ${count} pixel${count > 1 ? 's' : ''} for ₹${price.toLocaleString('en-IN')}`,
+              message: `${name} purchased ${count} pixel${count > 1 ? 's' : ''} for ₹${price.toLocaleString('en-IN')}`,
               emoji: count >= 20 ? '💎' : count >= 10 ? '🚀' : '🔥',
               type: (count >= 20 ? 'premium' : 'buy') as TickerMessage['type'],
             };
-          });
+          }));
           setMessages(realMessages);
         } else {
           setMessages([
@@ -114,9 +141,33 @@ const LiveTicker: React.FC<LiveTickerProps> = ({ isPurchaseOpen = false }) => {
   const elementStartPos = useRef<Position>({ x: 0, y: 0 });
 
 
-  // Subscribe to realtime pixel purchases for live updates
+  // Subscribe to realtime pixel purchases for live updates (or simulate them)
   useEffect(() => {
     if (isPaused) return;
+
+    if (!USE_REAL_DATA) {
+      // Simulate live incoming purchases every 8 to 15 seconds
+      const interval = setInterval(() => {
+        const names = ['Amit', 'TechBro', 'DigitalAgency', 'Neha', 'Someone', 'PixelKing'];
+        const name = names[Math.floor(Math.random() * names.length)];
+        const count = Math.floor(Math.random() * 50) + 1;
+        const price = count * 99;
+        
+        const newMsg: TickerMessage = {
+          id: Date.now(),
+          message: `${name} just purchased ${count} pixel${count > 1 ? 's' : ''} for ₹${price.toLocaleString('en-IN')}`,
+          emoji: count >= 20 ? '💎' : count >= 10 ? '🚀' : '🔥',
+          type: count >= 20 ? 'premium' : 'buy',
+        };
+        
+        setMessages(prev => {
+          const newArr = [...prev, newMsg];
+          return newArr.length > MAX_MESSAGES ? newArr.slice(-MAX_MESSAGES) : newArr;
+        });
+      }, Math.floor(Math.random() * 7000) + 8000); // 8-15 seconds
+
+      return () => clearInterval(interval);
+    }
 
     const channel = supabase
       .channel('ticker-purchases')
@@ -393,14 +444,44 @@ const LiveTicker: React.FC<LiveTickerProps> = ({ isPurchaseOpen = false }) => {
 
   // Initialize viewer count
   useEffect(() => {
+    if (USE_REAL_DATA) return;
     const [min, max] = getViewerRangeByHour();
     const initialCount = Math.floor(Math.random() * (max - min + 1)) + min;
     setViewerCount(initialCount);
   }, [getViewerRangeByHour]);
 
-
-  // Update viewer count periodically
+  // Realtime Presence for true viewership tracking
   useEffect(() => {
+    if (!USE_REAL_DATA) return;
+    
+    const room = supabase.channel('online-viewers');
+    room
+      .on('presence', { event: 'sync' }, () => {
+        const state = room.presenceState();
+        // Count total unique connections/devices
+        const total = Object.keys(state).length;
+        setViewerCount(Math.max(1, total));
+      })
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          const { data: { session } } = await supabase.auth.getSession();
+          await room.track({ 
+            online_at: new Date().toISOString(),
+            user_id: session?.user?.id || null
+          });
+        }
+      });
+      
+    return () => {
+      supabase.removeChannel(room);
+    };
+  }, []);
+
+
+  // Update viewer count periodically (fake data mode)
+  useEffect(() => {
+    if (USE_REAL_DATA) return;
+
     const updateViewers = () => {
       setViewerCount(prev => {
         const [min, max] = getViewerRangeByHour();

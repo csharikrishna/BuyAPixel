@@ -161,7 +161,7 @@ export const VirtualizedPixelGrid = forwardRef<
         const zoomMultiplier = isMobileDevice
           ? GRID_CONFIG.INITIAL_ZOOM_MULTIPLIER_MOBILE || 1.30
           : GRID_CONFIG.INITIAL_ZOOM_MULTIPLIER_DESKTOP || 2.2;
-        const mobileMaxZoom = fitZoom * 1.4;
+        const mobileMaxZoom = fitZoom * Math.max(1.05, zoomMultiplier);
         const clampedZoom = Math.min(
           Math.max(fitZoom * zoomMultiplier, GRID_CONFIG.MIN_ZOOM),
           isMobileDevice
@@ -169,7 +169,7 @@ export const VirtualizedPixelGrid = forwardRef<
             : GRID_CONFIG.MAX_INITIAL_ZOOM
         );
 
-        const fittedPixelSize = Math.max(1, Math.floor(pixelSize * clampedZoom));
+        const fittedPixelSize = Math.max(1, pixelSize * clampedZoom);
         const renderedGridWidth = gridWidth * fittedPixelSize;
         const renderedGridHeight = gridHeight * fittedPixelSize;
 
@@ -221,7 +221,7 @@ export const VirtualizedPixelGrid = forwardRef<
     // ── Memoized Derivations ──────────────────────────────────
 
     const scaledPixelSize = useMemo(
-      () => Math.max(1, Math.floor(pixelSize * zoom)),
+      () => Math.max(1, pixelSize * zoom),
       [pixelSize, zoom]
     );
 

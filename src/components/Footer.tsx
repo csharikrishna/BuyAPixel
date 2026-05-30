@@ -43,13 +43,13 @@ const Footer = () => {
 
   return (
     <footer className="bg-gradient-to-b from-white to-slate-50/80 dark:from-gray-950 dark:to-gray-900 border-t border-slate-200 dark:border-slate-800" role="contentinfo" aria-label="Site footer">
-      <div className="container mx-auto px-4 py-16 md:py-20 max-w-7xl">
+      <div className="container mx-auto px-4 py-4 md:py-20 max-w-7xl">
         {/* Main Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-12 lg:gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-6 md:gap-12 lg:gap-8">
           
           {/* Brand Section */}
           <div className="lg:col-span-5 pr-0 md:pr-8">
-            <div className="flex items-center space-x-3 mb-6">
+            <div className="flex items-center space-x-3 mb-2 md:mb-6">
               <Link to="/" className="group flex items-center gap-3 focus:outline-none focus:ring-2 focus:ring-primary/20 rounded-lg">
                 <img 
                   src={LOGO} 

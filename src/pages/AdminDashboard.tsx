@@ -19,7 +19,7 @@ import {
 import {
   Shield, Users, Image, FileText, Activity,
   RefreshCw, CheckCircle2, Store,
-  Megaphone, KeyRound, ShieldCheck,
+  Megaphone, KeyRound, ShieldCheck, Eye,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -36,6 +36,7 @@ import {
   AdminAccessTab,
   AdminBroadcastTab,
   AdminAuditTab,
+  AdminLiveViewersTab,
 } from '@/components/admin';
 import type { AdminStats } from '@/components/admin';
 
@@ -532,8 +533,12 @@ const AdminDashboard = () => {
         <AdminDangerZone userEmail={user.email || ''} onRefresh={handleRefresh} />
 
         {/* Tabs */}
-        <Tabs defaultValue="users" className="space-y-6">
-          <TabsList className="grid w-full max-w-3xl grid-cols-7">
+        <Tabs defaultValue="live" className="space-y-6">
+          <TabsList className="grid w-full max-w-4xl grid-cols-8">
+            <TabsTrigger value="live" className="gap-2">
+              <Eye className="w-4 h-4" />
+              <span className="hidden sm:inline">Live</span>
+            </TabsTrigger>
             <TabsTrigger value="users" className="gap-2">
               <Users className="w-4 h-4" />
               <span className="hidden sm:inline">Users</span>
@@ -563,6 +568,10 @@ const AdminDashboard = () => {
               <span className="hidden sm:inline">Access</span>
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="live" className="space-y-4">
+            <AdminLiveViewersTab users={users} />
+          </TabsContent>
 
           <TabsContent value="users" className="space-y-4">
             <AdminUsersTab users={users} stats={stats} onRefresh={handleRefresh} />

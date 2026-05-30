@@ -10,3 +10,4 @@ export { AdminAccessTab } from './AdminAccessTab';
 export { AdminBroadcastTab } from './AdminBroadcastTab';
 export { AdminAuditTab } from './AdminAuditTab';
 export { AdminRefundTab } from './AdminRefundTab';
+export { AdminLiveViewersTab } from './AdminLiveViewersTab';

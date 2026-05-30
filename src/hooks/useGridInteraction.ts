@@ -50,12 +50,12 @@ export function useGridInteraction({
 
    // -- Memoized Calculations --
    // Must match render-time pixel sizing in VirtualizedPixelGrid to avoid hover offset drift.
-   const scaledPixelSize = Math.max(1, Math.floor(pixelSize * zoom));
+   const scaledPixelSize = Math.max(1, pixelSize * zoom);
 
    const clampOffset = useCallback(
       (x: number, y: number, currentScale: number) => {
          // Use floored pixel size to match the renderer's actual grid dimensions
-         const fittedPixelSize = Math.max(1, Math.floor(pixelSize * currentScale));
+         const fittedPixelSize = Math.max(1, pixelSize * currentScale);
          const totalGridWidth = gridWidth * fittedPixelSize;
          const totalGridHeight = gridHeight * fittedPixelSize;
          const margin = GRID_CONFIG.PAN_VIEWPORT_MARGIN;
