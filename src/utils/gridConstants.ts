@@ -3,8 +3,8 @@ export const GRID_CONFIG = {
    MAX_INITIAL_ZOOM: 3.5,
    MIN_ZOOM: 0.1,
    MAX_ZOOM: 8,
-   INITIAL_ZOOM_MULTIPLIER_DESKTOP: 1.65, // 👈 desktop zoom multiplier
-   INITIAL_ZOOM_MULTIPLIER_MOBILE: 0.975, // 👈 mobile zoom multiplier (1.0 = fit entire grid)
+   INITIAL_ZOOM_MULTIPLIER_DESKTOP: 1.0, // 👈 desktop zoom multiplier (1.0 = fit entire grid)
+   INITIAL_ZOOM_MULTIPLIER_MOBILE: 0.995, // 👈 mobile zoom multiplier (1.0 = fit entire grid)
    BILLBOARD_WIDTH: 40,
    BILLBOARD_HEIGHT: 24,
    ZOOM_FACTOR: 1.05,

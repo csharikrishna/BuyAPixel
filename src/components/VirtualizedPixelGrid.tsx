@@ -15,7 +15,7 @@ import { PixelInfoModal } from "./PixelInfoModal";
 import { toast } from "sonner";
 import { Star, ExternalLink, Loader2 } from "lucide-react";
 import { openAdvertiserUrl } from "@/utils/utmUtils";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { usePixelGridData } from "@/hooks/usePixelGridData";
 import { useGridInteraction } from "@/hooks/useGridInteraction";
 import { GRID_CONFIG, ZONE_SIZES, AD_TIER_CONFIG, getAdTierByPrice, calculatePixelPrice } from "@/utils/gridConstants";
@@ -102,6 +102,7 @@ export const VirtualizedPixelGrid = forwardRef<
     ref
   ) => {
     const { user } = useAuth();
+    const navigate = useNavigate();
     const containerRef = useRef<HTMLDivElement>(null);
     const hasInitializedRef = useRef(false);
     const handledPixelParam = useRef<string | null>(null);
@@ -347,12 +348,22 @@ export const VirtualizedPixelGrid = forwardRef<
         if (dragDistance > GRID_CONFIG.DRAG_THRESHOLD) return;
 
         if (!isSelecting) {
-          toast.info(
-            <span className="text-sm">
-              To buy pixels, you should click on the <strong className="text-emerald-600 dark:text-emerald-400 font-bold">Buy Pixels</strong> button to proceed.
-            </span>,
-            { duration: 4000 }
-          );
+          if (!user) {
+            toast.info("Please sign in to buy pixels", {
+              description: "Create an account or log in to purchase pixels",
+              action: {
+                label: "Sign In",
+                onClick: () => navigate("/signin"),
+              },
+            });
+          } else {
+            toast.info(
+              <span className="text-sm">
+                To buy pixels, you should click on the <strong className="text-emerald-600 dark:text-emerald-400 font-bold">Buy Pixels</strong> button to proceed.
+              </span>,
+              { duration: 4000 }
+            );
+          }
           return;
         }
 
@@ -724,7 +735,7 @@ export const VirtualizedPixelGrid = forwardRef<
             />
 
             {/* Grid Lines — only show when pixels are large enough to distinguish */}
-            {showGrid && scaledPixelSize >= 4 && (
+            {showGrid && scaledPixelSize >= 2 && (
               <div
                 className="absolute pointer-events-none rounded-md"
                 style={{
@@ -830,8 +841,8 @@ export const VirtualizedPixelGrid = forwardRef<
                 key={`sel-${id}`}
                 className="absolute pointer-events-none"
                 style={{
-                  left: Math.floor(x * scaledPixelSize),
-                  top: Math.floor(y * scaledPixelSize),
+                  left: x * scaledPixelSize,
+                  top: y * scaledPixelSize,
                   width: scaledPixelSize,
                   height: scaledPixelSize,
                   backgroundColor: isPending
@@ -856,8 +867,8 @@ export const VirtualizedPixelGrid = forwardRef<
                   className={`cursor-pointer transition-all duration-300${scaledPixelSize >= 6 && !isOwner && !isHighlight ? block.tierAnimationClass : ""}`}
                   style={{
                     position: "absolute",
-                    left: Math.floor(block.minX * scaledPixelSize),
-                    top: Math.floor(block.minY * scaledPixelSize),
+                    left: block.minX * scaledPixelSize,
+                    top: block.minY * scaledPixelSize,
                     width: block.width * scaledPixelSize,
                     height: block.height * scaledPixelSize,
                     backgroundImage: `url(${getGridImageUrl(block.imageUrl, zoom)})`,
@@ -939,8 +950,8 @@ export const VirtualizedPixelGrid = forwardRef<
                   className={`cursor-pointer transition-all duration-300${tierAnimationClass}`}
                   style={{
                     position: "absolute",
-                    left: Math.floor(x * scaledPixelSize),
-                    top: Math.floor(y * scaledPixelSize),
+                    left: x * scaledPixelSize,
+                    top: y * scaledPixelSize,
                     width: scaledPixelSize,
                     height: scaledPixelSize,
                     backgroundColor: image_url
@@ -993,8 +1004,8 @@ export const VirtualizedPixelGrid = forwardRef<
               <div
                 className="absolute pointer-events-none"
                 style={{
-                  left: Math.floor(hoveredPixel.x * scaledPixelSize),
-                  top: Math.floor(hoveredPixel.y * scaledPixelSize),
+                  left: hoveredPixel.x * scaledPixelSize,
+                  top: hoveredPixel.y * scaledPixelSize,
                   width: scaledPixelSize,
                   height: scaledPixelSize,
                   backgroundColor:

@@ -65,7 +65,7 @@ export function useGridInteraction({
             contentSize: number,
             viewportSize: number
          ) => {
-            if (contentSize <= viewportSize - margin * 2) {
+            if (contentSize <= viewportSize) {
                return (viewportSize - contentSize) / 2;
             }
 

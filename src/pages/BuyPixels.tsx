@@ -624,7 +624,7 @@ const BuyPixels = () => {
                 onZoomChange={setZoom}
                 showGrid={showGrid}
                 showMyPixels={showMyPixels}
-                enableInteraction={mode === "buying"}
+                enableInteraction={true}
                 onAvailablePixelFocused={selectFocusedPixel}
               />
             </div>
