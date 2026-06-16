@@ -54,7 +54,7 @@ export function useGridInteraction({
 
    const clampOffset = useCallback(
       (x: number, y: number, currentScale: number) => {
-         // Use floored pixel size to match the renderer's actual grid dimensions
+         // Must match the rendering formula: pixelSize * zoom (no Math.floor).
          const fittedPixelSize = Math.max(1, pixelSize * currentScale);
          const totalGridWidth = gridWidth * fittedPixelSize;
          const totalGridHeight = gridHeight * fittedPixelSize;

@@ -209,6 +209,24 @@ const BuyPixels = () => {
     };
   }, []);
 
+  // --- Auto-Center Grid on Layout Changes ---
+  useEffect(() => {
+    // Slight delay to allow CSS transitions or flex layout to settle before calculating sizes
+    const timer1 = setTimeout(() => {
+      gridRef.current?.resetViewport();
+    }, 50);
+    
+    // Additional call after sidebar transition duration (300ms)
+    const timer2 = setTimeout(() => {
+      gridRef.current?.resetViewport();
+    }, 350);
+
+    return () => {
+      clearTimeout(timer1);
+      clearTimeout(timer2);
+    };
+  }, [sidebarCollapsed]);
+
   // --- Sync Ticker Visibility ---
   useEffect(() => {
     setTickerVisible(!showPurchasePreview);

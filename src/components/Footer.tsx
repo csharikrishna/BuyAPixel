@@ -145,7 +145,7 @@ const Footer = () => {
             <span>© {currentYear} BuyASpot.in. All rights reserved.</span>
             <span className="hidden sm:inline text-slate-300 dark:text-slate-700">•</span>
             <span className="flex items-center gap-1.5">
-              Made with <Heart className="w-3.5 h-3.5 text-red-500 fill-red-500 animate-pulse" /> in Mumbai
+              Made with <Heart className="w-3.5 h-3.5 text-red-500 fill-red-500 animate-pulse" /> at Annamacharya Institute of Technology and Sciences
             </span>
           </div>
 

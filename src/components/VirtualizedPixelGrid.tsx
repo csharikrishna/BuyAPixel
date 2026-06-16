@@ -154,10 +154,12 @@ export const VirtualizedPixelGrid = forwardRef<
       (clientWidth: number, clientHeight: number) => {
         const gridPixelWidth = gridWidth * pixelSize;
         const gridPixelHeight = gridHeight * pixelSize;
-        const isMobileDevice = clientWidth < 768;
-        const padding = 0;
-        const fitZoomX = (clientWidth - padding * 2) / gridPixelWidth;
-        const fitZoomY = (clientHeight - padding * 2) / gridPixelHeight;
+        // Use window.innerWidth for mobile detection, NOT the container width.
+        // On desktop the container is narrowed by the sidebar, which could falsely
+        // trigger the mobile multiplier.
+        const isMobileDevice = typeof window !== 'undefined' ? window.innerWidth < 768 : clientWidth < 768;
+        const fitZoomX = clientWidth / gridPixelWidth;
+        const fitZoomY = clientHeight / gridPixelHeight;
         const fitZoom = Math.min(fitZoomX, fitZoomY);
         const zoomMultiplier = isMobileDevice
           ? GRID_CONFIG.INITIAL_ZOOM_MULTIPLIER_MOBILE || 1.30
@@ -170,9 +172,12 @@ export const VirtualizedPixelGrid = forwardRef<
             : GRID_CONFIG.MAX_INITIAL_ZOOM
         );
 
-        const fittedPixelSize = Math.max(1, pixelSize * clampedZoom);
-        const renderedGridWidth = gridWidth * fittedPixelSize;
-        const renderedGridHeight = gridHeight * fittedPixelSize;
+        // IMPORTANT: Must match the rendering formula `pixelSize * zoom` (no Math.floor).
+        // Using Math.floor here causes the calculated grid size to be smaller than the
+        // actual rendered grid, pushing the grid toward the south-east.
+        const actualPixelSize = Math.max(1, pixelSize * clampedZoom);
+        const renderedGridWidth = gridWidth * actualPixelSize;
+        const renderedGridHeight = gridHeight * actualPixelSize;
 
         return {
           zoom: clampedZoom,

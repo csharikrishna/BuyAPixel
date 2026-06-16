@@ -140,7 +140,7 @@ const CONTACT_INFO = [
   {
     icon: MapPin,
     title: 'Location',
-    value: 'Mumbai, India',
+    value: 'Annamacharya Institute of Technology and Sciences',
     description: 'Serving India & beyond',
     href: null,
     color: 'accent',

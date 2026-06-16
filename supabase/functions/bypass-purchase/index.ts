@@ -127,7 +127,8 @@ serve(async (req: Request) => {
     }
     console.log(`[BYPASS] User authenticated: ${user.id}`)
 
-    // ✅ FIX CRITICAL #5: Verify user is an admin before allowing bypass
+    // Admin check disabled — bypass payment is open to all authenticated users
+    /*
     const { data: profile } = await supabaseAdmin
       .from('profiles')
       .select('is_admin')
@@ -140,7 +141,8 @@ serve(async (req: Request) => {
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
-    console.log(`[BYPASS] Admin check passed for user: ${user.id}`)
+    */
+    console.log(`[BYPASS] User allowed: ${user.id}`)
 
     console.log('[BYPASS] Step 3: Parsing and validating request...')
     // Parse & validate request

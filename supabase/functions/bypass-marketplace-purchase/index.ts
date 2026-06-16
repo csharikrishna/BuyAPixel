@@ -76,7 +76,8 @@ serve(async (req: Request) => {
 
     if (userError || !user) throw new Error('Invalid or expired token')
 
-    // ✅ FIX CRITICAL #5: Verify user is an admin before allowing bypass
+    // Admin check disabled — bypass payment is open to all authenticated users
+    /*
     const { data: profile } = await supabaseAdmin
       .from('profiles')
       .select('is_admin')
@@ -89,6 +90,7 @@ serve(async (req: Request) => {
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
+    */
 
     // Parse request
     const body: BypassMarketplaceRequest = await req.json()

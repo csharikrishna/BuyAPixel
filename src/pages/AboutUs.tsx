@@ -430,7 +430,7 @@ const AboutUs = memo(() => {
             </a>
             <div className="flex items-center gap-2">
               <MapPin className="w-4 h-4" />
-              Mumbai, Maharashtra, India
+              Annamacharya Institute of Technology and Sciences, India
             </div>
           </div>
         </div>
