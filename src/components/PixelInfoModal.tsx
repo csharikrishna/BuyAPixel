@@ -98,7 +98,7 @@ export const PixelInfoModal = ({ isOpen, onClose, pixel, block }: PixelInfoModal
       .from('profiles')
       .select('full_name, avatar_url')
       .eq('user_id', ownerId)
-      .single()
+      .maybeSingle()
       .then(({ data, error }) => {
         if (cancelled) return;
         if (!error && data) {
@@ -141,14 +141,14 @@ export const PixelInfoModal = ({ isOpen, onClose, pixel, block }: PixelInfoModal
   };
 
   const content = (
-    <div className="space-y-5">
+    <div className="space-y-5 w-full min-w-0">
       {/* Image Preview */}
       {imageUrl ? (
-        <div className="relative rounded-xl overflow-hidden bg-black/5 dark:bg-white/5 border border-border/30">
+        <div className="relative rounded-xl overflow-hidden bg-black/5 dark:bg-white/5 border border-border/30 w-full flex items-center justify-center">
           <img
             src={imageUrl}
             alt={altText}
-            className="w-full h-auto max-h-[280px] object-contain mx-auto"
+            className="max-w-full w-auto h-auto max-h-[280px] object-contain mx-auto"
             loading="lazy"
           />
           {/* Tier Badge Overlay */}

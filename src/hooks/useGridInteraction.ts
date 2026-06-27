@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef, useEffect, RefObject } from "react";
+import { toast } from "sonner";
 import { GRID_CONFIG } from "@/utils/gridConstants";
 
 interface UseGridInteractionProps {
@@ -29,9 +30,11 @@ export function useGridInteraction({
    const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null);
    const [dragDistance, setDragDistance] = useState(0);
    const [hoveredPixel, setHoveredPixel] = useState<{ x: number; y: number } | null>(null);
+   const [isForcePanning, setIsForcePanning] = useState(false);
 
    const animationFrameRef = useRef<number>();
    const hoverTimeoutRef = useRef<NodeJS.Timeout>();
+   const longPressTimeoutRef = useRef<NodeJS.Timeout>();
 
    // -- Refs for stable event handler values --
    // These prevent the wheel/touch effect from re-registering on every frame
@@ -41,12 +44,14 @@ export function useGridInteraction({
    const dragStartRef = useRef(dragStart);
    const initialZoomRef = useRef(zoom);
    const touchStartRef = useRef<{ x: number; y: number; dist: number } | null>(null);
+   const isForcePanningRef = useRef(isForcePanning);
 
    // Keep refs in sync with state
    zoomRef.current = zoom;
    viewportOffsetRef.current = viewportOffset;
    isDraggingRef.current = isDragging;
    dragStartRef.current = dragStart;
+   isForcePanningRef.current = isForcePanning;
 
    // -- Memoized Calculations --
    // Must match render-time pixel sizing in VirtualizedPixelGrid to avoid hover offset drift.
@@ -202,10 +207,10 @@ export function useGridInteraction({
       touchStartRef.current = null;
    }, [enableInteraction]);
 
-   // Wheel and touch handlers are only attached while canvas interaction is enabled.
+   // Wheel and touch handlers are now always attached so zooming and long-press panning work.
    useEffect(() => {
       const container = containerRef.current;
-      if (!container || !enableInteraction) return;
+      if (!container) return;
 
       const handleWheel = (event: WheelEvent) => {
          if (!event.ctrlKey && !event.metaKey) return;
@@ -217,12 +222,23 @@ export function useGridInteraction({
          const currentZoom = zoomRef.current;
          const zoomFactor = GRID_CONFIG.ZOOM_FACTOR;
          const newZoom = event.deltaY < 0 ? currentZoom * zoomFactor : currentZoom / zoomFactor;
+         const rect = container.getBoundingClientRect();
+         
+         // Calculate dynamic minimum zoom so users don't get lost
+         const fitZoomX = rect.width / (gridWidth * pixelSize);
+         const fitZoomY = rect.height / (gridHeight * pixelSize);
+         const dynamicMinZoom = Math.min(fitZoomX, fitZoomY) * 0.5;
+         const minZoomLimit = Math.max(GRID_CONFIG.MIN_ZOOM, dynamicMinZoom);
+
          const safeZoom = Math.max(
-            GRID_CONFIG.MIN_ZOOM,
+            minZoomLimit,
             Math.min(GRID_CONFIG.MAX_ZOOM, newZoom)
          );
 
-         const rect = container.getBoundingClientRect();
+         // Haptic feedback when hitting zoom limits
+         if (navigator.vibrate && safeZoom !== currentZoom && (safeZoom === minZoomLimit || safeZoom === GRID_CONFIG.MAX_ZOOM)) {
+            navigator.vibrate(20);
+         }
          const cursorX = event.clientX - rect.left;
          const cursorY = event.clientY - rect.top;
          const scale = safeZoom / currentZoom;
@@ -253,12 +269,34 @@ export function useGridInteraction({
             isDraggingRef.current = true;
             setDragDistance(0);
             setHoveredPixel(null);
-            dragStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-            setDragStart({ x: e.touches[0].clientX, y: e.touches[0].clientY });
+            const startX = e.touches[0].clientX;
+            const startY = e.touches[0].clientY;
+            dragStartRef.current = { x: startX, y: startY };
+            setDragStart({ x: startX, y: startY });
+
+            // Start long press timer if interaction is not normally enabled
+            if (!enableInteraction) {
+               longPressTimeoutRef.current = setTimeout(() => {
+                  setIsForcePanning(true);
+                  isForcePanningRef.current = true;
+                  if (navigator.vibrate) navigator.vibrate(50);
+                  toast.info("Grid movement enabled", { duration: 1500, position: "top-center" });
+               }, 600); // 600ms long press to enable panning
+            }
          }
       };
 
       const handleTouchMove = (e: TouchEvent) => {
+         // Clear long press if they move their finger before it triggers
+         if (longPressTimeoutRef.current && !isForcePanningRef.current && dragStartRef.current) {
+            const dx = Math.abs(e.touches[0].clientX - dragStartRef.current.x);
+            const dy = Math.abs(e.touches[0].clientY - dragStartRef.current.y);
+            if (dx > 10 || dy > 10) {
+               clearTimeout(longPressTimeoutRef.current);
+               longPressTimeoutRef.current = undefined;
+            }
+         }
+
          if (e.touches.length === 2 && touchStartRef.current) {
             e.preventDefault();
             const dx = e.touches[0].clientX - e.touches[1].clientX;
@@ -266,15 +304,27 @@ export function useGridInteraction({
             const dist = Math.sqrt(dx * dx + dy * dy);
             if (dist > 0 && touchStartRef.current.dist > 0) {
                const scale = dist / touchStartRef.current.dist;
+               const rect = container.getBoundingClientRect();
+               
+               // Calculate dynamic minimum zoom so users don't get lost
+               const fitZoomX = rect.width / (gridWidth * pixelSize);
+               const fitZoomY = rect.height / (gridHeight * pixelSize);
+               const dynamicMinZoom = Math.min(fitZoomX, fitZoomY) * 0.5;
+               const minZoomLimit = Math.max(GRID_CONFIG.MIN_ZOOM, dynamicMinZoom);
+
                const newZoom = Math.min(
                   GRID_CONFIG.MAX_ZOOM,
-                  Math.max(GRID_CONFIG.MIN_ZOOM, initialZoomRef.current * scale)
+                  Math.max(minZoomLimit, initialZoomRef.current * scale)
                );
 
                // Focal-point zoom: keep the pinch center stable
                const currentZoom = zoomRef.current;
+               
+               // Haptic feedback when hitting zoom limits during pinch
+               if (navigator.vibrate && newZoom !== currentZoom && (newZoom === minZoomLimit || newZoom === GRID_CONFIG.MAX_ZOOM)) {
+                  navigator.vibrate(20);
+               }
                const currentOffset = viewportOffsetRef.current;
-               const rect = container.getBoundingClientRect();
                const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
                const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
                const focalX = midX - rect.left;
@@ -288,6 +338,7 @@ export function useGridInteraction({
                onZoomChange(newZoom);
             }
          } else if (e.touches.length === 1 && isDraggingRef.current && dragStartRef.current) {
+            if (!enableInteraction && !isForcePanningRef.current) return;
             e.preventDefault();
             const currentOffset = viewportOffsetRef.current;
             const currentZoom = zoomRef.current;
@@ -307,6 +358,12 @@ export function useGridInteraction({
          setIsDragging(false);
          isDraggingRef.current = false;
          touchStartRef.current = null;
+         if (longPressTimeoutRef.current) {
+            clearTimeout(longPressTimeoutRef.current);
+            longPressTimeoutRef.current = undefined;
+         }
+         setIsForcePanning(false);
+         isForcePanningRef.current = false;
       };
 
       container.addEventListener("wheel", handleWheel, { passive: false });
@@ -337,5 +394,6 @@ export function useGridInteraction({
       handleMouseMove,
       handleMouseUp,
       clampOffset, // Exporting for usage if needed
+      isForcePanning,
    };
 }

@@ -13,7 +13,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { PixelTooltip } from "./PixelTooltip";
 import { PixelInfoModal } from "./PixelInfoModal";
 import { toast } from "sonner";
-import { Star, ExternalLink, Loader2 } from "lucide-react";
+import { Star, ExternalLink, Loader2, Target } from "lucide-react";
 import { openAdvertiserUrl } from "@/utils/utmUtils";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { usePixelGridData } from "@/hooks/usePixelGridData";
@@ -124,6 +124,7 @@ export const VirtualizedPixelGrid = forwardRef<
       handleMouseDown,
       handleMouseMove,
       handleMouseUp,
+      isForcePanning
     } = useGridInteraction({
       gridWidth,
       gridHeight,
@@ -248,10 +249,49 @@ export const VirtualizedPixelGrid = forwardRef<
       return set;
     }, [selectedPixels]);
 
-    const featuredPixelsList = useMemo(
-      () => purchasedPixels.filter((p) => p.image_url?.length > 0),
-      [purchasedPixels]
-    );
+    interface FeaturedAd {
+      id: string;
+      block_id: string | null;
+      pixel_id: string | null;
+      image_url: string;
+      link_url: string | null;
+      alt_text: string | null;
+      price_paid: number;
+      pixelCount: number;
+      x: number;
+      y: number;
+    }
+
+    const featuredPixelsList = useMemo(() => {
+      const adsMap = new Map<string, FeaturedAd>();
+
+      purchasedPixels.forEach((p) => {
+        if (!p.image_url) return;
+        const key = p.block_id || `${p.x}-${p.y}`;
+        const existing = adsMap.get(key);
+        if (existing) {
+          existing.pixelCount += 1;
+          if (p.price_paid > existing.price_paid) {
+            existing.price_paid = p.price_paid;
+          }
+        } else {
+          adsMap.set(key, {
+            id: key,
+            block_id: p.block_id || null,
+            pixel_id: p.block_id ? null : p.id,
+            image_url: p.image_url,
+            link_url: p.link_url,
+            alt_text: p.alt_text,
+            price_paid: p.price_paid,
+            pixelCount: 1,
+            x: p.x,
+            y: p.y,
+          });
+        }
+      });
+
+      return Array.from(adsMap.values());
+    }, [purchasedPixels]);
 
     const currentFeaturedPixel = featuredPixelsList[currentFeaturedIndex] ?? null;
 
@@ -354,8 +394,8 @@ export const VirtualizedPixelGrid = forwardRef<
 
         if (!isSelecting) {
           if (!user) {
-            toast.info("Please sign in to buy pixels", {
-              description: "Create an account or log in to purchase pixels",
+            toast.info("Action Required", {
+              description: "Please login and press 'Buy Pixels' to start selecting your spot.",
               action: {
                 label: "Sign In",
                 onClick: () => navigate("/signin"),
@@ -460,7 +500,11 @@ export const VirtualizedPixelGrid = forwardRef<
       const tier = currentPixel?.price_paid
         ? getAdTierByPrice(currentPixel.price_paid)
         : "ECONOMY";
-      const durationMs = AD_TIER_CONFIG[tier].adDuration * 1000;
+      
+      const baseDuration = AD_TIER_CONFIG[tier].adDuration;
+      // Ad plays for: baseDuration * pixelCount, capped at 30 seconds
+      const playDuration = Math.min(30, baseDuration * (currentPixel?.pixelCount || 1));
+      const durationMs = playDuration * 1000;
 
       const id = setTimeout(
         () => setCurrentFeaturedIndex((i) => (i + 1) % featuredPixelsList.length),
@@ -569,6 +613,7 @@ export const VirtualizedPixelGrid = forwardRef<
         });
 
         if (onAvailablePixelFocused) {
+          if (navigator.vibrate) navigator.vibrate(25);
           onAvailablePixelFocused(px, py);
         }
       }
@@ -682,7 +727,7 @@ export const VirtualizedPixelGrid = forwardRef<
           style={{
             width: "100%",
             height: "100%",
-            touchAction: enableInteraction ? "none" : "pan-y",
+            touchAction: enableInteraction || isForcePanning ? "none" : "pan-y",
             WebkitUserSelect: "none",
             cursor,
             backgroundColor: "#e8ecf1",
@@ -808,7 +853,7 @@ export const VirtualizedPixelGrid = forwardRef<
               ) : (
                 <>
                   <div
-                    className="absolute inset-0 bg-contain bg-center bg-no-repeat transition-all duration-1000 ease-in-out"
+                    className="absolute inset-0 bg-contain bg-center bg-no-repeat"
                     style={{
                       backgroundImage: `url(${getBillboardImageUrl(currentFeaturedPixel.image_url)})`,
                       backgroundColor: '#18181b',
@@ -828,7 +873,11 @@ export const VirtualizedPixelGrid = forwardRef<
                         onClick={(e) => {
                           e.stopPropagation();
                           openAdvertiserUrl(currentFeaturedPixel.link_url!, 'billboard');
-                          trackPixelClick(null, currentFeaturedPixel.block_id, 'billboard');
+                          trackPixelClick(
+                            currentFeaturedPixel.pixel_id,
+                            currentFeaturedPixel.block_id,
+                            'billboard'
+                          );
                         }}
                         aria-label={`Visit ${currentFeaturedPixel.alt_text || "featured partner"}`}
                       >
@@ -869,7 +918,7 @@ export const VirtualizedPixelGrid = forwardRef<
                   key={`block-${block.blockId}`}
                   role="button"
                   tabIndex={0}
-                  className={`cursor-pointer transition-all duration-300${scaledPixelSize >= 6 && !isOwner && !isHighlight ? block.tierAnimationClass : ""}`}
+                  className={`cursor-pointer ${scaledPixelSize >= 6 && !isOwner && !isHighlight ? block.tierAnimationClass : ""}`}
                   style={{
                     position: "absolute",
                     left: block.minX * scaledPixelSize,
@@ -952,7 +1001,7 @@ export const VirtualizedPixelGrid = forwardRef<
                   key={`sold-${id}`}
                   role="button"
                   tabIndex={0}
-                  className={`cursor-pointer transition-all duration-300${tierAnimationClass}`}
+                  className={`cursor-pointer ${tierAnimationClass}`}
                   style={{
                     position: "absolute",
                     left: x * scaledPixelSize,
@@ -1003,7 +1052,6 @@ export const VirtualizedPixelGrid = forwardRef<
                 />
               );
             })}
-
             {/* Hover Indicator */}
             {hoveredPixel && hoveredStatus && isSelecting && !isDragging && (
               <div
@@ -1041,6 +1089,24 @@ export const VirtualizedPixelGrid = forwardRef<
               Test Mode
             </div>
           )}
+
+          {/* Recenter Button */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              if (navigator.vibrate) navigator.vibrate(30);
+              if (containerRef.current) {
+                const fitted = calculateFittedViewport(containerRef.current.clientWidth, containerRef.current.clientHeight);
+                onZoomChange(fitted.zoom);
+                setViewportOffset(fitted.offset);
+              }
+            }}
+            className="absolute bottom-3 left-3 bg-white/90 backdrop-blur-md text-neutral-800 p-2.5 rounded-full shadow-lg hover:bg-white transition-all transform hover:scale-110 active:scale-95 border border-white/50 z-50"
+            title="Recenter Grid"
+            aria-label="Recenter Grid"
+          >
+            <Target className="w-5 h-5" />
+          </button>
         </div>
 
         {/* Tooltip */}

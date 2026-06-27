@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription } from "@/components/ui/drawer";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -765,6 +765,21 @@ export const PurchasePreview = ({
     }
   };
 
+  const isContiguous = useMemo(() => {
+    if (selectedPixels.length <= 1) return true;
+    
+    let minX = 10000, maxX = -1, minY = 10000, maxY = -1;
+    for (const p of selectedPixels) {
+      if (p.x < minX) minX = p.x;
+      if (p.x > maxX) maxX = p.x;
+      if (p.y < minY) minY = p.y;
+      if (p.y > maxY) maxY = p.y;
+    }
+    
+    const area = (maxX - minX + 1) * (maxY - minY + 1);
+    return area === selectedPixels.length;
+  }, [selectedPixels]);
+
   const purchaseContent = (
     <div className="space-y-6">
       {/* SEO and Metadata */}
@@ -833,6 +848,15 @@ export const PurchasePreview = ({
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          {!isContiguous && selectedPixels.length > 1 && (
+            <div className="flex items-start gap-2 p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-500/20 rounded-lg text-sm">
+              <Info className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
+              <div className="text-amber-800 dark:text-amber-300">
+                <strong className="block font-semibold mb-1">Non-rectangular Selection</strong>
+                Your selected pixels do not form a perfect rectangle (e.g. you might have an accidental stray pixel selected). Your image will be repeated individually on each pixel instead of spanning across them as a single large image.
+              </div>
+            </div>
+          )}
           <div className="grid grid-cols-3 gap-2 md:gap-4">
             <div className="text-center p-2 md:p-3 rounded-lg bg-primary/10">
               <div className="text-xl md:text-2xl font-bold text-primary" aria-label={`${selectedPixels.length} pixels`}>

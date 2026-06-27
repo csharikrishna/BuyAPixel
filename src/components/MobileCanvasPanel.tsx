@@ -53,7 +53,7 @@ export const MobileCanvasPanel = ({
   // Minimized state - just a floating indicator
   if (isMinimized) {
     return (
-      <div className="fixed bottom-20 right-4 z-40 lg:hidden">
+      <div className="fixed bottom-6 right-4 z-40 lg:hidden pb-safe">
         <Button
           onClick={() => setIsMinimized(false)}
           className="rounded-full h-14 w-14 shadow-lg bg-primary hover:bg-primary/90"
@@ -75,7 +75,7 @@ export const MobileCanvasPanel = ({
   return (
     <div
       className={cn(
-        "fixed bottom-16 left-0 right-0 z-50 lg:hidden transition-all duration-300 ease-in-out",
+        "fixed bottom-6 left-0 right-0 z-50 lg:hidden transition-all duration-300 ease-in-out pb-safe",
         isExpanded ? "h-[70vh]" : "h-auto"
       )}
     >

@@ -7,7 +7,7 @@ import {
   Suspense,
 } from "react";
 import { VirtualizedPixelGrid, GridHandle } from "@/components/VirtualizedPixelGrid";
-import { FloatingActionButton } from "@/components/FloatingActionButton";
+import { Skeleton } from "@/components/ui/skeleton";
 import { OnboardingTutorial } from "@/components/OnboardingTutorial";
 import { QuickSelectTools } from "@/components/QuickSelectTools";
 import { EnhancedSelectionSummary } from "@/components/EnhancedSelectionSummary";
@@ -17,6 +17,7 @@ import { PurchasePreview } from "@/components/PurchasePreview";
 const EnhancedStatsPanel = lazy(() => import("@/components/EnhancedStatsPanel").then(m => ({ default: m.EnhancedStatsPanel })));
 import { MobileCanvasPanel } from "@/components/MobileCanvasPanel";
 import { useAuth } from "@/hooks/useAuth";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "sonner";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -78,6 +79,7 @@ type SharePixel = SelectedPixel & {
 
 const BuyPixels = () => {
   const { user } = useAuth();
+  const isMobile = useIsMobile();
   const navigate = useNavigate();
   const { setTickerVisible } = useLayout();
 
@@ -642,7 +644,7 @@ const BuyPixels = () => {
                 onZoomChange={setZoom}
                 showGrid={showGrid}
                 showMyPixels={showMyPixels}
-                enableInteraction={true}
+                enableInteraction={mode === "buying" || !isMobile}
                 onAvailablePixelFocused={selectFocusedPixel}
               />
             </div>
@@ -1025,19 +1027,9 @@ const BuyPixels = () => {
         />
       )}
 
-      {/* Floating Action Button (Mobile fallback) */}
-      {mode === "buying" && selectedPixels.length > 0 && (
-        <div className="lg:hidden">
-          <FloatingActionButton
-            selectedCount={selectedPixels.length}
-            onClick={handlePurchase}
-          />
-        </div>
-      )}
-
       {/* Mobile Fixed Action Buttons (Idle Mode) */}
       {mode === "idle" && (
-        <div className="fixed bottom-16 left-4 right-4 z-50 lg:hidden flex gap-3">
+        <div className="fixed bottom-6 left-4 right-4 z-50 lg:hidden flex gap-3 pb-safe">
           <Button
             onClick={handleBuyClick}
             disabled={isLoading || !isOnline}

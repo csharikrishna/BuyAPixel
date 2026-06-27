@@ -23,7 +23,7 @@ interface TickerMessage {
   id: number;
   message: string;
   emoji: string;
-  type: 'buy' | 'resale' | 'premium';
+  type: 'buy' | 'resale' | 'premium' | 'click';
 }
 
 
@@ -129,7 +129,9 @@ const LiveTicker: React.FC<LiveTickerProps> = ({ isPurchaseOpen = false }) => {
 
 
   const [isPaused, setIsPaused] = useState(false);
-  const [viewerCount, setViewerCount] = useState(0);
+  const [realViewerCount, setRealViewerCount] = useState(0);
+  const [fakeViewerCount, setFakeViewerCount] = useState(0);
+  const viewerCount = Math.max(1, realViewerCount + fakeViewerCount);
   const [isMobile, setIsMobile] = useState(false);
   const [isHovering, setIsHovering] = useState(false);
   const [announcement, setAnnouncement] = useState('');
@@ -169,7 +171,7 @@ const LiveTicker: React.FC<LiveTickerProps> = ({ isPurchaseOpen = false }) => {
       return () => clearInterval(interval);
     }
 
-    const channel = supabase
+    const purchasesChannel = supabase
       .channel('ticker-purchases')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'pixel_blocks' }, async (payload) => {
         const block = payload.new as { owner_id?: string; pixel_count?: number; total_price?: number };
@@ -197,9 +199,82 @@ const LiveTicker: React.FC<LiveTickerProps> = ({ isPurchaseOpen = false }) => {
       })
       .subscribe();
 
+    const clicksChannel = supabase
+      .channel('ticker-clicks')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'pixel_clicks' }, async (payload) => {
+        const click = payload.new as { block_id?: string; pixel_id?: string; };
+        let link_url = null;
+        let pixelType = 'a pixel';
+        
+        if (click.block_id) {
+           const { data } = await supabase.from('pixel_blocks').select('link_url, total_price').eq('id', click.block_id).maybeSingle();
+           if (data) {
+             link_url = data.link_url;
+             pixelType = data.total_price >= 499 ? 'a Gold Tier block' : (data.total_price >= 299 ? 'a Premium block' : 'an Economy block');
+           }
+        } else if (click.pixel_id) {
+           const { data } = await supabase.from('pixels').select('link_url, price_paid').eq('id', click.pixel_id).maybeSingle();
+           if (data) {
+             link_url = data.link_url;
+             pixelType = data.price_paid >= 499 ? 'a Gold pixel' : (data.price_paid >= 299 ? 'a Premium pixel' : 'an Economy pixel');
+           }
+        }
+
+        if (link_url) {
+          try {
+            const urlObj = new URL(link_url);
+            let hostname = urlObj.hostname;
+            if (hostname.startsWith('www.')) hostname = hostname.slice(4);
+            
+            const newMsg: TickerMessage = {
+              id: Date.now() + Math.random(),
+              message: `A user clicked ${pixelType} and visited ${hostname}`,
+              emoji: '🖱️',
+              type: 'click',
+            };
+            setMessages(prev => {
+              const newArr = [...prev, newMsg];
+              return newArr.length > MAX_MESSAGES ? newArr.slice(-MAX_MESSAGES) : newArr;
+            });
+          } catch (e) {
+            // skip invalid URLs
+          }
+        }
+      })
+      .subscribe();
+
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(purchasesChannel);
+      supabase.removeChannel(clicksChannel);
     };
+  }, [isPaused]);
+
+
+  // Simulate live click activity (only when using fake data)
+  useEffect(() => {
+    if (isPaused || USE_REAL_DATA) return;
+
+    const interval = setInterval(() => {
+      const websites = ['a Crypto Startup', 'an AI Agency', 'a SaaS Tool', 'a Portfolio site', 'a Tech Blog', 'an E-commerce store', 'a Web3 Project', 'a Real Estate site', 'a Gaming studio'];
+      const pixelTypes = ['a Gold Tier pixel', 'a Premium pixel', 'an Economy pixel', `Pixel #${Math.floor(Math.random() * 5000)}`, 'a Featured pixel'];
+      
+      const website = websites[Math.floor(Math.random() * websites.length)];
+      const pixelType = pixelTypes[Math.floor(Math.random() * pixelTypes.length)];
+      
+      const newMsg: TickerMessage = {
+        id: Date.now() + Math.random(),
+        message: `A user clicked ${pixelType} and visited ${website}`,
+        emoji: '🖱️',
+        type: 'click',
+      };
+      
+      setMessages(prev => {
+        const newArr = [...prev, newMsg];
+        return newArr.length > MAX_MESSAGES ? newArr.slice(-MAX_MESSAGES) : newArr;
+      });
+    }, Math.floor(Math.random() * 8000) + 12000); // 12-20 seconds
+
+    return () => clearInterval(interval);
   }, [isPaused]);
 
 
@@ -358,51 +433,31 @@ const LiveTicker: React.FC<LiveTickerProps> = ({ isPurchaseOpen = false }) => {
   const getViewerRangeByHour = useCallback((): [number, number] => {
     const now = new Date();
     const hour = now.getHours();
-    const day = now.getDay();
-    const minute = now.getMinutes();
-
-    const weekNumber = Math.floor(Date.now() / (7 * 24 * 60 * 60 * 1000));
-    const viralDay = weekNumber % 7;
-    const isViralDay = day === viralDay;
-
-    const isWeekend = day === 0 || day === 6;
-    const weekendMultiplier = isWeekend ? 1.3 : 1;
 
     let baseMin = 100;
     let baseMax = 300;
 
-    if (hour >= 0 && hour < 6) {
-      baseMin = 50;
-      baseMax = 200;
-    } else if (hour >= 6 && hour < 10) {
-      baseMin = 150 + Math.floor((hour - 6) * 25);
-      baseMax = 350;
-    } else if (hour >= 10 && hour < 14) {
-      baseMin = 300;
-      baseMax = 700;
-    } else if (hour >= 14 && hour < 18) {
-      baseMin = 200;
-      baseMax = 450;
-    } else if (hour >= 18 && hour < 22) {
-      if (isViralDay) {
-        baseMin = 1500 + Math.floor((hour - 18) * 100);
-        baseMax = 5000;
-      } else {
-        baseMin = 600 + Math.floor((hour - 18) * 100);
-        baseMax = 2000;
-      }
-    } else if (hour >= 22) {
-      baseMin = 150;
-      baseMax = 400 - Math.floor((hour - 22) * 50);
+    if (hour === 0) {
+      baseMin = 180; baseMax = 420;
+    } else if (hour >= 1 && hour < 6) {
+      baseMin = 4; baseMax = 22;
+    } else if (hour >= 6 && hour < 9) {
+      baseMin = 28; baseMax = 90;
+    } else if (hour >= 9 && hour < 12) {
+      baseMin = 120; baseMax = 240;
+    } else if (hour >= 12 && hour < 15) {
+      baseMin = 180; baseMax = 320;
+    } else if (hour >= 15 && hour < 18) {
+      baseMin = 220; baseMax = 420;
+    } else if (hour >= 18 && hour < 21) {
+      baseMin = 380; baseMax = 720;
+    } else if (hour >= 21 && hour < 24) {
+      baseMin = 650; baseMax = 1400;
     }
 
-    baseMin = Math.floor(baseMin * weekendMultiplier);
-    baseMax = Math.floor(baseMax * weekendMultiplier);
-
-    const minuteVariance = Math.floor((minute / 60) * 50);
-    baseMin += minuteVariance;
-
-    return [baseMin, baseMax];
+    // Add a tiny bit of variance based on the current minute
+    const minuteVariance = Math.floor((now.getMinutes() / 60) * 10);
+    return [baseMin + minuteVariance, baseMax + minuteVariance];
   }, []);
 
 
@@ -442,12 +497,11 @@ const LiveTicker: React.FC<LiveTickerProps> = ({ isPurchaseOpen = false }) => {
   }, []);
 
 
-  // Initialize viewer count
+  // Initialize fake viewer count
   useEffect(() => {
-    if (USE_REAL_DATA) return;
     const [min, max] = getViewerRangeByHour();
     const initialCount = Math.floor(Math.random() * (max - min + 1)) + min;
-    setViewerCount(initialCount);
+    setFakeViewerCount(initialCount);
   }, [getViewerRangeByHour]);
 
   // Realtime Presence for true viewership tracking
@@ -460,7 +514,7 @@ const LiveTicker: React.FC<LiveTickerProps> = ({ isPurchaseOpen = false }) => {
         const state = room.presenceState();
         // Count total unique connections/devices
         const total = Object.keys(state).length;
-        setViewerCount(Math.max(1, total));
+        setRealViewerCount(total);
       })
       .subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
@@ -478,12 +532,10 @@ const LiveTicker: React.FC<LiveTickerProps> = ({ isPurchaseOpen = false }) => {
   }, []);
 
 
-  // Update viewer count periodically (fake data mode)
+  // Update fake viewer count periodically
   useEffect(() => {
-    if (USE_REAL_DATA) return;
-
     const updateViewers = () => {
-      setViewerCount(prev => {
+      setFakeViewerCount(prev => {
         const [min, max] = getViewerRangeByHour();
 
         const rand = Math.random();
@@ -510,7 +562,7 @@ const LiveTicker: React.FC<LiveTickerProps> = ({ isPurchaseOpen = false }) => {
           newCount -= Math.floor((newCount - max) * 0.3);
         }
 
-        newCount = Math.max(50, newCount);
+        newCount = Math.max(2, newCount);
 
         return Math.floor(newCount);
       });
@@ -521,7 +573,7 @@ const LiveTicker: React.FC<LiveTickerProps> = ({ isPurchaseOpen = false }) => {
     const timer = setTimeout(updateViewers, randomInterval);
 
     return () => clearTimeout(timer);
-  }, [viewerCount, getViewerRangeByHour]);
+  }, [fakeViewerCount, getViewerRangeByHour]);
 
 
   // Update announcement for screen readers
@@ -557,6 +609,7 @@ const LiveTicker: React.FC<LiveTickerProps> = ({ isPurchaseOpen = false }) => {
       case 'premium': return '#8b5cf6';
       case 'buy': return '#10b981';
       case 'resale': return '#f59e0b';
+      case 'click': return '#3b82f6';
       default: return '#6366f1';
     }
   }, []);
