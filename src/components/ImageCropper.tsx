@@ -677,9 +677,11 @@ export const ImageCropper = ({
                      <span>R - Rotate</span>
                   </div>
                </div>
+            </div>
 
-               {/* Action Buttons */}
-               <div className="flex gap-3 pt-1">
+            {/* Action Buttons (Always Visible Footer) */}
+            <div className="px-5 py-4 bg-card border-t shrink-0">
+               <div className="flex gap-3">
                   <Button
                      variant="outline"
                      onClick={onCancel}
