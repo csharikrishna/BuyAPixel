@@ -95,14 +95,20 @@ export class SpatialIndex {
       const startCy = Math.floor(y / CHUNK_SIZE);
       const endCy = Math.floor((y + height) / CHUNK_SIZE);
 
+      const endX = x + width;
+      const endY = y + height;
+
       for (let cy = startCy; cy <= endCy; cy++) {
          for (let cx = startCx; cx <= endCx; cx++) {
             const chunk = this.chunks.get(`${cx}-${cy}`);
             if (chunk) {
-               // We could granularly filter here, but returning the whole chunk is often faster 
-               // if chunks are small enough, and then letting the specific visibility check handle strict culling if needed.
-               // However, for strict viewport querying, we just return the chunk candidates.
-               results.push(...chunk);
+               // Strict bounding box culling to reduce off-screen renders
+               for (let i = 0; i < chunk.length; i++) {
+                  const p = chunk[i];
+                  if (p.x >= x && p.x <= endX && p.y >= y && p.y <= endY) {
+                     results.push(p);
+                  }
+               }
             }
          }
       }

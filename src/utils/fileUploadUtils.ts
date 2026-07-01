@@ -178,7 +178,7 @@ export async function compressImage(
               // Safety valve — return whatever we have
               canvas.toBlob(
                 (blob) => resolve(blob || new Blob()),
-                'image/jpeg',
+                'image/webp',
                 MIN_QUALITY
               );
               return;
@@ -225,7 +225,7 @@ export async function compressImage(
                   tryCompress();
                 }
               },
-              'image/jpeg',
+              'image/webp',
               currentQuality
             );
           };

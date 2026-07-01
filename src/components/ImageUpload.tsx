@@ -205,7 +205,7 @@ export const ImageUpload = ({
         abortControllerRef.current = new AbortController();
 
         // Generate unique filename
-        const fileExt = file.type.split('/')[1] || 'jpg';
+        const fileExt = file.type.split('/')[1] || 'webp';
         const fileName = `${folder}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
 
         // Simulate progress (Supabase doesn't provide native progress for storage)
@@ -223,7 +223,7 @@ export const ImageUpload = ({
         const { data, error } = await supabase.storage
           .from(bucket)
           .upload(fileName, file, {
-            cacheControl: '3600',
+            cacheControl: '31536000',
             upsert: false,
             contentType: file.type,
           });

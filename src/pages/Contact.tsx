@@ -411,7 +411,7 @@ const Contact = () => {
       const { error: uploadErr } = await supabase.storage
         .from('support-attachments')
         .upload(filePath, file, {
-          cacheControl: '3600',
+          cacheControl: '31536000',
           upsert: false,
         });
 

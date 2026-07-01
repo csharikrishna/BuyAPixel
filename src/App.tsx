@@ -10,6 +10,7 @@ import { HelmetProvider } from "react-helmet-async";
 import { LayoutProvider } from "./contexts/LayoutContext";
 import { Loader2 } from "lucide-react";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { useLocation } from "react-router-dom";
 
 // ============================================
 // STATIC IMPORTS (Critical Path - Always Loaded)
@@ -149,12 +150,18 @@ const AppContent = () => {
     previousOnlineStatusRef.current = isOnline;
   }, [isOnline]);
 
+  const location = useLocation();
+  const showTickerPaths = ["/", "/buy-pixels", "/canvas"];
+  const shouldShowTicker = showTickerPaths.includes(location.pathname) || location.pathname === "";
+
   return (
     <>
-      {/* LiveTicker - Lazy loaded, non-blocking */}
-      <Suspense fallback={<TickerLoader />}>
-        <LiveTicker />
-      </Suspense>
+      {/* LiveTicker - Lazy loaded, non-blocking, conditionally rendered */}
+      {shouldShowTicker && (
+        <Suspense fallback={<TickerLoader />}>
+          <LiveTicker />
+        </Suspense>
+      )}
 
       {!isOnline && <OfflineBanner />}
 

@@ -101,7 +101,11 @@ export function useGridInteraction({
          if (!enableInteraction) return;
          if (event.button !== 0 && event.button !== 1) return;
 
+         // Ignore mouse down on buttons
+         if ((event.target as HTMLElement).closest('button')) return;
+
          setIsDragging(true);
+         isDraggingRef.current = true;
          setDragDistance(0);
          setHoveredPixel(null);
 
@@ -109,24 +113,27 @@ export function useGridInteraction({
             clearTimeout(hoverTimeoutRef.current);
          }
 
-         setDragStart({
-            x: event.clientX - viewportOffset.x,
-            y: event.clientY - viewportOffset.y,
-         });
+         const startX = event.clientX - viewportOffsetRef.current.x;
+         const startY = event.clientY - viewportOffsetRef.current.y;
+         setDragStart({ x: startX, y: startY });
+         dragStartRef.current = { x: startX, y: startY };
       },
-      [enableInteraction, viewportOffset]
+      [enableInteraction]
    );
 
    const handleMouseMove = useCallback(
       (event: React.MouseEvent) => {
-         if (!isDragging) {
+         if (!isDraggingRef.current) {
             // Hover logic with debouncing
             const rect = containerRef.current?.getBoundingClientRect();
             if (rect) {
-               const relativeX = event.clientX - rect.left - viewportOffset.x;
-               const relativeY = event.clientY - rect.top - viewportOffset.y;
-               const pixelX = Math.floor(relativeX / scaledPixelSize);
-               const pixelY = Math.floor(relativeY / scaledPixelSize);
+               const relativeX = event.clientX - rect.left - viewportOffsetRef.current.x;
+               const relativeY = event.clientY - rect.top - viewportOffsetRef.current.y;
+               
+               // Must match the render-time pixel sizing formula exactly
+               const currentScaledPixelSize = Math.max(1, pixelSize * zoomRef.current);
+               const pixelX = Math.floor(relativeX / currentScaledPixelSize);
+               const pixelY = Math.floor(relativeY / currentScaledPixelSize);
 
                if (pixelX >= 0 && pixelX < gridWidth && pixelY >= 0 && pixelY < gridHeight) {
                   if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
@@ -142,24 +149,25 @@ export function useGridInteraction({
 
          // Drag logic
          if (!enableInteraction) return;
-         if (dragStart && !animationFrameRef.current) {
+         const start = dragStartRef.current;
+         if (start && !animationFrameRef.current) {
             animationFrameRef.current = requestAnimationFrame(() => {
-               const newX = event.clientX - dragStart.x;
-               const newY = event.clientY - dragStart.y;
+               const newX = event.clientX - start.x;
+               const newY = event.clientY - start.y;
 
                const dist = Math.sqrt(
-                  Math.pow(newX - viewportOffset.x, 2) + Math.pow(newY - viewportOffset.y, 2)
+                  Math.pow(newX - viewportOffsetRef.current.x, 2) + Math.pow(newY - viewportOffsetRef.current.y, 2)
                );
                setDragDistance((prev) => prev + dist);
 
-               const clamped = clampOffset(newX, newY, zoom);
+               const clamped = clampOffsetRef.current(newX, newY, zoomRef.current);
                setViewportOffset(clamped);
 
                animationFrameRef.current = undefined;
             });
          }
       },
-      [isDragging, dragStart, scaledPixelSize, viewportOffset, gridWidth, gridHeight, clampOffset, zoom, containerRef, enableInteraction]
+      [enableInteraction, gridWidth, gridHeight, pixelSize, containerRef]
    );
 
    const handleMouseUp = useCallback(() => {
@@ -213,9 +221,12 @@ export function useGridInteraction({
       if (!container) return;
 
       const handleWheel = (event: WheelEvent) => {
-         if (!event.ctrlKey && !event.metaKey) return;
+         // Ignore wheel events on overlay buttons
+         if ((event.target as HTMLElement).closest('button')) return;
 
+         // PREVENT default page scroll when interacting with the canvas
          event.preventDefault();
+         
          const currentOffset = viewportOffsetRef.current;
 
          // Zoom toward cursor position only with explicit modifier intent.
@@ -251,6 +262,9 @@ export function useGridInteraction({
       };
 
       const handleTouchStart = (e: TouchEvent) => {
+         // Ignore touches on overlay buttons
+         if ((e.target as HTMLElement).closest('button')) return;
+
          if (e.touches.length === 2) {
             e.preventDefault(); // Prevent browser zoom
             const dx = e.touches[0].clientX - e.touches[1].clientX;
@@ -287,6 +301,9 @@ export function useGridInteraction({
       };
 
       const handleTouchMove = (e: TouchEvent) => {
+         // Ignore touches on overlay buttons
+         if ((e.target as HTMLElement).closest('button')) return;
+
          // Clear long press if they move their finger before it triggers
          if (longPressTimeoutRef.current && !isForcePanningRef.current && dragStartRef.current) {
             const dx = Math.abs(e.touches[0].clientX - dragStartRef.current.x);

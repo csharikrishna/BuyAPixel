@@ -7,7 +7,7 @@ export const GRID_CONFIG = {
    INITIAL_ZOOM_MULTIPLIER_MOBILE: 0.995, // 👈 mobile zoom multiplier (1.0 = fit entire grid)
    BILLBOARD_WIDTH: 40,
    BILLBOARD_HEIGHT: 24,
-   ZOOM_FACTOR: 1.05,
+   ZOOM_FACTOR: 1.12,
    PAN_VIEWPORT_MARGIN: 24,
 
    // Canvas dimensions
@@ -17,13 +17,13 @@ export const GRID_CONFIG = {
 
    // Performance
    CULLING_BUFFER: 2,
-   HOVER_DEBOUNCE_MS: 30,
+   HOVER_DEBOUNCE_MS: 50,
    DRAG_THRESHOLD: 15, // Increased from 5 for better mobile tap detection
    MAX_SELECTION_AREA: 2500,
 
    // Optimization - reduced for faster initial render
    CHUNK_SIZE: 20, // Smaller chunks for finer spatial queries
-   RENDER_BUFFER: 150, // Reduced from 500 for faster rendering
+   RENDER_BUFFER: 50, // Reduced from 150 for faster rendering
 } as const;
 
 /**

@@ -51,26 +51,15 @@ export const getGridImageUrl = (
 ): string => {
    if (!url) return '';
 
-   // At low zoom, use smaller images
-   // At high zoom, use higher quality
-   let width: number;
-   let quality: number;
-
-   if (zoom < 0.5) {
-      width = 50;
-      quality = 60;
-   } else if (zoom < 1) {
-      width = 100;
-      quality = 70;
-   } else if (zoom < 2) {
-      width = 200;
-      quality = 80;
+   // PERFORMANCE: Only 2 stable buckets to prevent mass re-downloads
+   // when zooming across threshold boundaries.
+   // Low zoom (< 1.5): tiny thumbnail, fast to load
+   // High zoom (>= 1.5): detail image for close inspection
+   if (zoom < 1.5) {
+      return getOptimizedImageUrl(url, 50, 60);
    } else {
-      width = 400;
-      quality = 90;
+      return getOptimizedImageUrl(url, 200, 80);
    }
-
-   return getOptimizedImageUrl(url, width, quality);
 };
 
 /**

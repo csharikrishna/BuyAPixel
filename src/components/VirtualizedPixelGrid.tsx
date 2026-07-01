@@ -8,6 +8,7 @@ import {
   useTransition,
   forwardRef,
   useImperativeHandle,
+  memo,
 } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { PixelTooltip } from "./PixelTooltip";
@@ -74,6 +75,141 @@ function getTierAnimationClass(pricePaid = 0): string {
   if (pricePaid >= AD_TIER_CONFIG.PREMIUM.price) return " pixel-premium-shimmer";
   return "";
 }
+
+// ============================================================
+// Memoized Sub-Components (prevents re-rendering every pixel
+// when unrelated state changes like hover or zoom)
+// ============================================================
+
+interface BlockImageProps {
+  blockId: string;
+  minX: number;
+  minY: number;
+  width: number;
+  height: number;
+  imageUrl: string;
+  linkUrl: string | null;
+  altText: string | null;
+  ownerId: string;
+  tierAnimationClass: string;
+  scaledPixelSize: number;
+  isOwner: boolean;
+  isHighlight: boolean;
+  zoomBucket: 'low' | 'high';
+  onClick: (e: React.MouseEvent) => void;
+  onKeyDown: (e: React.KeyboardEvent) => void;
+}
+
+const PixelBlockImage = memo<BlockImageProps>(function PixelBlockImage({
+  blockId, minX, minY, width, height, imageUrl, altText,
+  tierAnimationClass, scaledPixelSize, isOwner, isHighlight,
+  zoomBucket, onClick, onKeyDown,
+}) {
+  const imgSrc = getGridImageUrl(imageUrl, zoomBucket === 'low' ? 1 : 2);
+  const showAnimation = scaledPixelSize >= 10 && !isOwner && !isHighlight;
+  return (
+    <div
+      key={`block-${blockId}`}
+      role="button"
+      tabIndex={0}
+      className={`cursor-pointer${showAnimation ? tierAnimationClass : ''}`}
+      style={{
+        position: 'absolute',
+        left: minX * scaledPixelSize,
+        top: minY * scaledPixelSize,
+        width: width * scaledPixelSize,
+        height: height * scaledPixelSize,
+        backgroundColor: '#1e1e2e',
+        opacity: isHighlight ? 1 : isOwner ? 1 : 0.9,
+        border: isHighlight
+          ? '3px solid #f97316'
+          : isOwner ? '2px solid #10b981' : '1px solid #cbd5e1',
+        borderRadius: '2px',
+        zIndex: isHighlight ? 20 : isOwner ? 15 : 5,
+        overflow: 'hidden',
+      }}
+      onClick={onClick}
+      onKeyDown={onKeyDown}
+      aria-label={altText || `Pixel block at (${minX}, ${minY})`}
+    >
+      <img
+        src={imgSrc}
+        alt={altText || ''}
+        loading="lazy"
+        decoding="async"
+        style={{
+          width: '100%',
+          height: '100%',
+          objectFit: 'contain',
+          display: 'block',
+        }}
+      />
+    </div>
+  );
+});
+
+interface IndividualPixelProps {
+  pixel: PurchasedPixel;
+  scaledPixelSize: number;
+  isOwner: boolean;
+  isHighlight: boolean;
+  tierAnimationClass: string;
+  zoomBucket: 'low' | 'high';
+  onClick: (e: React.MouseEvent) => void;
+  onKeyDown: (e: React.KeyboardEvent) => void;
+}
+
+const IndividualPixelImage = memo<IndividualPixelProps>(function IndividualPixelImage({
+  pixel, scaledPixelSize, isOwner, isHighlight,
+  tierAnimationClass, zoomBucket, onClick, onKeyDown,
+}) {
+  const { x, y, image_url, alt_text } = pixel;
+  const showAnimation = scaledPixelSize >= 10 && !isOwner && !isHighlight;
+  const imgSrc = image_url ? getGridImageUrl(image_url, zoomBucket === 'low' ? 1 : 2) : null;
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      className={`cursor-pointer${showAnimation ? tierAnimationClass : ''}`}
+      style={{
+        position: 'absolute',
+        left: x * scaledPixelSize,
+        top: y * scaledPixelSize,
+        width: scaledPixelSize,
+        height: scaledPixelSize,
+        backgroundColor: image_url
+          ? '#1e1e2e'
+          : isOwner
+            ? '#10b981'
+            : '#ef4444',
+        opacity: isHighlight ? 1 : isOwner ? 1 : 0.85,
+        border: isHighlight
+          ? '2px solid #f97316'
+          : isOwner ? '1px solid #10b981' : '1px solid #cbd5e1',
+        zIndex: isHighlight ? 20 : isOwner ? 10 : 0,
+        overflow: 'hidden',
+      }}
+      onClick={onClick}
+      onKeyDown={onKeyDown}
+      aria-label={alt_text || `Pixel at ${x}, ${y}`}
+    >
+      {imgSrc && (
+        <img
+          src={imgSrc}
+          alt={alt_text || ''}
+          loading="lazy"
+          decoding="async"
+          style={{
+            width: '100%',
+            height: '100%',
+            objectFit: 'contain',
+            display: 'block',
+          }}
+        />
+      )}
+    </div>
+  );
+});
 
 // ============================================================
 // Component
@@ -673,15 +809,26 @@ export const VirtualizedPixelGrid = forwardRef<
       });
 
       const blocks = Array.from(blockMap.entries()).map(([blockId, pixels]) => {
-        const xs = pixels.map((p) => p.x);
-        const ys = pixels.map((p) => p.y);
+        let minX = Infinity;
+        let maxX = -Infinity;
+        let minY = Infinity;
+        let maxY = -Infinity;
+
+        for (let i = 0; i < pixels.length; i++) {
+          const p = pixels[i];
+          if (p.x < minX) minX = p.x;
+          if (p.x > maxX) maxX = p.x;
+          if (p.y < minY) minY = p.y;
+          if (p.y > maxY) maxY = p.y;
+        }
+
         const first = pixels[0];
         return {
           blockId,
-          minX: Math.min(...xs),
-          minY: Math.min(...ys),
-          width: Math.max(...xs) - Math.min(...xs) + 1,
-          height: Math.max(...ys) - Math.min(...ys) + 1,
+          minX,
+          minY,
+          width: maxX - minX + 1,
+          height: maxY - minY + 1,
           imageUrl: first.image_url!,
           linkUrl: first.link_url,
           altText: first.alt_text,
@@ -716,6 +863,8 @@ export const VirtualizedPixelGrid = forwardRef<
         : isSelecting
           ? "crosshair"
           : "grab";
+
+    const zoomBucket = zoom < 1.5 ? 'low' : 'high';
 
     // ── Render ────────────────────────────────────────────────
 
@@ -769,7 +918,7 @@ export const VirtualizedPixelGrid = forwardRef<
           <div
             style={{
               transform: `translate3d(${Math.round(viewportOffset.x)}px, ${Math.round(viewportOffset.y)}px, 0)`,
-              willChange: isDragging ? "transform" : "auto",
+              willChange: "transform",
               transformOrigin: "0 0",
             }}
           >
@@ -785,7 +934,7 @@ export const VirtualizedPixelGrid = forwardRef<
             />
 
             {/* Grid Lines — only show when pixels are large enough to distinguish */}
-            {showGrid && scaledPixelSize >= 2 && (
+            {showGrid && scaledPixelSize >= 4 && (
               <div
                 className="absolute pointer-events-none rounded-md"
                 style={{
@@ -914,35 +1063,13 @@ export const VirtualizedPixelGrid = forwardRef<
               const isOwner = block.ownerId === user?.id;
               const isHighlight = highlightUser === block.ownerId;
               return (
-                <div
+                <PixelBlockImage
                   key={`block-${block.blockId}`}
-                  role="button"
-                  tabIndex={0}
-                  className={`cursor-pointer ${scaledPixelSize >= 6 && !isOwner && !isHighlight ? block.tierAnimationClass : ""}`}
-                  style={{
-                    position: "absolute",
-                    left: block.minX * scaledPixelSize,
-                    top: block.minY * scaledPixelSize,
-                    width: block.width * scaledPixelSize,
-                    height: block.height * scaledPixelSize,
-                    backgroundImage: `url(${getGridImageUrl(block.imageUrl, zoom)})`,
-                    backgroundSize: "contain",
-                    backgroundPosition: "center",
-                    backgroundRepeat: "no-repeat",
-                    backgroundColor: "#1e1e2e",
-                    opacity: isHighlight ? 1 : isOwner ? 1 : 0.9,
-                    boxShadow: isHighlight
-                      ? "0 0 15px rgba(249,115,22,1)"
-                      : isOwner
-                        ? "0 0 8px rgba(16,185,129,0.7)"
-                        : "0 2px 8px rgba(0,0,0,0.15)",
-                    border: isHighlight
-                      ? "3px solid #f97316"
-                      : isOwner ? "2px solid #10b981" : "1px solid #cbd5e1",
-                    borderRadius: "2px",
-                    zIndex: isHighlight ? 20 : isOwner ? 15 : 5,
-                    imageRendering: zoom < 1 ? "auto" : "pixelated",
-                  }}
+                  {...block}
+                  scaledPixelSize={scaledPixelSize}
+                  isOwner={isOwner}
+                  isHighlight={isHighlight}
+                  zoomBucket={zoomBucket}
                   onClick={(e) => {
                     e.stopPropagation();
                     if (dragDistance > GRID_CONFIG.DRAG_THRESHOLD) return;
@@ -981,7 +1108,6 @@ export const VirtualizedPixelGrid = forwardRef<
                       }
                     }
                   }}
-                  aria-label={block.altText || `Pixel block at (${block.minX}, ${block.minY})`}
                 />
               );
             })}
@@ -989,46 +1115,18 @@ export const VirtualizedPixelGrid = forwardRef<
             {/* Individual Pixels */}
             {individualPixels.map((pixel) => {
               if (showMyPixels && pixel.owner_id !== user?.id) return null;
-              const { x, y, id, owner_id, image_url, link_url, alt_text } = pixel;
-              const isOwner = owner_id === user?.id;
-              const isHighlight = highlightUser === owner_id;
-              const tierAnimationClass =
-                scaledPixelSize >= 6 && !isOwner && !isHighlight
-                  ? getTierAnimationClass(pixel.price_paid)
-                  : "";
+              const isOwner = pixel.owner_id === user?.id;
+              const isHighlight = highlightUser === pixel.owner_id;
+              const tierAnimationClass = getTierAnimationClass(pixel.price_paid);
               return (
-                <div
-                  key={`sold-${id}`}
-                  role="button"
-                  tabIndex={0}
-                  className={`cursor-pointer ${tierAnimationClass}`}
-                  style={{
-                    position: "absolute",
-                    left: x * scaledPixelSize,
-                    top: y * scaledPixelSize,
-                    width: scaledPixelSize,
-                    height: scaledPixelSize,
-                    backgroundColor: image_url
-                      ? "transparent"
-                      : isOwner
-                        ? "#10b981"
-                        : "#ef4444",
-                    backgroundImage: image_url
-                      ? `url(${getGridImageUrl(image_url, zoom)})`
-                      : "none",
-                    backgroundSize: "contain",
-                    backgroundPosition: "center",
-                    backgroundRepeat: "no-repeat",
-                    opacity: isHighlight ? 1 : isOwner ? 1 : 0.85,
-                    boxShadow: isHighlight
-                      ? "0 0 12px rgba(249,115,22,1)"
-                      : isOwner ? "0 0 6px rgba(16,185,129,0.6)" : "none",
-                    border: isHighlight
-                      ? "2px solid #f97316"
-                      : isOwner ? "1px solid #10b981" : "1px solid #cbd5e1",
-                    zIndex: isHighlight ? 20 : isOwner ? 10 : 0,
-                    imageRendering: zoom < 1 ? "auto" : "pixelated",
-                  }}
+                <IndividualPixelImage
+                  key={`sold-${pixel.id}`}
+                  pixel={pixel}
+                  scaledPixelSize={scaledPixelSize}
+                  isOwner={isOwner}
+                  isHighlight={isHighlight}
+                  tierAnimationClass={tierAnimationClass}
+                  zoomBucket={zoomBucket}
                   onClick={(e) => {
                     e.stopPropagation();
                     if (dragDistance > GRID_CONFIG.DRAG_THRESHOLD) return;
@@ -1040,15 +1138,14 @@ export const VirtualizedPixelGrid = forwardRef<
                     }
                   }}
                   onKeyDown={(e) => {
-                    if ((link_url || image_url) && (e.key === "Enter" || e.key === " ")) {
+                    if ((pixel.link_url || pixel.image_url) && (e.key === "Enter" || e.key === " ")) {
                       e.preventDefault();
-                      if (link_url) {
-                        openUrl(link_url);
-                        trackPixelClick(id, null, 'grid');
+                      if (pixel.link_url) {
+                        openUrl(pixel.link_url);
+                        trackPixelClick(pixel.id, null, 'grid');
                       }
                     }
                   }}
-                  aria-label={alt_text || `Pixel at ${x}, ${y}`}
                 />
               );
             })}
@@ -1092,13 +1189,20 @@ export const VirtualizedPixelGrid = forwardRef<
 
           {/* Recenter Button */}
           <button
+            onPointerDown={(e) => e.stopPropagation()}
             onClick={(e) => {
               e.stopPropagation();
+              e.preventDefault();
               if (navigator.vibrate) navigator.vibrate(30);
               if (containerRef.current) {
                 const fitted = calculateFittedViewport(containerRef.current.clientWidth, containerRef.current.clientHeight);
-                onZoomChange(fitted.zoom);
-                setViewportOffset(fitted.offset);
+                
+                // Break out of the React render batch to prevent the useGridInteraction
+                // useEffect from receiving a stale or racing state update.
+                setTimeout(() => {
+                  onZoomChange(fitted.zoom);
+                  setViewportOffset(fitted.offset);
+                }, 10);
               }
             }}
             className="absolute bottom-3 left-3 bg-white/90 backdrop-blur-md text-neutral-800 p-2.5 rounded-full shadow-lg hover:bg-white transition-all transform hover:scale-110 active:scale-95 border border-white/50 z-50"

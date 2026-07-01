@@ -29,7 +29,8 @@ const StaticPixelPreview = () => {
       if (error) throw error;
       return data || [];
     },
-    refetchInterval: 30000, // Refresh every 30 seconds
+    staleTime: 300000,
+    refetchInterval: 300000, // Refresh every 5 minutes instead of 30s
   });
 
   // Fetch real pixel data

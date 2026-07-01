@@ -718,17 +718,17 @@ export const PurchasePreview = ({
         canvas.toBlob((b) => {
           if (b) resolve(b);
           else reject(new Error('Failed to generate color image'));
-        }, 'image/png');
+        }, 'image/webp');
       });
 
       // Upload to Supabase
-      const fileName = `user-pixels/color-${selectedColor.replace('#', '')}-${Date.now()}.png`;
+      const fileName = `user-pixels/color-${selectedColor.replace('#', '')}-${Date.now()}.webp`;
       const { data, error } = await supabase.storage
         .from('pixel-images')
         .upload(fileName, blob, {
-          cacheControl: '3600',
+          cacheControl: '31536000',
           upsert: false,
-          contentType: 'image/png',
+          contentType: 'image/webp',
         });
 
       if (error) throw error;
