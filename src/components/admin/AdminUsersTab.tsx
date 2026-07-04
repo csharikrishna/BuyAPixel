@@ -29,6 +29,8 @@ import {
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { getErrorMessage } from '@/lib/utils';
+import { useAdminUsers, useAdminStats } from '@/hooks/useAdminData';
+import { Skeleton } from '@/components/ui/skeleton';
 
 // Re-export so the parent can use the same type
 export interface User {
@@ -47,12 +49,18 @@ type SortField = 'created_at' | 'pixels_owned' | 'total_spent';
 type SortOrder = 'asc' | 'desc';
 
 interface AdminUsersTabProps {
-  users: User[];
-  stats: { activeUsers: number; blockedUsers: number; paidUsers: number };
-  onRefresh: () => void;
+  onRefresh?: () => void;
 }
 
-export function AdminUsersTab({ users, stats, onRefresh }: AdminUsersTabProps) {
+export function AdminUsersTab({ onRefresh }: AdminUsersTabProps) {
+  const { data: users = [], isLoading: loadingUsers, refetch: refetchUsers } = useAdminUsers();
+  const { data: stats = { activeUsers: 0, blockedUsers: 0, paidUsers: 0 }, isLoading: loadingStats } = useAdminStats();
+
+  const handleRefresh = useCallback(() => {
+    refetchUsers();
+    if (onRefresh) onRefresh();
+  }, [refetchUsers, onRefresh]);
+
   // --- Local state ---
   const [searchTerm, setSearchTerm] = useState('');
   const [userFilter, setUserFilter] = useState<UserFilter>('all');
@@ -164,7 +172,7 @@ export function AdminUsersTab({ users, stats, onRefresh }: AdminUsersTabProps) {
       setBlockDialog(null);
       setBlockReason('');
       setBlockNotes('');
-      onRefresh();
+      handleRefresh();
     } catch (error: unknown) {
       console.error('Error blocking user:', error);
       toast.error('Failed to block user', { description: getErrorMessage(error) });
@@ -179,7 +187,7 @@ export function AdminUsersTab({ users, stats, onRefresh }: AdminUsersTabProps) {
       const { error } = await supabase.rpc('admin_unblock_user', { p_user_id: userId });
       if (error) throw error;
       toast.success('User unblocked', { description: `${email} can now access the platform` });
-      onRefresh();
+      handleRefresh();
     } catch (error: unknown) {
       console.error('Error unblocking user:', error);
       toast.error('Failed to unblock user', { description: getErrorMessage(error) });
@@ -201,7 +209,7 @@ export function AdminUsersTab({ users, stats, onRefresh }: AdminUsersTabProps) {
         duration: 8000,
       });
       setDeleteDialog(null);
-      onRefresh();
+      handleRefresh();
     } catch (error: unknown) {
       console.error('Error deleting user:', error);
       toast.error('Failed to delete user', { description: getErrorMessage(error) });
@@ -223,7 +231,7 @@ export function AdminUsersTab({ users, stats, onRefresh }: AdminUsersTabProps) {
         description: `Pixels owned by ${resetUserPixelsDialog.email} are now available for purchase.`,
       });
       setResetUserPixelsDialog(null);
-      onRefresh();
+      handleRefresh();
     } catch (error: unknown) {
       console.error('Error resetting user pixels:', error);
       toast.error('Failed to reset user pixels', { description: getErrorMessage(error) });
@@ -281,7 +289,7 @@ export function AdminUsersTab({ users, stats, onRefresh }: AdminUsersTabProps) {
       }
       setSelectedUsers(new Set());
       setBulkAction(null);
-      onRefresh();
+      handleRefresh();
     } catch (error: unknown) {
       toast.error('Bulk action failed', { description: getErrorMessage(error) });
     } finally {
@@ -304,7 +312,7 @@ export function AdminUsersTab({ users, stats, onRefresh }: AdminUsersTabProps) {
       setSelectedUsers(new Set());
       setBulkAction(null);
       setBulkDeleteDialog(false);
-      onRefresh();
+      handleRefresh();
     } catch (error: unknown) {
       toast.error('Bulk deletion failed', { description: getErrorMessage(error) });
       setBulkDeleteDialog(false);
@@ -320,9 +328,13 @@ export function AdminUsersTab({ users, stats, onRefresh }: AdminUsersTabProps) {
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
             <div>
               <CardTitle>User Management</CardTitle>
-              <CardDescription>
-                Showing {filteredAndSortedUsers.length} of {users.length} users
-              </CardDescription>
+              {loadingUsers ? (
+                <Skeleton className="h-4 w-40 mt-1" />
+              ) : (
+                <CardDescription>
+                  Showing {filteredAndSortedUsers.length} of {users.length} users
+                </CardDescription>
+              )}
             </div>
             <Button
               onClick={handleBulkAction}
@@ -422,7 +434,13 @@ export function AdminUsersTab({ users, stats, onRefresh }: AdminUsersTabProps) {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredAndSortedUsers.length === 0 ? (
+                  {loadingUsers ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="h-40 text-center">
+                        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground mx-auto" />
+                      </TableCell>
+                    </TableRow>
+                  ) : filteredAndSortedUsers.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={7} className="h-40">
                         <div className="flex flex-col items-center justify-center text-center">

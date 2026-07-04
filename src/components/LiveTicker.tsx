@@ -516,15 +516,7 @@ const LiveTicker: React.FC<LiveTickerProps> = ({ isPurchaseOpen = false }) => {
         const total = Object.keys(state).length;
         setRealViewerCount(total);
       })
-      .subscribe(async (status) => {
-        if (status === 'SUBSCRIBED') {
-          const { data: { session } } = await supabase.auth.getSession();
-          await room.track({ 
-            online_at: new Date().toISOString(),
-            user_id: session?.user?.id || null
-          });
-        }
-      });
+      .subscribe();
       
     return () => {
       supabase.removeChannel(room);

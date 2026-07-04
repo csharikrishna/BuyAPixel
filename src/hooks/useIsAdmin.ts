@@ -6,17 +6,23 @@ export const useIsAdmin = () => {
   const { user } = useAuth();
   const [isAdmin, setIsAdmin] = useState(false);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingState, setIsLoadingState] = useState(true);
+  const [checkedUserId, setCheckedUserId] = useState<string | null | undefined>(undefined); // undefined means hasn't checked
+
+  const isLoading = isLoadingState || checkedUserId !== (user?.id || null);
 
   useEffect(() => {
     checkAdminStatus();
   }, [user]);
 
   const checkAdminStatus = async () => {
+    setIsLoadingState(true);
+    
     if (!user) {
       setIsAdmin(false);
       setIsSuperAdmin(false);
-      setIsLoading(false);
+      setCheckedUserId(null);
+      setIsLoadingState(false);
       return;
     }
 
@@ -43,12 +49,14 @@ export const useIsAdmin = () => {
       // Either condition grants admin access
       setIsAdmin(dbIsAdmin || dbIsSuperAdmin);
       setIsSuperAdmin(dbIsSuperAdmin);
+      setCheckedUserId(user.id);
     } catch {
       // Error — default to non-admin (safer)
       setIsAdmin(false);
       setIsSuperAdmin(false);
+      setCheckedUserId(user.id);
     } finally {
-      setIsLoading(false);
+      setIsLoadingState(false);
     }
   };
 

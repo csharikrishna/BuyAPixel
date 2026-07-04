@@ -458,37 +458,7 @@ export const PurchasePreview = ({
         return;
       }
 
-      // Step 1: Create Razorpay order [web:144]
-      // Use raw fetch to ensure we can read the exact error body from the edge function
-      const orderResponse = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-razorpay-order`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`
-        },
-        body: JSON.stringify({
-          pixels: selectedPixels.map(p => ({ x: p.x, y: p.y, price: p.price })),
-          totalAmount: totalCost,
-          imageUrl: imagePreview,
-          linkUrl: linkUrl.trim() || null,
-          altText: pixelName.trim(),
-        })
-      });
-
-      const orderData = await orderResponse.json().catch(() => ({ error: 'Invalid JSON response from server' }));
-
-      if (!orderResponse.ok || !orderData?.success) {
-        const errorMsg = orderData?.error || orderData?.message || orderData?.details || `Server returned ${orderResponse.status}`;
-        console.error('Create order failed:', { status: orderResponse.status, orderData, errorMsg });
-        throw new Error(errorMsg);
-      }
-
-      // Capture order ID for receipt display
-      if (orderData.order?.id) {
-        setOrderId(orderData.order.id);
-      }
-
-          // ── BYPASS MODE: skip Razorpay, call bypass-purchase directly ──
+      // ── BYPASS MODE: skip Razorpay, call bypass-purchase directly ──
       if (isPaymentBypassed) {
         try {
           const bypassResponse = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/bypass-purchase`, {
@@ -544,6 +514,36 @@ export const PurchasePreview = ({
           console.error('Bypass error:', err);
           throw err;
         }
+      }
+
+      // Step 1: Create Razorpay order [web:144]
+      // Use raw fetch to ensure we can read the exact error body from the edge function
+      const orderResponse = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-razorpay-order`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({
+          pixels: selectedPixels.map(p => ({ x: p.x, y: p.y, price: p.price })),
+          totalAmount: totalCost,
+          imageUrl: imagePreview,
+          linkUrl: linkUrl.trim() || null,
+          altText: pixelName.trim(),
+        })
+      });
+
+      const orderData = await orderResponse.json().catch(() => ({ error: 'Invalid JSON response from server' }));
+
+      if (!orderResponse.ok || !orderData?.success) {
+        const errorMsg = orderData?.error || orderData?.message || orderData?.details || `Server returned ${orderResponse.status}`;
+        console.error('Create order failed:', { status: orderResponse.status, orderData, errorMsg });
+        throw new Error(errorMsg);
+      }
+
+      // Capture order ID for receipt display
+      if (orderData.order?.id) {
+        setOrderId(orderData.order.id);
       }
 
       // Step 2: Open Razorpay checkout with enhanced options [web:144]

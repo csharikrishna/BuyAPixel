@@ -242,6 +242,7 @@ export const VirtualizedPixelGrid = forwardRef<
     const containerRef = useRef<HTMLDivElement>(null);
     const hasInitializedRef = useRef(false);
     const handledPixelParam = useRef<string | null>(null);
+    const pendingFocusParam = useRef<string | null>(null);
     const [searchParams] = useSearchParams();
     const highlightUser = searchParams.get('highlightUser');
     const imageUrlsRef = useRef<Set<string>>(new Set());
@@ -636,7 +637,7 @@ export const VirtualizedPixelGrid = forwardRef<
       const tier = currentPixel?.price_paid
         ? getAdTierByPrice(currentPixel.price_paid)
         : "ECONOMY";
-      
+
       const baseDuration = AD_TIER_CONFIG[tier].adDuration;
       // Ad plays for: baseDuration * pixelCount, capped at 30 seconds
       const playDuration = Math.min(30, baseDuration * (currentPixel?.pixelCount || 1));
@@ -673,14 +674,45 @@ export const VirtualizedPixelGrid = forwardRef<
     // ── Handle URL Pixel Focus ─────────────────────────────────
     useEffect(() => {
       const pixelParam = searchParams.get('pixel');
-      if (!pixelParam || handledPixelParam.current === pixelParam) return;
+      const xParam = searchParams.get('x');
+      const yParam = searchParams.get('y');
+
+      let targetX: string | null = null;
+      let targetY: string | null = null;
+      let paramId = '';
+
+      if (pixelParam) {
+        const [xStr, yStr] = pixelParam.split(',');
+        targetX = xStr;
+        targetY = yStr;
+        paramId = `pixel=${pixelParam}`;
+      } else if (xParam !== null && yParam !== null) {
+        targetX = xParam;
+        targetY = yParam;
+        paramId = `x=${xParam}&y=${yParam}`;
+      }
+
+      if (!targetX || !targetY) return;
       if (isLoading || !containerSize.width || !containerSize.height) return;
+      
+      if (handledPixelParam.current === paramId && pendingFocusParam.current !== paramId) return;
 
-      handledPixelParam.current = pixelParam;
+      const targetZoom = Math.min(8, GRID_CONFIG.MAX_ZOOM);
+      
+      // Fix: Wait for parent's zoom state to propagate before setting viewport offset.
+      // Otherwise, local viewport offset gets clamped by useGridInteraction's useEffect
+      // using the old (smaller) zoom bounds.
+      if (zoom !== targetZoom) {
+        onZoomChange(targetZoom);
+        pendingFocusParam.current = paramId;
+        return; 
+      }
 
-      const [xStr, yStr] = pixelParam.split(',');
-      const px = parseInt(xStr, 10);
-      const py = parseInt(yStr, 10);
+      handledPixelParam.current = paramId;
+      pendingFocusParam.current = null;
+
+      const px = parseInt(targetX, 10);
+      const py = parseInt(targetY, 10);
 
       if (isNaN(px) || isNaN(py) || !isInGridBounds(px, py, gridWidth, gridHeight)) {
         toast.error("Invalid pixel coordinates in URL");
@@ -688,8 +720,6 @@ export const VirtualizedPixelGrid = forwardRef<
       }
 
       // Found a valid pixel to focus
-      const targetZoom = Math.min(8, GRID_CONFIG.MAX_ZOOM);
-      onZoomChange(targetZoom);
       const scaled = Math.max(1, Math.floor(pixelSize * targetZoom));
       setViewportOffset(
         getPixelFocusViewportOffset({
@@ -731,7 +761,7 @@ export const VirtualizedPixelGrid = forwardRef<
         setInfoModalBlock(block);
 
         // Add a slight delay to open the modal so the zoom animation feels smooth
-        setTimeout(() => setInfoModalOpen(true), 100);
+        setTimeout(() => setInfoModalOpen(true), 1200);
 
       } else {
         const selectionValidation = validateSelection([createSelectedPixel(px, py)]);
@@ -1196,7 +1226,7 @@ export const VirtualizedPixelGrid = forwardRef<
               if (navigator.vibrate) navigator.vibrate(30);
               if (containerRef.current) {
                 const fitted = calculateFittedViewport(containerRef.current.clientWidth, containerRef.current.clientHeight);
-                
+
                 // Break out of the React render batch to prevent the useGridInteraction
                 // useEffect from receiving a stale or racing state update.
                 setTimeout(() => {

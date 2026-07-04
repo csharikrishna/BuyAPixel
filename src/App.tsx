@@ -11,7 +11,7 @@ import { LayoutProvider } from "./contexts/LayoutContext";
 import { Loader2 } from "lucide-react";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { useLocation } from "react-router-dom";
-
+import { AdminRoute } from "@/components/AdminRoute";
 // ============================================
 // STATIC IMPORTS (Critical Path - Always Loaded)
 // ============================================
@@ -58,8 +58,8 @@ const StatsPage = lazy(() => import("./pages/StatsPage"));
 const DirectoryPage = lazy(() => import("./pages/DirectoryPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
-// LiveTicker (not critical for first paint)
 const LiveTicker = lazy(() => import("./components/LiveTicker"));
+import { GlobalPresence } from "./components/GlobalPresence";
 
 // ============================================
 // LOADING FALLBACK
@@ -163,13 +163,21 @@ const AppContent = () => {
         </Suspense>
       )}
 
+      <GlobalPresence />
+
       {!isOnline && <OfflineBanner />}
 
       <ErrorBoundary pageName="BuyASpot">
         <Suspense fallback={<PageLoader />}>
           <Routes>
             {/* Admin Page */}
-            <Route path="/admin" element={<ErrorBoundary pageName="Admin Dashboard"><AdminDashboard /></ErrorBoundary>} />
+            <Route path="/admin" element={
+              <AdminRoute>
+                <ErrorBoundary pageName="Admin Dashboard">
+                  <AdminDashboard />
+                </ErrorBoundary>
+              </AdminRoute>
+            } />
 
             {/* Main Pages */}
             <Route path="/" element={<ErrorBoundary pageName="BuyPixels"><BuyPixels /></ErrorBoundary>} />

@@ -39,6 +39,7 @@ import {
   AdminLiveViewersTab,
 } from '@/components/admin';
 import type { AdminStats } from '@/components/admin';
+import { useAdminStats, useAdminUsers, useAdminPixels } from '@/hooks/useAdminData';
 
 // --- Interfaces (shared / parent-only) ---
 
@@ -96,21 +97,14 @@ const AdminDashboard = () => {
   const navigate = useNavigate();
 
   // --- Shared State ---
-  const [users, setUsers] = useState<User[]>([]);
   const [admins, setAdmins] = useState<AdminUser[]>([]);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [marketplaceListings, setMarketplaceListings] = useState<MarketplaceListing[]>([]);
   const [marketplaceAnalytics, setMarketplaceAnalytics] = useState<MarketplaceAnalytics | null>(null);
-  const [pixels, setPixels] = useState<any[]>([]);
 
-  const [stats, setStats] = useState<AdminStats>({
-    totalUsers: 0,
-    totalPixelsSold: 0,
-    totalRevenue: 0,
-    blockedUsers: 0,
-    activeUsers: 0,
-    paidUsers: 0,
-  });
+  const { data: stats = { totalUsers: 0, totalPixelsSold: 0, totalRevenue: 0, blockedUsers: 0, activeUsers: 0, paidUsers: 0 }, isLoading: loadingStats } = useAdminStats();
+  const { data: users = [], isLoading: loadingUsers } = useAdminUsers();
+  const { data: pixels = [], isLoading: loadingPixels } = useAdminPixels();
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -118,6 +112,7 @@ const AdminDashboard = () => {
 
   // Access management
   const [newAdminEmail, setNewAdminEmail] = useState('');
+  const [showLilBro, setShowLilBro] = useState(false);
 
   // Broadcast
   const [broadcastMessage, setBroadcastMessage] = useState('');
@@ -214,39 +209,18 @@ const AdminDashboard = () => {
       if (!silent) setLoading(true);
       else setRefreshing(true);
 
-      // 1. Users (via safe admin RPC that checks permissions internally)
-      let allUsers: User[] = [];
-      try {
-        const { data: usersData, error: usersError } = await supabase.rpc('get_admin_dashboard_users');
-        if (usersError) {
-          if (!silent) {
-            console.warn('Failed to load admin users:', usersError.message);
-          }
-        } else {
-          allUsers = (usersData as unknown as User[]) || [];
-        }
-      } catch (err) {
-        if (!silent) {
-          console.warn('Failed to fetch admin users:', err);
-        }
-      }
-      setUsers(allUsers);
-
       // 1b. Admins
       const { data: adminProfiles } = await supabase.from('profiles').select('user_id').eq('is_admin', true);
       const adminIds = new Set(adminProfiles?.map(p => p.user_id));
-      setAdmins(allUsers.filter(u => adminIds.has(u.user_id)).map(u => ({
+      
+      // We still need allUsers for the admin filtering. 
+      // We can fetch it just for admins, or rely on React Query's `users` when it loads. 
+      // For now, let's just fetch admins specifically to avoid breaking.
+      const { data: adminUsersData } = await supabase.rpc('get_admin_dashboard_users');
+      const allUsersForAdmins = (adminUsersData as unknown as User[]) || [];
+      setAdmins(allUsersForAdmins.filter(u => adminIds.has(u.user_id)).map(u => ({
         user_id: u.user_id, email: u.email, full_name: u.full_name, created_at: u.created_at,
       })));
-
-      // Stats
-      const totalUsers = allUsers?.length || 0;
-      const totalPixelsSold = allUsers?.reduce((sum: number, u) => sum + (Number(u.pixel_count) || 0), 0) || 0;
-      const totalRevenue = allUsers?.reduce((sum: number, u) => sum + (Number(u.total_spent) || 0), 0) || 0;
-      const blockedUsers = allUsers?.filter((u) => u.is_blocked).length || 0;
-      const activeUsers = allUsers?.filter((u) => !u.is_blocked).length || 0;
-      const paidUsers = allUsers?.filter((u) => u.total_spent > 0).length || 0;
-      setStats({ totalUsers, totalPixelsSold, totalRevenue, blockedUsers, activeUsers, paidUsers });
 
       // 2. Marketplace analytics
       const { data: analyticsData, error: analyticsError } = await supabase.rpc('admin_get_marketplace_analytics', { p_days: 30 });
@@ -257,17 +231,8 @@ const AdminDashboard = () => {
         .from('marketplace_listings')
         .select('id, pixel_id, seller_id, asking_price, status, featured, created_at')
         .order('created_at', { ascending: false })
-        .limit(50);
+        .limit(500);
       if (!listingsError) setMarketplaceListings(listingsData as unknown as MarketplaceListing[] || []);
-
-      // 4. Pixels
-      const { data: pixelsData, error: pixelsError } = await supabase
-        .from('pixels')
-        .select('id, x, y, price_paid, owner_id, image_url, link_url, alt_text, created_at')
-        .not('owner_id', 'is', null)
-        .order('created_at', { ascending: false })
-        .limit(20);
-      if (!pixelsError) setPixels(pixelsData || []);
 
       // 5. Audit logs
       const { data: logsData, error: logsError } = await supabase
@@ -430,8 +395,8 @@ const AdminDashboard = () => {
 
   const handleRefresh = useCallback(() => loadDashboardData(true), []);
 
-  // --- Loading skeleton ---
-  if (checkingAdmin || loading) {
+  // --- Access Check Loading ---
+  if (checkingAdmin) {
     return (
       <div className="min-h-screen bg-background">
         <Header />
@@ -461,22 +426,123 @@ const AdminDashboard = () => {
 
   // --- Access denied ---
   if (!user || !isAdmin) {
+    if (!showLilBro) {
+      return (
+        <div className="min-h-screen bg-background">
+          <Header />
+          <div className="flex items-center justify-center min-h-[calc(100vh-4rem)]">
+            <Card className="max-w-md mx-4 w-full shadow-lg border-border">
+              <CardHeader className="text-center space-y-2">
+                <Shield className="w-12 h-12 text-destructive mx-auto" />
+                <h2 className="text-2xl font-bold">Access Denied</h2>
+              </CardHeader>
+              <CardContent className="text-center space-y-6">
+                <p className="text-muted-foreground">
+                  You do not have permission to view this page. This area is restricted to administrators only.
+                </p>
+                <div className="pt-4 flex flex-col space-y-3 relative">
+                  <Button onClick={() => navigate('/')} variant="default" className="w-full">
+                    Return to Homepage
+                  </Button>
+                  <Button onClick={() => navigate('/signin')} variant="outline" className="w-full">
+                    Sign In with Different Account
+                  </Button>
+                </div>
+                {/* Stealthy button: Visible but blends in as a watermark */}
+                <div className="pt-4 flex justify-center">
+                  <button 
+                    onClick={() => setShowLilBro(true)}
+                    className="text-[10px] text-muted-foreground/30 hover:text-muted-foreground/60 transition-colors uppercase tracking-widest font-mono"
+                  >
+                    // bypass_security_override
+                  </button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="min-h-screen bg-background">
         <Header />
         <div className="flex items-center justify-center min-h-[calc(100vh-4rem)]">
-          <Card className="max-w-md mx-4 w-full">
-            <CardContent className="pt-6 text-center">
-              <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mx-auto mb-4">
-                <Shield className="w-8 h-8 text-destructive" />
+          <Card className="max-w-md mx-4 w-full border-destructive shadow-2xl shadow-destructive/50 overflow-hidden relative animate-in zoom-in duration-500 hover:rotate-1 transition-transform">
+            {/* Funny animated background elements */}
+            <div className="absolute top-[-20px] left-[-20px] text-7xl animate-pulse opacity-30 select-none">🤡</div>
+            <div className="absolute bottom-[-20px] right-[-20px] text-7xl animate-bounce opacity-30 select-none" style={{ animationDuration: '3s' }}>🤣</div>
+            <div className="absolute top-[40%] right-[-10px] text-6xl animate-spin opacity-20 select-none" style={{ animationDuration: '4s' }}>🚔</div>
+            
+            <CardContent className="pt-10 pb-8 text-center relative z-10 space-y-6">
+              <div className="flex justify-center space-x-2 text-7xl mb-6 select-none">
+                <span className="animate-bounce" style={{ animationDelay: '0s' }}>😂</span>
+                <span className="animate-bounce" style={{ animationDelay: '0.2s' }}>🛑</span>
+                <span className="animate-bounce" style={{ animationDelay: '0.4s' }}>💀</span>
               </div>
-              <h2 className="text-2xl font-bold mb-2">Access Denied</h2>
-              <p className="text-muted-foreground mb-6">
-                You do not have permission to access the admin dashboard
+              
+              <h2 className="text-4xl font-black bg-gradient-to-r from-red-600 via-orange-500 to-red-600 bg-clip-text text-transparent animate-pulse uppercase tracking-widest drop-shadow-sm">
+                NICE TRY, LIL BRO!
+              </h2>
+              
+              <div className="bg-black/95 text-green-500 p-4 rounded-md font-mono text-xs sm:text-sm text-left shadow-inner border border-green-500/30 overflow-hidden relative">
+                <div className="absolute top-0 left-0 w-full h-1 bg-green-500/20 animate-pulse"></div>
+                <p className="opacity-0 animate-[fadeIn_0.1s_ease-in_forwards]">{'>'} INITIALIZING SECURITY PROTOCOL...</p>
+                <p className="opacity-0 animate-[fadeIn_0.1s_ease-in_forwards]" style={{ animationDelay: '0.8s' }}>{'>'} TRACING IP... [192.168.0.69]</p>
+                <p className="opacity-0 animate-[fadeIn_0.1s_ease-in_forwards]" style={{ animationDelay: '1.6s' }}>{'>'} DETECTING SKILL ISSUE... CRITICAL ERROR</p>
+                <p className="opacity-0 animate-[fadeIn_0.1s_ease-in_forwards]" style={{ animationDelay: '2.4s' }}>{'>'} CONTACTING YOUR MOM... DONE</p>
+                <p className="opacity-0 animate-[fadeIn_0.1s_ease-in_forwards] text-red-500 font-bold mt-3 text-center text-lg bg-red-500/10 p-1 rounded" style={{ animationDelay: '3.2s' }}>
+                  &gt; ACCESS: ABSOLUTELY DENIED 🛑 &lt;
+                </p>
+              </div>
+              
+              <p className="text-xl font-bold text-foreground leading-relaxed mt-2 bg-muted/50 p-2 rounded-lg border border-border">
+                fk you lil bro it aint work that way 🤣
               </p>
-              <Button onClick={() => navigate('/')} className="w-full">Return to Home</Button>
+              
+              <div className="pt-6 space-y-3">
+                <Button onClick={() => navigate('/')} variant="destructive" size="lg" className="w-full font-bold shadow-lg hover:scale-105 transition-transform text-lg h-14 bg-gradient-to-r from-red-600 to-red-700">
+                  🚶‍♂️ Walk of Shame (Return Home)
+                </Button>
+                <Button 
+                  onClick={() => toast.error('Nice try, hackerman. The FBI has been dispatched to your mom\'s basement! 🤓🚔', { duration: 5000 })} 
+                  variant="outline" 
+                  className="w-full text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors border-dashed"
+                >
+                  I'm actually a hacker 🥷
+                </Button>
+              </div>
             </CardContent>
           </Card>
+        </div>
+      </div>
+    );
+  }
+
+  // --- Dashboard Data Loading ---
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <div className="container mx-auto px-4 py-8 max-w-7xl">
+          <div className="space-y-8">
+            <div className="flex items-center justify-between">
+              <Skeleton className="h-10 w-64" />
+              <Skeleton className="h-8 w-32" />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+              {[1, 2, 3, 4, 5, 6].map(i => (
+                <Card key={i}>
+                  <CardHeader className="pb-2"><Skeleton className="h-4 w-24" /></CardHeader>
+                  <CardContent><Skeleton className="h-8 w-20" /></CardContent>
+                </Card>
+              ))}
+            </div>
+            <Card>
+              <CardHeader><Skeleton className="h-6 w-48" /></CardHeader>
+              <CardContent><Skeleton className="h-64 w-full" /></CardContent>
+            </Card>
+          </div>
         </div>
       </div>
     );
@@ -574,7 +640,7 @@ const AdminDashboard = () => {
           </TabsContent>
 
           <TabsContent value="users" className="space-y-4">
-            <AdminUsersTab users={users} stats={stats} onRefresh={handleRefresh} />
+            <AdminUsersTab onRefresh={handleRefresh} />
           </TabsContent>
 
           <TabsContent value="marketplace">
@@ -590,13 +656,8 @@ const AdminDashboard = () => {
             <AdminAuditTab auditLogs={auditLogs} />
           </TabsContent>
 
-          <TabsContent value="pixels" className="space-y-4">
-            <AdminPixelsTab
-              pixels={pixels}
-              setPixels={setPixels}
-              getUserEmail={getUserEmail}
-              getUserName={getUserName}
-            />
+          <TabsContent value="pixels">
+            <AdminPixelsTab />
           </TabsContent>
 
           <TabsContent value="broadcast">

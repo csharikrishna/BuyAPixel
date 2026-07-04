@@ -143,59 +143,127 @@ serve(async (req: Request) => {
       // Amount in paise (INR * 100)
       const amountInPaise = Math.round(listing.asking_price * 100)
 
-      // Create Razorpay order
+      // Create Razorpay order with timeout protection
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 second timeout
+
+      let razorpayResponse
       const razorpayAuth = btoa(`${RAZORPAY_KEY_ID}:${RAZORPAY_KEY_SECRET}`)
 
-      const razorpayResponse = await fetch('https://api.razorpay.com/v1/orders', {
-         method: 'POST',
-         headers: {
-            'Authorization': `Basic ${razorpayAuth}`,
-            'Content-Type': 'application/json',
-         },
-         body: JSON.stringify({
-            amount: amountInPaise,
-            currency: 'INR',
-            receipt: `marketplace_${Date.now()}`,
-            notes: {
-               user_id: user.id,
-               listing_id: body.listing_id,
-               seller_id: listing.seller_id,
-               purpose: 'marketplace_purchase'
-            }
-         }),
-      })
+      try {
+         razorpayResponse = await fetch('https://api.razorpay.com/v1/orders', {
+            method: 'POST',
+            signal: controller.signal,
+            headers: {
+               'Authorization': `Basic ${razorpayAuth}`,
+               'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+               amount: amountInPaise,
+               currency: 'INR',
+               receipt: `marketplace_${Date.now()}`,
+               notes: {
+                  user_id: user.id,
+                  listing_id: body.listing_id,
+                  seller_id: listing.seller_id,
+                  purpose: 'marketplace_purchase'
+               }
+            }),
+         })
+      } finally {
+         clearTimeout(timeoutId)
+      }
 
       if (!razorpayResponse.ok) {
          const errorData = await razorpayResponse.json()
-         console.error('Razorpay error:', errorData)
-         throw new Error('Failed to create Razorpay order')
+         console.error('Razorpay API error:', {
+           status: razorpayResponse.status,
+           error: errorData?.error,
+           description: errorData?.error?.description,
+         })
+         throw new Error(`Razorpay API error (${razorpayResponse.status}): ${errorData?.error?.description || 'Unknown'}`)
       }
 
       const razorpayOrder = await razorpayResponse.json()
 
-      // Store order in database
-      const { data: paymentOrder, error: dbError } = await supabaseAdmin
-         .from('payment_orders')
-         .insert({
-            user_id: user.id,
-            razorpay_order_id: razorpayOrder.id,
-            amount: amountInPaise,
-            purchase_type: 'marketplace_purchase',
-            purchase_metadata: {
-               listing_id: body.listing_id,
-               pixel_id: listing.pixel_id,
-               seller_id: listing.seller_id,
-               asking_price: listing.asking_price,
-               pixel_coords: listing.pixels
-            },
-            status: 'created',
-         })
-         .select()
-         .single()
+      // Retry database insert with exponential backoff to handle orphaned orders
+      let paymentOrder = null
+      let lastError: Error | null = null
+      const maxRetries = 3
 
-      if (dbError) {
-         console.error('Database error:', dbError)
-         throw new Error('Failed to store payment order')
+      for (let attempt = 0; attempt < maxRetries; attempt++) {
+         try {
+            const { data, error: dbError } = await supabaseAdmin
+               .from('payment_orders')
+               .insert({
+                  user_id: user.id,
+                  razorpay_order_id: razorpayOrder.id,
+                  amount: amountInPaise,
+                  purchase_type: 'marketplace_purchase',
+                  purchase_metadata: {
+                     listing_id: body.listing_id,
+                     pixel_id: listing.pixel_id,
+                     seller_id: listing.seller_id,
+                     asking_price: listing.asking_price,
+                     pixel_coords: listing.pixels
+                  },
+                  status: 'created',
+               })
+               .select()
+               .single()
+
+            if (!dbError) {
+               paymentOrder = data
+               break // Success!
+            }
+
+            lastError = new Error(dbError.message)
+            
+            // Check if error is retryable (connection timeout, pool exhaustion)
+            const isRetryable = 
+               dbError.message.includes('timeout') ||
+               dbError.message.includes('pool') ||
+               dbError.message.includes('connection')
+            
+            if (!isRetryable) {
+               // Break the loop on non-retryable errors
+               break
+            }
+
+            if (attempt < maxRetries - 1) {
+               // Exponential backoff: 100ms, 200ms, 400ms
+               const delayMs = 100 * Math.pow(2, attempt)
+               await new Promise(r => setTimeout(r, delayMs))
+            }
+         } catch (err) {
+            lastError = err instanceof Error ? err : new Error(String(err))
+            const errMsg = lastError.message
+            if (!errMsg.includes('timeout') && 
+                !errMsg.includes('pool') && 
+                !errMsg.includes('connection')) {
+               break
+            }
+         }
+      }
+
+      if (!paymentOrder) {
+         console.error(`Failed to insert payment order after ${maxRetries} retries:`, lastError)
+         
+         // Log to orphaned_orders for manual recovery
+         try {
+            await supabaseAdmin.from('orphaned_orders').insert({
+               razorpay_order_id: razorpayOrder.id,
+               user_id: user.id,
+               amount: amountInPaise,
+               error_message: lastError?.message || 'Unknown error',
+               attempted_at: new Date().toISOString(),
+               status: 'pending_manual_review'
+            }).catch(console.error)
+         } catch (logErr) {
+            console.error('Failed to log orphaned order:', logErr)
+         }
+
+         throw new Error(`DB Error: ${lastError?.message || 'Failed to create payment order'}`)
       }
 
       // Return order details for frontend
