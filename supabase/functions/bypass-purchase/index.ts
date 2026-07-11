@@ -4,7 +4,6 @@ import { sendEmail, buildPurchaseConfirmationEmail } from '../_shared/email.ts'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
-const BYPASS_PAYMENT_ENABLED = Deno.env.get('BYPASS_PAYMENT_ENABLED')
 
 const ALLOWED_ORIGINS = [
   'https://buyaspot.in',
@@ -85,27 +84,7 @@ serve(async (req: Request) => {
   }
 
   try {
-    console.log('[BYPASS] Step 1: Checking bypass flag...')
-
-    // Temporarily commented out environment variable checks to allow admin testing
-    /*
-    const deployEnv = Deno.env.get('DEPLOY_ENV') || 'production'
-    if (deployEnv === 'production') {
-      console.error(`[BYPASS] BLOCKED: DEPLOY_ENV is "production"`)
-      return new Response(
-        JSON.stringify({ success: false, error: 'Payment bypass is not available in production' }),
-        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    if (BYPASS_PAYMENT_ENABLED !== 'true') {
-      console.error(`[BYPASS] BYPASS_PAYMENT_ENABLED = "${BYPASS_PAYMENT_ENABLED}" (not "true")`)
-      return new Response(
-        JSON.stringify({ success: false, error: 'Payment bypass is not enabled on the server' }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-    */
+    console.log('[BYPASS] Step 1: Validating credentials...')
 
     if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
       throw new Error('Supabase credentials not configured')
@@ -127,13 +106,13 @@ serve(async (req: Request) => {
     }
     console.log(`[BYPASS] User authenticated: ${user.id}`)
 
-    // Admin check disabled — bypass payment is open to all authenticated users
-    /*
+    // Admin check: only users with profiles.is_admin = true can bypass payment
     const { data: profile } = await supabaseAdmin
       .from('profiles')
       .select('is_admin')
       .eq('user_id', user.id)
       .single()
+
     if (!profile?.is_admin) {
       console.error(`[BYPASS] BLOCKED: User ${user.id} is not an admin`)
       return new Response(
@@ -141,8 +120,7 @@ serve(async (req: Request) => {
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
-    */
-    console.log(`[BYPASS] User allowed: ${user.id}`)
+    console.log(`[BYPASS] Admin verified: ${user.id}`)
 
     console.log('[BYPASS] Step 3: Parsing and validating request...')
     // Parse & validate request
@@ -192,6 +170,7 @@ serve(async (req: Request) => {
           image_url: validatedImageUrl,
           link_url: validatedLinkUrl,
           alt_text: validatedAltText,
+          is_admin_bypass: true,
         },
         status: 'created',
       })
@@ -239,7 +218,7 @@ serve(async (req: Request) => {
           pixelCount: body.pixels.length,
           totalCost: body.totalAmount,
           linkUrl: validatedLinkUrl || undefined,
-          isTestMode: true,
+          isTestMode: false,
         })
 
         await sendEmail(

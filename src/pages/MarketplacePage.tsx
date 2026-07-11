@@ -3,6 +3,7 @@ import { getThumbnailUrl } from "@/utils/imageOptimization";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -156,6 +157,7 @@ interface MarketplaceStats {
 
 const MarketplacePage = () => {
   const { session } = useAuth();
+  const { isAdmin } = useIsAdmin();
   const [selectedPixelId, setSelectedPixelId] = useState<string | null>(null);
   const [listingPrice, setListingPrice] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -165,8 +167,8 @@ const MarketplacePage = () => {
   const [isListing, setIsListing] = useState(false);
   const [razorpayLoaded, setRazorpayLoaded] = useState(false);
 
-  // Payment bypass flag — when true, skips Razorpay entirely
-  const isPaymentBypassed = import.meta.env.VITE_BYPASS_PAYMENT === 'true';
+  // Payment bypass — admins skip Razorpay entirely
+  const isPaymentBypassed = isAdmin;
 
   // Lazy-load Razorpay script on demand [perf]
   const loadRazorpayScript = (): Promise<void> => {
@@ -406,8 +408,8 @@ const MarketplacePage = () => {
           throw new Error(errMsg);
         }
 
-        toast.success("Purchase Successful! 🎉 (Payment bypassed)", {
-          description: `You have acquired a pixel for ₹${price.toLocaleString()}. Dev mode — no real charge.`,
+        toast.success("Purchase Successful! 🎉 (Admin bypass)", {
+          description: `You have acquired a pixel for ₹${price.toLocaleString()}. No payment charged.`,
         });
 
         // FIX #10: Refetch all related data after purchase

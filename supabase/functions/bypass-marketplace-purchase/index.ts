@@ -3,7 +3,6 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
-const BYPASS_PAYMENT_ENABLED = Deno.env.get('BYPASS_PAYMENT_ENABLED')
 
 const ALLOWED_ORIGINS = [
   'https://buyaspot.in',
@@ -39,27 +38,7 @@ serve(async (req: Request) => {
   }
 
   try {
-    console.log('[MARKET_BYPASS] Step 1: Checking bypass flag...')
-
-    // Temporarily commented out environment variable checks to allow admin testing
-    /*
-    const deployEnv = Deno.env.get('DEPLOY_ENV') || 'production'
-    if (deployEnv === 'production') {
-      console.error(`[MARKET_BYPASS] BLOCKED: DEPLOY_ENV is "production"`)
-      return new Response(
-        JSON.stringify({ success: false, error: 'Payment bypass is not available in production' }),
-        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    if (BYPASS_PAYMENT_ENABLED !== 'true') {
-      console.error(`[MARKET_BYPASS] BYPASS_PAYMENT_ENABLED = "${BYPASS_PAYMENT_ENABLED}"`)
-      return new Response(
-        JSON.stringify({ success: false, error: 'Payment bypass is not enabled on the server' }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-    */
+    console.log('[MARKET_BYPASS] Step 1: Validating credentials...')
 
     if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
       throw new Error('Supabase credentials not configured')
@@ -76,21 +55,21 @@ serve(async (req: Request) => {
 
     if (userError || !user) throw new Error('Invalid or expired token')
 
-    // Admin check disabled — bypass payment is open to all authenticated users
-    /*
+    // Admin check: only users with profiles.is_admin = true can bypass payment
     const { data: profile } = await supabaseAdmin
       .from('profiles')
       .select('is_admin')
       .eq('user_id', user.id)
       .single()
+
     if (!profile?.is_admin) {
-      console.error(`[BYPASS-MKT] BLOCKED: User ${user.id} is not an admin`)
+      console.error(`[MARKET_BYPASS] BLOCKED: User ${user.id} is not an admin`)
       return new Response(
         JSON.stringify({ success: false, error: 'Payment bypass is restricted to admin users only' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
-    */
+    console.log(`[MARKET_BYPASS] Admin verified: ${user.id}`)
 
     // Parse request
     const body: BypassMarketplaceRequest = await req.json()
@@ -136,6 +115,7 @@ serve(async (req: Request) => {
           seller_id: listing.seller_id,
           asking_price: listing.asking_price,
           pixel_coords: listing.pixels,
+          is_admin_bypass: true,
         },
         status: 'created',
       })

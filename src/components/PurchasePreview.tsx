@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription } from "@/components/ui/drawer";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/hooks/useAuth";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -123,7 +124,8 @@ export const PurchasePreview = ({
 }: PurchasePreviewProps) => {
   const isMobile = useIsMobile();
   const { user } = useAuth();
-  const isPaymentBypassed = import.meta.env.VITE_BYPASS_PAYMENT === 'true';
+  const { isAdmin } = useIsAdmin();
+  const isPaymentBypassed = isAdmin;
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [currentStep, setCurrentStep] = useState<CheckoutStep>('details');
@@ -490,8 +492,8 @@ export const PurchasePreview = ({
           // Update payment status to success
           setPaymentStatus('success');
 
-          toast.success("🎉 Purchase successful! (Payment bypassed)", {
-            description: "Dev mode active — no real charge.",
+          toast.success("🎉 Purchase successful! (Admin bypass)", {
+            description: "Your pixels have been claimed without payment.",
             duration: 5000
           });
 
@@ -790,11 +792,11 @@ export const PurchasePreview = ({
 
       {/* Dev Mode Banner — only visible when payment bypass is active */}
       {isPaymentBypassed && (
-        <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-gradient-to-r from-amber-500/15 to-orange-500/15 border border-amber-500/30 text-amber-700 dark:text-amber-400">
-          <span className="text-lg">🛠️</span>
+        <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-gradient-to-r from-emerald-500/15 to-teal-500/15 border border-emerald-500/30 text-emerald-700 dark:text-emerald-400">
+          <span className="text-lg">🛡️</span>
           <div className="flex-1">
-            <p className="text-sm font-bold leading-tight">DEV MODE — Payment Bypassed</p>
-            <p className="text-xs opacity-80">No real charge will be made. Set VITE_BYPASS_PAYMENT=false for production.</p>
+            <p className="text-sm font-bold leading-tight">Admin Purchase — No Payment Required</p>
+            <p className="text-xs opacity-80">As an admin, your purchase will be processed without payment.</p>
           </div>
         </div>
       )}
@@ -1326,7 +1328,7 @@ export const PurchasePreview = ({
         ) : (
           <>
             <Lock className="w-4 md:w-5 h-4 md:h-5 mr-2" aria-hidden="true" />
-            <span>Pay ₹{totalCost} Securely</span>
+            <span>{isPaymentBypassed ? `Claim Free (Admin)` : `Pay ₹${totalCost} Securely`}</span>
           </>
         )}
       </Button>

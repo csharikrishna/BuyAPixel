@@ -11,6 +11,7 @@ import {
   memo,
 } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { PixelTooltip } from "./PixelTooltip";
 import { PixelInfoModal } from "./PixelInfoModal";
 import { toast } from "sonner";
@@ -238,6 +239,7 @@ export const VirtualizedPixelGrid = forwardRef<
     ref
   ) => {
     const { user } = useAuth();
+    const { isAdmin } = useIsAdmin();
     const navigate = useNavigate();
     const containerRef = useRef<HTMLDivElement>(null);
     const hasInitializedRef = useRef(false);
@@ -1209,11 +1211,11 @@ export const VirtualizedPixelGrid = forwardRef<
             </div>
           )}
 
-          {/* Test Mode Badge — visible when payment bypass is active */}
-          {import.meta.env.VITE_BYPASS_PAYMENT === 'true' && (
-            <div className="absolute bottom-3 right-3 pointer-events-none bg-amber-500/90 backdrop-blur-md text-white px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider shadow-lg flex items-center gap-1.5">
+          {/* Admin Mode Badge — visible when current user is admin */}
+          {isAdmin && (
+            <div className="absolute bottom-3 right-3 pointer-events-none bg-emerald-500/90 backdrop-blur-md text-white px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider shadow-lg flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-              Test Mode
+              Admin Mode
             </div>
           )}
 

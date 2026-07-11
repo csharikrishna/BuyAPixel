@@ -16,7 +16,16 @@ export const AdminRoute = ({ children }: { children?: React.ReactNode }) => {
     );
   }
 
-  // Let the child component (e.g. AdminDashboard) handle the actual Access Denied UI
-  // so the user sees the "Access Denied" message instead of getting bounced around.
+  // Block non-authenticated users — redirect to sign in
+  if (!user) {
+    return <Navigate to="/signin" replace />;
+  }
+
+  // Block non-admin users — redirect to home
+  if (!isAdmin) {
+    return <Navigate to="/" replace />;
+  }
+
+  // Admin verified — render children or outlet
   return children ? <>{children}</> : <Outlet />;
 };

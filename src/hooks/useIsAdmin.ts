@@ -2,6 +2,11 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 
+// Module-level cache to avoid redundant network calls across hook instances.
+// All components sharing the same user will get the cached result within the TTL.
+const CACHE_TTL_MS = 60_000; // 60 seconds
+let cachedResult: { userId: string; isAdmin: boolean; isSuperAdmin: boolean; timestamp: number } | null = null;
+
 export const useIsAdmin = () => {
   const { user } = useAuth();
   const [isAdmin, setIsAdmin] = useState(false);
@@ -16,8 +21,6 @@ export const useIsAdmin = () => {
   }, [user]);
 
   const checkAdminStatus = async () => {
-    setIsLoadingState(true);
-    
     if (!user) {
       setIsAdmin(false);
       setIsSuperAdmin(false);
@@ -25,6 +28,21 @@ export const useIsAdmin = () => {
       setIsLoadingState(false);
       return;
     }
+
+    // Check module-level cache first
+    if (
+      cachedResult &&
+      cachedResult.userId === user.id &&
+      Date.now() - cachedResult.timestamp < CACHE_TTL_MS
+    ) {
+      setIsAdmin(cachedResult.isAdmin);
+      setIsSuperAdmin(cachedResult.isSuperAdmin);
+      setCheckedUserId(user.id);
+      setIsLoadingState(false);
+      return;
+    }
+
+    setIsLoadingState(true);
 
     try {
       // Primary check: profiles.is_admin column (most reliable)
@@ -46,8 +64,18 @@ export const useIsAdmin = () => {
         dbIsSuperAdmin = false;
       }
 
+      const finalIsAdmin = dbIsAdmin || dbIsSuperAdmin;
+
+      // Update module-level cache
+      cachedResult = {
+        userId: user.id,
+        isAdmin: finalIsAdmin,
+        isSuperAdmin: dbIsSuperAdmin,
+        timestamp: Date.now(),
+      };
+
       // Either condition grants admin access
-      setIsAdmin(dbIsAdmin || dbIsSuperAdmin);
+      setIsAdmin(finalIsAdmin);
       setIsSuperAdmin(dbIsSuperAdmin);
       setCheckedUserId(user.id);
     } catch {
