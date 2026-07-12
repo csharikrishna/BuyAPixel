@@ -363,6 +363,7 @@ export const VirtualizedPixelGrid = forwardRef<
     const [infoModalPixel, setInfoModalPixel] = useState<PurchasedPixel | null>(null);
     const [infoModalBlock, setInfoModalBlock] = useState<PixelBlock | null>(null);
     const [infoModalOpen, setInfoModalOpen] = useState(false);
+    const [highlightTargetId, setHighlightTargetId] = useState<string | null>(null);
 
     // ── Memoized Derivations ──────────────────────────────────
 
@@ -722,7 +723,7 @@ export const VirtualizedPixelGrid = forwardRef<
       }
 
       // Found a valid pixel to focus
-      const scaled = Math.max(1, Math.floor(pixelSize * targetZoom));
+      const scaled = Math.max(1, pixelSize * targetZoom);
       setViewportOffset(
         getPixelFocusViewportOffset({
           x: px,
@@ -761,6 +762,7 @@ export const VirtualizedPixelGrid = forwardRef<
         }
         setInfoModalPixel(purchased);
         setInfoModalBlock(block);
+        setHighlightTargetId(purchased.block_id || purchased.id);
 
         // Add a slight delay to open the modal so the zoom animation feels smooth
         setTimeout(() => setInfoModalOpen(true), 1200);
@@ -1093,7 +1095,7 @@ export const VirtualizedPixelGrid = forwardRef<
             {blockData.map((block) => {
               if (showMyPixels && block.ownerId !== user?.id) return null;
               const isOwner = block.ownerId === user?.id;
-              const isHighlight = highlightUser === block.ownerId;
+              const isHighlight = highlightUser === block.ownerId || highlightTargetId === block.blockId;
               return (
                 <PixelBlockImage
                   key={`block-${block.blockId}`}
@@ -1148,7 +1150,7 @@ export const VirtualizedPixelGrid = forwardRef<
             {individualPixels.map((pixel) => {
               if (showMyPixels && pixel.owner_id !== user?.id) return null;
               const isOwner = pixel.owner_id === user?.id;
-              const isHighlight = highlightUser === pixel.owner_id;
+              const isHighlight = highlightUser === pixel.owner_id || highlightTargetId === pixel.id;
               const tierAnimationClass = getTierAnimationClass(pixel.price_paid);
               return (
                 <IndividualPixelImage
@@ -1262,6 +1264,7 @@ export const VirtualizedPixelGrid = forwardRef<
             setInfoModalOpen(false);
             setInfoModalPixel(null);
             setInfoModalBlock(null);
+            setHighlightTargetId(null);
           }}
           pixel={infoModalPixel}
           block={infoModalBlock}
