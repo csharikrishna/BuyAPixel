@@ -23,7 +23,7 @@ export function useGridInteraction({
 }: UseGridInteractionProps) {
    // -- State: Viewport --
    const [viewportOffset, setViewportOffset] = useState({ x: 0, y: 0 });
-   const [containerSize, setContainerSize] = useState({ width: 800, height: 600 });
+   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
 
    // -- State: Interaction --
    const [isDragging, setIsDragging] = useState(false);
