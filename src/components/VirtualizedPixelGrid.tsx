@@ -733,6 +733,13 @@ export const VirtualizedPixelGrid = forwardRef<
           scaledPixelSize: scaled,
         })
       );
+      
+      // Scroll the container into view on mobile so the user actually sees the grid
+      if (containerRef.current) {
+        setTimeout(() => {
+          containerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 100);
+      }
 
       const purchased = getPurchasedPixel(px, py);
       if (purchased) {

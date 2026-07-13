@@ -70,7 +70,8 @@ export function useLiveActivity(isPaused: boolean) {
         const block = payload.new as { owner_id?: string; pixel_count?: number; total_price?: number };
         let name = 'Someone';
         if (block.owner_id) {
-          const { data: profile } = await supabase.from('profiles').select('full_name').eq('user_id', block.owner_id).maybeSingle();
+          const { data: profile } = await supabase.from('profiles').select('full_name, is_admin').eq('user_id', block.owner_id).maybeSingle();
+          if (profile?.is_admin) return; // Skip admin purchases
           if (profile?.full_name) name = profile.full_name;
         }
         const count = block.pixel_count || 1;
