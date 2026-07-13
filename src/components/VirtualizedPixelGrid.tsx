@@ -800,7 +800,8 @@ export const VirtualizedPixelGrid = forwardRef<
       onZoomChange,
       setViewportOffset,
       onAvailablePixelFocused,
-      validateSelection
+      validateSelection,
+      zoom
     ]);
 
     // ── Render Pre-calculations ───────────────────────────────
