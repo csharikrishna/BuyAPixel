@@ -21,11 +21,12 @@ import {
 } from '@/components/ui/dropdown-menu';
 import {
   Ban, Trash2, Loader2, Search, Image, TrendingUp,
-  Eye, MoreVertical, LayoutGrid, List as ListIcon, RefreshCw, Network
+  Eye, MoreVertical, LayoutGrid, List as ListIcon, RefreshCw, Network, Edit2
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAdminPixels, useAdminUsers } from '@/hooks/useAdminData';
 import { Skeleton } from '@/components/ui/skeleton';
+import { EditPixelDialog } from '@/components/EditPixelDialog';
 
 interface AdminPixelsTabProps {}
 
@@ -49,6 +50,7 @@ export function AdminPixelsTab({}: AdminPixelsTabProps) {
   const [selectedGroup, setSelectedGroup] = useState<any[] | null>(null);
   const [resetPixelDialog, setResetPixelDialog] = useState<{ open: boolean; pixelId: string } | null>(null);
   const [clearContentDialog, setClearContentDialog] = useState<{ open: boolean; pixelId: string } | null>(null);
+  const [editPixelDialog, setEditPixelDialog] = useState<{ open: boolean; pixel: any } | null>(null);
   const [processing, setProcessing] = useState(false);
 
   const displayedPixels = useMemo(() => {
@@ -74,7 +76,7 @@ export function AdminPixelsTab({}: AdminPixelsTabProps) {
     
     const groups = new Map<string, any[]>();
     filtered.forEach(p => {
-      const key = (p.image_url || 'no-image') + '|' + (p.link_url || 'no-link') + '|' + (p.owner_id || 'no-owner');
+      const key = (p.alt_text || 'no-name') + '|' + (p.image_url || 'no-image') + '|' + (p.link_url || 'no-link') + '|' + (p.owner_id || 'no-owner');
       if (!groups.has(key)) groups.set(key, []);
       groups.get(key)!.push(p);
     });
@@ -206,8 +208,8 @@ export function AdminPixelsTab({}: AdminPixelsTabProps) {
                       <TableCell>
                         {pixel.owner_id ? (
                           <div className="flex flex-col">
-                            <span className="font-medium">{getUserName(pixel.owner_id)}</span>
-                            <span className="text-xs text-muted-foreground">{getUserEmail(pixel.owner_id)}</span>
+                            <span className="font-bold text-primary">{pixel.alt_text || 'No Brand Name'}</span>
+                            <span className="font-medium text-xs mt-1">Buyer: {getUserName(pixel.owner_id)}</span>
                             <span className="text-[10px] text-muted-foreground font-mono">{pixel.owner_id}</span>
                           </div>
                         ) : (
@@ -246,6 +248,13 @@ export function AdminPixelsTab({}: AdminPixelsTabProps) {
                               <DropdownMenuItem onClick={() => window.open(`/?x=${pixel.x}&y=${pixel.y}`, '_blank')}>
                                 <Eye className="mr-2 h-4 w-4" />
                                 View on Canvas
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => setEditPixelDialog({ open: true, pixel: pixel })}
+                                disabled={!pixel.owner_id}
+                              >
+                                <Edit2 className="mr-2 h-4 w-4 text-blue-600" />
+                                Edit Pixel
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 className="text-amber-600"
@@ -309,6 +318,12 @@ export function AdminPixelsTab({}: AdminPixelsTabProps) {
                             onClick={() => window.open(`/?x=${pixel.x}&y=${pixel.y}`, '_blank')}
                           >
                             <Eye className="w-3 h-3 mr-1" /> View
+                          </Button>
+                          <Button
+                            size="sm" variant="outline" className="w-full h-8 text-xs bg-transparent text-white border-white/50 hover:bg-white/20"
+                            onClick={() => setEditPixelDialog({ open: true, pixel: pixel })}
+                          >
+                            <Edit2 className="w-3 h-3 mr-1" /> Edit
                           </Button>
                           <Button
                             size="sm" variant="destructive" className="w-full h-8 text-xs"
@@ -415,6 +430,9 @@ export function AdminPixelsTab({}: AdminPixelsTabProps) {
                         <Button size="sm" variant="secondary" onClick={() => window.open(`/?x=${p.x}&y=${p.y}`, '_blank')}>
                           View
                         </Button>
+                        <Button size="sm" variant="outline" onClick={() => { setSelectedGroup(null); setEditPixelDialog({ open: true, pixel: p }); }}>
+                          Edit
+                        </Button>
                         <Button size="sm" variant="destructive" onClick={() => { setSelectedGroup(null); setClearContentDialog({ open: true, pixelId: p.id }); }} disabled={!p.image_url && !p.link_url}>
                           Clear
                         </Button>
@@ -429,6 +447,13 @@ export function AdminPixelsTab({}: AdminPixelsTabProps) {
           </Table>
         </DialogContent>
       </Dialog>
+
+      <EditPixelDialog
+        isOpen={!!editPixelDialog?.open}
+        onClose={() => setEditPixelDialog(null)}
+        pixel={editPixelDialog?.pixel || null}
+        onUpdate={refetchPixels}
+      />
     </>
   );
 }

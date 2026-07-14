@@ -87,7 +87,7 @@ const ListingCard = memo(({
   const x = listing.pixels?.x ?? 0;
   const y = listing.pixels?.y ?? 0;
   const price = listing.selling_price ?? 0;
-  const sellerName = listing.profiles?.full_name ?? "Anonymous";
+  const sellerName = (listing.pixels as any)?.alt_text?.trim() || listing.profiles?.full_name || "Anonymous";
   const imageUrl = listing.pixels?.image_url;
 
   return (
@@ -209,7 +209,7 @@ const Marketplace = () => {
           asking_price,
           featured,
           created_at,
-          pixels (x, y, image_url),
+          pixels (x, y, image_url, alt_text),
           profiles:seller_id (full_name)
         `)
         .eq('status', 'active')

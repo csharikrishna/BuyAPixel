@@ -283,34 +283,37 @@ const Leaderboard = () => {
           startDate = new Date(now.setMonth(now.getMonth() - 1)).toISOString();
         }
 
-        // Fetch profiles with pixel stats
-        const { data: profilesData, error: profilesError } = await supabase
-          .from('profiles')
-          .select('user_id, full_name, avatar_url, pixel_count, total_spent')
+        // Fetch projects with pixel stats
+        const { data: projectsData, error: projectsError } = await supabase
+          .from('vw_project_leaderboard')
+          .select('project_name, owner_id, avatar_url, pixel_count, total_spent')
           .gt('pixel_count', 0)
           .order('pixel_count', { ascending: false })
           .limit(LEADERBOARD_LIMIT);
 
-        if (profilesError) throw profilesError;
+        if (projectsError) throw projectsError;
 
-        // Fetch hot users (purchased in last 24h)
+        // Fetch hot projects (purchased in last 24h)
         const yesterday = new Date();
         yesterday.setHours(yesterday.getHours() - 24);
         const { data: hotPixels } = await supabase
           .from('pixels')
-          .select('owner_id')
+          .select('alt_text, owner_id')
           .gte('purchased_at', yesterday.toISOString());
-        const hotUserIds = new Set(hotPixels?.map((p) => p.owner_id) || []);
+          
+        const hotProjectNames = new Set(
+          hotPixels?.map((p) => p.alt_text?.trim() || 'Anonymous') || []
+        );
 
         // Transform to LeaderboardUser format
-        const allUsers: LeaderboardUser[] = (profilesData || []).map((profile) => ({
-          id: profile.user_id,
-          user_id: profile.user_id,
-          full_name: profile.full_name,
-          avatar_url: profile.avatar_url,
-          pixel_count: profile.pixel_count || 0,
-          total_spent: profile.total_spent || 0,
-          isHot: hotUserIds.has(profile.user_id),
+        const allUsers: LeaderboardUser[] = (projectsData || []).map((project, index) => ({
+          id: `${project.project_name || 'Anonymous'}-${index}`,
+          user_id: project.owner_id || '',
+          full_name: project.project_name || 'Anonymous',
+          avatar_url: project.avatar_url,
+          pixel_count: project.pixel_count || 0,
+          total_spent: project.total_spent || 0,
+          isHot: hotProjectNames.has(project.project_name || 'Anonymous'),
         }));
 
         // Sort by pixels and spending
@@ -382,8 +385,8 @@ const Leaderboard = () => {
           const profile = profileMap.get(purchase.owner_id);
           return {
             ...purchase,
-            full_name: profile?.full_name || null,
-            avatar_url: profile?.avatar_url || null,
+            full_name: purchase.alt_text?.trim() || profile?.full_name || 'Anonymous',
+            avatar_url: purchase.image_url?.trim() || profile?.avatar_url || null,
             user_id: purchase.owner_id!,
           };
         });

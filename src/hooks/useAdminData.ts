@@ -49,7 +49,7 @@ export const useAdminPixels = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('pixels')
-        .select('id, x, y, price_paid, owner_id, image_url, link_url, alt_text, created_at')
+        .select('id, x, y, price_paid, owner_id, image_url, link_url, alt_text, created_at, block_id')
         .not('owner_id', 'is', null)
         .order('created_at', { ascending: false })
         .limit(1000);

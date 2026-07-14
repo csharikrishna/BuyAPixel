@@ -244,6 +244,7 @@ const MarketplacePage = () => {
             y, 
             image_url, 
             link_url,
+            alt_text,
             times_resold,
             last_sale_price
           )
@@ -344,7 +345,7 @@ const MarketplacePage = () => {
     ?.filter((listing) => {
       if (!searchQuery) return true;
       const searchLower = searchQuery.toLowerCase();
-      const sellerName = listing.seller_profile?.full_name?.toLowerCase() || "";
+      const sellerName = (listing.pixels as any)?.alt_text?.trim()?.toLowerCase() || listing.seller_profile?.full_name?.toLowerCase() || "";
       const coordinates = `${listing.pixels?.x},${listing.pixels?.y}`;
       return sellerName.includes(searchLower) || coordinates.includes(searchQuery);
     })
@@ -938,7 +939,7 @@ const MarketplacePage = () => {
                             </div>
                             <div className="text-muted-foreground text-xs md:text-sm flex items-center gap-1">
                               <span className="truncate">
-                                {listing.seller_profile?.full_name || "Anonymous"}
+                                By {(listing.pixels as any)?.alt_text?.trim() || listing.seller_profile?.full_name || "Anonymous"}
                               </span>
                             </div>
                             {timesResold > 0 && (

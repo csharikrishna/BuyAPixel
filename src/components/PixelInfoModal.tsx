@@ -212,7 +212,7 @@ export const PixelInfoModal = ({ isOpen, onClose, pixel, block }: PixelInfoModal
               {isLoadingOwner ? (
                 <span className="inline-block w-16 h-3 bg-muted animate-pulse rounded" />
               ) : (
-                ownerProfile?.full_name || 'Anonymous'
+                (altText !== 'Pixel' ? altText : null) || ownerProfile?.full_name || 'Anonymous'
               )}
             </p>
           </div>

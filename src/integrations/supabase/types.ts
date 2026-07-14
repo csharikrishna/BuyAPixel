@@ -1,4 +1,4 @@
-﻿export type Json =
+export type Json =
   | string
   | number
   | boolean
@@ -1537,6 +1537,16 @@ export type Database = {
           pixel_count: number | null
           total_spent: number | null
           user_id: string | null
+        }
+        Relationships: []
+      }
+      vw_project_leaderboard: {
+        Row: {
+          project_name: string | null
+          owner_id: string | null
+          avatar_url: string | null
+          pixel_count: number | null
+          total_spent: number | null
         }
         Relationships: []
       }
