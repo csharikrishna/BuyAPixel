@@ -28,16 +28,10 @@ import { useAdminPixels, useAdminUsers } from '@/hooks/useAdminData';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EditPixelDialog } from '@/components/EditPixelDialog';
 
-interface AdminPixelsTabProps {}
-
-export function AdminPixelsTab({}: AdminPixelsTabProps) {
+export function AdminPixelsTab() {
   const { data: pixels = [], isLoading: loadingPixels, refetch: refetchPixels } = useAdminPixels();
   const { data: users = [] } = useAdminUsers();
 
-  const getUserEmail = useCallback((userId: string) => {
-    const u = users.find(u => u.user_id === userId);
-    return u ? u.email : 'Unknown';
-  }, [users]);
 
   const getUserName = useCallback((userId: string) => {
     const u = users.find(u => u.user_id === userId);
