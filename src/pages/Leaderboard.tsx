@@ -971,7 +971,7 @@ const Leaderboard = () => {
                           const tier = getPlayerTier(leaderUser.pixel_count);
                           return (
                           <div
-                            key={leaderUser.user_id}
+                            key={leaderUser.id}
                             onClick={() => setSelectedUser(leaderUser)}
                             className={cn(
                               'flex items-center justify-between p-4 rounded-lg border transition-all duration-200 group cursor-pointer hover:-translate-y-0.5',
@@ -1107,7 +1107,7 @@ const Leaderboard = () => {
                           const tier = getPlayerTier(leaderUser.pixel_count);
                           return (
                           <div
-                            key={leaderUser.user_id}
+                            key={leaderUser.id}
                             onClick={() => setSelectedUser(leaderUser)}
                             className={cn(
                               'flex items-center justify-between p-4 rounded-lg border transition-all duration-200 group cursor-pointer hover:-translate-y-0.5',
@@ -1335,7 +1335,7 @@ const Leaderboard = () => {
                   </div>
                 </div>
                 <Button className="w-full bg-gradient-to-r from-primary to-accent hover:opacity-90" onClick={() => {
-                   navigate(`/canvas?highlightUser=${selectedUser.user_id}`);
+                   navigate(`/canvas?highlightUser=${selectedUser.user_id}&highlightProject=${encodeURIComponent(selectedUser.full_name || '')}`);
                 }}>
                   <MapPin className="w-4 h-4 mr-2" />
                   View Grid

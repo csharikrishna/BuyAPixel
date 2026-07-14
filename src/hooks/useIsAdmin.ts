@@ -8,13 +8,13 @@ const CACHE_TTL_MS = 60_000; // 60 seconds
 let cachedResult: { userId: string; isAdmin: boolean; isSuperAdmin: boolean; timestamp: number } | null = null;
 
 export const useIsAdmin = () => {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [isAdmin, setIsAdmin] = useState(false);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [isLoadingState, setIsLoadingState] = useState(true);
   const [checkedUserId, setCheckedUserId] = useState<string | null | undefined>(undefined); // undefined means hasn't checked
 
-  const isLoading = isLoadingState || checkedUserId !== (user?.id || null);
+  const isLoading = authLoading || isLoadingState || checkedUserId !== (user?.id || null);
 
   useEffect(() => {
     checkAdminStatus();
@@ -52,6 +52,10 @@ export const useIsAdmin = () => {
         .eq('user_id', user.id)
         .maybeSingle();
 
+      if (profileResult.error) {
+        console.error('[useIsAdmin] ❌ Profile query FAILED:', profileResult.error.message, profileResult.error.code);
+      }
+
       const dbIsAdmin = profileResult.data?.is_admin === true;
       
       // Secondary check: super admin email (optional)
@@ -60,7 +64,7 @@ export const useIsAdmin = () => {
         const superAdminResult = await supabase.rpc('is_current_user_super_admin');
         dbIsSuperAdmin = superAdminResult.data === true;
       } catch (err) {
-        // RPC might not be accessible; rely on profiles.is_admin
+        console.warn('[useIsAdmin] Super admin RPC failed:', err);
         dbIsSuperAdmin = false;
       }
 
@@ -78,8 +82,9 @@ export const useIsAdmin = () => {
       setIsAdmin(finalIsAdmin);
       setIsSuperAdmin(dbIsSuperAdmin);
       setCheckedUserId(user.id);
-    } catch {
+    } catch (err) {
       // Error — default to non-admin (safer)
+      console.error('[useIsAdmin] ❌ Unexpected error in admin check:', err);
       setIsAdmin(false);
       setIsSuperAdmin(false);
       setCheckedUserId(user.id);

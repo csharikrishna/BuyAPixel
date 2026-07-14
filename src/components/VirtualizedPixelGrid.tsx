@@ -680,16 +680,33 @@ export const VirtualizedPixelGrid = forwardRef<
       const xParam = searchParams.get('x');
       const yParam = searchParams.get('y');
 
+      const highlightProject = searchParams.get('highlightProject');
+
       let targetX: string | null = null;
       let targetY: string | null = null;
       let paramId = '';
 
-      if (pixelParam) {
+      if (highlightUser && purchasedPixels.length > 0) {
+        // If a project is specified, try to find a pixel matching both owner AND project (alt_text).
+        // If no project is specified or it doesn't match, fallback to the first pixel owned by the user.
+        const userPixel = purchasedPixels.find(p => 
+          p.owner_id === highlightUser && 
+          (!highlightProject || p.alt_text === highlightProject)
+        ) || purchasedPixels.find(p => p.owner_id === highlightUser);
+        
+        if (userPixel) {
+          targetX = userPixel.x.toString();
+          targetY = userPixel.y.toString();
+          paramId = `highlightUser=${highlightUser}&highlightProject=${highlightProject || ''}`;
+        }
+      }
+
+      if (!targetX && pixelParam) {
         const [xStr, yStr] = pixelParam.split(',');
         targetX = xStr;
         targetY = yStr;
         paramId = `pixel=${pixelParam}`;
-      } else if (xParam !== null && yParam !== null) {
+      } else if (!targetX && xParam !== null && yParam !== null) {
         targetX = xParam;
         targetY = yParam;
         paramId = `x=${xParam}&y=${yParam}`;
@@ -741,58 +758,67 @@ export const VirtualizedPixelGrid = forwardRef<
         }, 100);
       }
 
-      const purchased = getPurchasedPixel(px, py);
-      if (purchased) {
-        let block: PixelBlock | null = null;
-        if (purchased.block_id) {
-          // Find all pixels in this block
-          const blockPixels = purchasedPixels.filter(p => p.block_id === purchased.block_id);
-          if (blockPixels.length > 0) {
-            const xs = blockPixels.map(p => p.x);
-            const ys = blockPixels.map(p => p.y);
-            block = {
-              id: purchased.block_id,
-              owner_id: purchased.owner_id,
-              image_url: purchased.image_url || null,
-              link_url: purchased.link_url || null,
-              alt_text: purchased.alt_text || null,
-              min_x: Math.min(...xs),
-              max_x: Math.max(...xs),
-              min_y: Math.min(...ys),
-              max_y: Math.max(...ys),
-              pixel_count: blockPixels.length,
-              total_price: blockPixels.reduce((sum, p) => sum + (p.price_paid || 0), 0),
-              created_at: purchased.purchased_at || new Date().toISOString(),
-              updated_at: purchased.purchased_at || new Date().toISOString()
-            };
+      // ONLY open the modal if they navigated to a specific pixel, not a user highlight
+      if (!paramId.startsWith('highlightUser=')) {
+        const purchased = getPurchasedPixel(px, py);
+        if (purchased) {
+          let block: PixelBlock | null = null;
+          if (purchased.block_id) {
+            // Find all pixels in this block
+            const blockPixels = purchasedPixels.filter(p => p.block_id === purchased.block_id);
+            if (blockPixels.length > 0) {
+              const xs = blockPixels.map(p => p.x);
+              const ys = blockPixels.map(p => p.y);
+              block = {
+                id: purchased.block_id,
+                owner_id: purchased.owner_id,
+                image_url: purchased.image_url || null,
+                link_url: purchased.link_url || null,
+                alt_text: purchased.alt_text || null,
+                min_x: Math.min(...xs),
+                max_x: Math.max(...xs),
+                min_y: Math.min(...ys),
+                max_y: Math.max(...ys),
+                pixel_count: blockPixels.length,
+                total_price: blockPixels.reduce((sum, p) => sum + (p.price_paid || 0), 0),
+                created_at: purchased.purchased_at || new Date().toISOString(),
+                updated_at: purchased.purchased_at || new Date().toISOString()
+              };
+            }
           }
-        }
-        setInfoModalPixel(purchased);
-        setInfoModalBlock(block);
-        setHighlightTargetId(purchased.block_id || purchased.id);
+          setInfoModalPixel(purchased);
+          setInfoModalBlock(block);
+          setHighlightTargetId(purchased.block_id || purchased.id);
 
-        // Add a slight delay to open the modal so the zoom animation feels smooth
-        setTimeout(() => setInfoModalOpen(true), 1200);
+          // Add a slight delay to open the modal so the zoom animation feels smooth
+          setTimeout(() => setInfoModalOpen(true), 1200);
 
-      } else {
-        const selectionValidation = validateSelection([createSelectedPixel(px, py)]);
-        if (selectionValidation.accepted.length === 0) {
-          toast.info(`Pixel at (${px}, ${py}) can't be selected`, {
-            description: summarizeSelectionRejections(selectionValidation.rejected),
+        } else {
+          const selectionValidation = validateSelection([createSelectedPixel(px, py)]);
+          if (selectionValidation.accepted.length === 0) {
+            toast.info(`Pixel at (${px}, ${py}) can't be selected`, {
+              description: summarizeSelectionRejections(selectionValidation.rejected),
+              duration: 5000,
+            });
+            return;
+          }
+
+          toast.success(`Pixel at (${px}, ${py}) is available!`, {
+            description: "We've selected it for you. Buy it now to own a piece of internet history.",
             duration: 5000,
           });
-          return;
-        }
 
-        toast.success(`Pixel at (${px}, ${py}) is available!`, {
-          description: "We've selected it for you. Buy it now to own a piece of internet history.",
-          duration: 5000,
-        });
-
-        if (onAvailablePixelFocused) {
-          if (navigator.vibrate) navigator.vibrate(25);
-          onAvailablePixelFocused(px, py);
+          if (onAvailablePixelFocused) {
+            if (navigator.vibrate) navigator.vibrate(25);
+            onAvailablePixelFocused(px, py);
+          }
         }
+      } else {
+         // If it's a highlightUser navigation, just show a toast so they know what happened
+         toast.success("User pixels highlighted!", {
+            description: "We've centered the canvas on their first pixel. Zoom out to see them all.",
+            duration: 4000
+         });
       }
     }, [
       searchParams,

@@ -93,7 +93,7 @@ const Sparkline = ({
   return (
     <svg
       viewBox={`0 0 ${width} ${height}`}
-      className="w-full h-auto"
+      className="w-full h-full"
       preserveAspectRatio="none"
     >
       <defs>
@@ -310,7 +310,7 @@ const StatsPage = () => {
         </div>
 
         {/* ── Key Metrics Grid ─────────────────────────── */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
           {/* Fill Rate */}
           <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-white to-indigo-50/50 dark:from-gray-900 dark:to-indigo-950/20 shadow-lg shadow-indigo-500/5">
             <CardContent className="p-5 flex flex-col items-center text-center">
@@ -324,25 +324,6 @@ const StatsPage = () => {
               <p className="text-sm text-muted-foreground mt-1">
                 {stats.total_pixels_sold.toLocaleString()} / {stats.total_pixels.toLocaleString()}
               </p>
-            </CardContent>
-          </Card>
-
-          {/* Revenue */}
-          <Card className="border-0 bg-gradient-to-br from-white to-emerald-50/50 dark:from-gray-900 dark:to-emerald-950/20 shadow-lg shadow-emerald-500/5">
-            <CardContent className="p-5">
-              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center mb-3">
-                <DollarSign className="w-5 h-5 text-emerald-600" />
-              </div>
-              <p className="text-2xl font-black text-foreground">
-                {formatCurrency(stats.total_revenue)}
-              </p>
-              <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mt-1">Total Revenue</p>
-              <div className="flex items-center gap-1 mt-2">
-                <ArrowUpRight className="w-3 h-3 text-emerald-500" />
-                <span className="text-xs text-emerald-600 font-semibold">
-                  {formatCurrency(stats.daily_velocity?.reduce((s, d) => s + d.revenue, 0) || 0)} this month
-                </span>
-              </div>
             </CardContent>
           </Card>
 
@@ -380,7 +361,7 @@ const StatsPage = () => {
         </div>
 
         {/* ── Charts Row ───────────────────────────────── */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <div className="grid grid-cols-1 gap-6 mb-8">
           {/* Purchase Velocity Chart */}
           <Card className="border-0 shadow-lg bg-white dark:bg-gray-900">
             <CardContent className="p-6">
@@ -393,26 +374,6 @@ const StatsPage = () => {
               </div>
               <div className="h-24">
                 <Sparkline data={velocityData} color="#6366f1" />
-              </div>
-              <div className="flex justify-between mt-3 text-xs text-muted-foreground">
-                <span>30 days ago</span>
-                <span>Today</span>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Revenue Trend */}
-          <Card className="border-0 shadow-lg bg-white dark:bg-gray-900">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <TrendingUp className="w-4 h-4 text-emerald-500" />
-                  <h3 className="font-bold text-sm">Revenue Trend</h3>
-                </div>
-                <Badge variant="outline" className="text-[10px] font-semibold">Last 30 Days</Badge>
-              </div>
-              <div className="h-24">
-                <Sparkline data={revenueData} color="#10b981" />
               </div>
               <div className="flex justify-between mt-3 text-xs text-muted-foreground">
                 <span>30 days ago</span>
