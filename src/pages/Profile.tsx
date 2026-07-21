@@ -8,7 +8,7 @@ import { ProfileSkeleton } from '@/components/ui/skeleton-primitives';
 import {
   ArrowLeft, RefreshCw, Edit, AlertCircle,
   User, Sparkles, CheckCircle2, Phone, Calendar,
-  Shield, Download, Trash2, Loader2
+  Shield, Download, Trash2, Loader2, BarChart3, ArrowUpRight
 } from 'lucide-react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -550,7 +550,20 @@ const Profile = () => {
 
             {/* Analytics Dashboard — Only for Own Profile */}
             {isOwnProfile && targetUserId && (
-              <PixelAnalytics userId={targetUserId} />
+              <>
+                <PixelAnalytics userId={targetUserId} />
+                <Card className="shadow-lg bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700/50">
+                  <CardContent className="p-6">
+                    <Link to="/dashboard/analytics">
+                      <Button className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:opacity-90 text-white">
+                        <BarChart3 className="w-4 h-4 mr-2" />
+                        Open Full Analytics Dashboard
+                        <ArrowUpRight className="w-4 h-4 ml-2" />
+                      </Button>
+                    </Link>
+                  </CardContent>
+                </Card>
+              </>
             )}
 
             {/* Referral Section — Only for Own Profile */}

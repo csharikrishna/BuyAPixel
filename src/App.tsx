@@ -31,6 +31,7 @@ const Leaderboard = lazy(() => import("./pages/Leaderboard"));
 const MarketplacePage = lazy(() => import("./pages/MarketplacePage"));
 const Canvas = lazy(() => import("./pages/Canvas"));
 const ScanPixel = lazy(() => import("./pages/ScanPixel"));
+const OwnerDashboard = lazy(() => import("./pages/OwnerDashboard"));
 
 // Blog
 const Blog = lazy(() => import("./pages/Blog"));
@@ -194,6 +195,7 @@ const AppContent = () => {
 
             {/* User Pages */}
             <Route path="/profile" element={<ErrorBoundary pageName="Profile"><Profile /></ErrorBoundary>} />
+            <Route path="/dashboard/analytics" element={<ErrorBoundary pageName="Owner Analytics"><OwnerDashboard /></ErrorBoundary>} />
             <Route path="/leaderboard" element={<ErrorBoundary pageName="Leaderboard"><Leaderboard /></ErrorBoundary>} />
             <Route path="/marketplace" element={<ErrorBoundary pageName="Marketplace"><MarketplacePage /></ErrorBoundary>} />
             <Route path="/contact" element={<ErrorBoundary pageName="Contact"><Contact /></ErrorBoundary>} />

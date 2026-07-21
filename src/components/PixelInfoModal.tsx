@@ -24,6 +24,7 @@ import { toast } from 'sonner';
 import { PurchasedPixel, PixelBlock } from '@/types/grid';
 import { calculatePixelPrice } from '@/utils/gridConstants';
 import { appendUtmParams } from '@/utils/utmUtils';
+import { trackPixelView, trackPixelClick } from '@/utils/analytics';
 
 interface PixelInfoModalProps {
   isOpen: boolean;
@@ -111,6 +112,13 @@ export const PixelInfoModal = ({ isOpen, onClose, pixel, block }: PixelInfoModal
       cancelled = true;
     };
   }, [isOpen, ownerId]);
+
+  // Track pixel view when modal opens
+  useEffect(() => {
+    if (isOpen && pixel?.id) {
+      trackPixelView(pixel.id);
+    }
+  }, [isOpen, pixel?.id]);
 
   const handleCopyLink = () => {
     if (linkUrl) {
@@ -263,7 +271,10 @@ export const PixelInfoModal = ({ isOpen, onClose, pixel, block }: PixelInfoModal
         {linkUrl && (
           <Button
             className="flex-1 gap-2"
-            onClick={() => window.open(appendUtmParams(linkUrl, 'pixel_info'), '_blank', 'noopener,noreferrer')}
+            onClick={() => {
+              if (pixel?.id) trackPixelClick(pixel.id, block?.id || null, 'pixel_info');
+              window.open(appendUtmParams(linkUrl, 'pixel_info'), '_blank', 'noopener,noreferrer');
+            }}
           >
             <ExternalLink className="w-4 h-4" />
             Visit Link
