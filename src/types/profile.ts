@@ -35,6 +35,8 @@ export interface UserPixel {
    times_resold?: number;
    last_sale_price?: number | null;
    last_sale_date?: string | null;
+   view_count?: number;
+   click_count?: number;
 }
 
 export interface PixelStats {

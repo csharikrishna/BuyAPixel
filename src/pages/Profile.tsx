@@ -236,7 +236,9 @@ const Profile = () => {
         block_id: row.block_id || undefined,
         times_resold: row.times_resold || undefined,
         last_sale_price: row.last_sale_price || undefined,
-        last_sale_date: row.last_sale_date || undefined
+        last_sale_date: row.last_sale_date || undefined,
+        view_count: row.view_count || 0,
+        click_count: row.click_count || 0
       }));
 
       setUserPixels(pixels);

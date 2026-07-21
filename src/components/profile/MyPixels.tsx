@@ -6,7 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
    TrendingUp, MapPin, Loader2, Download,
-   ExternalLink, Share2, Edit, Layers
+   ExternalLink, Share2, Edit, Layers,
+   Eye, MousePointerClick
 } from 'lucide-react';
 import { UserPixel, PixelStats } from '@/types/profile';
 import { formatRelativeDate } from '@/utils/dateUtils';
@@ -40,6 +41,8 @@ type DisplayItem = {
       imageUrl?: string;
       linkUrl?: string;
       pixelCount: number;
+      viewCount: number;
+      clickCount: number;
    }
 };
 
@@ -98,7 +101,9 @@ export const MyPixels = memo(({
                purchasedAt: firstPixel.purchased_at,
                imageUrl: firstPixel.image_url || undefined,
                linkUrl: firstPixel.link_url || undefined,
-               pixelCount: pixels.length
+               pixelCount: pixels.length,
+               viewCount: pixels.reduce((sum, p) => sum + (p.view_count || 0), 0),
+               clickCount: pixels.reduce((sum, p) => sum + (p.click_count || 0), 0)
             }
          });
       });
@@ -254,18 +259,31 @@ export const MyPixels = memo(({
                                  )}
 
                                  <div className="flex flex-wrap items-center gap-3 pt-1">
-                                    <Badge variant="outline" className="text-xs font-normal">
-                                       Purchased {formatRelativeDate(isBlock ? summary!.purchasedAt : pixel.purchased_at)}
-                                    </Badge>
-                                    <Badge variant="outline" className="text-xs font-normal bg-green-100 text-green-700 border-green-300 dark:bg-green-900/50 dark:text-green-300 dark:border-green-700">
-                                       ₹{isBlock ? summary!.totalPrice.toFixed(2) : pixel.price_paid}
-                                    </Badge>
-                                    {(pixel.times_resold || 0) > 0 && (
-                                       <Badge variant="outline" className="text-xs font-normal bg-orange-100 text-orange-700 border-orange-300 dark:bg-orange-900/50 dark:text-orange-300 dark:border-orange-700">
-                                          Resold {pixel.times_resold}x
-                                       </Badge>
-                                    )}
-                                 </div>
+                                     <Badge variant="outline" className="text-xs font-normal">
+                                        Purchased {formatRelativeDate(isBlock ? summary!.purchasedAt : pixel.purchased_at)}
+                                     </Badge>
+                                     <Badge variant="outline" className="text-xs font-normal bg-green-100 text-green-700 border-green-300 dark:bg-green-900/50 dark:text-green-300 dark:border-green-700">
+                                        ₹{isBlock ? summary!.totalPrice.toFixed(2) : pixel.price_paid}
+                                     </Badge>
+                                     {(pixel.times_resold || 0) > 0 && (
+                                        <Badge variant="outline" className="text-xs font-normal bg-orange-100 text-orange-700 border-orange-300 dark:bg-orange-900/50 dark:text-orange-300 dark:border-orange-700">
+                                           Resold {pixel.times_resold}x
+                                        </Badge>
+                                     )}
+                                     {/* Analytics Badges */}
+                                     {isOwnProfile && (
+                                        <>
+                                           <Badge variant="outline" className="text-xs font-normal bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800">
+                                              <Eye className="w-3 h-3 mr-1" />
+                                              {isBlock ? summary!.viewCount : (pixel.view_count || 0)} Views
+                                           </Badge>
+                                           <Badge variant="outline" className="text-xs font-normal bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800">
+                                              <MousePointerClick className="w-3 h-3 mr-1" />
+                                              {isBlock ? summary!.clickCount : (pixel.click_count || 0)} Clicks
+                                           </Badge>
+                                        </>
+                                     )}
+                                  </div>
                               </div>
 
                               <div className="flex flex-row sm:flex-col gap-2 w-full sm:w-auto mt-2 sm:mt-0">
