@@ -586,10 +586,10 @@ const Profile = () => {
               </Card>
             )}
 
-            {/* Referral Section — Only for Own Profile */}
-            {isOwnProfile && (
+            {/* Referral Section — Temporarily Disabled */}
+            {/* {isOwnProfile && (
               <ReferralSection />
-            )}
+            )} */}
 
             {/* My Pixels */}
             <MyPixels
