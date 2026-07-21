@@ -549,7 +549,7 @@ const Profile = () => {
             <TrophyCase userId={targetUserId || ""} />
 
             {/* Analytics Dashboard — Only for Own Profile */}
-            {isOwnProfile && targetUserId && (
+            {isOwnProfile && targetUserId && userPixels.length > 0 && (
               <>
                 <PixelAnalytics userId={targetUserId} />
                 <Card className="shadow-lg bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700/50">
@@ -564,6 +564,26 @@ const Profile = () => {
                   </CardContent>
                 </Card>
               </>
+            )}
+
+            {isOwnProfile && targetUserId && userPixels.length === 0 && !pixelsLoading && (
+              <Card className="shadow-lg bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700/50">
+                <CardContent className="p-8 text-center">
+                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500/10 to-purple-500/10 flex items-center justify-center mx-auto mb-4">
+                    <BarChart3 className="w-8 h-8 text-indigo-500" />
+                  </div>
+                  <h3 className="font-bold text-xl mb-2">Unlock Pixel Analytics</h3>
+                  <p className="text-sm text-muted-foreground mb-6 max-w-md mx-auto">
+                    Purchase your first pixel to unlock the Owner Analytics Dashboard. Track views, clicks, and engagement from visitors all over the world!
+                  </p>
+                  <Link to="/buy-pixels">
+                    <Button size="lg" className="bg-indigo-600 hover:bg-indigo-700 text-white w-full sm:w-auto">
+                      <Sparkles className="w-4 h-4 mr-2" />
+                      Buy Your First Pixel
+                    </Button>
+                  </Link>
+                </CardContent>
+              </Card>
             )}
 
             {/* Referral Section — Only for Own Profile */}
