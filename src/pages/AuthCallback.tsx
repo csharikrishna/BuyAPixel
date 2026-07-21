@@ -34,18 +34,20 @@ const AuthCallback = () => {
       // Step 1: Check for existing valid session FIRST
       const { data: { session: existingSession } } = await supabase.auth.getSession();
 
-      if (existingSession) {
-        console.log('✅ Valid session already exists');
-        await completeAuthentication(existingSession, 'signin');
-        return;
-      }
-
       // Step 2: Get URL parameters
       const errorCode = searchParams.get('error_code');
       const errorDescription = searchParams.get('error_description');
       const error = searchParams.get('error');
       const type = searchParams.get('type');
       const tokenHash = searchParams.get('token_hash');
+      const code = searchParams.get('code');
+
+      if (existingSession) {
+        console.log('✅ Valid session already exists');
+        const authType = type === 'recovery' ? 'recovery' : 'signin';
+        await completeAuthentication(existingSession, authType);
+        return;
+      }
 
       // Step 3: Handle OTP expired error ONLY if no session exists
       if ((errorCode === 'otp_expired' || error === 'access_denied') && !existingSession) {
@@ -68,7 +70,26 @@ const AuthCallback = () => {
         return;
       }
 
-      // Step 6: No session and no token - redirect to sign in
+      // Step 6: Handle PKCE code (supabase-js handles exchange automatically)
+      if (code) {
+        console.log('🔄 PKCE code detected, waiting for supabase-js to exchange it...');
+        // We just wait, supabase-js will exchange it in the background and trigger onAuthStateChange
+        // We can manually check again after a short delay
+        setTimeout(async () => {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session) {
+            const authType = type === 'recovery' ? 'recovery' : 'signin';
+            await completeAuthentication(session, authType);
+          } else {
+             // If exchange failed (e.g. opened on different device)
+             setStatus('error');
+             setErrorMessage('Failed to authenticate. If you opened this link on a different device than you requested it from, please request a new link and open it on the same device.');
+          }
+        }, 2000);
+        return;
+      }
+
+      // Step 7: No session and no token - redirect to sign in
       console.warn('⚠️ No authentication data found');
       setStatus('error');
       setErrorMessage('No authentication data found. Please try signing in again.');
