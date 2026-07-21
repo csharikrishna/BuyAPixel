@@ -1,15 +1,7 @@
--- =============================================================
--- Migration: Fix Analytics GROUP BY Bug
--- =============================================================
--- The previous migration caused a SQL compilation error (42803)
--- because it attempted to GROUP BY an alias (source) that contained
--- a complex CASE expression involving column names, which Postgres
--- does not allow in this context. We must use positional grouping (GROUP BY 1).
--- =============================================================
-
+-- Fix: pixel_clicks doesn't have owner_id column, use p2.owner_id from joined pixels table
 CREATE OR REPLACE FUNCTION get_owner_dashboard_analytics(
   target_user_id UUID,
-  time_range TEXT DEFAULT 'all'  -- 'today', 'yesterday', '7d', '30d', 'all'
+  time_range TEXT DEFAULT 'all'
 )
 RETURNS JSON
 LANGUAGE plpgsql
@@ -21,12 +13,10 @@ DECLARE
   range_start TIMESTAMPTZ;
   range_end TIMESTAMPTZ := now();
 BEGIN
-  -- Only allow users to view their own analytics
   IF auth.uid() IS DISTINCT FROM target_user_id THEN
     RETURN json_build_object('error', 'Unauthorized');
   END IF;
 
-  -- Calculate time range
   CASE time_range
     WHEN 'today' THEN range_start := date_trunc('day', now());
     WHEN 'yesterday' THEN
@@ -38,7 +28,6 @@ BEGIN
   END CASE;
 
   SELECT json_build_object(
-    -- ===== TRAFFIC ANALYTICS =====
     'total_views', COALESCE((
       SELECT COUNT(*) FROM public.events e
       JOIN public.pixels p ON p.id = e.target_id
@@ -70,7 +59,6 @@ BEGIN
         AND pc.clicked_at >= range_start AND pc.clicked_at < range_end
     ), 0),
 
-    -- ===== TRAFFIC TIMELINE (daily for last 30 days or selected range) =====
     'daily_timeline', COALESCE((
       SELECT json_agg(row_to_json(d) ORDER BY d.date)
       FROM (
@@ -102,7 +90,6 @@ BEGIN
       ) d
     ), '[]'::json),
 
-    -- ===== DEVICE ANALYTICS =====
     'device_breakdown', COALESCE((
       SELECT json_agg(row_to_json(dev))
       FROM (
@@ -118,7 +105,6 @@ BEGIN
       ) dev
     ), '[]'::json),
 
-    -- ===== BROWSER ANALYTICS =====
     'browser_breakdown', COALESCE((
       SELECT json_agg(row_to_json(br))
       FROM (
@@ -134,7 +120,6 @@ BEGIN
       ) br
     ), '[]'::json),
 
-    -- ===== OS ANALYTICS =====
     'os_breakdown', COALESCE((
       SELECT json_agg(row_to_json(o))
       FROM (
@@ -150,7 +135,6 @@ BEGIN
       ) o
     ), '[]'::json),
 
-    -- ===== REFERRAL SOURCES =====
     'referral_sources', COALESCE((
       SELECT json_agg(row_to_json(ref))
       FROM (
@@ -179,7 +163,6 @@ BEGIN
       ) ref
     ), '[]'::json),
 
-    -- ===== POPULAR VISITING HOURS =====
     'hourly_activity', COALESCE((
       SELECT json_agg(row_to_json(h) ORDER BY h.hour)
       FROM (
@@ -194,7 +177,6 @@ BEGIN
       ) h
     ), '[]'::json),
 
-    -- ===== GEOGRAPHIC DISTRIBUTION =====
     'geographic', COALESCE((
       SELECT json_agg(row_to_json(geo))
       FROM (
@@ -211,7 +193,6 @@ BEGIN
       ) geo
     ), '[]'::json),
 
-    -- ===== CLICK HISTORY (latest 50 anonymous events) =====
     'click_history', COALESCE((
       SELECT json_agg(row_to_json(ch))
       FROM (
@@ -232,7 +213,6 @@ BEGIN
       ) ch
     ), '[]'::json),
 
-    -- ===== TOP PERFORMING BLOCKS =====
     'top_blocks', COALESCE((
       SELECT json_agg(row_to_json(blk))
       FROM (
@@ -253,7 +233,6 @@ BEGIN
       ) blk
     ), '[]'::json),
 
-    -- ===== PIXEL RANKING =====
     'pixel_ranking', (
       SELECT json_build_object(
         'user_rank', COALESCE(ur.rank, 0),
@@ -281,7 +260,6 @@ BEGIN
       ) ur
     ),
 
-    -- ===== GENERATED AT =====
     'generated_at', now()
   ) INTO result;
 
